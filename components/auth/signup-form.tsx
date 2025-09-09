@@ -15,6 +15,8 @@ import { Eye, EyeOff, CreditCard, Loader2, Building2, Users } from 'lucide-react
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { navigationPaths } from '@/lib/navigation'
+import { usersApi } from '@/lib/api-client'
+import { useToast } from '@/hooks/use-toast'
 
 const signupSchema = z.object({
   fullName: z.string().min(2, 'Full name must be at least 2 characters'),
@@ -41,6 +43,7 @@ export function SignupForm() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+  const { toast } = useToast()
 
   const {
     register,
@@ -57,21 +60,32 @@ export function SignupForm() {
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true)
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000))
-      
-      // Store user data in localStorage (in real app, this would be handled by API)
-      localStorage.setItem('token', 'mock-jwt-token')
-      localStorage.setItem('userRole', data.userType)
-      
-      // Redirect based on user type
-      if (data.userType === 'aggregator') {
-        router.push(navigationPaths.aggregator.dashboard)
-      } else {
-        router.push(navigationPaths.lender.dashboard)
+      const roleMap: Record<string, 'aggregator_admin' | 'lender_admin'> = {
+        aggregator: 'aggregator_admin',
+        lender: 'lender_admin',
       }
+      const payload = {
+        username: data.fullName,
+        email: data.email,
+        password: data.password,
+        contact: data.phone,
+        designation: data.companyName,
+        role: roleMap[data.userType],
+        address: '',
+        pincode: 0,
+      }
+      await usersApi.register(payload)
+      const login = await usersApi.login({ email: data.email, password: data.password })
+      const token = login?.data?.access_token
+      const role = login?.data?.user?.role as 'aggregator_admin' | 'lender_admin' | 'super_admin' | undefined
+      if (token) localStorage.setItem('token', token)
+      if (role) localStorage.setItem('userRole', role)
+      if (role === 'aggregator_admin') router.push(navigationPaths.aggregator.dashboard)
+      else if (role === 'lender_admin') router.push(navigationPaths.lender.dashboard)
+      else router.push('/')
     } catch (error) {
       console.error('Signup error:', error)
+      toast({ title: 'Signup failed', description: 'Please review the form and try again.' })
     } finally {
       setIsLoading(false)
     }

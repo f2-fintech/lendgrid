@@ -1,6 +1,8 @@
 "use client"
 
 import { useState } from 'react'
+import { useAuth, AppRole } from '@/lib/auth'
+import { useLogout } from '@/lib/logout'
 import {
   Sidebar,
   SidebarContent,
@@ -29,7 +31,7 @@ import { navigationPaths } from '@/lib/navigation'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  userRole: 'super_admin' | 'aggregator' | 'lender'
+  userRole?: 'super_admin' | 'aggregator' | 'lender'
 }
 
 const navigationConfig = {
@@ -94,8 +96,9 @@ const navigationConfig = {
   ]
 }
 
-function AppSidebar({ userRole }: { userRole: DashboardLayoutProps['userRole'] }) {
+function AppSidebar({ userRole, user }: { userRole: DashboardLayoutProps['userRole'], user?: any }) {
   const router = useRouter()
+  const logout = useLogout()
   const navigation = navigationConfig[userRole] || navigationConfig.lender
 
   if (!navigation || !Array.isArray(navigation)) {
@@ -108,11 +111,7 @@ function AppSidebar({ userRole }: { userRole: DashboardLayoutProps['userRole'] }
     )
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem('token')
-    localStorage.removeItem('userRole')
-    router.push(navigationPaths.login)
-  }
+  const handleLogout = () => logout()
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
@@ -122,6 +121,13 @@ function AppSidebar({ userRole }: { userRole: DashboardLayoutProps['userRole'] }
       default: return 'User'
     }
   }
+
+  const displayName = user?.username || user?.email || 'User'
+  const initials = (displayName || 'U')
+    .split(' ')
+    .map((s: string) => s.charAt(0).toUpperCase())
+    .slice(0, 2)
+    .join('')
 
   return (
     <Sidebar variant="inset" className="bg-gray-900 border-gray-800">
@@ -175,11 +181,11 @@ function AppSidebar({ userRole }: { userRole: DashboardLayoutProps['userRole'] }
                   className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                 >
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src="/placeholder.svg?height=32&width=32&text=U" alt="User" />
-                    <AvatarFallback className="rounded-lg bg-gold text-dark">U</AvatarFallback>
+                    <AvatarImage src={user?.profilePicture || ''} alt={displayName} />
+                    <AvatarFallback className="rounded-lg bg-gold text-dark">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold text-white">John Doe</span>
+                    <span className="truncate font-semibold text-white">{displayName}</span>
                     <span className="truncate text-xs text-gray-400">{getRoleDisplayName(userRole)}</span>
                   </div>
                   <ChevronUp className="ml-auto size-4 text-gray-400" />
@@ -217,9 +223,17 @@ function AppSidebar({ userRole }: { userRole: DashboardLayoutProps['userRole'] }
 }
 
 export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
+  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'lender_admin'] as AppRole[])
+  const normalizedRole: 'super_admin' | 'aggregator' | 'lender' =
+    role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : 'lender'
+
+  if (loading) {
+    return <div className="p-8 text-white">Loading...</div>
+  }
+
   return (
     <SidebarProvider>
-      <AppSidebar userRole={userRole} />
+      <AppSidebar userRole={userRole ?? normalizedRole} user={user} />
       <SidebarInset>
         <header className="flex h-16 shrink-0 items-center gap-2 px-4 bg-gray-900/50 backdrop-blur-md border-b border-gray-800">
           <SidebarTrigger className="-ml-1 text-white hover:bg-gray-800" />

@@ -12,6 +12,8 @@ import { CreditCard, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { navigationPaths } from '@/lib/navigation'
+import { usersApi } from '@/lib/api-client'
+import { useToast } from '@/hooks/use-toast'
 import { CardSkeleton } from '../ui/loading-skeleton'
 
 interface LoginFormData {
@@ -27,33 +29,36 @@ export function LoginForm() {
   const [cardsLoading, setCardsLoading] = useState(true)
   const { register, handleSubmit, formState: { errors }, setValue, watch } = useForm<LoginFormData>()
   const selectedRole = watch('role')
+  const { toast } = useToast()
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true)
+    try {
+      const resp = await usersApi.login({ email: data.email, password: data.password })
+      const token = resp?.data?.access_token
+      const role = resp?.data?.user?.role as LoginFormData['role'] | undefined
+      if (token) localStorage.setItem('token', token)
+      if (role) localStorage.setItem('userRole', role)
 
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 2000))
-
-    // Mock JWT token storage
-    localStorage.setItem('token', 'mock-jwt-token')
-    localStorage.setItem('userRole', data.role)
-
-    // Redirect based on role
-    switch (data.role) {
-      case 'super_admin':
-        router.push(navigationPaths.superAdmin.dashboard)
-        break
-      case 'aggregator_admin':
-        router.push(navigationPaths.aggregator.dashboard)
-        break
-      case 'lender_admin':
-        router.push(navigationPaths.lender.dashboard)
-        break
-      default:
-        router.push('/dashboard')
+      switch (role || data.role) {
+        case 'super_admin':
+          router.push(navigationPaths.superAdmin.dashboard)
+          break
+        case 'aggregator_admin':
+          router.push(navigationPaths.aggregator.dashboard)
+          break
+        case 'lender_admin':
+          router.push(navigationPaths.lender.dashboard)
+          break
+        default:
+          router.push('/')
+      }
+    } catch (err) {
+      console.error(err)
+      toast({ title: 'Login failed', description: 'Check your credentials and try again.' })
+    } finally {
+      setIsLoading(false)
     }
-
-    setIsLoading(false)
   }
 
   useEffect(() => {
