@@ -37,8 +37,10 @@ export function LoginForm() {
       const resp = await usersApi.login({ email: data.email, password: data.password })
       const token = resp?.data?.access_token
       const role = resp?.data?.user?.role as LoginFormData['role'] | undefined
-      if (token) localStorage.setItem('token', token)
-      if (role) localStorage.setItem('userRole', role)
+      if (token) {
+        const expires = new Date(Date.now() + 7 * 864e5).toUTCString()
+        document.cookie = `token=${encodeURIComponent(token)}; Expires=${expires}; Path=/; SameSite=Lax`
+      }
 
       switch (role || data.role) {
         case 'super_admin':

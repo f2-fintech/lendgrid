@@ -11,6 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
+import { useToast } from '@/hooks/use-toast'
+import { usersApi } from '@/lib/api-client'
+import { AddAggregatorDialog } from './dialogs/add-aggregator-dialog'
 import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, CreditCard, Building2 } from 'lucide-react'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
@@ -127,6 +130,7 @@ export function SuperAdminAggregators() {
   const [filterStatus, setFilterStatus] = useState('')
   const [selectedAggregator, setSelectedAggregator] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const { toast } = useToast()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(5)
@@ -205,6 +209,50 @@ export function SuperAdminAggregators() {
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const handleApprove = async (aggregatorId: string) => {
+    try {
+      await usersApi.updateUser({
+        id: aggregatorId,
+        status: 'ACTIVE'
+      })
+      
+      // Refresh data
+      toast({
+        title: 'Success',
+        description: 'Aggregator has been approved successfully.',
+      })
+    } catch (error) {
+      console.error('Approve aggregator error:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to approve aggregator. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleReject = async (aggregatorId: string) => {
+    try {
+      await usersApi.updateUser({
+        id: aggregatorId,
+        status: 'INACTIVE'
+      })
+
+      // Refresh data
+      toast({
+        title: 'Success',
+        description: 'Aggregator has been rejected.',
+      })
+    } catch (error) {
+      console.error('Reject aggregator error:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to reject aggregator. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -243,10 +291,7 @@ export function SuperAdminAggregators() {
           <h1 className="text-3xl font-bold text-white">Aggregator Management</h1>
           <p className="text-gray-400 mt-1">Manage and monitor all registered aggregators</p>
         </div>
-        <Button className="bg-gradient-to-r from-gold to-blue text-dark">
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Aggregator
-        </Button>
+        <AddAggregatorDialog />
       </motion.div>
 
       {/* Metrics Cards */}
@@ -407,10 +452,20 @@ export function SuperAdminAggregators() {
                             </Button>
                             {aggregator.status === 'Pending' && (
                               <>
-                                <Button variant="ghost" size="sm" className="text-green-400 hover:text-white hover:bg-gray-700">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-green-400 hover:text-white hover:bg-gray-700"
+                                  onClick={() => handleApprove(aggregator.id)}
+                                >
                                   <CheckCircle className="w-4 h-4" />
                                 </Button>
-                                <Button variant="ghost" size="sm" className="text-red-400 hover:text-white hover:bg-gray-700">
+                                <Button 
+                                  variant="ghost" 
+                                  size="sm" 
+                                  className="text-red-400 hover:text-white hover:bg-gray-700"
+                                  onClick={() => handleReject(aggregator.id)}
+                                >
                                   <XCircle className="w-4 h-4" />
                                 </Button>
                               </>
@@ -520,11 +575,24 @@ export function SuperAdminAggregators() {
 
               {selectedAggregator.status === 'Pending' && (
                 <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
-                  <Button className="bg-green-500 hover:bg-green-600 text-white">
+                  <Button 
+                    className="bg-green-500 hover:bg-green-600 text-white"
+                    onClick={() => {
+                      handleApprove(selectedAggregator.id)
+                      setIsViewDialogOpen(false)
+                    }}
+                  >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Approve Aggregator
                   </Button>
-                  <Button variant="outline" className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white">
+                  <Button 
+                    variant="outline" 
+                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                    onClick={() => {
+                      handleReject(selectedAggregator.id)
+                      setIsViewDialogOpen(false)
+                    }}
+                  >
                     <XCircle className="w-4 h-4 mr-2" />
                     Reject Application
                   </Button>

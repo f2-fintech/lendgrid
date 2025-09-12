@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from 'react'
-import { useForm } from 'react-hook-form'
+import { Controller, useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion } from 'framer-motion'
@@ -23,6 +23,13 @@ const signupSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   phone: z.string().min(10, 'Phone number must be at least 10 digits'),
   companyName: z.string().min(2, 'Company name must be at least 2 characters'),
+  dob: z.string().refine((val) => !isNaN(Date.parse(val)), {
+    message: 'Date of Birth must be a valid date',
+  }),
+  gender: z.enum(['male', 'female', 'other'], {
+    required_error: 'Please select a gender',
+  }),
+  pincode: z.string().regex(/^\d+$/, 'Pincode must be a number string'),
   userType: z.enum(['aggregator', 'lender'], {
     required_error: 'Please select a user type'
   }),
@@ -50,6 +57,7 @@ export function SignupForm() {
     handleSubmit,
     setValue,
     watch,
+    control,
     formState: { errors }
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema)
@@ -72,14 +80,18 @@ export function SignupForm() {
         designation: data.companyName,
         role: roleMap[data.userType],
         address: '',
-        pincode: 0,
+        dob: new Date(data.dob).toISOString(),
+        gender: data.gender.toLowerCase(),
+        pincode: data.pincode,
       }
       await usersApi.register(payload)
       const login = await usersApi.login({ email: data.email, password: data.password })
       const token = login?.data?.access_token
       const role = login?.data?.user?.role as 'aggregator_admin' | 'lender_admin' | 'super_admin' | undefined
-      if (token) localStorage.setItem('token', token)
-      if (role) localStorage.setItem('userRole', role)
+      if (token) {
+        const expires = new Date(Date.now() + 7 * 864e5).toUTCString()
+        document.cookie = `token=${encodeURIComponent(token)}; Expires=${expires}; Path=/; SameSite=Lax`
+      }
       if (role === 'aggregator_admin') router.push(navigationPaths.aggregator.dashboard)
       else if (role === 'lender_admin') router.push(navigationPaths.lender.dashboard)
       else router.push('/')
@@ -90,6 +102,7 @@ export function SignupForm() {
       setIsLoading(false)
     }
   }
+  console.log("errors>>", errors);
 
   return (
     <motion.div
@@ -100,7 +113,7 @@ export function SignupForm() {
     >
       <Card className="enhanced-card">
         <CardHeader className="text-center pb-6">
-          <motion.div 
+          <motion.div
             className="flex items-center justify-center mb-6"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
@@ -117,6 +130,49 @@ export function SignupForm() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div className="space-y-2">
+              <Label htmlFor="dob" className="text-gray-300 font-medium">Date of Birth</Label>
+              <Input
+                id="dob"
+                type="date"
+                {...register('dob')}
+                className="glass-input text-white placeholder-gray-400 h-12"
+                placeholder="Enter your date of birth"
+              />
+              {errors.dob && (
+                <p className="text-red-400 text-sm">{errors.dob.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="gender" className="text-gray-300 font-medium">Gender</Label>
+              <Select onValueChange={(value) => setValue('gender', value as 'male' | 'female' | 'other')}>
+                <SelectTrigger className="glass-input text-white h-12">
+                  <SelectValue placeholder="Select your gender" />
+                </SelectTrigger>
+                <SelectContent className="glass-card border-white/10">
+                  <SelectItem value="male" className="text-white hover:bg-white/10">Male</SelectItem>
+                  <SelectItem value="female" className="text-white hover:bg-white/10">Female</SelectItem>
+                  <SelectItem value="other" className="text-white hover:bg-white/10">Other</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.gender && (
+                <p className="text-red-400 text-sm">{errors.gender.message}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="pincode" className="text-gray-300 font-medium">Pincode</Label>
+              <Input
+                id="pincode"
+                {...register('pincode')}
+                className="glass-input text-white placeholder-gray-400 h-12"
+                placeholder="Enter your pincode"
+              />
+              {errors.pincode && (
+                <p className="text-red-400 text-sm">{errors.pincode.message}</p>
+              )}
+            </div>
             <div className="space-y-2">
               <Label htmlFor="fullName" className="text-gray-300 font-medium">Full Name</Label>
               <Input
@@ -247,10 +303,17 @@ export function SignupForm() {
             </div>
 
             <div className="flex items-center space-x-2 pt-2">
-              <Checkbox
-                id="agreeToTerms"
-                {...register('agreeToTerms')}
-                className="border-gray-600 data-[state=checked]:bg-gold data-[state=checked]:border-gold"
+              <Controller
+                name="agreeToTerms"
+                control={control}
+                render={({ field }) => (
+                  <Checkbox
+                    id="agreeToTerms"
+                    checked={field.value}
+                    onCheckedChange={field.onChange}
+                    className="border-gray-600 data-[state=checked]:bg-gold data-[state=checked]:border-gold"
+                  />
+                )}
               />
               <Label htmlFor="agreeToTerms" className="text-sm text-gray-300 leading-relaxed">
                 I agree to the{' '}

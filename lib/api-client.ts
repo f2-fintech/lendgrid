@@ -5,8 +5,11 @@ type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000'
 
 function getAuthToken(): string | null {
-	if (typeof window === 'undefined') return null
-	return localStorage.getItem('token')
+	if (typeof document === 'undefined') return null
+	const value = `; ${document.cookie}`
+	const parts = value.split(`; token=`)
+	if (parts.length === 2) return decodeURIComponent(parts.pop()!.split(';').shift() || '') || null
+	return null
 }
 
 function buildHeaders(extra?: HeadersInit): HeadersInit {
@@ -62,8 +65,51 @@ export const usersApi = {
 			'/api/v1/users/login',
 			{ method: 'POST', body: payload }
 		),
-	register: (payload: any) => apiFetch('/api/v1/users/register', { method: 'POST', body: payload }),
-	profile: () => apiFetch('/api/v1/users/profile'),
+	register: (payload: any) =>
+		apiFetch('/api/v1/users/register', { method: 'POST', body: payload }),
+	profile: () =>
+		apiFetch('/api/v1/users/profile'),
+	findByRole: (role: string, params?: { page?: number; limit?: number }) =>
+		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
+			`/api/v1/users/role/${role}${params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)]))).toString()}` : ''}`
+		),
+	countByRole: (role: string) =>
+		apiFetch<{ success: boolean; data: { count: number } }>(`/api/v1/users/role/${role}/count`),
+	// Fixed method name from 'update' to 'updateUser' to match component usage
+	updateUser: (payload: { id: string; status?: string;[key: string]: any }) =>
+		apiFetch(`/api/v1/users/${payload.id}`, { method: 'PATCH', body: payload }),
+	update: (id: string, payload: any) =>
+		apiFetch(`/api/v1/users/${id}`, { method: 'PATCH', body: payload }),
+	remove: (id: string) =>
+		apiFetch(`/api/v1/users/${id}`, { method: 'DELETE' }),
+}
+
+export const applicationsApi = {
+	list: (params?: { page?: number; limit?: number; aggregatorId?: string; lenderId?: string }) =>
+		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
+			`/api/v1/applications${params ? `?${new URLSearchParams(params as any).toString()}` : ''}`
+		),
+	create: (payload: any) => apiFetch('/api/v1/applications', { method: 'POST', body: payload }),
+	updateStatus: (id: string, payload: any) => apiFetch(`/api/v1/applications/${id}/status`, { method: 'PATCH', body: payload }),
+}
+
+export const commissionsApi = {
+	list: (params?: { page?: number; limit?: number; aggregatorId?: string }) =>
+		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
+			`/api/v1/commissions${params ? `?${new URLSearchParams(params as any).toString()}` : ''}`
+		),
+	create: (payload: any) => apiFetch('/api/v1/commissions', { method: 'POST', body: payload }),
+	updateStatus: (id: string, payload: any) => apiFetch(`/api/v1/commissions/${id}/status`, { method: 'PATCH', body: payload }),
+}
+
+export const productsApi = {
+	list: (params?: { page?: number; limit?: number; lenderId?: string }) =>
+		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
+			`/api/v1/products${params ? `?${new URLSearchParams(params as any).toString()}` : ''}`
+		),
+	create: (payload: any) => apiFetch('/api/v1/products', { method: 'POST', body: payload }),
+	update: (id: string, payload: any) => apiFetch(`/api/v1/products/${id}`, { method: 'PATCH', body: payload }),
+	remove: (id: string) => apiFetch(`/api/v1/products/${id}`, { method: 'DELETE' }),
 }
 
 

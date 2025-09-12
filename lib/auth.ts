@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { usersApi } from './api-client'
+import { decodeJwt } from './utils'
 
 export type AppRole = 'super_admin' | 'aggregator_admin' | 'lender_admin'
 
@@ -15,26 +16,32 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 
 	useEffect(() => {
 		async function verify() {
-			const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+			const cookieStr = typeof document !== 'undefined' ? document.cookie : ''
+			const tokenMatch = cookieStr?.split('; ').find((c) => c.startsWith('token='))
+			const token = tokenMatch ? decodeURIComponent(tokenMatch.split('=')[1]) : null
 			if (!token) {
 				router.replace(`/login?next=${encodeURIComponent(pathname)}`)
 				return
 			}
 			try {
+				const decoded: any = decodeJwt(token)
+				if (decoded?.role) setRole(decoded.role as AppRole)
 				const profileResp: any = await usersApi.profile()
 				const fetchedRole: AppRole | undefined = profileResp?.data?.role
 				setUser(profileResp?.data)
-				setRole(fetchedRole || (localStorage.getItem('userRole') as AppRole | null))
+				if (fetchedRole) setRole(fetchedRole)
 				if (requiredRole) {
 					const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
-					if (!fetchedRole || !roles.includes(fetchedRole)) {
+					const effectiveRole = fetchedRole || decoded?.role
+					if (!effectiveRole || !roles.includes(effectiveRole)) {
 						router.replace('/login')
 						return
 					}
 				}
 			} catch (e) {
-				localStorage.removeItem('token')
-				localStorage.removeItem('userRole')
+				if (typeof document !== 'undefined') {
+					document.cookie = 'token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax'
+				}
 				router.replace('/login')
 				return
 			} finally {

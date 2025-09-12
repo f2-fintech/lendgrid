@@ -65,6 +65,7 @@ const navigationConfig = {
       title: "Overview",
       items: [
         { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
+        { title: "Products", url: navigationPaths.aggregator.products, icon: CreditCard },
         { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
         { title: "Reports", url: navigationPaths.aggregator.reports, icon: FileText }
       ]
@@ -89,6 +90,7 @@ const navigationConfig = {
     {
       title: "Operations",
       items: [
+        { title: "Applications", url: navigationPaths.lender.applications, icon: CreditCard },
         { title: "Payout Approval", url: navigationPaths.lender.payouts, icon: FileText },
         { title: "Settings", url: navigationPaths.lender.settings, icon: Settings }
       ]

@@ -20,6 +20,7 @@ export const navigationPaths = {
   // Aggregator routes
   aggregator: {
     dashboard: '/aggregator',
+    products: '/aggregator/products',
     commission: '/aggregator/commission',
     reports: '/aggregator/reports',
     applications: '/aggregator/applications',
@@ -31,6 +32,7 @@ export const navigationPaths = {
     dashboard: '/lender',
     products: '/lender/products',
     insights: '/lender/insights',
+    applications: '/lender/applications',
     payouts: '/lender/payouts',
     settings: '/lender/settings'
   }
