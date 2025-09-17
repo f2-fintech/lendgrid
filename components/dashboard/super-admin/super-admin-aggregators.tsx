@@ -296,7 +296,7 @@ export function SuperAdminAggregators() {
 
       {/* Metrics Cards */}
       {cardsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />

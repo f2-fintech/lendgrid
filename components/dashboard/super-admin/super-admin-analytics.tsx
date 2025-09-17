@@ -120,7 +120,7 @@ export function SuperAdminAnalytics() {
               </SelectContent>
             </Select>
             <Button className="bg-gradient-to-r from-gold to-blue text-dark">
-              <Download className="w-4 h-4 mr-2" />
+              <Download className="w-4 h-4 mr-2"/>
               Export Analytics
             </Button>
           </div>

@@ -100,8 +100,9 @@ export function AddAggregatorDialog() {
           Add New Aggregator
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl"
+>
+        <DialogHeader >
           <DialogTitle className="text-xl font-bold">Add New Aggregator</DialogTitle>
           <DialogDescription className="text-gray-400">
             Register a new loan aggregator to the platform

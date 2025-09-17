@@ -101,7 +101,8 @@ export function AddLenderDialog() {
           Add New Lender
         </Button>
       </DialogTrigger>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl"
+>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">Add New Lender</DialogTitle>
           <DialogDescription className="text-gray-400">
