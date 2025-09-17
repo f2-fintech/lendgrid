@@ -98,10 +98,10 @@ const navigationConfig = {
   ]
 }
 
-function AppSidebar({ userRole, user }: { userRole: DashboardLayoutProps['userRole'], user?: any }) {
+function AppSidebar({ userRole, user }: { userRole: 'super_admin' | 'aggregator' | 'lender', user?: any }) {
   const router = useRouter()
   const logout = useLogout()
-  const navigation = navigationConfig[userRole] || navigationConfig.lender
+  const navigation = navigationConfig[userRole]
 
   if (!navigation || !Array.isArray(navigation)) {
     return (
@@ -157,7 +157,7 @@ function AppSidebar({ userRole, user }: { userRole: DashboardLayoutProps['userRo
             <SidebarGroupLabel className="text-gray-400">{group.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {group.items.map((item) => (
+                {group.items.map((item: { url: string; icon: React.ElementType; title: string }) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
                       <Link href={item.url} className="text-gray-300 hover:text-white hover:bg-gray-800">
