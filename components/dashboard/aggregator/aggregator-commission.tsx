@@ -17,6 +17,7 @@ import { exportRevenueReport } from '@/lib/exporter'
 import { useToast } from "@/hooks/use-toast"
 import { ExportButton } from '@/components/ui/button-to-export'
 import { CardSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton'
+import { commissionsApi } from '@/lib/api-client'
 
 const mockData = {
   metrics: {
@@ -127,11 +128,37 @@ export function AggregatorCommission() {
   const { toast } = useToast()
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setCardsLoading(false)
-      setChartLoading(false)
-    }, 2000)
-    return () => clearTimeout(t)
+    let mounted = true
+    async function load() {
+      try {
+        const resp = await commissionsApi.list({ page: 1, limit: 25 })
+        const results = resp?.data?.results || []
+        if (mounted && results.length) {
+          // map server results onto mock shape for now
+          ;(mockData as any).commissionHistory = results.map((r: any) => ({
+            id: r._id,
+            applicationId: r.applicationId,
+            lenderName: r.lenderName,
+            loanType: r.loanType,
+            disbursedAmount: r.disbursedAmount,
+            commissionRate: r.commissionRate,
+            commissionAmount: r.commissionAmount,
+            status: r.status,
+            disbursedDate: r.disbursedDate ? new Date(r.disbursedDate).toLocaleDateString() : '-',
+            paidDate: r.paidDate ? new Date(r.paidDate).toLocaleDateString() : null,
+            payoutMethod: '-',
+            utrNumber: null,
+          }))
+        }
+      } finally {
+        if (mounted) {
+          setCardsLoading(false)
+          setChartLoading(false)
+        }
+      }
+    }
+    load()
+    return () => { mounted = false }
   }, [])
 
   const formatCurrency = (amount: number) => {

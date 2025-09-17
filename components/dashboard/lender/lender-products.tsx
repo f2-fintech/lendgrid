@@ -37,6 +37,9 @@ import {
 } from "lucide-react"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { CardSkeleton } from "@/components/ui/loading-skeleton"
+import { productsApi } from '@/lib/api-client'
+import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/lib/auth'
 
 const mockProducts = [
   {
@@ -106,19 +109,152 @@ const mockProducts = [
 ]
 
 export function LenderProducts() {
+  const { loading, user } = useAuth('lender_admin')
   const [searchTerm, setSearchTerm] = useState("")
   const [filterStatus, setFilterStatus] = useState("all")
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
   const [cardsLoading, setCardsLoading] = useState(true)
+  const { toast } = useToast()
+
+  const [products, setProducts] = useState(mockProducts)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    name: '',
+    type: '',
+    interestRate: '',
+    commissionPercent: '',
+    minAmount: '',
+    maxAmount: '',
+    tenure: '12-60 months',
+    eligibility: '',
+    requiredDocs: '',
+    isActive: true,
+  })
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setCardsLoading(false)
-    }, 2000)
-    return () => clearTimeout(t)
-  }, [])
+    let mounted = true
+    async function load() {
+      try {
+        const lenderId = (user as any)?._id || (user as any)?.id
+        const resp = await productsApi.list({ page: 1, limit: 50, lenderId })
+        const results = resp?.data?.results || []
+        if (mounted && results.length) {
+          const mapped = results.map((r: any) => ({
+            id: r._id,
+            name: r.name,
+            type: r.type,
+            interestRate: r.interestRate,
+            commissionPercent: r.commissionPercent,
+            minAmount: r.minAmount,
+            maxAmount: r.maxAmount,
+            tenure: r.tenure,
+            applications: 0,
+            approvalRate: 0,
+            totalDisbursed: 0,
+            isActive: r.isActive,
+            eligibility: r.eligibility || [],
+            requiredDocs: r.requiredDocs || [],
+          }))
+          setProducts(mapped)
+        } else if (mounted) {
+          setProducts(mockProducts)
+        }
+      } finally {
+        if (mounted) setCardsLoading(false)
+      }
+    }
+    // Wait for user to be available
+    if (!loading) {
+      load()
+    }
+    return () => { mounted = false }
+  }, [loading, user])
 
-  const filteredProducts = mockProducts.filter((product) => {
+  const openCreate = () => {
+    setIsEditMode(false)
+    setEditingId(null)
+    setForm({ name: '', type: '', interestRate: '', commissionPercent: '', minAmount: '', maxAmount: '', tenure: '12-60 months', eligibility: '', requiredDocs: '', isActive: true })
+    setIsDialogOpen(true)
+  }
+
+  const openEdit = (p: any) => {
+    setIsEditMode(true)
+    setEditingId(p.id)
+    setForm({
+      name: p.name,
+      type: p.type,
+      interestRate: String(p.interestRate),
+      commissionPercent: String(p.commissionPercent),
+      minAmount: String(p.minAmount),
+      maxAmount: String(p.maxAmount),
+      tenure: p.tenure,
+      eligibility: (p.eligibility || []).join(', '),
+      requiredDocs: (p.requiredDocs || []).join(', '),
+      isActive: !!p.isActive,
+    })
+    setIsDialogOpen(true)
+  }
+
+  const submit = async () => {
+    try {
+      const payload = {
+        name: form.name,
+        type: form.type,
+        interestRate: Number(form.interestRate),
+        commissionPercent: Number(form.commissionPercent),
+        minAmount: Number(form.minAmount),
+        maxAmount: Number(form.maxAmount),
+        tenure: form.tenure,
+        eligibility: form.eligibility ? form.eligibility.split(',').map(s => s.trim()).filter(Boolean) : [],
+        requiredDocs: form.requiredDocs ? form.requiredDocs.split(',').map(s => s.trim()).filter(Boolean) : [],
+        isActive: form.isActive,
+      } as any
+
+      if (isEditMode && editingId) {
+        await productsApi.update(editingId, payload)
+        toast({ title: 'Product updated' })
+      } else {
+        // Backend infers lenderId from JWT
+        await productsApi.create(payload)
+        toast({ title: 'Product created' })
+      }
+
+      const lenderId = (user as any)?._id || (user as any)?.id
+      const refreshed = await productsApi.list({ page: 1, limit: 50, lenderId })
+      const results = refreshed?.data?.results || []
+      const mapped = results.map((r: any) => ({
+        id: r._id,
+        name: r.name,
+        type: r.type,
+        interestRate: r.interestRate,
+        commissionPercent: r.commissionPercent,
+        minAmount: r.minAmount,
+        maxAmount: r.maxAmount,
+        tenure: r.tenure,
+        applications: 0,
+        approvalRate: 0,
+        totalDisbursed: 0,
+        isActive: r.isActive,
+        eligibility: r.eligibility || [],
+        requiredDocs: r.requiredDocs || [],
+      }))
+      setProducts(mapped.length ? mapped : mockProducts)
+      setIsDialogOpen(false)
+    } catch (e: any) {
+      toast({ title: 'Action failed', description: e?.message || 'Please try again.' })
+    }
+  }
+
+  if (loading) {
+    return (
+      <DashboardLayout userRole="lender">
+        <div className="space-y-6 p-6 text-white">Loading...</div>
+      </DashboardLayout>
+    )
+  }
+
+  const filteredProducts = products.filter((product) => {
     const matchesSearch =
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       product.type.toLowerCase().includes(searchTerm.toLowerCase())
@@ -129,10 +265,10 @@ export function LenderProducts() {
     return matchesSearch && matchesFilter
   })
 
-  const totalProducts = mockProducts.length
-  const activeProducts = mockProducts.filter((p) => p.isActive).length
-  const totalApplications = mockProducts.reduce((sum, p) => sum + p.applications, 0)
-  const avgApprovalRate = mockProducts.reduce((sum, p) => sum + p.approvalRate, 0) / mockProducts.length
+  const totalProducts = products.length
+  const activeProducts = products.filter((p) => p.isActive).length
+  const totalApplications = products.reduce((sum, p) => sum + (p as any).applications, 0)
+  const avgApprovalRate = products.reduce((sum, p) => sum + (p as any).approvalRate, 0) / (products.length || 1)
 
   return (
     <DashboardLayout userRole="lender">
@@ -147,73 +283,95 @@ export function LenderProducts() {
             <h1 className="text-3xl font-bold text-white">Product Management</h1>
             <p className="text-gray-400 mt-1">Manage your loan products and track performance</p>
           </div>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-gold to-blue hover:from-gold/80 hover:to-blue/80 text-dark">
+              <Button onClick={openCreate} className="bg-gradient-to-r from-gold to-blue hover:from-gold/80 hover:to-blue/80 text-dark">
                 <Plus className="w-4 h-4 mr-2" />
                 Create Product
               </Button>
             </DialogTrigger>
             <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
               <DialogHeader>
-                <DialogTitle>Create New Product</DialogTitle>
+                <DialogTitle>{isEditMode ? 'Edit Product' : 'Create New Product'}</DialogTitle>
                 <DialogDescription className="text-gray-400">
-                  Add a new loan product to your portfolio
+                  {isEditMode ? 'Update your loan product' : 'Add a new loan product to your portfolio'}
                 </DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-2 gap-4 py-4">
                 <div className="space-y-2">
                   <Label htmlFor="productName">Product Name</Label>
-                  <Input id="productName" placeholder="Enter product name" className="bg-gray-800 border-gray-700" />
+                  <Input id="productName" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="Enter product name" className="bg-gray-800 border-gray-700" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="productType">Product Type</Label>
-                  <Select>
+                  <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                     <SelectTrigger className="bg-gray-800 border-gray-700">
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      <SelectItem value="personal">Personal Loan</SelectItem>
-                      <SelectItem value="business">Business Loan</SelectItem>
-                      <SelectItem value="home">Home Loan</SelectItem>
-                      <SelectItem value="vehicle">Vehicle Loan</SelectItem>
+                      <SelectItem value="Personal Loan">Personal Loan</SelectItem>
+                      <SelectItem value="Business Loan">Business Loan</SelectItem>
+                      <SelectItem value="Home Loan">Home Loan</SelectItem>
+                      <SelectItem value="Vehicle Loan">Vehicle Loan</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                  <Input id="interestRate" type="number" placeholder="12.5" className="bg-gray-800 border-gray-700" />
+                  <Input id="interestRate" type="number" value={form.interestRate} onChange={e => setForm({ ...form, interestRate: e.target.value })} placeholder="12.5" className="bg-gray-800 border-gray-700" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="commission">Commission (%)</Label>
-                  <Input id="commission" type="number" placeholder="2.5" className="bg-gray-800 border-gray-700" />
+                  <Input id="commission" type="number" value={form.commissionPercent} onChange={e => setForm({ ...form, commissionPercent: e.target.value })} placeholder="2.5" className="bg-gray-800 border-gray-700" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="minAmount">Min Amount (₹)</Label>
-                  <Input id="minAmount" type="number" placeholder="50000" className="bg-gray-800 border-gray-700" />
+                  <Input id="minAmount" type="number" value={form.minAmount} onChange={e => setForm({ ...form, minAmount: e.target.value })} placeholder="50000" className="bg-gray-800 border-gray-700" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="maxAmount">Max Amount (₹)</Label>
-                  <Input id="maxAmount" type="number" placeholder="1000000" className="bg-gray-800 border-gray-700" />
+                  <Input id="maxAmount" type="number" value={form.maxAmount} onChange={e => setForm({ ...form, maxAmount: e.target.value })} placeholder="1000000" className="bg-gray-800 border-gray-700" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="tenure">Tenure</Label>
+                  <Select value={form.tenure} onValueChange={(v) => setForm({ ...form, tenure: v })}>
+                    <SelectTrigger className="bg-gray-800 border-gray-700">
+                      <SelectValue placeholder="Select tenure" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-800 border-gray-700">
+                      {/* Months */}
+                      <SelectItem value="6-12 months">6-12 months</SelectItem>
+                      <SelectItem value="12-24 months">12-24 months</SelectItem>
+                      <SelectItem value="12-36 months">12-36 months</SelectItem>
+                      <SelectItem value="12-60 months">12-60 months</SelectItem>
+                      <SelectItem value="24-60 months">24-60 months</SelectItem>
+                      <SelectItem value="36-84 months">36-84 months</SelectItem>
+                      {/* Years */}
+                      <SelectItem value="1-3 years">1-3 years</SelectItem>
+                      <SelectItem value="1-5 years">1-5 years</SelectItem>
+                      <SelectItem value="5-10 years">5-10 years</SelectItem>
+                      <SelectItem value="10-30 years">10-30 years</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="col-span-2 space-y-2">
                   <Label htmlFor="eligibility">Eligibility Criteria</Label>
-                  <Textarea
-                    id="eligibility"
-                    placeholder="Enter eligibility criteria..."
-                    className="bg-gray-800 border-gray-700"
-                  />
+                  <Textarea id="eligibility" value={form.eligibility} onChange={e => setForm({ ...form, eligibility: e.target.value })} placeholder="Comma-separated list..." className="bg-gray-800 border-gray-700" />
+                </div>
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="requiredDocs">Required Documents</Label>
+                  <Textarea id="requiredDocs" value={form.requiredDocs} onChange={e => setForm({ ...form, requiredDocs: e.target.value })} placeholder="Comma-separated list..." className="bg-gray-800 border-gray-700" />
                 </div>
                 <div className="col-span-2 flex items-center space-x-2">
-                  <Switch id="isActive" />
+                  <Switch id="isActive" checked={form.isActive} onCheckedChange={v => setForm({ ...form, isActive: v })} />
                   <Label htmlFor="isActive">Active Product</Label>
                 </div>
               </div>
               <div className="flex justify-end space-x-2">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button className="bg-gradient-to-r from-gold to-blue text-dark">Create Product</Button>
+                <Button onClick={submit} className="bg-gradient-to-r from-gold to-blue text-dark">{isEditMode ? 'Save Changes' : 'Create Product'}</Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -469,6 +627,7 @@ export function LenderProducts() {
                       <Button
                         size="sm"
                         className="flex-1 bg-gradient-to-r from-gold to-blue hover:from-gold/80 hover:to-blue/80 text-dark font-medium transition-all"
+                        onClick={() => openEdit(product)}
                       >
                         <Edit className="w-4 h-4 mr-2" />
                         Edit Product

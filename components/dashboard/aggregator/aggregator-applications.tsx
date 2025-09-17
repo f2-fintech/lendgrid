@@ -42,6 +42,9 @@ import { Search, Plus, MoreHorizontal, Eye, Edit, Trash2, FileText, Clock, Check
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import { TablePagination } from '@/components/ui/pagination'
+import { applicationsApi } from '@/lib/api-client'
+import { useToast } from '@/hooks/use-toast'
+import { useAuth } from '@/lib/auth'
 
 const mockApplications = [
   {
@@ -158,11 +161,23 @@ const stats = [
 ]
 
 export function AggregatorApplications() {
+  const { user } = useAuth('aggregator_admin')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterLender, setFilterLender] = useState('')
   const [selectedApplication, setSelectedApplication] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [form, setForm] = useState({
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    loanType: '',
+    loanAmount: '',
+    lenderId: '',
+    lenderName: '',
+  })
+  const { toast } = useToast()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -171,12 +186,43 @@ export function AggregatorApplications() {
   const tableTopRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setIsTableLoading(false)
-      setCardsLoading(false)
-    }, 2000)
-    return () => clearTimeout(t)
-  }, [])
+    let mounted = true
+    async function load() {
+      setIsTableLoading(true)
+      try {
+        const resp = await applicationsApi.list({ page, limit: pageSize })
+        // keep mock stats for now, but data populates table
+        if (!mounted) return
+        const results = resp?.data?.results || []
+        if (results.length) {
+          // replace mockApplications in memory
+          ;(mockApplications as any).splice(0, mockApplications.length, ...results.map((r: any) => ({
+            id: r._id,
+            customerName: r.customerName,
+            customerEmail: r.customerEmail,
+            customerPhone: r.customerPhone,
+            loanType: r.loanType,
+            loanAmount: r.loanAmount,
+            lenderName: r.lenderName,
+            status: r.status,
+            applicationDate: r.createdAt,
+            lastUpdated: r.updatedAt,
+            commissionRate: r.commissionRate,
+            expectedCommission: r.expectedCommission,
+            documents: r.documents || [],
+            avatar: '/placeholder.svg?height=40&width=40',
+          })))
+        }
+      } finally {
+        if (mounted) {
+          setIsTableLoading(false)
+          setCardsLoading(false)
+        }
+      }
+    }
+    load()
+    return () => { mounted = false }
+  }, [page, pageSize])
 
   useEffect(() => {
     setPage(1)
@@ -258,9 +304,9 @@ export function AggregatorApplications() {
             </h1>
             <p className="text-gray-400 mt-1">Manage and track all loan applications</p>
           </div>
-          <Dialog>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 New Application
               </Button>
@@ -275,45 +321,45 @@ export function AggregatorApplications() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
-                  <Input id="customerName" className="bg-gray-800 border-gray-700 text-white" />
+                  <Input id="customerName" value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="customerEmail" className="text-gray-300">Email</Label>
-                  <Input id="customerEmail" type="email" className="bg-gray-800 border-gray-700 text-white" />
+                  <Input id="customerEmail" type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="customerPhone" className="text-gray-300">Phone</Label>
-                  <Input id="customerPhone" className="bg-gray-800 border-gray-700 text-white" />
+                  <Input id="customerPhone" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="loanType" className="text-gray-300">Loan Type</Label>
-                  <Select>
+                  <Select value={form.loanType} onValueChange={(v) => setForm({ ...form, loanType: v })}>
                     <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                       <SelectValue placeholder="Select loan type" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      <SelectItem value="personal">Personal Loan</SelectItem>
-                      <SelectItem value="home">Home Loan</SelectItem>
-                      <SelectItem value="business">Business Loan</SelectItem>
-                      <SelectItem value="car">Car Loan</SelectItem>
+                      <SelectItem value="Personal Loan">Personal Loan</SelectItem>
+                      <SelectItem value="Home Loan">Home Loan</SelectItem>
+                      <SelectItem value="Business Loan">Business Loan</SelectItem>
+                      <SelectItem value="Vehicle Loan">Vehicle Loan</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="loanAmount" className="text-gray-300">Loan Amount</Label>
-                  <Input id="loanAmount" type="number" className="bg-gray-800 border-gray-700 text-white" />
+                  <Input id="loanAmount" type="number" value={form.loanAmount} onChange={e => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lender" className="text-gray-300">Preferred Lender</Label>
-                  <Select>
+                  <Select value={form.lenderName} onValueChange={(v) => setForm({ ...form, lenderName: v, lenderId: v })}>
                     <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
                       <SelectValue placeholder="Select lender" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-800 border-gray-700">
-                      <SelectItem value="hdfc">HDFC Bank</SelectItem>
-                      <SelectItem value="icici">ICICI Bank</SelectItem>
-                      <SelectItem value="bajaj">Bajaj Finance</SelectItem>
-                      <SelectItem value="axis">Axis Bank</SelectItem>
+                      <SelectItem value="HDFC Bank">HDFC Bank</SelectItem>
+                      <SelectItem value="ICICI Bank">ICICI Bank</SelectItem>
+                      <SelectItem value="Bajaj Finance">Bajaj Finance</SelectItem>
+                      <SelectItem value="Axis Bank">Axis Bank</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -322,7 +368,28 @@ export function AggregatorApplications() {
                   <Textarea id="notes" className="bg-gray-800 border-gray-700 text-white" />
                 </div>
               </div>
-              <Button className="w-full bg-gradient-to-r from-green-600 to-blue-600 mt-4">
+              <Button
+                onClick={async () => {
+                  try {
+                    const payload: any = {
+                      aggregatorId: user?._id || user?.id,
+                      lenderId: form.lenderId || 'L1',
+                      lenderName: form.lenderName,
+                      customerName: form.customerName,
+                      customerEmail: form.customerEmail,
+                      customerPhone: form.customerPhone,
+                      loanType: form.loanType,
+                      loanAmount: Number(form.loanAmount || 0),
+                    }
+                    await applicationsApi.create(payload)
+                    toast({ title: 'Application submitted' })
+                    setIsCreateDialogOpen(false)
+                  } catch (e: any) {
+                    toast({ title: 'Submission failed', description: e?.message || 'Try again.' })
+                  }
+                }}
+                className="w-full bg-gradient-to-r from-green-600 to-blue-600 mt-4"
+              >
                 Submit Application
               </Button>
             </DialogContent>

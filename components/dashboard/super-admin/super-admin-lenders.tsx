@@ -4,6 +4,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useToast } from '@/hooks/use-toast'
+import { usersApi } from '@/lib/api-client'
+import { AddLenderDialog } from './dialogs/add-lender-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -17,117 +20,20 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 
-const mockData = {
-  metrics: {
-    totalLenders: 16,
-    activeLenders: 14,
-    pendingApprovals: 3,
-    avgCommissionRate: 4.2
-  },
-  lenders: [
-    {
-      id: 'LEN001',
-      name: 'HDFC Bank',
-      type: 'Bank',
-      status: 'Active',
-      joinDate: '2023-01-15',
-      totalVolume: 5200000,
-      productsCount: 8,
-      avgCommission: 3.8,
-      contactPerson: 'Rajesh Kumar',
-      email: 'rajesh.kumar@hdfcbank.com',
-      phone: '+91 98765 43210',
-      address: 'Mumbai, Maharashtra',
-      kycStatus: 'Verified',
-      lastActivity: '2025-01-20'
-    },
-    {
-      id: 'LEN002',
-      name: 'ICICI Bank',
-      type: 'Bank',
-      status: 'Active',
-      joinDate: '2023-02-20',
-      totalVolume: 4100000,
-      productsCount: 6,
-      avgCommission: 3.5,
-      contactPerson: 'Priya Sharma',
-      email: 'priya.sharma@icicibank.com',
-      phone: '+91 98765 43211',
-      address: 'Bangalore, Karnataka',
-      kycStatus: 'Verified',
-      lastActivity: '2025-01-19'
-    },
-    {
-      id: 'LEN003',
-      name: 'Bajaj Finance',
-      type: 'NBFC',
-      status: 'Active',
-      joinDate: '2023-03-10',
-      totalVolume: 3800000,
-      productsCount: 5,
-      avgCommission: 4.5,
-      contactPerson: 'Amit Patel',
-      email: 'amit.patel@bajajfinance.com',
-      phone: '+91 98765 43212',
-      address: 'Pune, Maharashtra',
-      kycStatus: 'Verified',
-      lastActivity: '2025-01-18'
-    },
-    {
-      id: 'LEN004',
-      name: 'ABC Finance Ltd',
-      type: 'NBFC',
-      status: 'Pending',
-      joinDate: '2025-01-15',
-      totalVolume: 0,
-      productsCount: 0,
-      avgCommission: 0,
-      contactPerson: 'Suresh Gupta',
-      email: 'suresh.gupta@abcfinance.com',
-      phone: '+91 98765 43213',
-      address: 'Delhi, Delhi',
-      kycStatus: 'Under Review',
-      lastActivity: '2025-01-15'
-    },
-    {
-      id: 'LEN005',
-      name: 'XYZ Bank',
-      type: 'Bank',
-      status: 'Inactive',
-      joinDate: '2023-08-05',
-      totalVolume: 1200000,
-      productsCount: 2,
-      avgCommission: 3.2,
-      contactPerson: 'Neha Singh',
-      email: 'neha.singh@xyzbank.com',
-      phone: '+91 98765 43214',
-      address: 'Chennai, Tamil Nadu',
-      kycStatus: 'Verified',
-      lastActivity: '2023-12-15'
-    }
-  ]
-}
+import { useLenders } from '@/hooks/use-lenders'
 
 export function SuperAdminLenders() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterType, setFilterType] = useState('')
   const [selectedLender, setSelectedLender] = useState<any>(null)
+  const [editingLender, setEditingLender] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const { toast } = useToast()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [isTableLoading, setIsTableLoading] = useState(true)
-  const [cardsLoading, setCardsLoading] = useState(true)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
-
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setIsTableLoading(false)
-      setCardsLoading(false)
-    }, 2000)
-    return () => clearTimeout(t)
-  }, [])
 
   // Reset to page 1 when filters change
   useEffect(() => {
@@ -161,40 +67,100 @@ export function SuperAdminLenders() {
     }
   }
 
+  const {
+    lenders,
+    total,
+    pages,
+    metrics,
+    loading: isTableLoading,
+    error,
+    mutate,
+  } = useLenders({ page, limit: pageSize })
+
+  const handleLenderUpdated = () => {
+    mutate()
+  }
+
   const filteredLenders = useMemo(() => {
-    return mockData.lenders.filter((lender) => {
+    if (!lenders) return []
+    return lenders.filter((lender) => {
       const matchesSearch =
         lender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lender.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())
+        (lender.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()))
       const matchesStatus = !filterStatus || filterStatus === "all" || lender.status === filterStatus
-      const matchesType = !filterType || filterType === "all" || lender.type === filterType
+      const matchesType = !filterType || filterType === "all" || lender.lenderType === filterType
       return matchesSearch && matchesStatus && matchesType
     })
-  }, [searchTerm, filterStatus, filterType])
+  }, [lenders, searchTerm, filterStatus, filterType])
 
-  const total = filteredLenders.length
+  // For server-side pagination, use filtered count
+  const totalFiltered = filteredLenders.length
+  const pagesFiltered = Math.ceil(totalFiltered / pageSize)
+
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize
     return filteredLenders.slice(start, start + pageSize)
   }, [filteredLenders, page, pageSize])
 
-  // For server-side pagination later
-  const handlePageChange = async (newPage: number) => {
-    setIsTableLoading(true)
-    // Replace this with API call later. Keep skeleton visible during fetch.
-    await new Promise((r) => setTimeout(r, 350))
+  const handlePageChange = (newPage: number) => {
     setPage(newPage)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
-  const handlePageSizeChange = async (size: number) => {
-    setIsTableLoading(true)
-    await new Promise((r) => setTimeout(r, 350))
+  const handlePageSizeChange = (size: number) => {
     setPageSize(size)
     setPage(1)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const handleApprove = async (lenderId: string) => {
+    try {
+      await usersApi.updateUser({
+        id: lenderId,
+        status: 'active'
+      })
+
+      // Show success message
+      toast({
+        title: 'Success',
+        description: 'Lender has been approved successfully.',
+      })
+
+      // Refresh data by updating the page state to trigger re-fetch
+      handleLenderUpdated()
+    } catch (error) {
+      console.error('Approve lender error:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to approve lender. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+
+  const handleReject = async (lenderId: string) => {
+    try {
+      await usersApi.updateUser({
+        id: lenderId,
+        status: 'inactive'
+      })
+
+      // Show success message
+      toast({
+        title: 'Success',
+        description: 'Lender has been rejected.',
+      })
+
+      // Refresh data by updating the page state to trigger re-fetch
+      handleLenderUpdated()
+    } catch (error) {
+      console.error('Reject lender error:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to reject lender. Please try again.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
@@ -222,6 +188,23 @@ export function SuperAdminLenders() {
     </motion.div>
   )
 
+  // Show error message if there's an error
+  if (error) {
+    return (
+      <DashboardLayout userRole="super_admin">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-white mb-2">Error Loading Lenders</h3>
+            <p className="text-gray-400">{error}</p>
+          </div>
+        </div>
+      </DashboardLayout>
+    )
+  }
+
+  console.log("lenders>>>", lenders);
+
   return (
     <DashboardLayout userRole="super_admin">
       <div className="space-y-8">
@@ -236,14 +219,11 @@ export function SuperAdminLenders() {
             <h1 className="text-3xl font-bold text-white">Lender Management</h1>
             <p className="text-gray-400 mt-1">Manage and monitor all registered lenders</p>
           </div>
-          <Button className="bg-gradient-to-r from-gold to-blue text-dark">
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Lender
-          </Button>
+          <AddLenderDialog onLenderUpdated={handleLenderUpdated} />
         </motion.div>
 
         {/* Metrics Cards */}
-        {cardsLoading ? (
+        {isTableLoading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <CardSkeleton headerLines={2} bodyHeight={20} />
             <CardSkeleton headerLines={2} bodyHeight={20} />
@@ -254,28 +234,28 @@ export function SuperAdminLenders() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
               title="Total Lenders"
-              value={mockData.metrics.totalLenders}
+              value={metrics?.totalLenders || 0}
               icon={Building2}
               color="bg-blue/20 text-blue"
               subtitle="Registered partners"
             />
             <MetricCard
               title="Active Lenders"
-              value={mockData.metrics.activeLenders}
+              value={metrics?.activeLenders || 0}
               icon={CheckCircle}
               color="bg-green-500/20 text-green-400"
               subtitle="Currently operational"
             />
             <MetricCard
               title="Pending Approvals"
-              value={mockData.metrics.pendingApprovals}
+              value={metrics?.pendingApprovals || 0}
               icon={AlertCircle}
               color="bg-orange-500/20 text-orange-400"
               subtitle="Awaiting review"
             />
             <MetricCard
               title="Avg Commission Rate"
-              value={`${mockData.metrics.avgCommissionRate}%`}
+              value={`${metrics?.avgCommissionRate || 0}%`}
               icon={TrendingUp}
               color="bg-gold/20 text-gold"
               subtitle="Platform average"
@@ -338,6 +318,10 @@ export function SuperAdminLenders() {
               <div className="overflow-x-auto">
                 {isTableLoading ? (
                   <TableSkeleton columns={9} rows={pageSize} />
+                ) : paginated.length === 0 ? (
+                  <div className="text-center py-8">
+                    <p className="text-gray-400">No lenders found matching your criteria.</p>
+                  </div>
                 ) : (
                   <Table>
                     <TableHeader>
@@ -370,7 +354,7 @@ export function SuperAdminLenders() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="border-gray-600 text-gray-300">
-                              {lender.type}
+                              {lender.lenderType || 'N/A'}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -404,15 +388,23 @@ export function SuperAdminLenders() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-gold hover:text-white hover:bg-gray-700">
-                                <Edit className="w-4 h-4" />
-                              </Button>
+                              <AddLenderDialog lender={lender} onLenderUpdated={handleLenderUpdated} />
                               {lender.status === 'Pending' && (
                                 <>
-                                  <Button variant="ghost" size="sm" className="text-green-400 hover:text-white hover:bg-gray-700">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-green-400 hover:text-white hover:bg-gray-700"
+                                    onClick={() => handleApprove(lender.id)}
+                                  >
                                     <CheckCircle className="w-4 h-4" />
                                   </Button>
-                                  <Button variant="ghost" size="sm" className="text-red-400 hover:text-white hover:bg-gray-700">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-red-400 hover:text-white hover:bg-gray-700"
+                                    onClick={() => handleReject(lender.id)}
+                                  >
                                     <XCircle className="w-4 h-4" />
                                   </Button>
                                 </>
@@ -426,14 +418,16 @@ export function SuperAdminLenders() {
                 )}
               </div>
 
-              <TablePagination
-                page={page}
-                pageSize={pageSize}
-                total={total}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
-                className="mt-4"
-              />
+              {!isTableLoading && paginated.length > 0 && (
+                <TablePagination
+                  page={page}
+                  pageSize={pageSize}
+                  total={totalFiltered}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                  className="mt-4"
+                />
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -523,11 +517,24 @@ export function SuperAdminLenders() {
 
                 {selectedLender.status === 'Pending' && (
                   <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
-                    <Button className="bg-green-500 hover:bg-green-600 text-white">
+                    <Button
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                      onClick={() => {
+                        handleApprove(selectedLender.id)
+                        setIsViewDialogOpen(false)
+                      }}
+                    >
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Approve Lender
                     </Button>
-                    <Button variant="outline" className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white">
+                    <Button
+                      variant="outline"
+                      className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                      onClick={() => {
+                        handleReject(selectedLender.id)
+                        setIsViewDialogOpen(false)
+                      }}
+                    >
                       <XCircle className="w-4 h-4 mr-2" />
                       Reject Application
                     </Button>
