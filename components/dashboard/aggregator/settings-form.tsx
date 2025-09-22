@@ -34,7 +34,7 @@ export function SettingsForm() {
   useEffect(() => {
     const fetchSettings = async () => {
       try {
-        const response = await settingsApi.get()
+        const response: any = await settingsApi.get()
         if (response) {
           setValue('emailNotifications', response.emailNotifications)
           setValue('smsNotifications', response.smsNotifications)

@@ -19,7 +19,7 @@ import { CardSkeleton } from '../ui/loading-skeleton'
 interface LoginFormData {
   email: string
   password: string
-  role: 'super_admin' | 'aggregator_admin' | 'lender_admin'
+  role: 'SUPER_ADMIN' | 'AGGREGATOR_ADMIN' | 'LENDER_ADMIN'
 }
 
 export function LoginForm() {
@@ -35,21 +35,22 @@ export function LoginForm() {
     setIsLoading(true)
     try {
       const resp = await usersApi.login({ email: data.email, password: data.password })
-      const token = resp?.data?.access_token
-      const role = resp?.data?.user?.role as LoginFormData['role'] | undefined
+      console.log('Login response:', resp)  
+      const token = resp?.login?.access_token
+      const role = resp?.login?.user?.role as LoginFormData['role'] | undefined
       if (token) {
         const expires = new Date(Date.now() + 7 * 864e5).toUTCString()
         document.cookie = `token=${encodeURIComponent(token)}; Expires=${expires}; Path=/; SameSite=Lax`
       }
 
       switch (role || data.role) {
-        case 'super_admin':
+        case 'SUPER_ADMIN':
           router.push(navigationPaths.superAdmin.dashboard)
           break
-        case 'aggregator_admin':
+        case 'AGGREGATOR_ADMIN':
           router.push(navigationPaths.aggregator.dashboard)
           break
-        case 'lender_admin':
+        case 'LENDER_ADMIN':
           router.push(navigationPaths.lender.dashboard)
           break
         default:

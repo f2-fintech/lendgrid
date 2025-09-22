@@ -61,39 +61,128 @@ export async function gqlFetch<T>({ query, variables }: GraphQLRequest, baseUrl:
 
 export const usersApi = {
 	login: (payload: { email: string; password: string }) =>
-		apiFetch<{ success: boolean; data: { access_token: string; user: any } }>(
-			'/api/v1/users/login',
-			{ method: 'POST', body: payload }
-		),
+		gqlFetch<{ login: { success: boolean; message: string; access_token?: string; user?: any } }>({
+			query: `
+        mutation Login($email: String!, $password: String!) {
+          login(loginInput: { email: $email, password: $password }) {
+            success
+            message
+            access_token
+            user {
+              _id
+              email
+              role
+            }
+          }
+        }
+      `,
+			variables: payload,
+		}),
 	register: (payload: any) =>
-		apiFetch('/api/v1/users/register', { method: 'POST', body: payload }),
+		gqlFetch({
+			query: `
+				mutation CreateUser($createUserInput: CreateUserDto!) {
+					createUser(createUserInput: $createUserInput) {
+						access_token
+						user {
+							_id
+							email
+							role
+						}
+					}
+				}
+			`,
+			variables: { createUserInput: payload },
+		}),
 	profile: () =>
-		apiFetch('/api/v1/users/profile'),
+		gqlFetch({
+			query: `
+				query Profile {
+					profile {
+						_id
+						email
+						role
+					}
+				}
+			`,
+		}),
 	findByRole: (role: string, params?: { page?: number; limit?: number }) =>
-		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
-			`/api/v1/users/role/${role}${params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)]))).toString()}` : ''}`
-		),
-	countByRole: (role: string) =>
-		apiFetch<{ success: boolean; data: { count: number } }>(`/api/v1/users/role/${role}/count`),
-	// Get all aggregators (users with AGGREGATOR_ADMIN role)
+		gqlFetch<{ usersByRole: { results: any[]; count: number; page: number; pages: number } }>({
+			query: `
+      query UsersByRole($role: Role!, $page: Int, $limit: Int) {
+        usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }) {
+          results {
+            _id
+			username
+			email
+			contact
+			designation
+			dob
+			gender
+			address
+			pincode
+			lenderType
+			profilePicture
+			status
+			role
+			loginHistory
+			createdAt
+			updatedAt
+          }
+          count
+          page
+          pages
+        }
+      }
+    `,
+			variables: { role, ...params },
+		}),
 	getAggregators: (params?: { page?: number; limit?: number }) =>
-		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
-			`/api/v1/users/role/aggregator_admin${params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)]))).toString()}` : ''}`
-		),
-	// Get all users with pagination
+		usersApi.findByRole('AGGREGATOR_ADMIN', params),
 	getUsers: (params?: { page?: number; limit?: number; status?: string }) =>
-		apiFetch<{ success: boolean; data: { results: any[]; count: number; pages: number } }>(
-			`/api/v1/users${params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)]))).toString()}` : ''}`
-		),
-	// Fixed method name from 'update' to 'updateUser' to match component usage
+		gqlFetch<{ users: { results: any[]; count: number; pages: number } }>({
+			query: `
+				query Users($page: Int, $limit: Int, $status: String) {
+					users(paginationArgs: { page: $page, limit: $limit, status: $status }) {
+						results {
+							_id
+							email
+							role
+							status
+						}
+						count
+						pages
+					}
+				}
+			`,
+			variables: params,
+		}),
 	updateUser: (payload: { id: string; status?: string;[key: string]: any }) =>
-		apiFetch(`/api/v1/users`, { method: 'PATCH', body: payload }),
-	update: (id: string, payload: any) =>
-		apiFetch(`/api/v1/users`, { method: 'PATCH', body: { id, ...payload } }),
-	updateUserByAdmin: (payload: { id: string; status?: string; email?: string; username?: string;[key: string]: any }) =>
-		apiFetch(`/api/v1/users`, { method: 'PATCH', body: payload }),
+		gqlFetch({
+			query: `
+				mutation UpdateUser($updateUserInput: UpdateUserDto!) {
+					updateUser(updateUserInput: $updateUserInput) {
+						_id
+						email
+						role
+						status
+					}
+				}
+			`,
+			variables: { updateUserInput: { ...payload, _id: payload._id } },
+		}),
 	remove: (id: string) =>
-		apiFetch(`/api/v1/users/${id}`, { method: 'DELETE' }),
+		gqlFetch({
+			query: `
+				mutation RemoveUser($id: ID!) {
+					removeUser(id: $id) {
+						_id
+						status
+					}
+				}
+			`,
+			variables: { id },
+		}),
 }
 
 export const kycApi = {
@@ -114,11 +203,49 @@ export const settingsApi = {
 
 export const applicationsApi = {
 	list: (params?: { page?: number; limit?: number; aggregatorId?: string; lenderId?: string }) =>
-		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
-			`/api/v1/applications${params ? `?${new URLSearchParams(params as any).toString()}` : ''}`
-		),
-	create: (payload: any) => apiFetch('/api/v1/applications', { method: 'POST', body: payload }),
-	updateStatus: (id: string, payload: any) => apiFetch(`/api/v1/applications/${id}/status`, { method: 'PATCH', body: payload }),
+		gqlFetch<{ applications: { results: any[]; count: number; page: number; pages: number } }>({
+			query: `
+				query Applications($query: ApplicationPaginationQuery!) {
+					applications(query: $query) {
+						results {
+							_id
+							customerName
+							lenderName
+							loanAmount
+							status
+							expectedCommission
+						}
+						count
+						page
+						pages
+					}
+				}
+			`,
+			variables: { query: params },
+		}),
+	create: (payload: any) =>
+		gqlFetch({
+			query: `
+				mutation CreateApplication($createApplicationInput: CreateApplicationDto!) {
+					createApplication(createApplicationInput: $createApplicationInput) {
+						_id
+					}
+				}
+			`,
+			variables: { createApplicationInput: payload },
+		}),
+	updateStatus: (id: string, payload: any) =>
+		gqlFetch({
+			query: `
+				mutation UpdateApplication($id: ID!, $updateApplicationInput: UpdateApplicationDto!) {
+					updateApplication(id: $id, updateApplicationInput: $updateApplicationInput) {
+						_id
+						status
+					}
+				}
+			`,
+			variables: { id, updateApplicationInput: payload },
+		}),
 }
 
 export const commissionsApi = {
@@ -132,10 +259,57 @@ export const commissionsApi = {
 
 export const productsApi = {
 	list: (params?: { page?: number; limit?: number; lenderId?: string }) =>
-		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
-			`/api/v1/products${params ? `?${new URLSearchParams(params as any).toString()}` : ''}`
-		),
-	create: (payload: any) => apiFetch('/api/v1/products', { method: 'POST', body: payload }),
-	update: (id: string, payload: any) => apiFetch(`/api/v1/products/${id}`, { method: 'PATCH', body: payload }),
-	remove: (id: string) => apiFetch(`/api/v1/products/${id}`, { method: 'DELETE' }),
+		gqlFetch<{ products: { results: any[]; count: number; page: number; pages: number } }>({
+			query: `
+				query Products($query: ProductPaginationQuery!) {
+					products(query: $query) {
+						results {
+							_id
+							name
+							lenderName
+							interestRate
+							maxAmount
+							isActive
+						}
+						count
+						page
+						pages
+					}
+				}
+			`,
+			variables: { query: params },
+		}),
+	create: (payload: any) =>
+		gqlFetch({
+			query: `
+				mutation CreateProduct($createProductInput: CreateProductDto!) {
+					createProduct(createProductInput: $createProductInput) {
+						_id
+					}
+				}
+			`,
+			variables: { createProductInput: payload },
+		}),
+	update: (id: string, payload: any) =>
+		gqlFetch({
+			query: `
+				mutation UpdateProduct($id: ID!, $updateProductInput: UpdateProductDto!) {
+					updateProduct(id: $id, updateProductInput: $updateProductInput) {
+						_id
+					}
+				}
+			`,
+			variables: { id, updateProductInput: payload },
+		}),
+	remove: (id: string) =>
+		gqlFetch({
+			query: `
+				mutation RemoveProduct($id: ID!) {
+					removeProduct(id: $id) {
+						_id
+					}
+				}
+			`,
+			variables: { id },
+		}),
 }

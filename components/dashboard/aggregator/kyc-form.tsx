@@ -46,7 +46,7 @@ export function KycForm() {
   useEffect(() => {
     const fetchKyc = async () => {
       try {
-        const response = await kycApi.get()
+        const response: any = await kycApi.get()
         if (response) {
           Object.entries(response).forEach(([key, value]) => {
             setValue(key as keyof KycFormData, value)

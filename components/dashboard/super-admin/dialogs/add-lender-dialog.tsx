@@ -78,6 +78,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
     setIsLoading(true)
     try {
       const payload: any = {
+        _id: lender?._id,
         username: data.fullName,
         email: data.email,
         contact: data.phone,
@@ -95,7 +96,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
       }
       
       if (lender) {
-        await usersApi.update(lender.id, payload)
+        await usersApi.updateUser( payload)
         toast({ 
           title: 'Success',
           description: 'Lender updated successfully.',
