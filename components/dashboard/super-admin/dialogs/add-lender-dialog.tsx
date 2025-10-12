@@ -140,7 +140,8 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
           </Button>
         )}
       </DialogTrigger>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl"
+>
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">{lender ? 'Edit Lender' : 'Add New Lender'}</DialogTitle>
           <DialogDescription className="text-gray-400">

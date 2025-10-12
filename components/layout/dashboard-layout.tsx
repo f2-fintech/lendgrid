@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from "react"
 import { useAuth, AppRole } from '@/lib/auth'
 import { useLogout } from '@/lib/logout'
 import {
@@ -18,16 +18,29 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
-  useSidebar
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import { LayoutDashboard, TrendingUp, FileText, Settings, CreditCard, Building2, Users, BarChart3, Bell, LogOut, User, ChevronUp } from 'lucide-react'
+import {
+  LayoutDashboard,
+  TrendingUp,
+  FileText,
+  Settings,
+  CreditCard,
+  Building2,
+  Users,
+  BarChart3,
+  Bell,
+  LogOut,
+  User,
+  ChevronUp
+} from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { navigationPaths } from '@/lib/navigation'
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -229,6 +242,22 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const normalizedRole: 'super_admin' | 'aggregator' | 'lender' =
     role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : 'lender'
 
+  const [showNotifications, setShowNotifications] = useState(false)
+  const panelRef = useRef<HTMLDivElement | null>(null)
+  const router = useRouter()
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
+        setShowNotifications(false)
+      }
+    }
+    if (showNotifications) {
+      document.addEventListener("mousedown", handleClickOutside)
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside)
+  }, [showNotifications])
+
   if (loading) {
     return <div className="p-8 text-white">Loading...</div>
   }
@@ -237,17 +266,58 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     <SidebarProvider>
       <AppSidebar userRole={userRole ?? normalizedRole} user={user} />
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 px-4 bg-gray-900/50 backdrop-blur-md border-b border-gray-800">
+        <header className="flex h-16 shrink-0 items-center gap-2 px-4 bg-gray-900 border-b border-gray-800 relative">
           <SidebarTrigger className="-ml-1 text-white hover:bg-gray-800" />
-          <div className="ml-auto flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-gray-800">
+          <div className="ml-auto flex items-center space-x-4 relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-white hover:bg-gray-800 relative"
+              onClick={() => setShowNotifications((prev) => !prev)}
+            >
               <Bell className="w-5 h-5" />
               <Badge className="absolute -top-1 -right-1 w-2 h-2 p-0 bg-red-500" />
             </Button>
+
+            {showNotifications && (
+              <div
+                ref={panelRef}
+                className="absolute right-0 top-12 w-80 z-50"
+              >
+                <Card className="bg-gray-900 border border-gray-700 shadow-lg rounded-xl">
+                  <CardHeader>
+                    <CardTitle className="text-lg text-white">Notifications</CardTitle>
+                  </CardHeader>
+                  <CardContent className="flex flex-col gap-3 max-h-64 overflow-y-auto">
+                    <div className="p-3 rounded-md bg-gray-800 hover:bg-gray-700">New aggregator registered 🚀</div>
+                    <div className="p-3 rounded-md bg-gray-800 hover:bg-gray-700">Payment received successfully 💰</div>
+                    <div className="p-3 rounded-md bg-gray-800 hover:bg-gray-700">System maintenance scheduled ⚠️</div>
+                  </CardContent>
+                  {/* FIXED: Navigate properly to notifications page */}
+                  <Button
+                    className="mb-2 mx-44"
+                    onClick={() => {
+                      if (normalizedRole === "super_admin") {
+                        router.push("/super-admin/notification")
+                      } else if (normalizedRole === "aggregator") {
+                        router.push("/aggregator/notification")
+                      } else if (normalizedRole === "lender") {
+                        router.push("/lender/notification")
+                      } else {
+                        router.push("/notification") // fallback
+                      }
+                    }}
+                  >
+                    See more..
+                  </Button>
+
+                </Card>
+              </div>
+            )}
           </div>
         </header>
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-          <div className="min-h-[100vh] flex-1 rounded-xl bg-gray-900/30 p-6">
+          <div className="min-h-[100vh] flex-1 rounded-xl bg-gray-900 p-6">
             {children}
           </div>
         </div>

@@ -110,7 +110,7 @@ const FloatingMathSymbols = () => {
   )
 }
 
-export function LandingPage() {
+export function  LandingPage() {
   const [currentLender, setCurrentLender] = useState(0)
   const {
     register,
