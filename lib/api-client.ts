@@ -30,7 +30,7 @@ export async function apiFetch<T>(path: string, options: { method?: HttpMethod; 
 	const resp = await fetch(url, {
 		method,
 		headers: buildHeaders(headers),
-		body: body ? JSON.stringify(body) : undefined,
+		body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
 		credentials: 'include',
 	})
 	if (!resp.ok) {
@@ -75,13 +75,41 @@ export const usersApi = {
 		),
 	countByRole: (role: string) =>
 		apiFetch<{ success: boolean; data: { count: number } }>(`/api/v1/users/role/${role}/count`),
+	// Get all aggregators (users with AGGREGATOR_ADMIN role)
+	getAggregators: (params?: { page?: number; limit?: number }) =>
+		apiFetch<{ success: boolean; data: { results: any[]; count: number; page: number; pages: number } }>(
+			`/api/v1/users/role/aggregator_admin${params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)]))).toString()}` : ''}`
+		),
+	// Get all users with pagination
+	getUsers: (params?: { page?: number; limit?: number; status?: string }) =>
+		apiFetch<{ success: boolean; data: { results: any[]; count: number; pages: number } }>(
+			`/api/v1/users${params ? `?${new URLSearchParams(Object.fromEntries(Object.entries(params).map(([key, value]) => [key, String(value)]))).toString()}` : ''}`
+		),
 	// Fixed method name from 'update' to 'updateUser' to match component usage
 	updateUser: (payload: { id: string; status?: string;[key: string]: any }) =>
-		apiFetch(`/api/v1/users/${payload.id}`, { method: 'PATCH', body: payload }),
+		apiFetch(`/api/v1/users`, { method: 'PATCH', body: payload }),
 	update: (id: string, payload: any) =>
-		apiFetch(`/api/v1/users/${id}`, { method: 'PATCH', body: payload }),
+		apiFetch(`/api/v1/users`, { method: 'PATCH', body: { id, ...payload } }),
+	updateUserByAdmin: (payload: { id: string; status?: string; email?: string; username?: string;[key: string]: any }) =>
+		apiFetch(`/api/v1/users`, { method: 'PATCH', body: payload }),
 	remove: (id: string) =>
 		apiFetch(`/api/v1/users/${id}`, { method: 'DELETE' }),
+}
+
+export const kycApi = {
+	create: (payload: any) =>
+		apiFetch('/api/v1/kyc', { method: 'POST', body: payload }),
+	get: () =>
+		apiFetch('/api/v1/kyc'),
+}
+
+export const settingsApi = {
+	create: (payload: any) =>
+		apiFetch('/api/v1/settings', { method: 'POST', body: payload }),
+	get: () =>
+		apiFetch('/api/v1/settings'),
+	update: (payload: any) =>
+		apiFetch('/api/v1/settings', { method: 'PATCH', body: payload }),
 }
 
 export const applicationsApi = {
@@ -111,5 +139,3 @@ export const productsApi = {
 	update: (id: string, payload: any) => apiFetch(`/api/v1/products/${id}`, { method: 'PATCH', body: payload }),
 	remove: (id: string) => apiFetch(`/api/v1/products/${id}`, { method: 'DELETE' }),
 }
-
-

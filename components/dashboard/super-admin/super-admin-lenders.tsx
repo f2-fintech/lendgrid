@@ -27,6 +27,7 @@ export function SuperAdminLenders() {
   const [filterStatus, setFilterStatus] = useState('')
   const [filterType, setFilterType] = useState('')
   const [selectedLender, setSelectedLender] = useState<any>(null)
+  const [editingLender, setEditingLender] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const { toast } = useToast()
 
@@ -72,8 +73,13 @@ export function SuperAdminLenders() {
     pages,
     metrics,
     loading: isTableLoading,
-    error
+    error,
+    mutate,
   } = useLenders({ page, limit: pageSize })
+
+  const handleLenderUpdated = () => {
+    mutate()
+  }
 
   const filteredLenders = useMemo(() => {
     if (!lenders) return []
@@ -82,7 +88,7 @@ export function SuperAdminLenders() {
         lender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         (lender.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()))
       const matchesStatus = !filterStatus || filterStatus === "all" || lender.status === filterStatus
-      const matchesType = !filterType || filterType === "all" || lender.type === filterType
+      const matchesType = !filterType || filterType === "all" || lender.lenderType === filterType
       return matchesSearch && matchesStatus && matchesType
     })
   }, [lenders, searchTerm, filterStatus, filterType])
@@ -113,7 +119,7 @@ export function SuperAdminLenders() {
         id: lenderId,
         status: 'active'
       })
-      
+
       // Show success message
       toast({
         title: 'Success',
@@ -121,7 +127,7 @@ export function SuperAdminLenders() {
       })
 
       // Refresh data by updating the page state to trigger re-fetch
-      setPage(page)
+      handleLenderUpdated()
     } catch (error) {
       console.error('Approve lender error:', error)
       toast({
@@ -146,7 +152,7 @@ export function SuperAdminLenders() {
       })
 
       // Refresh data by updating the page state to trigger re-fetch
-      setPage(page)
+      handleLenderUpdated()
     } catch (error) {
       console.error('Reject lender error:', error)
       toast({
@@ -197,6 +203,8 @@ export function SuperAdminLenders() {
     )
   }
 
+  console.log("lenders>>>", lenders);
+
   return (
     <DashboardLayout userRole="super_admin">
       <div className="space-y-8">
@@ -211,7 +219,7 @@ export function SuperAdminLenders() {
             <h1 className="text-3xl font-bold text-white">Lender Management</h1>
             <p className="text-gray-400 mt-1">Manage and monitor all registered lenders</p>
           </div>
-          <AddLenderDialog />
+          <AddLenderDialog onLenderUpdated={handleLenderUpdated} />
         </motion.div>
 
         {/* Metrics Cards */}
@@ -346,7 +354,7 @@ export function SuperAdminLenders() {
                           </TableCell>
                           <TableCell>
                             <Badge variant="outline" className="border-gray-600 text-gray-300">
-                              {lender.type}
+                              {lender.lenderType || 'N/A'}
                             </Badge>
                           </TableCell>
                           <TableCell>
@@ -380,22 +388,20 @@ export function SuperAdminLenders() {
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
-                              <Button variant="ghost" size="sm" className="text-gold hover:text-white hover:bg-gray-700">
-                                <Edit className="w-4 h-4" />
-                              </Button>
+                              <AddLenderDialog lender={lender} onLenderUpdated={handleLenderUpdated} />
                               {lender.status === 'Pending' && (
                                 <>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
                                     className="text-green-400 hover:text-white hover:bg-gray-700"
                                     onClick={() => handleApprove(lender.id)}
                                   >
                                     <CheckCircle className="w-4 h-4" />
                                   </Button>
-                                  <Button 
-                                    variant="ghost" 
-                                    size="sm" 
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
                                     className="text-red-400 hover:text-white hover:bg-gray-700"
                                     onClick={() => handleReject(lender.id)}
                                   >
@@ -511,7 +517,7 @@ export function SuperAdminLenders() {
 
                 {selectedLender.status === 'Pending' && (
                   <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
-                    <Button 
+                    <Button
                       className="bg-green-500 hover:bg-green-600 text-white"
                       onClick={() => {
                         handleApprove(selectedLender.id)
@@ -521,8 +527,8 @@ export function SuperAdminLenders() {
                       <CheckCircle className="w-4 h-4 mr-2" />
                       Approve Lender
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
                       onClick={() => {
                         handleReject(selectedLender.id)

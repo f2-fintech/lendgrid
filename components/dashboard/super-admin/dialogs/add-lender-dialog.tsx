@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -32,8 +32,8 @@ const addLenderSchema = z.object({
   dob: z.string().refine((val) => !isNaN(Date.parse(val)), {
     message: 'Date of Birth must be a valid date',
   }),
-  password: z.string().min(8, 'Password must be at least 8 characters'),
-  confirmPassword: z.string(),
+  password: z.string().optional(),
+  confirmPassword: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"],
@@ -41,7 +41,7 @@ const addLenderSchema = z.object({
 
 type AddLenderFormData = z.infer<typeof addLenderSchema>
 
-export function AddLenderDialog() {
+export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onLenderUpdated?: () => void }) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -56,13 +56,30 @@ export function AddLenderDialog() {
     resolver: zodResolver(addLenderSchema),
   })
 
+  useEffect(() => {
+    if (open && lender) {
+      reset({
+        fullName: lender.name,
+        email: lender.email,
+        phone: lender.phone,
+        companyName: lender.designation,
+        lenderType: lender.type,
+        address: lender.address,
+        pincode: lender.pincode,
+        gender: lender.gender,
+        dob: lender.dob ? new Date(lender.dob).toISOString().split('T')[0] : '',
+      })
+    } else if (open && !lender) {
+      reset()
+    }
+  }, [lender, open, reset])
+
   const onSubmit = async (data: AddLenderFormData) => {
     setIsLoading(true)
     try {
-      const payload = {
+      const payload: any = {
         username: data.fullName,
         email: data.email,
-        password: data.password,
         contact: data.phone,
         designation: data.companyName,
         role: 'lender_admin',
@@ -70,22 +87,40 @@ export function AddLenderDialog() {
         dob: new Date(data.dob).toISOString(),
         gender: data.gender.toLowerCase(),
         pincode: data.pincode,
+        lenderType: data.lenderType,
+      }
+
+      if (data.password) {
+        payload.password = data.password
       }
       
-      await usersApi.register(payload)
-      
-      toast({ 
-        title: 'Success',
-        description: 'Lender registration successful. An invite email will be sent to the provided email address.',
-      })
+      if (lender) {
+        await usersApi.update(lender.id, payload)
+        toast({ 
+          title: 'Success',
+          description: 'Lender updated successfully.',
+        })
+        if (onLenderUpdated) {
+          onLenderUpdated()
+        }
+      } else {
+        await usersApi.register(payload)
+        toast({ 
+          title: 'Success',
+          description: 'Lender registration successful. An invite email will be sent to the provided email address.',
+        })
+        if (onLenderUpdated) {
+          onLenderUpdated()
+        }
+      }
       
       reset()
       setOpen(false)
     } catch (error) {
-      console.error('Add lender error:', error)
+      console.error('Add/Update lender error:', error)
       toast({ 
         title: 'Error', 
-        description: 'Failed to register lender. Please try again.',
+        description: `Failed to ${lender ? 'update' : 'register'} lender. Please try again.`,
         variant: 'destructive'
       })
     } finally {
@@ -96,17 +131,21 @@ export function AddLenderDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-gradient-to-r from-gold to-blue text-dark">
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Lender
-        </Button>
+        {lender ? (
+          <Button variant="ghost" size="sm">Edit</Button>
+        ) : (
+          <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Lender
+          </Button>
+        )}
       </DialogTrigger>
       <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl"
 >
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Add New Lender</DialogTitle>
+          <DialogTitle className="text-xl font-bold">{lender ? 'Edit Lender' : 'Add New Lender'}</DialogTitle>
           <DialogDescription className="text-gray-400">
-            Register a new lending partner to the platform
+            {lender ? 'Update the details of the existing lending partner.' : 'Register a new lending partner to the platform'}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -256,37 +295,41 @@ export function AddLenderDialog() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300 font-medium">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                {...register('password')}
-                className="glass-input text-white placeholder-gray-400 h-12"
-                placeholder="Enter password"
-              />
-              {errors.password && (
-                <p className="text-red-400 text-sm">{errors.password.message}</p>
-              )}
-            </div>
+            {!lender && (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="text-gray-300 font-medium">
+                    Password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    {...register('password')}
+                    className="glass-input text-white placeholder-gray-400 h-12"
+                    placeholder="Enter new password (optional)"
+                  />
+                  {errors.password && (
+                    <p className="text-red-400 text-sm">{errors.password.message}</p>
+                  )}
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">
-                Confirm Password
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                {...register('confirmPassword')}
-                className="glass-input text-white placeholder-gray-400 h-12"
-                placeholder="Confirm password"
-              />
-              {errors.confirmPassword && (
-                <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
-              )}
-            </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">
+                    Confirm Password
+                  </Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    {...register('confirmPassword')}
+                    className="glass-input text-white placeholder-gray-400 h-12"
+                    placeholder="Confirm new password"
+                  />
+                  {errors.confirmPassword && (
+                    <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
+                  )}
+                </div>
+              </>
+            )}
           </div>
 
           <div className="flex justify-end space-x-4">
@@ -309,10 +352,10 @@ export function AddLenderDialog() {
               {isLoading ? (
                 <>
                   <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Adding Lender...
+                  {lender ? 'Updating Lender...' : 'Adding Lender...'}
                 </>
               ) : (
-                'Add Lender'
+                lender ? 'Update Lender' : 'Add Lender'
               )}
             </Button>
           </div>

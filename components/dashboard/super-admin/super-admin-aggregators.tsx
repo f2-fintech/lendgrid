@@ -8,147 +8,48 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { usersApi } from '@/lib/api-client'
 import { AddAggregatorDialog } from './dialogs/add-aggregator-dialog'
-import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, CreditCard, Building2 } from 'lucide-react'
+import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp } from 'lucide-react'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
-
-const mockData = {
-  metrics: {
-    totalAggregators: 24,
-    activeAggregators: 21,
-    pendingApprovals: 4,
-    avgConversionRate: 68.5
-  },
-  aggregators: [
-    {
-      id: 'AGG001',
-      name: 'FinTech Solutions Pvt Ltd',
-      contactPerson: 'Rahul Sharma',
-      email: 'rahul@fintechsolutions.com',
-      phone: '+91 98765 43210',
-      status: 'Active',
-      joinDate: '2023-01-15',
-      totalApplications: 1250,
-      approvedApplications: 856,
-      conversionRate: 68.5,
-      totalCommission: 125000,
-      address: 'Mumbai, Maharashtra',
-      kycStatus: 'Verified',
-      lastActivity: '2025-01-20'
-    },
-    {
-      id: 'AGG002',
-      name: 'Loan Connect India',
-      contactPerson: 'Priya Patel',
-      email: 'priya@loanconnect.in',
-      phone: '+91 98765 43211',
-      status: 'Active',
-      joinDate: '2023-02-20',
-      totalApplications: 980,
-      approvedApplications: 672,
-      conversionRate: 68.6,
-      totalCommission: 98000,
-      address: 'Bangalore, Karnataka',
-      kycStatus: 'Verified',
-      lastActivity: '2025-01-19'
-    },
-    {
-      id: 'AGG003',
-      name: 'Credit Bridge Solutions',
-      contactPerson: 'Amit Kumar',
-      email: 'amit@creditbridge.com',
-      phone: '+91 98765 43212',
-      status: 'Active',
-      joinDate: '2023-03-10',
-      totalApplications: 750,
-      approvedApplications: 525,
-      conversionRate: 70.0,
-      totalCommission: 75000,
-      address: 'Pune, Maharashtra',
-      kycStatus: 'Verified',
-      lastActivity: '2025-01-18'
-    },
-    {
-      id: 'AGG004',
-      name: 'Digital Loan Hub',
-      contactPerson: 'Suresh Gupta',
-      email: 'suresh@digitalloan.com',
-      phone: '+91 98765 43213',
-      status: 'Pending',
-      joinDate: '2025-01-15',
-      totalApplications: 0,
-      approvedApplications: 0,
-      conversionRate: 0,
-      totalCommission: 0,
-      address: 'Delhi, Delhi',
-      kycStatus: 'Under Review',
-      lastActivity: '2025-01-15'
-    },
-    {
-      id: 'AGG005',
-      name: 'Quick Finance Partners',
-      contactPerson: 'Neha Singh',
-      email: 'neha@quickfinance.com',
-      phone: '+91 98765 43214',
-      status: 'Suspended',
-      joinDate: '2023-08-05',
-      totalApplications: 320,
-      approvedApplications: 192,
-      conversionRate: 60.0,
-      totalCommission: 32000,
-      address: 'Chennai, Tamil Nadu',
-      kycStatus: 'Verified',
-      lastActivity: '2023-12-15'
-    },
-    {
-      id: 'AGG006',
-      name: 'Asset Partners',
-      contactPerson: 'Gurmeet Singh',
-      email: 'gurmeet@quickfinance.com',
-      phone: '+91 98765 43214',
-      status: 'Suspended',
-      joinDate: '2023-08-05',
-      totalApplications: 320,
-      approvedApplications: 192,
-      conversionRate: 60.0,
-      totalCommission: 32000,
-      address: 'Chennai, Tamil Nadu',
-      kycStatus: 'Verified',
-      lastActivity: '2023-12-15'
-    }
-  ]
-}
+import { useAggregators, Aggregator } from '@/hooks/use-aggregators'
 
 export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
-  const [selectedAggregator, setSelectedAggregator] = useState<any>(null)
+  const [selectedAggregator, setSelectedAggregator] = useState<Aggregator | null>(null)
+  const [editingAggregator, setEditingAggregator] = useState<Aggregator | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(5)
-  const [isTableLoading, setIsTableLoading] = useState(true)
-  const [cardsLoading, setCardsLoading] = useState(true)
+  const [pageSize, setPageSize] = useState(10)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setIsTableLoading(false)
-      setCardsLoading(false)
-    }, 2000)
-    return () => clearTimeout(t)
-  }, [])
+  const {
+    aggregators,
+    total,
+    pages,
+    metrics,
+    loading: isTableLoading,
+    error,
+    mutate,
+  } = useAggregators({ page, limit: pageSize })
 
   useEffect(() => {
     setPage(1)
   }, [searchTerm, filterStatus])
+
+  const handleSuccess = () => {
+    setIsAddEditDialogOpen(false)
+    setEditingAggregator(null)
+    mutate()
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -159,11 +60,11 @@ export function SuperAdminAggregators() {
   }
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Active': return 'bg-green-500/20 text-green-400'
-      case 'Pending': return 'bg-orange-500/20 text-orange-400'
-      case 'Suspended': return 'bg-red-500/20 text-red-400'
-      case 'Inactive': return 'bg-gray-500/20 text-gray-400'
+    switch (status.toUpperCase()) {
+      case 'ACTIVE': return 'bg-green-500/20 text-green-400'
+      case 'PENDING': return 'bg-orange-500/20 text-orange-400'
+      case 'SUSPENDED':
+      case 'INACTIVE': return 'bg-red-500/20 text-red-400'
       default: return 'bg-gray-500/20 text-gray-400'
     }
   }
@@ -178,34 +79,28 @@ export function SuperAdminAggregators() {
   }
 
   const filteredAggregators = useMemo(() => {
-    return mockData.aggregators.filter((aggregator) => {
+    return aggregators.filter((aggregator) => {
       const matchesSearch =
-        aggregator.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        aggregator.contactPerson.toLowerCase().includes(searchTerm.toLowerCase())
+        aggregator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        aggregator.email.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesStatus = !filterStatus || filterStatus === "all" || aggregator.status === filterStatus
       return matchesSearch && matchesStatus
     })
-  }, [searchTerm, filterStatus])
+  }, [aggregators, searchTerm, filterStatus])
 
-  const total = filteredAggregators.length
-  const paginated = useMemo(() => {
+  const paginatedAggregators = useMemo(() => {
     const start = (page - 1) * pageSize
     return filteredAggregators.slice(start, start + pageSize)
   }, [filteredAggregators, page, pageSize])
 
-  const handlePageChange = async (newPage: number) => {
-    setIsTableLoading(true)
-    await new Promise((r) => setTimeout(r, 350))
+  const handlePageChange = (newPage: number) => {
     setPage(newPage)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-  const handlePageSizeChange = async (size: number) => {
-    setIsTableLoading(true)
-    await new Promise((r) => setTimeout(r, 350))
+
+  const handlePageSizeChange = (size: number) => {
     setPageSize(size)
     setPage(1)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
@@ -215,8 +110,7 @@ export function SuperAdminAggregators() {
         id: aggregatorId,
         status: 'ACTIVE'
       })
-      
-      // Refresh data
+      mutate()
       toast({
         title: 'Success',
         description: 'Aggregator has been approved successfully.',
@@ -237,8 +131,7 @@ export function SuperAdminAggregators() {
         id: aggregatorId,
         status: 'INACTIVE'
       })
-
-      // Refresh data
+      mutate()
       toast({
         title: 'Success',
         description: 'Aggregator has been rejected.',
@@ -278,9 +171,20 @@ export function SuperAdminAggregators() {
     </motion.div>
   )
 
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Aggregators</h3>
+          <p className="text-gray-400">{error}</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-8">
-      {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -291,11 +195,20 @@ export function SuperAdminAggregators() {
           <h1 className="text-3xl font-bold text-white">Aggregator Management</h1>
           <p className="text-gray-400 mt-1">Manage and monitor all registered aggregators</p>
         </div>
-        <AddAggregatorDialog />
+        <Button
+          className="bg-gradient-to-r from-gold to-blue text-dark"
+          onClick={() => {
+            setEditingAggregator(null)
+            setIsAddEditDialogOpen(true)
+          }}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add New Aggregator
+        </Button>
       </motion.div>
 
       {/* Metrics Cards */}
-      {cardsLoading ? (
+      {isTableLoading && !aggregators.length ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
@@ -306,28 +219,28 @@ export function SuperAdminAggregators() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Aggregators"
-            value={mockData.metrics.totalAggregators}
+            value={metrics.totalAggregators}
             icon={Users}
             color="bg-blue/20 text-blue"
             subtitle="Registered partners"
           />
           <MetricCard
             title="Active Aggregators"
-            value={mockData.metrics.activeAggregators}
+            value={metrics.activeAggregators}
             icon={CheckCircle}
             color="bg-green-500/20 text-green-400"
             subtitle="Currently operational"
           />
           <MetricCard
             title="Pending Approvals"
-            value={mockData.metrics.pendingApprovals}
+            value={metrics.pendingApprovals}
             icon={AlertCircle}
             color="bg-orange-500/20 text-orange-400"
             subtitle="Awaiting review"
           />
           <MetricCard
             title="Avg Conversion Rate"
-            value={`${mockData.metrics.avgConversionRate}%`}
+            value={`${metrics.avgConversionRate}%`}
             icon={TrendingUp}
             color="bg-gold/20 text-gold"
             subtitle="Platform average"
@@ -366,10 +279,9 @@ export function SuperAdminAggregators() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Suspended">Suspended</SelectItem>
-                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="PENDING">Pending</SelectItem>
+                    <SelectItem value="INACTIVE">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -379,62 +291,58 @@ export function SuperAdminAggregators() {
             <div ref={tableTopRef} />
             <div className="overflow-x-auto">
               {isTableLoading ? (
-                <TableSkeleton columns={10} rows={pageSize} />
+                <TableSkeleton columns={8} rows={pageSize} />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Aggregator</TableHead>
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">KYC Status</TableHead>
-                      <TableHead className="text-gray-300">Applications</TableHead>
-                      <TableHead className="text-gray-300">Conversion Rate</TableHead>
-                      <TableHead className="text-gray-300">Total Commission</TableHead>
-                      <TableHead className="text-gray-300">Join Date</TableHead>
-                      <TableHead className="text-gray-300">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {paginated.map((aggregator, index) => (
-                      <motion.tr
-                        key={aggregator.id}
+                <div className="min-w-full">
+                  <div className="grid grid-cols-8 gap-4 py-3 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
+                    <div>Aggregator</div>
+                    <div>Status</div>
+                    <div>KYC Status</div>
+                    <div>Applications</div>
+                    <div>Conversion Rate</div>
+                    <div>Total Commission</div>
+                    <div>Join Date</div>
+                    <div>Actions</div>
+                  </div>
+                  <div className="space-y-1">
+                    {paginatedAggregators.map((aggregator, index) => (
+                      <motion.div
+                        key={aggregator._id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border-gray-700 hover:bg-gray-800/50"
+                        className="grid grid-cols-8 gap-4 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
                       >
-                        <TableCell>
-                          <div>
-                            <p className="text-white font-medium">{aggregator.name}</p>
-                            <p className="text-sm text-gray-400">{aggregator.contactPerson}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell>
+                        <div>
+                          <p className="text-white font-medium">{aggregator.username}</p>
+                          <p className="text-sm text-gray-400">{aggregator.email}</p>
+                        </div>
+                        <div>
                           <Badge className={getStatusColor(aggregator.status)}>
                             {aggregator.status}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={getKycStatusColor(aggregator.kycStatus)}>
-                            {aggregator.kycStatus}
+                        </div>
+                        <div>
+                          <Badge className={getKycStatusColor(aggregator.kycStatus || 'Verified')}>
+                            {aggregator.kycStatus || 'Verified'}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-white">
-                          <div>
-                            <p>{aggregator.totalApplications}</p>
-                            <p className="text-sm text-gray-400">
-                              {aggregator.approvedApplications} approved
-                            </p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-gold">
-                          {aggregator.conversionRate > 0 ? `${aggregator.conversionRate}%` : '-'}
-                        </TableCell>
-                        <TableCell className="text-white">
-                          {aggregator.totalCommission > 0 ? formatCurrency(aggregator.totalCommission) : '-'}
-                        </TableCell>
-                        <TableCell className="text-gray-300">{aggregator.joinDate}</TableCell>
-                        <TableCell>
+                        </div>
+                        <div className="text-white">
+                          <p>{aggregator.totalApplications || 0}</p>
+                          <p className="text-sm text-gray-400">
+                            {aggregator.approvedApplications || 0} approved
+                          </p>
+                        </div>
+                        <div className="text-gold">
+                          {(aggregator.conversionRate || 0) > 0 ? `${aggregator.conversionRate}%` : '-'}
+                        </div>
+                        <div className="text-white">
+                          {(aggregator.totalCommission || 0) > 0 ? formatCurrency(aggregator.totalCommission || 0) : '-'}
+                        </div>
+                        <div className="text-gray-300">
+                          {new Date(aggregator.createdAt).toLocaleDateString()}
+                        </div>
+                        <div>
                           <div className="flex items-center space-x-2">
                             <Button
                               variant="ghost"
@@ -447,35 +355,43 @@ export function SuperAdminAggregators() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            <Button variant="ghost" size="sm" className="text-gold hover:text-white hover:bg-gray-700">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-gold hover:text-white hover:bg-gray-700"
+                              onClick={() => {
+                                setEditingAggregator(aggregator)
+                                setIsAddEditDialogOpen(true)
+                              }}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            {aggregator.status === 'Pending' && (
+                            {aggregator.status === 'PENDING' && (
                               <>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   className="text-green-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleApprove(aggregator.id)}
+                                  onClick={() => handleApprove(aggregator._id)}
                                 >
                                   <CheckCircle className="w-4 h-4" />
                                 </Button>
-                                <Button 
-                                  variant="ghost" 
-                                  size="sm" 
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
                                   className="text-red-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleReject(aggregator.id)}
+                                  onClick={() => handleReject(aggregator._id)}
                                 >
                                   <XCircle className="w-4 h-4" />
                                 </Button>
                               </>
                             )}
                           </div>
-                        </TableCell>
-                      </motion.tr>
+                        </div>
+                      </motion.div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </div>
               )}
             </div>
             <TablePagination
@@ -503,12 +419,12 @@ export function SuperAdminAggregators() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-gray-300">Company Name</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.name}</p>
+                  <Label className="text-gray-300">Username</Label>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.username}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Contact Person</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.contactPerson}</p>
+                  <Label className="text-gray-300">Email</Label>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.email}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Status</Label>
@@ -518,44 +434,46 @@ export function SuperAdminAggregators() {
                 </div>
                 <div>
                   <Label className="text-gray-300">KYC Status</Label>
-                  <Badge className={`${getKycStatusColor(selectedAggregator.kycStatus)} mt-1`}>
-                    {selectedAggregator.kycStatus}
+                  <Badge className={`${getKycStatusColor(selectedAggregator.kycStatus || 'Verified')} mt-1`}>
+                    {selectedAggregator.kycStatus || 'Verified'}
                   </Badge>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-gray-300">Email</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.email}</p>
+                  <Label className="text-gray-300">Contact</Label>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.contact || 'Not provided'}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Phone</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.phone}</p>
+                  <Label className="text-gray-300">Designation</Label>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.designation || 'Not specified'}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Address</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.address}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.address || 'Not provided'}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Join Date</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.joinDate}</p>
+                  <p className="text-white font-semibold mt-1">
+                    {new Date(selectedAggregator.createdAt).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-6">
                 <div>
                   <Label className="text-gray-300">Total Applications</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.totalApplications}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.totalApplications || 0}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Approved Applications</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.approvedApplications}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.approvedApplications || 0}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Conversion Rate</Label>
                   <p className="text-white font-semibold mt-1">
-                    {selectedAggregator.conversionRate > 0 ? `${selectedAggregator.conversionRate}%` : 'Not applicable'}
+                    {(selectedAggregator.conversionRate || 0) > 0 ? `${selectedAggregator.conversionRate}%` : 'Not applicable'}
                   </p>
                 </div>
               </div>
@@ -564,32 +482,34 @@ export function SuperAdminAggregators() {
                 <div>
                   <Label className="text-gray-300">Total Commission Earned</Label>
                   <p className="text-white font-semibold mt-1">
-                    {selectedAggregator.totalCommission > 0 ? formatCurrency(selectedAggregator.totalCommission) : 'No earnings yet'}
+                    {(selectedAggregator.totalCommission || 0) > 0 ? formatCurrency(selectedAggregator.totalCommission || 0) : 'No earnings yet'}
                   </p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Last Activity</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.lastActivity}</p>
+                  <p className="text-white font-semibold mt-1">
+                    {new Date(selectedAggregator.updatedAt).toLocaleDateString()}
+                  </p>
                 </div>
               </div>
 
-              {selectedAggregator.status === 'Pending' && (
+              {selectedAggregator.status === 'PENDING' && (
                 <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
-                  <Button 
+                  <Button
                     className="bg-green-500 hover:bg-green-600 text-white"
                     onClick={() => {
-                      handleApprove(selectedAggregator.id)
+                      handleApprove(selectedAggregator._id)
                       setIsViewDialogOpen(false)
                     }}
                   >
                     <CheckCircle className="w-4 h-4 mr-2" />
                     Approve Aggregator
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
                     onClick={() => {
-                      handleReject(selectedAggregator.id)
+                      handleReject(selectedAggregator._id)
                       setIsViewDialogOpen(false)
                     }}
                   >
@@ -602,6 +522,17 @@ export function SuperAdminAggregators() {
           )}
         </DialogContent>
       </Dialog>
+      
+      <AddAggregatorDialog
+        isOpen={isAddEditDialogOpen}
+        mode={editingAggregator ? 'edit' : 'add'}
+        editData={editingAggregator}
+        onSuccess={handleSuccess}
+        onClose={() => {
+          setIsAddEditDialogOpen(false)
+          setEditingAggregator(null)
+        }}
+      />
     </div>
   )
 }
