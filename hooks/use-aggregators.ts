@@ -61,8 +61,8 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
         limit: limit || 10
       })
 
-      if (response.success && response.data) {
-        const { results, count, pages } = response.data
+      if (response.usersByRole && response.usersByRole.results.length !== 0) {
+        const { results, count, pages } = response.usersByRole
 
         const transformedAggregators: Aggregator[] = await Promise.all(
           results.map(async (agg: any) => {
@@ -75,8 +75,8 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
                 aggregatorId: agg._id,
                 limit: 1000
               })
-              if (appResponse.success) {
-                const applications = appResponse.data.results
+              if (appResponse.applications) {
+                const applications = appResponse.applications.results
                 totalApplications = applications.length
                 approvedApplications = applications.filter((app: any) =>
                   app.status === 'approved' || app.status === 'disbursed'

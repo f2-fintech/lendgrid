@@ -78,14 +78,15 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
     setIsLoading(true)
     try {
       const payload: any = {
+        id: lender?.id,
         username: data.fullName,
         email: data.email,
         contact: data.phone,
         designation: data.companyName,
-        role: 'lender_admin',
+        role: 'LENDER_ADMIN',
         address: data.address,
         dob: new Date(data.dob).toISOString(),
-        gender: data.gender.toLowerCase(),
+        gender: data.gender.toUpperCase(),
         pincode: data.pincode,
         lenderType: data.lenderType,
       }
@@ -93,10 +94,11 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
       if (data.password) {
         payload.password = data.password
       }
-      
+
       if (lender) {
-        await usersApi.update(lender.id, payload)
-        toast({ 
+        console.log('Update payload:', payload, data, lender)
+        await usersApi.updateUser(payload)
+        toast({
           title: 'Success',
           description: 'Lender updated successfully.',
         })
@@ -105,7 +107,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
         }
       } else {
         await usersApi.register(payload)
-        toast({ 
+        toast({
           title: 'Success',
           description: 'Lender registration successful. An invite email will be sent to the provided email address.',
         })
@@ -113,13 +115,13 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
           onLenderUpdated()
         }
       }
-      
+
       reset()
       setOpen(false)
     } catch (error) {
       console.error('Add/Update lender error:', error)
-      toast({ 
-        title: 'Error', 
+      toast({
+        title: 'Error',
         description: `Failed to ${lender ? 'update' : 'register'} lender. Please try again.`,
         variant: 'destructive'
       })
@@ -333,9 +335,9 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
           </div>
 
           <div className="flex justify-end space-x-4">
-            <Button 
-              type="button" 
-              variant="outline" 
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => {
                 reset()
                 setOpen(false)

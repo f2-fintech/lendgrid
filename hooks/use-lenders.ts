@@ -49,13 +49,15 @@ export function useLenders({ page, limit }: { page?: number; limit?: number }) {
       setError(null)
       
       // Get lenders list
-      const response = await usersApi.findByRole('lender_admin', {
+      const response = await usersApi.findByRole('LENDER_ADMIN', {
         page: page || 1,
         limit: limit || 10
       })
 
+      console.log('Lenders API response:', response);
+
       // Transform the API data to match expected format
-      const transformedLenders: LenderData[] = response.data.results.map((user: any) => ({
+      const transformedLenders: LenderData[] = response.usersByRole.results.map((user: any) => ({
         id: user._id,
         name: user.username || 'Unknown',
         lenderType: user.lenderType || 'N/A', // Use lenderType from API
@@ -84,10 +86,10 @@ export function useLenders({ page, limit }: { page?: number; limit?: number }) {
 
       setData({
         lenders: transformedLenders,
-        total: response.data.count,
-        pages: response.data.pages,
+        total: response.usersByRole.count,
+        pages: response.usersByRole.pages,
         metrics: {
-          totalLenders: response.data.count,
+          totalLenders: response.usersByRole.count,
           activeLenders: activeLenders,
           pendingApprovals: pendingLenders,
           avgCommissionRate: 4.2 // Static value until API provides this
