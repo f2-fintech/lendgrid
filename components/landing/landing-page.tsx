@@ -110,7 +110,7 @@ const FloatingMathSymbols = () => {
   )
 }
 
-export function  LandingPage() {
+export function LandingPage() {
   const [currentLender, setCurrentLender] = useState(0)
   const {
     register,
@@ -135,7 +135,7 @@ export function  LandingPage() {
       <FloatingMathSymbols />
 
       {/* Navigation */}
-      <nav className="relative z-20 px-6 py-4 glass-card border-b border-white/10">
+      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-4 backdrop-blur-lg bg-opacity-50  border-white/10 ">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <motion.div
             className="flex items-center space-x-2"
@@ -143,12 +143,15 @@ export function  LandingPage() {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6 }}
           >
-            <div className="w-10 h-10 bg-gradient-to-r from-gold to-blue rounded-xl flex items-center justify-center shadow-lg">
-              <CreditCard className="w-6 h-6 text-dark" />
+            <div className="w-12 h-10 bg-gradient  rounded-xl flex items-center justify-center shadow-lg">
+              <img
+                src="/logo.png" // Replace with your logo path
+                alt="LendGrid Logo"
+                className="w-12 h-10 rounded-xl "
+              />
             </div>
-            <span className="text-2xl font-bold gradient-text">LendGrid</span>
+            <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
           </motion.div>
-
           <div className="hidden md:flex items-center space-x-8">
             {["Features", "Lenders", "Testimonials", "Contact"].map((item, index) => (
               <motion.a
@@ -171,10 +174,10 @@ export function  LandingPage() {
             transition={{ duration: 0.6 }}
           >
             <Link href={navigationPaths.login}>
-              <Button className="glass-button text-white hover:text-gold">Login</Button>
+              <Button className="glass-button bg-gradient-to-r from-blue to-cyan-500 text-white hover:text-gold">Login</Button>
             </Link>
             <Link href={navigationPaths.signup}>
-              <Button className="btn-primary">Sign Up</Button>
+              <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">Sign Up</Button>
             </Link>
           </motion.div>
         </div>
@@ -202,12 +205,12 @@ export function  LandingPage() {
             className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
           >
             <Link href={navigationPaths.login}>
-              <Button className="btn-primary px-8 py-4 text-lg rounded-xl shadow-2xl">
+              <Button className="btn-primary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 shadow-2xl  hover:text-gold">
                 Join as Loan Aggregator
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
-            <Button className="btn-secondary px-8 py-4 text-lg rounded-xl">
+            <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
               List Your Lender Products
               <Building2 className="ml-2 w-5 h-5" />
             </Button>
@@ -739,7 +742,7 @@ export function  LandingPage() {
                     />
                   </div>
 
-                  <Button type="submit" className="w-full btn-primary text-lg py-4 rounded-xl">
+                  <Button type="submit" className="w-full btn-primary text-lg py-4 rounded-xl  hover:text-gold">
                     Submit Request
                     <ArrowRight className="ml-2 w-5 h-5" />
                   </Button>
@@ -756,10 +759,14 @@ export function  LandingPage() {
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-r from-gold to-blue rounded-xl flex items-center justify-center shadow-lg">
-                  <CreditCard className="w-6 h-6 text-dark" />
+                <div className="w-10 h-10 bg-gradient rounded-xl flex items-center justify-center shadow-lg">
+                  <img
+                    src="/logo.png" // Replace with your logo path
+                    alt="LendGrid Logo"
+                    className="w-12 h-10 rounded-xl "
+                  />
                 </div>
-                <span className="text-2xl font-bold gradient-text">LendGrid</span>
+                <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
               </div>
               <p className="text-gray-400 leading-relaxed">
                 Empowering the future of loan distribution with technology and innovation.

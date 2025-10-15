@@ -119,9 +119,14 @@ export function SignupForm() {
             animate={{ scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-r from-gold to-blue flex items-center justify-center shadow-2xl">
-              <CreditCard className="w-7 h-7 text-dark" />
+            <div className="w-12 h-12 rounded-2xl bg-gradient items-center justify-center shadow-2xl">
+             <img
+                src="/logo.png" // Replace with your logo path
+                alt="LendGrid Logo"
+                className="w-12 h-10 rounded-xl "
+              />
             </div>
+            <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
           </motion.div>
           <CardTitle className="text-3xl font-bold text-white">Join LendGrid</CardTitle>
           <CardDescription className="text-gray-400 text-lg">
