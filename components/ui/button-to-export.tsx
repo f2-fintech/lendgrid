@@ -18,7 +18,7 @@ export function ExportButton({
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button disabled={disabled} className="bg-gradient-to-r from-gold to-blue text-dark" >
+                <Button disabled={disabled} className="bg-gradient-to-r from-blue to-cyan-500 text-dark" >
                     <Download className="w-4 h-4 mr-2" />
                     {label}
                 </Button>

@@ -11,7 +11,6 @@ import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { CardSkeleton, ChartSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import { TablePagination } from '@/components/ui/pagination'
 import { ExportButton } from '@/components/ui/button-to-export'
@@ -188,8 +187,7 @@ export function AggregatorDashboard() {
   )
 
   return (
-    <DashboardLayout userRole="aggregator">
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -201,7 +199,7 @@ export function AggregatorDashboard() {
               <Calendar className="w-4 h-4 mr-2" />
               Last 30 days
             </Button>
-            <ExportButton onExport={handleExport} disabled={exporting} />
+            <ExportButton  onExport={handleExport} disabled={exporting}/>
           </div>
         </div>
 
@@ -236,6 +234,7 @@ export function AggregatorDashboard() {
               title="Pending Payouts"
               value={formatCurrency(mockData.metrics.pendingPayouts)}
               icon={CreditCard}
+              trend="2 payouts pending"
               color="bg-orange-500/20 text-orange-400"
             />
             <MetricCard
@@ -390,6 +389,5 @@ export function AggregatorDashboard() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
   )
 }

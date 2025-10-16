@@ -170,7 +170,7 @@ export function SignupForm() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient items-center justify-center shadow-2xl">
-             <img
+              <img
                 src="/logo.png" // Replace with your logo path
                 alt="LendGrid Logo"
                 className="w-12 h-10 rounded-xl "
@@ -195,7 +195,7 @@ export function SignupForm() {
               <Input
                 id="fullName"
                 {...register('fullName')}
-                className="glass-input text-white placeholder-gray-500 h-11"
+                className="glass-input text-black placeholder-gray-500 h-11"
                 placeholder="John Doe"
                 disabled={isLoading}
               />
@@ -232,7 +232,7 @@ export function SignupForm() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
-                  className="glass-input text-white placeholder-gray-500 pr-11 h-11"
+                  className="glass-input text-black placeholder-gray-500 pr-11 h-11"
                   placeholder="Create a strong password"
                   disabled={isLoading}
                 />
@@ -240,7 +240,7 @@ export function SignupForm() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
                   tabIndex={-1}
@@ -271,7 +271,7 @@ export function SignupForm() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   disabled={isLoading}
                   tabIndex={-1}
@@ -308,19 +308,19 @@ export function SignupForm() {
                 onValueChange={(value) => setValue('userType', value as 'aggregator' | 'lender')}
                 disabled={isLoading}
               >
-                <SelectTrigger className="glass-input text-white h-11">
+                <SelectTrigger className="glass-input text-bg-white/10 h-11">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
-                <SelectContent className="glass-card border-white/10">
-                  <SelectItem value="aggregator" className="text-white hover:bg-white/10 cursor-pointer">
+                <SelectContent className="glass-card border-bg-white/10">
+                  <SelectItem value="aggregator" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
                     <div className="flex items-center">
                       <Users className="w-4 h-4 mr-2" />
                       Loan Aggregator
                     </div>
                   </SelectItem>
-                  <SelectItem value="lender" className="text-white hover:bg-white/10 cursor-pointer">
+                  <SelectItem value="lender" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
                     <div className="flex items-center">
-                      <Building2 className="w-4 h-4 mr-2" />
+                      <Building2 className="w-4 h-4 mr-2 " />
                       Lender
                     </div>
                   </SelectItem>
@@ -335,7 +335,7 @@ export function SignupForm() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary h-12 text-base font-semibold rounded-xl mt-6"
+              className="w-full btn-primary h-12 text-gold font-semibold rounded-xl mt-6"
             >
               {isLoading ? (
                 <>

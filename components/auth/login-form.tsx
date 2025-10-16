@@ -158,17 +158,17 @@ export function LoginForm() {
                 onValueChange={(value) => setValue('role', value as 'super_admin' | 'aggregator_admin' | 'lender_admin')}
                 disabled={isLoading}
               >
-                <SelectTrigger className="glass-input text-white h-11">
+                <SelectTrigger className="glass-input text-black h-11">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
-                  <SelectItem value="super_admin" className="text-white hover:bg-white/10 cursor-pointer">
+                  <SelectItem value="super_admin" className="text-black hover:bg-white/10 cursor-pointer">
                     Super Admin
                   </SelectItem>
-                  <SelectItem value="aggregator_admin" className="text-white hover:bg-white/10 cursor-pointer">
+                  <SelectItem value="aggregator_admin" className="text-black hover:bg-white/10 cursor-pointer">
                     Aggregator Admin
                   </SelectItem>
-                  <SelectItem value="lender_admin" className="text-white hover:bg-white/10 cursor-pointer">
+                  <SelectItem value="lender_admin" className="text-black hover:bg-white/10 cursor-pointer">
                     Lender Admin
                   </SelectItem>
                 </SelectContent>
@@ -187,7 +187,7 @@ export function LoginForm() {
                 id="email"
                 type="email"
                 {...register('email')}
-                className="glass-input text-white placeholder-gray-500 h-11"
+                className="glass-input text-black placeholder-gray-500 h-11"
                 placeholder="Enter your email"
                 disabled={isLoading}
               />
@@ -214,7 +214,7 @@ export function LoginForm() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white hover:bg-transparent"
+                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
                   tabIndex={-1}
@@ -228,30 +228,30 @@ export function LoginForm() {
             </div>
 
             {/* Forgot Password Link */}
-            <div className="flex items-center justify-end">
+            {/* <div className="flex items-center justify-end">
               <Link
                 href={navigationPaths.forgotPassword}
                 className="text-sm text-gold hover:underline font-medium"
               >
                 Forgot password?
               </Link>
-            </div>
+            </div> */}
 
             {/* Submit Button */}
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary h-12 text-base font-semibold rounded-xl mt-2"
+              className="w-full btn-primary h-12 text-gold font-semibold rounded-xl mt-2"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin text-gold "/>
                   Signing in...
                 </>
               ) : (
                 <>
                   Sign In
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight className="w-5 h-5 ml-2 text-gold" />
                 </>
               )}
             </Button>

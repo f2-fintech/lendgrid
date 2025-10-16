@@ -9,7 +9,6 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { CardSkeleton } from '@/components/ui/loading-skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { applicationsApi, productsApi } from '@/lib/api-client'
@@ -65,8 +64,7 @@ export function AggregatorProducts() {
   }, [products, searchTerm, typeFilter])
 
   return (
-    <DashboardLayout userRole="aggregator">
-      <div className="space-y-6">
+    <div className="space-y-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -94,10 +92,10 @@ export function AggregatorProducts() {
             />
           </div>
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full sm:w-48 bg-gray-900/50 border-gray-800 text-white">
+            <SelectTrigger className="w-full sm:w-48 bg-gradient-to-r from-blue to-cyan-500 border-none text-white">
               <SelectValue placeholder="All Types" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-800">
+            <SelectContent className="bg-white text-black border-none">
               <SelectItem value="all">All Types</SelectItem>
               <SelectItem value="Personal Loan">Personal Loan</SelectItem>
               <SelectItem value="Business Loan">Business Loan</SelectItem>
@@ -286,7 +284,6 @@ export function AggregatorProducts() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
   )
 }
 

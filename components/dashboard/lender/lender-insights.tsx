@@ -5,7 +5,6 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { LineChart, Line, AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import { TrendingUp, TrendingDown, Users, DollarSign, FileText, Target, AlertTriangle, CheckCircle } from 'lucide-react'
 import { CardSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton'
@@ -67,8 +66,7 @@ export function LenderInsights() {
   }, [])
 
   return (
-    <DashboardLayout userRole="lender">
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -81,10 +79,10 @@ export function LenderInsights() {
 
           </div>
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-48 bg-gray-900/50 border-gray-800 text-white">
+            <SelectTrigger className="w-48 bg-gradient-to-r from-blue to-cyan-500 border-none text-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-800">
+            <SelectContent className="bg-white text-black border-none">
               <SelectItem value="1month">Last Month</SelectItem>
               <SelectItem value="3months">Last 3 Months</SelectItem>
               <SelectItem value="6months">Last 6 Months</SelectItem>
@@ -196,11 +194,11 @@ export function LenderInsights() {
         >
           <Tabs defaultValue="overview" className="space-y-6">
             <TabsList className="bg-gray-900/50 border-gray-800">
-              <TabsTrigger value="overview" className="data-[state=active]:bg-gray-800">Overview</TabsTrigger>
-              <TabsTrigger value="products" className="data-[state=active]:bg-gray-800">Products</TabsTrigger>
-              <TabsTrigger value="customers" className="data-[state=active]:bg-gray-800">Customers</TabsTrigger>
-              <TabsTrigger value="risk" className="data-[state=active]:bg-gray-800">Risk Analysis</TabsTrigger>
-              <TabsTrigger value="aggregators" className="data-[state=active]:bg-gray-800">Aggregators</TabsTrigger>
+              <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">Overview</TabsTrigger>
+              <TabsTrigger value="products" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">Products</TabsTrigger>
+              <TabsTrigger value="customers" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">Customers</TabsTrigger>
+              <TabsTrigger value="risk" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">Risk Analysis</TabsTrigger>
+              <TabsTrigger value="aggregators" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">Aggregators</TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-6">
@@ -523,6 +521,5 @@ export function LenderInsights() {
           </Tabs>
         </motion.div>
       </div>
-    </DashboardLayout>
   )
 }

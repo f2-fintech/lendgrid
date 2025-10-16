@@ -299,14 +299,14 @@ export function AggregatorApplications() {
           className="flex items-center justify-between"
         >
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue to-cyan-500 bg-clip-text text-transparent">
               Loan Applications
             </h1>
             <p className="text-gray-400 mt-1">Manage and track all loan applications</p>
           </div>
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
-              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700">
+              <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 New Application
               </Button>
