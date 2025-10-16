@@ -63,14 +63,14 @@ export const usersApi = {
 	login: (payload: { email: string; password: string }) =>
 		gqlFetch<{ login: { success: boolean; message: string; access_token?: string; } }>({
 			query: `
-        mutation Login($email: String!, $password: String!) {
-          login(loginInput: { email: $email, password: $password }) {
-            success
-            message
-            access_token
-          }
-        }
-      `,
+		        mutation Login($email: String!, $password: String!) {
+        		  login(loginInput: { email: $email, password: $password }) {
+            		success
+		            message
+        		    access_token
+		          }
+        		}
+		      `,
 			variables: payload,
 		}),
 	register: (payload: any) =>
@@ -255,6 +255,43 @@ export const commissionsApi = {
 	updateStatus: (id: string, payload: any) => apiFetch(`/api/v1/commissions/${id}/status`, { method: 'PATCH', body: payload }),
 }
 
+export type ProductSummary = {
+	_id: string
+	name: string
+	lenderName?: string
+	interestRate: number
+	maxAmount: number
+	isActive: boolean
+}
+
+export type ProductPaginationResult = {
+	results: ProductSummary[]
+	count: number
+	page: number
+	pages: number
+}
+
+/**
+ * CreateProductDto — matches backend CreateProductDto
+ */
+export type CreateProductDto = {
+	lenderId?: string
+	lenderName?: string
+	name: string
+	description?: string
+	productType: string
+	interestRate: number
+	commissionPercent: number
+	minAmount: number
+	maxAmount: number
+	loanTerm: number
+	tenure?: string
+	eligibilityCriteria?: string[]
+	requiredDocuments?: string[]
+	isActive?: boolean
+}
+
+
 export const productsApi = {
 	list: (params?: { page?: number; limit?: number; lenderId?: string }) =>
 		gqlFetch<{ products: { results: any[]; count: number; page: number; pages: number } }>({
@@ -278,11 +315,31 @@ export const productsApi = {
 			variables: { query: params },
 		}),
 	create: (payload: any) =>
-		gqlFetch({
+		gqlFetch<{
+			createProduct: {
+				success: boolean
+				message: string
+				product?: {
+					_id: string
+					lenderName?: string
+					name: string
+					description?: string
+					productType: string
+				}
+			}
+		}>({
 			query: `
 				mutation CreateProduct($createProductInput: CreateProductDto!) {
 					createProduct(createProductInput: $createProductInput) {
-						_id
+						    success
+						    message
+						    product {
+						      _id,
+						      lenderName,
+						      name,
+						      description,
+						      productType
+					    }
 					}
 				}
 			`,
