@@ -14,10 +14,10 @@ export function getCookie(name: string): string | null {
   return null
 }
 
-export function setCookie(name: string, value: string, days = 7): void {
+export function setCookie(name: string, value: string, days = 1): void {
   if (typeof document === 'undefined') return
   const expires = new Date(Date.now() + days * 864e5).toUTCString()
-  document.cookie = `${name}=${encodeURIComponent(value)}; Expires=${expires}; Path=/; SameSite=Lax`
+  document.cookie = `${name}=${encodeURIComponent(value)}; Expires=${expires}; Path=/; secure; SameSite=Lax`
 }
 
 export function deleteCookie(name: string): void {
@@ -26,21 +26,17 @@ export function deleteCookie(name: string): void {
 }
 
 // Lightweight JWT decoder (no verification; for claims extraction only)
-export type DecodedJwt = { [key: string]: any }
+export type DecodedJwt = Record<string, any>;
 
 export function decodeJwt(token: string | null | undefined): DecodedJwt | null {
-  if (!token) return null
+  if (!token) return null;
   try {
-    const payload = token.split('.')[1]
-    const json = atob(payload.replace(/-/g, '+').replace(/_/g, '/'))
-    return JSON.parse(decodeURIComponent(escape(json)))
-  } catch {
-    try {
-      const payload = token.split('.')[1]
-      const json = Buffer.from(payload.replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf8')
-      return JSON.parse(json)
-    } catch {
-      return null
-    }
+    const base64 = token.split(".")[1];
+    if (!base64) return null;
+    const json = atob(base64.replace(/-/g, "+").replace(/_/g, "/"));
+    return JSON.parse(decodeURIComponent(escape(json)));
+  } catch (error) {
+    console.error("Failed to decode JWT:", error);
+    return null;
   }
 }

@@ -61,18 +61,13 @@ export async function gqlFetch<T>({ query, variables }: GraphQLRequest, baseUrl:
 
 export const usersApi = {
 	login: (payload: { email: string; password: string }) =>
-		gqlFetch<{ login: { success: boolean; message: string; access_token?: string; user?: any } }>({
+		gqlFetch<{ login: { success: boolean; message: string; access_token?: string; } }>({
 			query: `
         mutation Login($email: String!, $password: String!) {
           login(loginInput: { email: $email, password: $password }) {
             success
             message
             access_token
-            user {
-              _id
-              email
-              role
-            }
           }
         }
       `,
@@ -83,11 +78,14 @@ export const usersApi = {
 			query: `
 				mutation CreateUser($createUserInput: CreateUserDto!) {
 					createUser(createUserInput: $createUserInput) {
-						access_token
+						success
+						message
 						user {
-							_id
-							email
-							role
+							_id,
+							username,
+							email,
+							role,
+							companyName
 						}
 					}
 				}
