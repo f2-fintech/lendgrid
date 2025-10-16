@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Building2, TrendingUp, Users, CreditCard, Plus, Edit, Trash2, CheckCircle, XCircle, FileText } from 'lucide-react'
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
+// DashboardLayout is provided by the app/(dashboard)/layout.tsx group layout
 import { CardSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton'
 
 const mockData = {
@@ -105,8 +105,7 @@ export function LenderDashboard() {
   )
 
   return (
-    <DashboardLayout userRole="lender">
-      <div className="space-y-8">
+    <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -369,6 +368,5 @@ export function LenderDashboard() {
           </Card>
         )}
       </div>
-    </DashboardLayout>
   )
 }

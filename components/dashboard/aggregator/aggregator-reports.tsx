@@ -30,11 +30,12 @@ import {
   Area
 } from 'recharts'
 import { Download, Calendar, TrendingUp, DollarSign, FileText, BarChart3, PieChartIcon, Activity, Target, Users, CreditCard } from 'lucide-react'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
+// Group layout provides DashboardLayout
 import { useToast } from '@/hooks/use-toast'
 import { exportRevenueReport } from '@/lib/exporter'
 import { ExportButton } from '@/components/ui/button-to-export'
 import { CardSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton'
+import { DashboardLayout } from '@/components/layout/dashboard-layout'
 
 const mockData = {
   performanceMetrics: [
@@ -159,6 +160,9 @@ export function AggregatorReports() {
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const [timeRange, setTimeRange] = useState('30d')
+  const [selectedMetric, setSelectedMetric] = useState('revenue')
+
   async function handleExport(format: "pdf" | "xlsx") {
     try {
       setExporting(true)
@@ -200,7 +204,7 @@ export function AggregatorReports() {
           className="flex items-center justify-between"
         >
           <div>
-            <h1 className="text-3xl font-bold bg-gradient-to-r from-green-400 to-purple-400 bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-blue to-cyan-500 bg-clip-text text-transparent">
               Reports & Analytics
             </h1>
             <p className="text-gray-400 mt-1">Comprehensive insights into your loan aggregation performance</p>
@@ -267,20 +271,20 @@ export function AggregatorReports() {
           transition={{ duration: 0.6, delay: 0.4 }}
         >
           <Tabs value={reportType} onValueChange={setReportType} className="space-y-6">
-            <TabsList className="bg-gray-800 border-gray-700">
-              <TabsTrigger value="performance" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsList className="bg-gray-800 border-gray-700 space-x-3">
+              <TabsTrigger value="performance" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
                 <BarChart3 className="w-4 h-4 mr-2" />
                 Performance
               </TabsTrigger>
-              <TabsTrigger value="breakdown" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+              <TabsTrigger value="breakdown" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
                 <PieChartIcon className="w-4 h-4 mr-2" />
                 Breakdown
               </TabsTrigger>
-              <TabsTrigger value="trends" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+              <TabsTrigger value="trends" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
                 <Activity className="w-4 h-4 mr-2" />
                 Trends
               </TabsTrigger>
-              <TabsTrigger value="conversion" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+              <TabsTrigger value="conversion" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
                 <Target className="w-4 h-4 mr-2" />
                 Conversion
               </TabsTrigger>
@@ -342,7 +346,7 @@ export function AggregatorReports() {
                         className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-colors"
                       >
                         <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-gradient-to-r from-gold to-blue rounded-lg flex items-center justify-center text-dark font-bold">
+                          <div className="w-12 h-12 bg-gradient-to-r from-blue to-cyan-500 rounded-lg flex items-center justify-center text-dark font-bold">
                             {index + 1}
                           </div>
                           <div>
@@ -584,7 +588,7 @@ export function AggregatorReports() {
                       >
                         <div className="flex items-center justify-between mb-3">
                           <div className="flex items-center space-x-3">
-                            <div className="w-8 h-8 bg-gradient-to-r from-gold to-blue rounded-full flex items-center justify-center text-dark font-bold text-sm">
+                            <div className="w-8 h-8 bg-gradient-to-r from-blue to-cyan-500 rounded-full flex items-center justify-center text-dark font-bold text-sm">
                               {index + 1}
                             </div>
                             <span className="text-white font-medium">{stage.stage}</span>
@@ -596,7 +600,7 @@ export function AggregatorReports() {
                         </div>
                         <div className="w-full bg-gray-700 rounded-full h-4 mb-2">
                           <motion.div
-                            className="bg-gradient-to-r from-gold to-blue h-4 rounded-full flex items-center justify-end pr-2"
+                            className="bg-gradient-to-r from-blue to-cyan-500 h-4 rounded-full flex items-center justify-end pr-2"
                             initial={{ width: 0 }}
                             animate={{ width: `${stage.percentage}%` }}
                             transition={{ duration: 1, delay: index * 0.2 }}

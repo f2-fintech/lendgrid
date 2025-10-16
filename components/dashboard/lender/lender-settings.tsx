@@ -12,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { User, Building2, CreditCard, Bell, Shield, Key, Smartphone, Globe, Mail, Phone, MapPin, Upload, Save, CheckCircle, AlertTriangle } from 'lucide-react'
 import { CardSkeleton } from '@/components/ui/loading-skeleton'
 
@@ -45,8 +44,7 @@ export function LenderSettings() {
   }, [])
 
   return (
-    <DashboardLayout userRole="lender">
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -57,7 +55,7 @@ export function LenderSettings() {
             <h1 className="text-3xl font-bold text-white">Settings</h1>
             <p className="text-gray-400 mt-1">Manage your account and business preferences</p>
           </div>
-          <Button className="bg-gradient-to-r from-gold to-blue hover:from-gold/80 hover:to-blue/80 text-dark">
+          <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
             <Save className="w-4 h-4 mr-2" />
             Save Changes
           </Button>
@@ -70,24 +68,24 @@ export function LenderSettings() {
           transition={{ delay: 0.1 }}
         >
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="bg-gray-900/50 border-gray-800 grid w-full grid-cols-2 lg:grid-cols-5">
-              <TabsTrigger value="profile" className="data-[state=active]:bg-gray-800">
+            <TabsList className="bg-gray-900/50 border-gray-800 grid w-full grid-cols-2 lg:grid-cols-5 space-x-2">
+              <TabsTrigger value="profile" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
                 <User className="w-4 h-4 mr-2" />
                 Profile
               </TabsTrigger>
-              <TabsTrigger value="business" className="data-[state=active]:bg-gray-800">
+              <TabsTrigger value="business" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
                 <Building2 className="w-4 h-4 mr-2" />
                 Business
               </TabsTrigger>
-              <TabsTrigger value="banking" className="data-[state=active]:bg-gray-800">
+              <TabsTrigger value="banking" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
                 <CreditCard className="w-4 h-4 mr-2" />
                 Banking
               </TabsTrigger>
-              <TabsTrigger value="notifications" className="data-[state=active]:bg-gray-800">
+              <TabsTrigger value="notifications" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
                 <Bell className="w-4 h-4 mr-2" />
                 Notifications
               </TabsTrigger>
-              <TabsTrigger value="security" className="data-[state=active]:bg-gray-800">
+              <TabsTrigger value="security" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
                 <Shield className="w-4 h-4 mr-2" />
                 Security
               </TabsTrigger>
@@ -565,6 +563,5 @@ export function LenderSettings() {
           </Tabs>
         </motion.div>
       </div>
-    </DashboardLayout>
   )
 }

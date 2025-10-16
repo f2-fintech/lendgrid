@@ -230,7 +230,7 @@ export function LenderProducts(): JSX.Element {
   }, [products, searchTerm])
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 bg-blue-900">
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -241,7 +241,7 @@ export function LenderProducts(): JSX.Element {
           <h1 className="text-3xl font-bold text-white">My Products</h1>
           <p className="text-gray-400 mt-1">Manage your loan products and offerings</p>
         </div>
-        <Button onClick={openCreate} className="bg-gradient-to-r from-gold to-blue hover:from-gold/80 hover:to-blue/80 text-dark">
+        <Button onClick={openCreate} className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-dark">
           <Plus className="w-4 h-4 mr-2" />
           Add New Product
         </Button>

@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from 'react'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { applicationsApi } from '@/lib/api-client'
 import { useAuth } from '@/lib/auth'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,8 +32,7 @@ export function LenderApplications() {
   }, [user])
 
   return (
-    <DashboardLayout userRole="lender">
-      <Card className="bg-gray-900/50 border-gray-800">
+    <Card className="bg-gray-900/50 border-gray-800">
         <CardHeader>
           <CardTitle className="text-white">Applications</CardTitle>
         </CardHeader>
@@ -94,7 +92,6 @@ export function LenderApplications() {
           </Table>
         </CardContent>
       </Card>
-    </DashboardLayout>
   )
 }
 

@@ -11,7 +11,6 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Calendar, Search, Filter, Download, Send, Clock, CheckCircle, XCircle, AlertCircle, DollarSign, TrendingUp, FileText } from 'lucide-react'
 import { format } from 'date-fns'
 import { CardSkeleton } from '@/components/ui/loading-skeleton'
@@ -156,8 +155,7 @@ export function LenderPayouts() {
   }, [])
 
   return (
-    <DashboardLayout userRole="lender">
-      <div className="space-y-6">
+    <div className="space-y-6">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -175,7 +173,7 @@ export function LenderPayouts() {
             </Button>
             <Dialog open={isProcessDialogOpen} onOpenChange={setIsProcessDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gradient-to-r from-gold to-blue hover:from-gold/80 hover:to-blue/80 text-dark">
+                <Button className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-dark">
                   <Send className="w-4 h-4 mr-2" />
                   Process Payout
                 </Button>
@@ -228,7 +226,7 @@ export function LenderPayouts() {
                 </div>
                 <div className="flex justify-end space-x-2">
                   <Button variant="outline" onClick={() => setIsProcessDialogOpen(false)}>Cancel</Button>
-                  <Button className="bg-gradient-to-r from-gold to-blue text-dark">Process Payout</Button>
+                  <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">Process Payout</Button>
                 </div>
               </DialogContent>
             </Dialog>
@@ -320,9 +318,9 @@ export function LenderPayouts() {
           transition={{ delay: 0.2 }}
         >
           <Tabs defaultValue="history" className="space-y-6">
-            <TabsList className="bg-gray-900/50 border-gray-800">
-              <TabsTrigger value="history" className="data-[state=active]:bg-gray-800">Transaction History</TabsTrigger>
-              <TabsTrigger value="upcoming" className="data-[state=active]:bg-gray-800">Upcoming Payouts</TabsTrigger>
+            <TabsList className="bg-gray-900/50 border-gray-800 space-x-3">
+              <TabsTrigger value="history" className="text-white data-[state=active]:bg-gray-800 bg-gradient-to-r from-blue to-cyan-500 ">Transaction History</TabsTrigger>
+              <TabsTrigger value="upcoming" className="text-white data-[state=active]:bg-gray-800 bg-gradient-to-r from-blue to-cyan-500">Upcoming Payouts</TabsTrigger>
             </TabsList>
 
             <TabsContent value="history" className="space-y-6">
@@ -448,7 +446,7 @@ export function LenderPayouts() {
                           </div>
                           <div className="text-right">
                             <p className="text-white font-bold text-lg">₹{payout.amount.toLocaleString()}</p>
-                            <Button size="sm" className="mt-2 bg-gradient-to-r from-gold to-blue text-dark">
+                            <Button size="sm" className="mt-2 bg-gradient-to-r from-blue to-cyan-500 text-dark">
                               Process Now
                             </Button>
                           </div>
@@ -462,6 +460,5 @@ export function LenderPayouts() {
           </Tabs>
         </motion.div>
       </div>
-    </DashboardLayout>
   )
 }

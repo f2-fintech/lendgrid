@@ -327,14 +327,14 @@ export function AggregatorCommission() {
 
         {/* Commission Analytics */}
         <Tabs defaultValue="trends" className="space-y-6">
-          <TabsList className="bg-gray-800 border-gray-700">
-            <TabsTrigger value="trends" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+          <TabsList className="bg-gray-800 border-gray-700 space-x-3">
+            <TabsTrigger value="trends" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Commission Trends
             </TabsTrigger>
-            <TabsTrigger value="breakdown" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="breakdown" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Lender Breakdown
             </TabsTrigger>
-            <TabsTrigger value="history" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="history" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Payment History
             </TabsTrigger>
           </TabsList>
