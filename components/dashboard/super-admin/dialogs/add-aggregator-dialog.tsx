@@ -34,20 +34,18 @@ interface EditAggregatorData {
 
 interface AddAggregatorDialogProps {
     onSuccess?: () => void
-    editData?: EditAggregatorData | null  // Make it explicitly nullable
+    editData?: EditAggregatorData | null
     mode?: 'add' | 'edit'
     isOpen?: boolean
-    onClose?: () => void  // Add this new prop
+    onClose?: () => void
 }
-
-// Replace the existing schema with conditional validatio
 
 export function AddAggregatorDialog({
     onSuccess,
     editData,
     mode = 'add',
     isOpen = false,
-    onClose  // ✅ defined here    
+    onClose
 }: AddAggregatorDialogProps = {}) {
     const [open, setOpen] = useState(false)
     const [isLoading, setIsLoading] = useState(false)
@@ -100,7 +98,7 @@ export function AddAggregatorDialog({
             fullName: editData.username,
             email: editData.email,
             phone: editData.contact,
-            companyName: editData.designation || '',
+            companyName: editData.companyName || '',
             address: editData.address || '',
             pincode: editData.pincode || '',
             gender: (editData.gender as 'male' | 'female' | 'other') || 'male',
@@ -108,24 +106,17 @@ export function AddAggregatorDialog({
         } : undefined
     })
 
-    // useEffect(() => {
-    //     if (mode === 'edit') {
-    //         setOpen(true)
-    //     }
-    // }, [mode])
-
     useEffect(() => {
         if (mode === 'edit' && editData) {
             setValue('fullName', editData.username)
             setValue('email', editData.email)
             setValue('phone', editData.contact)
-            setValue('companyName', editData.designation || '')
+            setValue('companyName', editData.companyName || '')
             setValue('address', editData.address || '')
             setValue('pincode', editData.pincode || '')
             setValue('gender', (editData.gender as 'male' | 'female' | 'other') || 'male')
             setValue('dob', editData.dob ? new Date(editData.dob).toISOString().split('T')[0] : '')
         } else {
-            // ✅ RESET form when switching to 'add' mode or closing
             reset();
         }
     }, [editData, mode, setValue, reset, isOpen])
@@ -135,44 +126,48 @@ export function AddAggregatorDialog({
         try {
             if (mode === 'add') {
                 const payload = {
+                    companyName: data.companyName,
                     username: data.fullName,
                     email: data.email,
-                    password: data.password!,
                     contact: data.phone,
-                    designation: data.companyName,
-                    role: 'aggregator_admin',
+                    password: data.password!,
+                    dob: data.dob,
                     address: data.address,
-                    dob: new Date(data.dob).toISOString(),
-                    gender: data.gender.toLowerCase(),
-                    pincode: data.pincode,
+                    role: 'AGGREGATOR_ADMIN',
+                    gender: data.gender.toUpperCase(),
+                    pincode: Number(data.pincode),
                 }
 
-                await usersApi.register(payload)
-
-                toast({
-                    title: 'Success',
-                    description: 'Aggregator registration successful.',
-                })
+                const res = await usersApi.register(payload);
+                if (res?.createUser?.success) {
+                    toast({ title: 'Success', description: 'Aggregator created successfully!' });
+                    onSuccess?.();
+                    // onOpenChange(false);
+                } else {
+                    throw new Error(res?.createUser?.message || 'Failed to create aggregator');
+                }
             } else {
                 // Edit mode
                 const payload = {
                     id: editData!._id,
+                    companyName: data.companyName,
                     username: data.fullName,
                     email: data.email,
                     contact: data.phone,
-                    designation: data.companyName,
                     address: data.address,
-                    pincode: data.pincode,
-                    gender: data.gender.toLowerCase(),
+                    pincode: Number(data.pincode),
+                    gender: data.gender.toUpperCase(),
                     dob: new Date(data.dob).toISOString(),
                 }
 
-                await usersApi.updateUser(payload)
-
-                toast({
-                    title: 'Success',
-                    description: 'Aggregator updated successfully.',
-                })
+                const res = await usersApi.updateUser(payload);
+                if (res?.updateUser?.success) {
+                    toast({ title: 'Success', description: 'Aggregator updated successfully!' });
+                    onSuccess?.();
+                    // onOpenChange(false);
+                } else {
+                    throw new Error(res?.updateUser?.message || 'Failed to update aggregator');
+                }
             }
 
             reset()
@@ -194,9 +189,9 @@ export function AddAggregatorDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={(newOpen) => {
-            // setOpen(newOpen)
+            setOpen(newOpen)
             if (!newOpen) {
-                onClose?.() // Call onClose when dialog is closed
+                onClose?.()
             }
         }}>
             <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
@@ -236,7 +231,7 @@ export function AddAggregatorDialog({
                                 id="fullName"
                                 {...register('fullName')}
                                 className="glass-input text-white placeholder-gray-400 h-12"
-                                placeholder="Enter contact person name"
+                                placeholder="Enter User Name"
                             />
                             {errors.fullName && (
                                 <p className="text-red-400 text-sm">{errors.fullName.message}</p>
@@ -384,7 +379,7 @@ export function AddAggregatorDialog({
                             type="button"
                             variant="outline"
                             onClick={() => {
-                                onClose?.() // Add this line
+                                onClose?.()
                             }}
                             className="border-gray-600 text-gray-300 hover:bg-gray-700"
                         >

@@ -20,7 +20,7 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 
-import { useLenders } from '@/hooks/use-lenders'
+// import { useLenders } from '@/hooks/use-lenders'
 
 export function SuperAdminLenders() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,6 +29,7 @@ export function SuperAdminLenders() {
   const [selectedLender, setSelectedLender] = useState<any>(null)
   const [editingLender, setEditingLender] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isTableLoading, setIsTableLoading] = useState(false)
   const { toast } = useToast()
 
   const [page, setPage] = useState(1)
@@ -67,40 +68,40 @@ export function SuperAdminLenders() {
     }
   }
 
-  const {
-    lenders,
-    total,
-    pages,
-    metrics,
-    loading: isTableLoading,
-    error,
-    mutate,
-  } = useLenders({ page, limit: pageSize })
+  // const {
+  //   lenders,
+  //   total,
+  //   pages,
+  //   metrics,
+  //   loading: isTableLoading,
+  //   error,
+  //   mutate,
+  // } = useLenders({ page, limit: pageSize })
 
-  const handleLenderUpdated = () => {
-    mutate()
-  }
+  // const handleLenderUpdated = () => {
+  //   mutate()
+  // }
 
-  const filteredLenders = useMemo(() => {
-    if (!lenders) return []
-    return lenders.filter((lender) => {
-      const matchesSearch =
-        lender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (lender.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()))
-      const matchesStatus = !filterStatus || filterStatus === "all" || lender.status === filterStatus
-      const matchesType = !filterType || filterType === "all" || lender.lenderType === filterType
-      return matchesSearch && matchesStatus && matchesType
-    })
-  }, [lenders, searchTerm, filterStatus, filterType])
+  // const filteredLenders = useMemo(() => {
+  //   if (!lenders) return []
+  //   return lenders.filter((lender) => {
+  //     const matchesSearch =
+  //       lender.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+  //       (lender.contactPerson?.toLowerCase().includes(searchTerm.toLowerCase()))
+  //     const matchesStatus = !filterStatus || filterStatus === "all" || lender.status === filterStatus
+  //     const matchesType = !filterType || filterType === "all" || lender.lenderType === filterType
+  //     return matchesSearch && matchesStatus && matchesType
+  //   })
+  // }, [lenders, searchTerm, filterStatus, filterType])
 
-  // For server-side pagination, use filtered count
-  const totalFiltered = filteredLenders.length
-  const pagesFiltered = Math.ceil(totalFiltered / pageSize)
+  // // For server-side pagination, use filtered count
+  // const totalFiltered = filteredLenders.length
+  // const pagesFiltered = Math.ceil(totalFiltered / pageSize)
 
-  const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filteredLenders.slice(start, start + pageSize)
-  }, [filteredLenders, page, pageSize])
+  // const paginated = useMemo(() => {
+  //   const start = (page - 1) * pageSize
+  //   return filteredLenders.slice(start, start + pageSize)
+  // }, [filteredLenders, page, pageSize])
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -127,7 +128,7 @@ export function SuperAdminLenders() {
       })
 
       // Refresh data by updating the page state to trigger re-fetch
-      handleLenderUpdated()
+      // handleLenderUpdated()
     } catch (error) {
       console.error('Approve lender error:', error)
       toast({
@@ -152,7 +153,7 @@ export function SuperAdminLenders() {
       })
 
       // Refresh data by updating the page state to trigger re-fetch
-      handleLenderUpdated()
+      // handleLenderUpdated()
     } catch (error) {
       console.error('Reject lender error:', error)
       toast({
@@ -188,23 +189,6 @@ export function SuperAdminLenders() {
     </motion.div>
   )
 
-  // Show error message if there's an error
-  if (error) {
-    return (
-      <DashboardLayout userRole="super_admin">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-white mb-2">Error Loading Lenders</h3>
-            <p className="text-gray-400">{error}</p>
-          </div>
-        </div>
-      </DashboardLayout>
-    )
-  }
-
-  console.log("lenders>>>", lenders);
-
   return (
     <DashboardLayout userRole="super_admin">
       <div className="space-y-8">
@@ -219,7 +203,7 @@ export function SuperAdminLenders() {
             <h1 className="text-3xl font-bold text-white">Lender Management</h1>
             <p className="text-gray-400 mt-1">Manage and monitor all registered lenders</p>
           </div>
-          <AddLenderDialog onLenderUpdated={handleLenderUpdated} />
+          <AddLenderDialog onLenderUpdated={() => { }} />
         </motion.div>
 
         {/* Metrics Cards */}
@@ -234,28 +218,28 @@ export function SuperAdminLenders() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <MetricCard
               title="Total Lenders"
-              value={metrics?.totalLenders || 0}
+              // value={metrics?.totalLenders || 0}
               icon={Building2}
               color="bg-blue/20 text-blue"
               subtitle="Registered partners"
             />
             <MetricCard
               title="Active Lenders"
-              value={metrics?.activeLenders || 0}
+              // value={metrics?.activeLenders || 0}
               icon={CheckCircle}
               color="bg-green-500/20 text-green-400"
               subtitle="Currently operational"
             />
             <MetricCard
               title="Pending Approvals"
-              value={metrics?.pendingApprovals || 0}
+              // value={metrics?.pendingApprovals || 0}
               icon={AlertCircle}
               color="bg-orange-500/20 text-orange-400"
               subtitle="Awaiting review"
             />
             <MetricCard
               title="Avg Commission Rate"
-              value={`${metrics?.avgCommissionRate || 0}%`}
+              // value={`${metrics?.avgCommissionRate || 0}%`}
               icon={TrendingUp}
               color="bg-gold/20 text-gold"
               subtitle="Platform average"
@@ -315,8 +299,8 @@ export function SuperAdminLenders() {
             </CardHeader>
             <CardContent>
               <div ref={tableTopRef} />
-              <div className="overflow-x-auto">
-                {isTableLoading ? (
+              {/* <div className="overflow-x-auto"> */}
+              {/* {isTableLoading ? (
                   <TableSkeleton columns={9} rows={pageSize} />
                 ) : paginated.length === 0 ? (
                   <div className="text-center py-8">
@@ -416,13 +400,13 @@ export function SuperAdminLenders() {
                     </TableBody>
                   </Table>
                 )}
-              </div>
+              </div> */}
 
-              {!isTableLoading && paginated.length > 0 && (
+              {!isTableLoading && (
                 <TablePagination
                   page={page}
                   pageSize={pageSize}
-                  total={totalFiltered}
+                  // total={totalFiltered}
                   onPageChange={handlePageChange}
                   onPageSizeChange={handlePageSizeChange}
                   className="mt-4"

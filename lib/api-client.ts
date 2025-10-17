@@ -107,32 +107,29 @@ export const usersApi = {
 	findByRole: (role: string, params?: { page?: number; limit?: number }) =>
 		gqlFetch<{ usersByRole: { results: any[]; count: number; page: number; pages: number } }>({
 			query: `
-      query UsersByRole($role: Role!, $page: Int, $limit: Int) {
-        usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }) {
-          results {
-            _id
-			username
-			email
-			contact
-			designation
-			dob
-			gender
-			address
-			pincode
-			lenderType
-			profilePicture
-			status
-			role
-			loginHistory
-			createdAt
-			updatedAt
-          }
-          count
-          page
-          pages
-        }
-      }
-    `,
+		      query UsersByRole($role: Role!, $page: Int, $limit: Int) {
+		        usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }) {
+        		  results {
+        		    _id
+					username
+					email
+					contact
+					companyName
+					gender
+					address
+					pincode
+					lenderType
+					profilePicture
+					status
+					role
+					loginHistory
+        		  }
+        		  count
+        		  page
+        		  pages
+        		}
+      		}
+    		`,
 			variables: { role, ...params },
 		}),
 	getAggregators: (params?: { page?: number; limit?: number }) =>

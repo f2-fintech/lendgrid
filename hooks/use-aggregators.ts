@@ -9,10 +9,8 @@ export interface Aggregator {
   status: string
   role: string
   profilePicture?: string
-  designation?: string
+  companyName?: string
   address?: string
-  createdAt: string
-  updatedAt: string
   totalApplications?: number
   approvedApplications?: number
   conversionRate?: number
@@ -56,7 +54,7 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
     setLoading(true)
     setError(null)
     try {
-      const response = await usersApi.getAggregators({
+      const response = await usersApi.findByRole('AGGREGATOR', {
         page: page || 1,
         limit: limit || 10
       })
@@ -108,7 +106,7 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
             }
           })
         )
-        
+
         const newMetrics: AggregatorMetrics = {
           totalAggregators: count,
           activeAggregators: transformedAggregators.filter(agg => agg.status === 'ACTIVE').length,
