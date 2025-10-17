@@ -25,12 +25,11 @@ interface EditAggregatorData {
     username: string
     email: string
     contact: string
-    designation?: string
-    address?: string
-    pincode?: string
     gender?: string
     dob?: string
-    // Don't include password fields for editing
+    address?: string
+    pincode?: string
+    companyName?: string
 }
 
 interface AddAggregatorDialogProps {
@@ -55,7 +54,7 @@ export function AddAggregatorDialog({
     const { toast } = useToast()
 
     const addAggregatorSchema = z.object({
-        fullName: z.string().min(2, 'Contact person name must be at least 2 characters'),
+        fullName: z.string().min(2, 'Person Name must be at least 2 characters'),
         email: z.string().email('Please enter a valid email address'),
         phone: z.string().min(10, 'Phone number must be at least 10 digits'),
         companyName: z.string().min(2, 'Company name must be at least 2 characters'),

@@ -131,6 +131,8 @@ export function SignupForm() {
           router.push(navigationPaths.aggregator.dashboard);
         } else if (role === "lender_admin" || role === "LENDER_ADMIN") {
           router.push(navigationPaths.lender.dashboard);
+        } else if (role === "super_admin" || role === "SUPER_ADMIN") {
+          router.push(navigationPaths.superAdmin.dashboard);
         } else {
           router.push("/");
         }
