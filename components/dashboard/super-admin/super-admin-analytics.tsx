@@ -94,7 +94,6 @@ export function SuperAdminAnalytics() {
   const COLORS = ['#FFD700', '#007AFF', '#22c55e', '#f97316', '#8b5cf6']
 
   return (
-    <DashboardLayout userRole="super_admin">
       <div className="space-y-8">
         {/* Header */}
         <motion.div
@@ -119,7 +118,7 @@ export function SuperAdminAnalytics() {
                 <SelectItem value="12m">12 Months</SelectItem>
               </SelectContent>
             </Select>
-            <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+            <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
               <Download className="w-4 h-4 mr-2"/>
               Export Analytics
             </Button>
@@ -129,16 +128,16 @@ export function SuperAdminAnalytics() {
         {/* Analytics Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="bg-gray-800 border-gray-700">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Overview
             </TabsTrigger>
-            <TabsTrigger value="performance" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="performance" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Performance
             </TabsTrigger>
-            <TabsTrigger value="geographic" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="geographic" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Geographic
             </TabsTrigger>
-            <TabsTrigger value="conversion" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="conversion" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Conversion
             </TabsTrigger>
           </TabsList>
@@ -373,7 +372,7 @@ export function SuperAdminAnalytics() {
                             className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-colors"
                           >
                             <div className="flex items-center space-x-4">
-                              <div className="w-10 h-10 bg-gradient-to-r from-gold to-yellow-500 rounded-lg flex items-center justify-center text-dark font-bold">
+                              <div className="w-10 h-10 bg-gradient-to-r from-blue to-cyan-500 rounded-lg flex items-center justify-center text-dark font-bold">
                                 {index + 1}
                               </div>
                               <div>
@@ -523,7 +522,7 @@ export function SuperAdminAnalytics() {
                           </div>
                           <div className="w-full bg-gray-700 rounded-full h-3">
                             <motion.div
-                              className="bg-gradient-to-r from-gold to-blue h-3 rounded-full"
+                              className="bg-gradient-to-r from-blue to-cyan-500 h-3 rounded-full"
                               initial={{ width: 0 }}
                               animate={{ width: `${stage.percentage}%` }}
                               transition={{ duration: 1, delay: index * 0.2 }}
@@ -546,6 +545,5 @@ export function SuperAdminAnalytics() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
   )
 }

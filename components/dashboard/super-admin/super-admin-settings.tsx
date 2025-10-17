@@ -55,19 +55,19 @@ export function SuperAdminSettings() {
       >
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-5 bg-gray-800 border-gray-700">
-            <TabsTrigger value="platform" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="platform" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Platform
             </TabsTrigger>
-            <TabsTrigger value="security" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="security" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Security
             </TabsTrigger>
-            <TabsTrigger value="notifications" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="notifications" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Notifications
             </TabsTrigger>
-            <TabsTrigger value="integrations" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="integrations" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Integrations
             </TabsTrigger>
-            <TabsTrigger value="maintenance" className="data-[state=active]:bg-gold data-[state=active]:text-dark">
+            <TabsTrigger value="maintenance" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               Maintenance
             </TabsTrigger>
           </TabsList>
@@ -161,7 +161,7 @@ export function SuperAdminSettings() {
             </div>
 
             <div className="flex justify-end">
-              <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+              <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                 Save Platform Settings
               </Button>
             </div>
@@ -252,7 +252,7 @@ export function SuperAdminSettings() {
             </div>
 
             <div className="flex justify-end">
-              <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+              <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                 Save Security Settings
               </Button>
             </div>
@@ -343,7 +343,7 @@ export function SuperAdminSettings() {
             </div>
 
             <div className="flex justify-end">
-              <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+              <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                 Save Notification Settings
               </Button>
             </div>
@@ -449,7 +449,7 @@ export function SuperAdminSettings() {
             </div>
 
             <div className="flex justify-end">
-              <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+              <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                 Save Integration Settings
               </Button>
             </div>
@@ -541,7 +541,7 @@ export function SuperAdminSettings() {
             </div>
 
             <div className="flex justify-end">
-              <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+              <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                 Save Maintenance Settings
               </Button>
             </div>

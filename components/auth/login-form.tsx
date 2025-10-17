@@ -208,7 +208,7 @@ export function LoginForm() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
-                  className="glass-input text-white placeholder-gray-500 pr-11 h-11"
+                  className="glass-input text-black placeholder-gray-500 pr-11 h-11"
                   placeholder="Enter your password"
                   disabled={isLoading}
                 />

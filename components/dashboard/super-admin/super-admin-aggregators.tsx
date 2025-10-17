@@ -193,7 +193,7 @@ export function SuperAdminAggregators() {
           <p className="text-gray-400 mt-1">Manage and monitor all registered aggregators</p>
         </div>
         <Button
-          className="bg-gradient-to-r from-gold to-blue text-dark"
+          className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
           onClick={() => {
             setEditingAggregator(null)
             setIsAddEditDialogOpen(true)

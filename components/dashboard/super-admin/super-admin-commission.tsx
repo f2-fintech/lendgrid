@@ -212,7 +212,7 @@ export function SuperAdminCommission() {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+            <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
               <Plus className="w-4 h-4 mr-2" />
               Create New Rule
             </Button>
@@ -304,7 +304,7 @@ export function SuperAdminCommission() {
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+                <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                   Create Rule
                 </Button>
               </div>

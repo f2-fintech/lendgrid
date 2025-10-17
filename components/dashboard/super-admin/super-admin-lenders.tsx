@@ -190,7 +190,6 @@ export function SuperAdminLenders() {
   )
 
   return (
-    <DashboardLayout userRole="super_admin">
       <div className="space-y-8">
         {/* Header */}
         <motion.div
@@ -529,6 +528,5 @@ export function SuperAdminLenders() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
   )
 }

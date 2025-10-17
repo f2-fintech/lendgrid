@@ -136,7 +136,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
         {lender ? (
           <Button variant="ghost" size="sm">Edit</Button>
         ) : (
-          <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+          <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
             <Plus className="w-4 h-4 mr-2" />
             Add New Lender
           </Button>
@@ -159,7 +159,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
               <Input
                 id="companyName"
                 {...register('companyName')}
-                className="glass-input text-white placeholder-gray-400 h-12"
+                className="glass-input text-black placeholder-gray-400 h-12"
                 placeholder="Enter company name"
               />
               {errors.companyName && (
@@ -172,13 +172,13 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                 Lender Type
               </Label>
               <Select onValueChange={(value) => setValue('lenderType', value as 'Bank' | 'NBFC' | 'Fintech')}>
-                <SelectTrigger className="glass-input text-white h-12">
+                <SelectTrigger className="glass-input text-gray-500 h-12">
                   <SelectValue placeholder="Select lender type" />
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
-                  <SelectItem value="Bank" className="text-white hover:bg-white/10">Bank</SelectItem>
-                  <SelectItem value="NBFC" className="text-white hover:bg-white/10">NBFC</SelectItem>
-                  <SelectItem value="Fintech" className="text-white hover:bg-white/10">Fintech</SelectItem>
+                  <SelectItem value="Bank" className="text-black hover:bg-white/10">Bank</SelectItem>
+                  <SelectItem value="NBFC" className="text-black hover:bg-white/10">NBFC</SelectItem>
+                  <SelectItem value="Fintech" className="text-black hover:bg-white/10">Fintech</SelectItem>
                 </SelectContent>
               </Select>
               {errors.lenderType && (
@@ -193,7 +193,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
               <Input
                 id="fullName"
                 {...register('fullName')}
-                className="glass-input text-white placeholder-gray-400 h-12"
+                className="glass-input text-black placeholder-gray-400 h-12"
                 placeholder="Enter contact person name"
               />
               {errors.fullName && (
@@ -209,7 +209,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                 id="email"
                 type="email"
                 {...register('email')}
-                className="glass-input text-white placeholder-gray-400 h-12"
+                className="glass-input text-black placeholder-gray-400 h-12"
                 placeholder="Enter email address"
               />
               {errors.email && (
@@ -224,7 +224,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
               <Input
                 id="phone"
                 {...register('phone')}
-                className="glass-input text-white placeholder-gray-400 h-12"
+                className="glass-input text-black placeholder-gray-400 h-12"
                 placeholder="Enter phone number"
               />
               {errors.phone && (
@@ -240,7 +240,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                 id="dob"
                 type="date"
                 {...register('dob')}
-                className="glass-input text-white placeholder-gray-400 h-12"
+                className="glass-input text-black placeholder-gray-400 h-12"
                 placeholder="Select date of birth"
               />
               {errors.dob && (
@@ -253,13 +253,13 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                 Gender
               </Label>
               <Select onValueChange={(value) => setValue('gender', value as 'male' | 'female' | 'other')}>
-                <SelectTrigger className="glass-input text-white h-12">
+                <SelectTrigger className="glass-input text-gray-500 h-12">
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
-                  <SelectItem value="male" className="text-white hover:bg-white/10">Male</SelectItem>
-                  <SelectItem value="female" className="text-white hover:bg-white/10">Female</SelectItem>
-                  <SelectItem value="other" className="text-white hover:bg-white/10">Other</SelectItem>
+                  <SelectItem value="male" className="text-black hover:bg-white/10">Male</SelectItem>
+                  <SelectItem value="female" className="text-black hover:bg-white/10">Female</SelectItem>
+                  <SelectItem value="other" className="text-black hover:bg-white/10">Other</SelectItem>
                 </SelectContent>
               </Select>
               {errors.gender && (
@@ -274,7 +274,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
               <Input
                 id="address"
                 {...register('address')}
-                className="glass-input text-white placeholder-gray-400 h-12"
+                className="glass-input text-black placeholder-gray-400 h-12"
                 placeholder="Enter complete address"
               />
               {errors.address && (
@@ -289,7 +289,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
               <Input
                 id="pincode"
                 {...register('pincode')}
-                className="glass-input text-white placeholder-gray-400 h-12"
+                className="glass-input text-black placeholder-gray-400 h-12"
                 placeholder="Enter pincode"
               />
               {errors.pincode && (
@@ -307,7 +307,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                     id="password"
                     type="password"
                     {...register('password')}
-                    className="glass-input text-white placeholder-gray-400 h-12"
+                    className="glass-input text-black placeholder-gray-400 h-12"
                     placeholder="Enter new password (optional)"
                   />
                   {errors.password && (
@@ -323,7 +323,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                     id="confirmPassword"
                     type="password"
                     {...register('confirmPassword')}
-                    className="glass-input text-white placeholder-gray-400 h-12"
+                    className="glass-input text-black placeholder-gray-400 h-12"
                     placeholder="Confirm new password"
                   />
                   {errors.confirmPassword && (
@@ -349,7 +349,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
             <Button
               type="submit"
               disabled={isLoading}
-              className="bg-gradient-to-r from-gold to-blue text-dark"
+              className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
             >
               {isLoading ? (
                 <>
