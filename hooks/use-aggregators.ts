@@ -54,7 +54,7 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
     setLoading(true)
     setError(null)
     try {
-      const response = await usersApi.findByRole('AGGREGATOR', {
+      const response = await usersApi.findByRole('AGGREGATOR_ADMIN', {
         page: page || 1,
         limit: limit || 10
       })

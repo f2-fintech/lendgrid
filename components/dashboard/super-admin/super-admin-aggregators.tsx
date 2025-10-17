@@ -16,8 +16,7 @@ import { AddAggregatorDialog } from './dialogs/add-aggregator-dialog'
 import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp } from 'lucide-react'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
-
-// import { productsApi, CreateProductDto, ProductSummary } from "@/lib/api-client"
+import { useAggregators } from '@/hooks/use-aggregators'
 
 export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -25,13 +24,22 @@ export function SuperAdminAggregators() {
   const [selectedAggregator, setSelectedAggregator] = useState(null)
   const [editingAggregator, setEditingAggregator] = useState(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isTableLoading, setIsTableLoading] = useState(true)
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
   const { toast } = useToast()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
+
+  const {
+    aggregators,
+    total,
+    pages,
+    metrics,
+    loading: isTableLoading,
+    error,
+    mutate,
+  } = useAggregators({ page, limit: pageSize })
 
   useEffect(() => {
     setPage(1)
@@ -69,20 +77,20 @@ export function SuperAdminAggregators() {
     }
   }
 
-  // const filteredAggregators = useMemo(() => {
-  //   return aggregators.filter((aggregator) => {
-  //     const matchesSearch =
-  //       aggregator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //       aggregator.email.toLowerCase().includes(searchTerm.toLowerCase())
-  //     const matchesStatus = !filterStatus || filterStatus === "all" || aggregator.status === filterStatus
-  //     return matchesSearch && matchesStatus
-  //   })
-  // }, [aggregators, searchTerm, filterStatus])
+  const filteredAggregators = useMemo(() => {
+    return aggregators.filter((aggregator) => {
+      const matchesSearch =
+        aggregator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        aggregator.email.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = !filterStatus || filterStatus === "all" || aggregator.status === filterStatus
+      return matchesSearch && matchesStatus
+    })
+  }, [aggregators, searchTerm, filterStatus])
 
-  // const paginatedAggregators = useMemo(() => {
-  //   const start = (page - 1) * pageSize
-  //   return filteredAggregators.slice(start, start + pageSize)
-  // }, [filteredAggregators, page, pageSize])
+  const paginatedAggregators = useMemo(() => {
+    const start = (page - 1) * pageSize
+    return filteredAggregators.slice(start, start + pageSize)
+  }, [filteredAggregators, page, pageSize])
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -160,17 +168,17 @@ export function SuperAdminAggregators() {
     </motion.div>
   )
 
-  // if (error) {
-  //   return (
-  //     <div className="flex items-center justify-center h-64">
-  //       <div className="text-center">
-  //         <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-  //         <h3 className="text-lg font-semibold text-white mb-2">Error Loading Aggregators</h3>
-  //         <p className="text-gray-400">{error}</p>
-  //       </div>
-  //     </div>
-  //   )
-  // }
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Aggregators</h3>
+          <p className="text-gray-400">{error}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -197,7 +205,7 @@ export function SuperAdminAggregators() {
       </motion.div>
 
       {/* Metrics Cards */}
-      {!isTableLoading ? (
+      {!isTableLoading && !aggregators.length ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
@@ -208,28 +216,28 @@ export function SuperAdminAggregators() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Aggregators"
-            // value={metrics.totalAggregators}
+            value={metrics.totalAggregators}
             icon={Users}
             color="bg-blue/20 text-blue"
             subtitle="Registered partners"
           />
           <MetricCard
             title="Active Aggregators"
-            // value={metrics.activeAggregators}
+            value={metrics.activeAggregators}
             icon={CheckCircle}
             color="bg-green-500/20 text-green-400"
             subtitle="Currently operational"
           />
           <MetricCard
             title="Pending Approvals"
-            // value={metrics.pendingApprovals}
+            value={metrics.pendingApprovals}
             icon={AlertCircle}
             color="bg-orange-500/20 text-orange-400"
             subtitle="Awaiting review"
           />
           <MetricCard
             title="Avg Conversion Rate"
-            // value={`${metrics.avgConversionRate}%`}
+            value={`${metrics.avgConversionRate}%`}
             icon={TrendingUp}
             color="bg-gold/20 text-gold"
             subtitle="Platform average"
@@ -294,7 +302,7 @@ export function SuperAdminAggregators() {
                     <div>Actions</div>
                   </div>
                   <div className="space-y-1">
-                    {/* {paginatedAggregators.map((aggregator, index) => (
+                    {paginatedAggregators.map((aggregator, index) => (
                       <motion.div
                         key={aggregator._id}
                         initial={{ opacity: 0, y: 10 }}
@@ -378,7 +386,7 @@ export function SuperAdminAggregators() {
                           </div>
                         </div>
                       </motion.div>
-                    ))} */}
+                    ))}
                   </div>
                 </div>
               )}
@@ -386,7 +394,7 @@ export function SuperAdminAggregators() {
             <TablePagination
               page={page}
               pageSize={pageSize}
-              // total={total}
+              total={total}
               onPageChange={handlePageChange}
               onPageSizeChange={handlePageSizeChange}
               className="mt-4"
@@ -435,8 +443,8 @@ export function SuperAdminAggregators() {
                   <p className="text-white font-semibold mt-1">{selectedAggregator.contact || 'Not provided'}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Designation</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.designation || 'Not specified'}</p>
+                  <Label className="text-gray-300">Company Name</Label>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.companyName || 'Not specified'}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Address</Label>

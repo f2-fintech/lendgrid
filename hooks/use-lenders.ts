@@ -47,7 +47,7 @@ export function useLenders({ page, limit }: { page?: number; limit?: number }) {
     try {
       setLoading(true)
       setError(null)
-      
+
       // Get lenders list
       const response = await usersApi.findByRole('LENDER_ADMIN', {
         page: page || 1,
@@ -71,7 +71,7 @@ export function useLenders({ page, limit }: { page?: number; limit?: number }) {
         productsCount: 0, // Not available in current API
         avgCommission: 0, // Not available in current API
         joinDate: new Date(user.createdAt).toLocaleDateString('en-GB'),
-        lastActivity: user.loginHistory?.length > 0 
+        lastActivity: user.loginHistory?.length > 0
           ? new Date(user.loginHistory[user.loginHistory.length - 1]).toLocaleDateString('en-GB')
           : 'Never',
         designation: user.designation,
