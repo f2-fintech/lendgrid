@@ -21,6 +21,8 @@ import { useAuth } from "@/lib/auth"
 import { Plus, Search, Edit, Trash2, AlertCircle } from "lucide-react"
 
 import { productsApi, CreateProductDto, ProductSummary } from "@/lib/api-client"
+import { createProduct, removeProduct, updateProduct, useProducts } from "@/hooks/use-products"
+import { Checkbox } from "@/components/ui/checkbox"
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters"),
@@ -32,25 +34,18 @@ const productSchema = z.object({
   maxAmount: z.coerce.number().min(0, "Max amount must be positive"),
   loanTerm: z.coerce.number().min(1, "Loan term must be at least 1 month"),
   tenure: z.string().optional(),
-  eligibilityCriteria: z.string().optional(), // comma-separated in UI
-  requiredDocuments: z.string().optional(), // comma-separated in UI
+  eligibilityCriteria: z.string().optional(),
+  requiredDocuments: z.string().optional(),
   isActive: z.boolean().optional(),
 })
 
 type ProductFormData = z.infer<typeof productSchema>
 
-/**
- * Production-ready LenderProducts component.
- * - Keeps your theme and UI.
- * - Sends payload matching CreateProductDto.
- * - Handles validation, loading, and errors.
- */
 export function LenderProducts(): JSX.Element {
   const { user } = useAuth()
   const { toast } = useToast()
   const tableTopRef = useRef<HTMLDivElement | null>(null)
 
-  // Pagination / list state (basic)
   const [page, setPage] = useState<number>(1)
   const [pageSize, setPageSize] = useState<number>(10)
   const [searchTerm, setSearchTerm] = useState<string>("")
@@ -58,9 +53,18 @@ export function LenderProducts(): JSX.Element {
   const [isDialogOpen, setIsDialogOpen] = useState<boolean>(false)
   const [isEditMode, setIsEditMode] = useState<boolean>(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductSummary | null>(null)
-  const [products, setProducts] = useState<ProductSummary[]>([])
-  const [totalCount, setTotalCount] = useState<number>(0)
-  const [submitting, setSubmitting] = useState<boolean>(false)
+
+  const {
+    products,
+    total,
+    loading: isTableLoading,
+    pages,
+    error
+  } = useProducts({
+    page,
+    limit: pageSize,
+    lenderId: user?._id,
+  })
 
   const {
     register,
@@ -87,29 +91,6 @@ export function LenderProducts(): JSX.Element {
     },
   })
 
-  // Basic listing (you likely already have a hook; this is a minimal fetch)
-  useEffect(() => {
-    let mounted = true
-    setIsLoading(true)
-    productsApi
-      .list({ page, limit: pageSize, lenderId: user?._id })
-      .then((res) => {
-        if (!mounted) return
-        setProducts(res.products.results)
-        setTotalCount(res.products.count)
-      })
-      .catch((err) => {
-        console.error("Failed to fetch products", err)
-        toast({ title: "Error", description: "Failed to fetch products", variant: "destructive" })
-      })
-      .finally(() => {
-        if (mounted) setIsLoading(false)
-      })
-    return () => {
-      mounted = false
-    }
-  }, [page, pageSize, user?._id, toast])
-
   const openCreate = () => {
     setIsEditMode(false)
     setSelectedProduct(null)
@@ -133,11 +114,10 @@ export function LenderProducts(): JSX.Element {
   const openEdit = (product: ProductSummary) => {
     setIsEditMode(true)
     setSelectedProduct(product)
-    // If you want to allow editing, fetch the full product and populate fields
     reset({
       name: product.name,
-      description: "", // fetch real description when editing
-      productType: "", // set real
+      description: "",
+      productType: "",
       interestRate: product.interestRate,
       commissionPercent: 0,
       minAmount: 0,
@@ -151,6 +131,14 @@ export function LenderProducts(): JSX.Element {
     setIsDialogOpen(true)
   }
 
+  const filteredProducts = useMemo(() => {
+    if (!products) return []
+    const s = searchTerm.trim().toLowerCase()
+    if (!s) return products
+    return products.filter((p) => p.name.toLowerCase().includes(s) || (p.productType ?? "").toLowerCase().includes(s))
+  }, [products, searchTerm])
+  console.log(products, filteredProducts, total, user?._id)
+
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
@@ -162,9 +150,7 @@ export function LenderProducts(): JSX.Element {
   }
 
   const submit = handleSubmit(async (formData) => {
-    setSubmitting(true)
     try {
-      // build payload matching CreateProductDto
       const payload: CreateProductDto = {
         lenderId: user?._id,
         lenderName: user?.name,
@@ -188,46 +174,47 @@ export function LenderProducts(): JSX.Element {
         isActive: formData.isActive ?? true,
       }
 
-      const res = await productsApi.create(payload)
-      if (res.createProduct.success) {
-        toast({ title: "Success", description: res.createProduct.message || "Product created." })
-        // refresh list — simple strategy: re-fetch by triggering page state
-        // You could also insert the new product into state for optimistic UI
-        setPage(1) // trigger useEffect fetch
-        setIsDialogOpen(false)
-        reset()
+      if (isEditMode && selectedProduct) {
+        await updateProduct(selectedProduct._id, payload)
+        toast({ title: 'Success', description: 'Product updated successfully.' })
       } else {
-        throw new Error(res.createProduct.message || "Create product failed")
+        await createProduct(payload)
+        toast({ title: 'Success', description: 'Product created successfully.' })
       }
-    } catch (err: any) {
-      console.error("Create product error", err)
+      setIsDialogOpen(false)
+    } catch (err) {
       toast({
-        title: "Error",
-        description: err?.message || "Failed to create product",
-        variant: "destructive",
+        title: 'Error',
+        description: `Failed to ${isEditMode ? 'update' : 'create'} product.`,
+        variant: 'destructive',
       })
-    } finally {
-      setSubmitting(false)
     }
   })
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this product?")) return
-    try {
-      // TODO: wire delete mutation
-      toast({ title: "Success", description: "Product deleted (demo)." })
-    } catch (err) {
-      toast({ title: "Error", description: "Failed to delete product.", variant: "destructive" })
+    if (window.confirm('Are you sure you want to delete this product?')) {
+      try {
+        await removeProduct(id)
+        toast({ title: 'Success', description: 'Product deleted successfully.' })
+      } catch (err) {
+        toast({
+          title: 'Error',
+          description: 'Failed to delete product.',
+          variant: 'destructive',
+        })
+      }
     }
   }
 
-  // filtered list if user types in search box
-  const filteredProducts = useMemo(() => {
-    if (!products) return []
-    const s = searchTerm.trim().toLowerCase()
-    if (!s) return products
-    return products.filter((p) => p.name.toLowerCase().includes(s) || (p.productType ?? "").toLowerCase().includes(s))
-  }, [products, searchTerm])
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <AlertCircle className="mx-auto h-12 w-12 text-red-400" />
+        <h3 className="mt-2 text-sm font-medium text-white">Error loading products</h3>
+        <p className="mt-1 text-sm text-gray-400">{error}</p>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 bg-blue-900">
@@ -319,7 +306,7 @@ export function LenderProducts(): JSX.Element {
           <TablePagination
             page={page}
             pageSize={pageSize}
-            // total={data?.count || 0}
+            total={total}
             onPageChange={handlePageChange}
             onPageSizeChange={handlePageSizeChange}
             className="mt-4"
@@ -328,7 +315,7 @@ export function LenderProducts(): JSX.Element {
       </Card>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">{isEditMode ? 'Edit Product' : 'Create New Product'}</DialogTitle>
             <DialogDescription className="text-gray-400">
@@ -339,23 +326,30 @@ export function LenderProducts(): JSX.Element {
             <div className="grid grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Product Name</Label>
-                <Input id="name" {...register('name')} className="glass-input" />
-                {errors.name && <p className="text-red-400 text-sm">{errors.name.message}</p>}
+                <Input
+                  id="name"
+                  {...register('name')}
+                  className="glass-input text-black placeholder-gray-400 h-12"
+                />
+                {errors.name &&
+                  <p className="text-red-400 text-sm">{errors.name.message}</p>
+                }
               </div>
               <div className="space-y-2">
                 <Label htmlFor="productType">Product Type</Label>
                 <Controller
                   name="productType"
+                  control={control}
                   render={({ field }) => (
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <SelectTrigger className="glass-input">
+                      <SelectTrigger className="glass-input text-black placeholder-gray-400 h-12">
                         <SelectValue placeholder="Select a type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Personal Loan">Personal Loan</SelectItem>
-                        <SelectItem value="Business Loan">Business Loan</SelectItem>
-                        <SelectItem value="Home Loan">Home Loan</SelectItem>
-                        <SelectItem value="Car Loan">Car Loan</SelectItem>
+                        <SelectItem value="Personal Loan" className="text-black hover:bg-white/10">Personal Loan</SelectItem>
+                        <SelectItem value="Business Loan" className="text-black hover:bg-white/10">Business Loan</SelectItem>
+                        <SelectItem value="Home Loan" className="text-black hover:bg-white/10">Home Loan</SelectItem>
+                        <SelectItem value="Car Loan" className="text-black hover:bg-white/10">Car Loan</SelectItem>
                       </SelectContent>
                     </Select>
                   )}
@@ -365,44 +359,78 @@ export function LenderProducts(): JSX.Element {
             </div>
             <div className="space-y-2">
               <Label htmlFor="description">Description</Label>
-              <Textarea id="description" {...register('description')} className="glass-input" />
+              <Textarea
+                id="description"
+                {...register('description')}
+                className="glass-input text-black placeholder-gray-400 h-12"
+              />
               {errors.description && <p className="text-red-400 text-sm">{errors.description.message}</p>}
             </div>
             <div className="grid grid-cols-3 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                <Input id="interestRate" type="number" step="0.01" {...register('interestRate')} className="glass-input" />
+                <Input
+                  id="interestRate"
+                  type="number"
+                  {...register('interestRate')}
+                  className="glass-input text-black placeholder-gray-400 h-12"
+                />
                 {errors.interestRate && <p className="text-red-400 text-sm">{errors.interestRate.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="minLoanAmount">Min Loan Amount (₹)</Label>
-                <Input id="minLoanAmount" type="number" {...register('minLoanAmount')} className="glass-input" />
-                {errors.minLoanAmount && <p className="text-red-400 text-sm">{errors.minLoanAmount.message}</p>}
+                <Label htmlFor="minAmount">Min Loan Amount (₹)</Label>
+                <Input
+                  id="minAmount"
+                  type="number"
+                  {...register('minAmount')}
+                  className="glass-input text-black placeholder-gray-400 h-12"
+                />
+                {errors.minAmount && <p className="text-red-400 text-sm">{errors.minAmount.message}</p>}
               </div>
               <div className="space-y-2">
-                <Label htmlFor="maxLoanAmount">Max Loan Amount (₹)</Label>
-                <Input id="maxLoanAmount" type="number" {...register('maxLoanAmount')} className="glass-input" />
-                {errors.maxLoanAmount && <p className="text-red-400 text-sm">{errors.maxLoanAmount.message}</p>}
+                <Label htmlFor="maxAmount">Max Loan Amount (₹)</Label>
+                <Input
+                  id="maxAmount"
+                  type="number"
+                  {...register('maxAmount')}
+                  className="glass-input text-black placeholder-gray-400 h-12"
+                />
+                {errors.maxAmount && <p className="text-red-400 text-sm">{errors.maxAmount.message}</p>}
               </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="loanTerm">Loan Term (months)</Label>
-              <Input id="loanTerm" type="number" {...register('loanTerm')} className="glass-input" />
+              <Input
+                id="loanTerm"
+                type="number"
+                {...register('loanTerm')}
+                className="glass-input text-black placeholder-gray-400 h-12"
+              />
               {errors.loanTerm && <p className="text-red-400 text-sm">{errors.loanTerm.message}</p>}
             </div>
             <div className="space-y-2">
               <Label htmlFor="eligibilityCriteria">Eligibility Criteria (comma-separated)</Label>
-              <Textarea id="eligibilityCriteria" {...register('eligibilityCriteria')} className="glass-input" />
+              <Textarea
+                id="eligibilityCriteria"
+                {...register('eligibilityCriteria')}
+                className="glass-input text-black placeholder-gray-400 h-12"
+              />
             </div>
             <div className="flex items-center space-x-2">
               <Controller
                 name="isActive"
                 control={control}
                 render={({ field }) => (
-                  <Input type="checkbox" checked={field.value} onCheckedChange={field.onChange} id="isActive" />
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="isActive"
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                    <Label htmlFor="isActive">Product is Active</Label>
+                  </div>
                 )}
               />
-              <Label htmlFor="isActive">Product is Active</Label>
             </div>
             <div className="flex justify-end space-x-4 pt-4">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>

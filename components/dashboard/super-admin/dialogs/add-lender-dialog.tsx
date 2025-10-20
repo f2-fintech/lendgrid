@@ -62,8 +62,8 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
         fullName: lender.name,
         email: lender.email,
         phone: lender.phone,
-        companyName: lender.designation,
-        lenderType: lender.type,
+        companyName: lender.companyName,
+        // lenderType: lender.type,
         address: lender.address,
         pincode: lender.pincode,
         gender: lender.gender,
@@ -82,13 +82,13 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
         username: data.fullName,
         email: data.email,
         contact: data.phone,
-        designation: data.companyName,
+        companyName: data.companyName,
         role: 'LENDER_ADMIN',
         address: data.address,
         dob: new Date(data.dob).toISOString(),
         gender: data.gender.toUpperCase(),
-        pincode: data.pincode,
-        lenderType: data.lenderType,
+        pincode: Number(data.pincode),
+        // lenderType: data.lenderType,
       }
 
       if (data.password) {
@@ -143,7 +143,7 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
         )}
       </DialogTrigger>
       <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl"
->
+      >
         <DialogHeader>
           <DialogTitle className="text-xl font-bold">{lender ? 'Edit Lender' : 'Add New Lender'}</DialogTitle>
           <DialogDescription className="text-gray-400">

@@ -17,22 +17,30 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 	useEffect(() => {
 		async function verify() {
 			const cookieStr = typeof document !== 'undefined' ? document.cookie : ''
-			const tokenMatch = cookieStr?.split('; ').find((c) => c.startsWith('token='))
+			const tokenMatch = cookieStr?.split('; ').find(c => c.startsWith('token='))
 			const token = tokenMatch ? decodeURIComponent(tokenMatch.split('=')[1]) : null
+
 			if (!token) {
 				router.replace(`/login?next=${encodeURIComponent(pathname)}`)
 				return
 			}
+
 			try {
 				const decoded: any = decodeJwt(token)
-				if (decoded?.role) setRole(decoded.role as AppRole)
+				const decodedRole = decoded?.role?.toLowerCase?.()
+
+				if (decodedRole) setRole(decodedRole as AppRole)
+
 				const profileResp: any = await usersApi.profile()
-				const fetchedRole: AppRole | undefined = profileResp?.data?.role
-				setUser(profileResp?.data)
+				const fetchedRole = profileResp?.profile?.role?.toLowerCase?.() as AppRole | undefined
+
+				setUser(profileResp?.profile)
 				if (fetchedRole) setRole(fetchedRole)
+
 				if (requiredRole) {
 					const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
-					const effectiveRole = fetchedRole || decoded?.role
+					const effectiveRole = fetchedRole || decodedRole
+
 					if (!effectiveRole || !roles.includes(effectiveRole)) {
 						router.replace('/login')
 						return
@@ -48,11 +56,10 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 				setLoading(false)
 			}
 		}
+
 		verify()
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [])
 
 	return { loading, role, user }
 }
-
-

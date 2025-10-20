@@ -102,7 +102,7 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
               approvedApplications,
               conversionRate: Math.round(conversionRate * 10) / 10,
               totalCommission,
-              kycStatus: agg.kycStatus || 'Verified'
+              kycStatus: agg.kycStatus || 'Under Review'
             }
           })
         )

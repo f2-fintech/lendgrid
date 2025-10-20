@@ -258,6 +258,7 @@ export type ProductSummary = {
 	lenderName?: string
 	interestRate: number
 	maxAmount: number
+	productType: string
 	isActive: boolean
 }
 
@@ -290,12 +291,12 @@ export type CreateProductDto = {
 
 
 export const productsApi = {
-	list: (params?: { page?: number; limit?: number; lenderId?: string }) =>
-		gqlFetch<{ products: { results: any[]; count: number; page: number; pages: number } }>({
+	findAllProducts: (params?: { page?: number; limit?: number; lenderId?: string }) =>
+		gqlFetch<{ findAllProducts: { results: any[]; count: number; page: number; pages: number } }>({
 			query: `
-				query Products($query: ProductPaginationQuery!) {
-					products(query: $query) {
-						results {
+		        query FindAllProducts($paginationArgs: ProductPaginationQuery!) {
+    		        findAllProducts(paginationArgs: $paginationArgs) {
+        			    results {
 							_id
 							name
 							lenderName
@@ -309,9 +310,9 @@ export const productsApi = {
 					}
 				}
 			`,
-			variables: { query: params },
+			variables: { paginationArgs: params },
 		}),
-	create: (payload: any) =>
+	createProduct: (payload: any) =>
 		gqlFetch<{
 			createProduct: {
 				success: boolean
@@ -342,7 +343,7 @@ export const productsApi = {
 			`,
 			variables: { createProductInput: payload },
 		}),
-	update: (id: string, payload: any) =>
+	updateProduct: (id: string, payload: any) =>
 		gqlFetch({
 			query: `
 				mutation UpdateProduct($id: ID!, $updateProductInput: UpdateProductDto!) {
@@ -353,7 +354,7 @@ export const productsApi = {
 			`,
 			variables: { id, updateProductInput: payload },
 		}),
-	remove: (id: string) =>
+	removeProduct: (id: string) =>
 		gqlFetch({
 			query: `
 				mutation RemoveProduct($id: ID!) {

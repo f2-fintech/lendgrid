@@ -194,7 +194,7 @@ export function AddAggregatorDialog({
                 onClose?.()
             }
         }}>
-            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl ">
+            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">
                         {mode === 'add' ? 'Add New Aggregator' : 'Edit Aggregator'}

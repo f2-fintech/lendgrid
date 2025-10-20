@@ -277,7 +277,7 @@ export function SuperAdminAggregators() {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="PENDING">Pending</SelectItem>
+                    {/* <SelectItem value="PENDING">Pending</SelectItem> */}
                     <SelectItem value="INACTIVE">Inactive</SelectItem>
                   </SelectContent>
                 </Select>
@@ -337,7 +337,7 @@ export function SuperAdminAggregators() {
                           {(aggregator.totalCommission || 0) > 0 ? formatCurrency(aggregator.totalCommission || 0) : '-'}
                         </div>
                         <div className="text-gray-300">
-                          {new Date(aggregator.createdAt).toLocaleDateString()}
+                          {aggregator.createdAt}
                         </div>
                         <div>
                           <div className="flex items-center space-x-2">
@@ -490,7 +490,7 @@ export function SuperAdminAggregators() {
                 </div>
               </div>
 
-              {selectedAggregator.status === 'PENDING' && (
+              {selectedAggregator.status === 'Under Review' && (
                 <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
                   <Button
                     className="bg-green-500 hover:bg-green-600 text-white"
