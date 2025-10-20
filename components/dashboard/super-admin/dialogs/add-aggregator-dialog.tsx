@@ -194,7 +194,7 @@ export function AddAggregatorDialog({
                 onClose?.()
             }
         }}>
-            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl ">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">
                         {mode === 'add' ? 'Add New Aggregator' : 'Edit Aggregator'}
@@ -215,7 +215,7 @@ export function AddAggregatorDialog({
                             <Input
                                 id="companyName"
                                 {...register('companyName')}
-                                className="glass-input text-white placeholder-gray-400 h-12"
+                                className="glass-input text-black placeholder-gray-400 h-12"
                                 placeholder="Enter company name"
                             />
                             {errors.companyName && (
@@ -230,8 +230,8 @@ export function AddAggregatorDialog({
                             <Input
                                 id="fullName"
                                 {...register('fullName')}
-                                className="glass-input text-white placeholder-gray-400 h-12"
-                                placeholder="Enter User Name"
+                                className="glass-input text-black placeholder-gray-400 h-12"
+                                placeholder="Enter contact person name"
                             />
                             {errors.fullName && (
                                 <p className="text-red-400 text-sm">{errors.fullName.message}</p>
@@ -246,7 +246,7 @@ export function AddAggregatorDialog({
                                 id="email"
                                 type="email"
                                 {...register('email')}
-                                className="glass-input text-white placeholder-gray-400 h-12"
+                                className="glass-input text-black placeholder-gray-400 h-12"
                                 placeholder="Enter email address"
                             />
                             {errors.email && (
@@ -261,7 +261,7 @@ export function AddAggregatorDialog({
                             <Input
                                 id="phone"
                                 {...register('phone')}
-                                className="glass-input text-white placeholder-gray-400 h-12"
+                                className="glass-input text-black placeholder-gray-400 h-12"
                                 placeholder="Enter phone number"
                             />
                             {errors.phone && (
@@ -277,7 +277,7 @@ export function AddAggregatorDialog({
                                 id="dob"
                                 type="date"
                                 {...register('dob')}
-                                className="glass-input text-white placeholder-gray-400 h-12"
+                                className="glass-input text-black placeholder-gray-400 h-12"
                                 placeholder="Select date of birth"
                             />
                             {errors.dob && (
@@ -293,13 +293,13 @@ export function AddAggregatorDialog({
                                 onValueChange={(value) => setValue('gender', value as 'male' | 'female' | 'other')}
                                 defaultValue={mode === 'edit' && editData?.gender ? editData.gender : undefined}
                             >
-                                <SelectTrigger className="glass-input text-white h-12">
-                                    <SelectValue placeholder="Select gender" />
+                                <SelectTrigger className="glass-input text-black h-12">
+                                    <SelectValue placeholder="Select gender" className='text-gray-500' />
                                 </SelectTrigger>
                                 <SelectContent className="glass-card border-white/10">
-                                    <SelectItem value="male" className="text-white hover:bg-white/10">Male</SelectItem>
-                                    <SelectItem value="female" className="text-white hover:bg-white/10">Female</SelectItem>
-                                    <SelectItem value="other" className="text-white hover:bg-white/10">Other</SelectItem>
+                                    <SelectItem value="male" className="text-black hover:bg-white/10">Male</SelectItem>
+                                    <SelectItem value="female" className="text-black hover:bg-white/10">Female</SelectItem>
+                                    <SelectItem value="other" className="text-black hover:bg-white/10">Other</SelectItem>
                                 </SelectContent>
                             </Select>
                             {errors.gender && (
@@ -314,7 +314,7 @@ export function AddAggregatorDialog({
                             <Input
                                 id="address"
                                 {...register('address')}
-                                className="glass-input text-white placeholder-gray-400 h-12"
+                                className="glass-input text-black placeholder-gray-400 h-12"
                                 placeholder="Enter complete address"
                             />
                             {errors.address && (
@@ -329,7 +329,7 @@ export function AddAggregatorDialog({
                             <Input
                                 id="pincode"
                                 {...register('pincode')}
-                                className="glass-input text-white placeholder-gray-400 h-12"
+                                className="glass-input text-black placeholder-gray-400 h-12"
                                 placeholder="Enter pincode"
                             />
                             {errors.pincode && (
@@ -347,7 +347,7 @@ export function AddAggregatorDialog({
                                         id="password"
                                         type="password"
                                         {...register('password')}
-                                        className="glass-input text-white placeholder-gray-400 h-12"
+                                        className="glass-input text-black placeholder-gray-400 h-12"
                                         placeholder="Enter password"
                                     />
                                     {errors.password && (
@@ -363,7 +363,7 @@ export function AddAggregatorDialog({
                                         id="confirmPassword"
                                         type="password"
                                         {...register('confirmPassword')}
-                                        className="glass-input text-white placeholder-gray-400 h-12"
+                                        className="glass-input text-black placeholder-gray-400 h-12"
                                         placeholder="Confirm password"
                                     />
                                     {errors.confirmPassword && (
@@ -388,7 +388,7 @@ export function AddAggregatorDialog({
                         <Button
                             type="submit"
                             disabled={isLoading}
-                            className="bg-gradient-to-r from-gold to-blue text-dark"
+                            className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
                         >
                             {isLoading ? (
                                 <>

@@ -109,7 +109,6 @@ export function SuperAdminDashboard() {
   )
 
   return (
-    <DashboardLayout userRole="super_admin">
       <div className="space-y-8">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -122,7 +121,7 @@ export function SuperAdminDashboard() {
           </div>
           <div className="flex items-center space-x-4">
             <Link href={navigationPaths.superAdmin.settings}>
-              <Button variant="outline" className="border-gray-600 text-white">
+              <Button variant="outline" className="border-gray-600 text-black bg-gradient-to-r from-blue to-cyan-500">
                 <Settings className="w-4 h-4 mr-2" />
                 Platform Settings
               </Button>
@@ -375,6 +374,5 @@ export function SuperAdminDashboard() {
           )}
         </div>
       </div>
-    </DashboardLayout>
   )
 }

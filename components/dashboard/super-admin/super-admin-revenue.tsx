@@ -187,7 +187,6 @@ export function SuperAdminRevenue() {
   )
 
   return (
-    <DashboardLayout userRole="super_admin">
       <div className="space-y-8">
         {/* Header */}
         <motion.div
@@ -355,7 +354,7 @@ export function SuperAdminRevenue() {
                         className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-colors"
                       >
                         <div className="flex items-center space-x-4">
-                          <div className="w-10 h-10 bg-gradient-to-r from-gold to-yellow-500 rounded-lg flex items-center justify-center text-dark font-bold">
+                          <div className="w-10 h-10 bg-gradient-to-r from-blue to-cyan-500 rounded-lg flex items-center justify-center text-dark font-bold">
                             {index + 1}
                           </div>
                           <div>
@@ -434,6 +433,5 @@ export function SuperAdminRevenue() {
           </motion.div>
         </div>
       </div>
-    </DashboardLayout>
   )
 }

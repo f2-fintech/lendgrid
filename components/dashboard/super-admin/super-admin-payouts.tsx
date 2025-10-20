@@ -203,7 +203,7 @@ export function SuperAdminPayouts() {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+            <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
               <Plus className="w-4 h-4 mr-2" />
               Create Payout
             </Button>
@@ -280,7 +280,7 @@ export function SuperAdminPayouts() {
                 <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Cancel
                 </Button>
-                <Button className="bg-gradient-to-r from-gold to-blue text-dark">
+                <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                   Create Payout
                 </Button>
               </div>

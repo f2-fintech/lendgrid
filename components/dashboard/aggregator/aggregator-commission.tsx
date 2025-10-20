@@ -251,7 +251,6 @@ export function AggregatorCommission() {
   )
 
   return (
-    <DashboardLayout userRole="aggregator">
       <div className="space-y-8">
         {/* Header */}
         <motion.div
@@ -560,6 +559,5 @@ export function AggregatorCommission() {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
   )
 }

@@ -64,7 +64,7 @@ export function AggregatorSettings() {
   }, [])
 
   return (
-    <DashboardLayout userRole="aggregator">
+    
       <div className="space-y-8">
         {/* Header */}
         <motion.div
@@ -656,6 +656,5 @@ export function AggregatorSettings() {
           </Tabs>
         </motion.div>
       </div>
-    </DashboardLayout>
   )
 }

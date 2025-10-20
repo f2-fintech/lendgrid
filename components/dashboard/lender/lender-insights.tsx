@@ -79,10 +79,10 @@ export function LenderInsights() {
 
           </div>
           <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-48 bg-gradient-to-r from-blue to-cyan-500 border-none text-white">
+            <SelectTrigger className="w-48 bg-gradient-to-r from-blue to-cyan-500 border-none text-black">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-white text-black border-none">
+            <SelectContent className="bg-blue-600 text-white border-none">
               <SelectItem value="1month">Last Month</SelectItem>
               <SelectItem value="3months">Last 3 Months</SelectItem>
               <SelectItem value="6months">Last 6 Months</SelectItem>
