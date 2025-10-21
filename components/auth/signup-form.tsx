@@ -173,7 +173,7 @@ export function SignupForm() {
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient items-center justify-center shadow-2xl">
               <img
-                src="/logo.png" // Replace with your logo path
+                src="/logo.png"
                 alt="LendGrid Logo"
                 className="w-12 h-10 rounded-xl "
               />
@@ -188,6 +188,53 @@ export function SignupForm() {
 
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+
+            {/* User Type */}
+            <div className="space-y-2">
+              <Label className="text-gray-300 font-medium">User Type</Label>
+              <Select
+                onValueChange={(value) => setValue('userType', value as 'aggregator' | 'lender')}
+                disabled={isLoading}
+              >
+                <SelectTrigger className="glass-input text-bg-white/10 h-11">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent className="glass-card border-bg-white/10">
+                  <SelectItem value="aggregator" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
+                    <div className="flex items-center">
+                      <Users className="w-4 h-4 mr-2" />
+                      Loan Aggregator
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="lender" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
+                    <div className="flex items-center">
+                      <Building2 className="w-4 h-4 mr-2 " />
+                      Lender
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.userType && (
+                <p className="text-red-400 text-sm mt-1">{errors.userType.message}</p>
+              )}
+            </div>
+
+            {/* Company Name */}
+            <div className="space-y-2">
+              <Label htmlFor="companyName" className="text-gray-300 font-medium">
+                Company Name
+              </Label>
+              <Input
+                id="companyName"
+                {...register('companyName')}
+                className="glass-input text-white placeholder-gray-500 h-11"
+                placeholder="Your Company Ltd."
+                disabled={isLoading}
+              />
+              {errors.companyName && (
+                <p className="text-red-400 text-sm mt-1">{errors.companyName.message}</p>
+              )}
+            </div>
 
             {/* Full Name */}
             <div className="space-y-2">
@@ -283,53 +330,6 @@ export function SignupForm() {
               </div>
               {errors.confirmPassword && (
                 <p className="text-red-400 text-sm mt-1">{errors.confirmPassword.message}</p>
-              )}
-            </div>
-
-            {/* Company Name */}
-            <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-gray-300 font-medium">
-                Company Name
-              </Label>
-              <Input
-                id="companyName"
-                {...register('companyName')}
-                className="glass-input text-white placeholder-gray-500 h-11"
-                placeholder="Your Company Ltd."
-                disabled={isLoading}
-              />
-              {errors.companyName && (
-                <p className="text-red-400 text-sm mt-1">{errors.companyName.message}</p>
-              )}
-            </div>
-
-            {/* User Type */}
-            <div className="space-y-2">
-              <Label className="text-gray-300 font-medium">User Type</Label>
-              <Select
-                onValueChange={(value) => setValue('userType', value as 'aggregator' | 'lender')}
-                disabled={isLoading}
-              >
-                <SelectTrigger className="glass-input text-bg-white/10 h-11">
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent className="glass-card border-bg-white/10">
-                  <SelectItem value="aggregator" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
-                    <div className="flex items-center">
-                      <Users className="w-4 h-4 mr-2" />
-                      Loan Aggregator
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="lender" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
-                    <div className="flex items-center">
-                      <Building2 className="w-4 h-4 mr-2 " />
-                      Lender
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.userType && (
-                <p className="text-red-400 text-sm mt-1">{errors.userType.message}</p>
               )}
             </div>
 

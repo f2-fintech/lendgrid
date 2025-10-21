@@ -9,6 +9,7 @@ import * as z from "zod"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Checkbox } from "@/components/ui/checkbox"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
@@ -18,11 +19,11 @@ import { useToast } from "@/hooks/use-toast"
 import { TablePagination } from "@/components/ui/pagination"
 import { TableSkeleton } from "@/components/ui/loading-skeleton"
 import { useAuth } from "@/lib/auth"
-import { Plus, Search, Edit, Trash2, AlertCircle } from "lucide-react"
+import { Plus, Search, Edit, Trash2, AlertCircle, UserCheck } from "lucide-react"
 
-import { productsApi, CreateProductDto, ProductSummary } from "@/lib/api-client"
+import { productsApi, CreateProductDto, ProductSummary, productAssignmentsApi } from "@/lib/api-client"
 import { createProduct, removeProduct, updateProduct, useProducts } from "@/hooks/use-products"
-import { Checkbox } from "@/components/ui/checkbox"
+import { useAggregators } from "@/hooks/use-aggregators"
 
 const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters"),
@@ -54,6 +55,11 @@ export function LenderProducts(): JSX.Element {
   const [isEditMode, setIsEditMode] = useState<boolean>(false)
   const [selectedProduct, setSelectedProduct] = useState<ProductSummary | null>(null)
 
+  const [isAssignDialogOpen, setIsAssignDialogOpen] = useState(false)
+  const [selectedProductForAssign, setSelectedProductForAssign] = useState<ProductSummary | null>(null)
+  const [selectedAggregators, setSelectedAggregators] = useState<string[]>([])
+  const [assignedAggregators, setAssignedAggregators] = useState<string[]>([])
+
   const {
     products,
     total,
@@ -65,6 +71,13 @@ export function LenderProducts(): JSX.Element {
     limit: pageSize,
     lenderId: user?._id,
   })
+
+  // Get the list of aggregators from db
+  const {
+    aggregators,
+    loading: loadingAggregators,
+    mutate
+  } = useAggregators({ page, limit: pageSize });
 
   const {
     register,
@@ -114,22 +127,28 @@ export function LenderProducts(): JSX.Element {
   const openEdit = (product: ProductSummary) => {
     setIsEditMode(true)
     setSelectedProduct(product)
-    reset({
-      name: product.name,
-      description: "",
-      productType: "",
-      interestRate: product.interestRate,
-      commissionPercent: 0,
-      minAmount: 0,
-      maxAmount: product.maxAmount,
-      loanTerm: 12,
-      tenure: "",
-      eligibilityCriteria: "",
-      requiredDocuments: "",
-      isActive: product.isActive,
-    })
     setIsDialogOpen(true)
+
+    reset({
+      name: product.name || "",
+      description: product.description ?? "",
+      productType: product.productType || "",
+      interestRate: Number(product.interestRate) || 0,
+      commissionPercent: Number(product.commissionPercent) || 0,
+      minAmount: Number(product.minAmount) || 0,
+      maxAmount: Number(product.maxAmount) || 0,
+      loanTerm: Number(product.loanTerm) || 12,
+      tenure: product.tenure || "",
+      eligibilityCriteria: Array.isArray(product.eligibilityCriteria)
+        ? product.eligibilityCriteria.join(", ")
+        : "",
+      requiredDocuments: Array.isArray(product.requiredDocuments)
+        ? product.requiredDocuments.join(", ")
+        : "",
+      isActive: product.isActive ?? true,
+    })
   }
+
 
   const filteredProducts = useMemo(() => {
     if (!products) return []
@@ -137,7 +156,6 @@ export function LenderProducts(): JSX.Element {
     if (!s) return products
     return products.filter((p) => p.name.toLowerCase().includes(s) || (p.productType ?? "").toLowerCase().includes(s))
   }, [products, searchTerm])
-  console.log(products, filteredProducts, total, user?._id)
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -206,6 +224,68 @@ export function LenderProducts(): JSX.Element {
     }
   }
 
+  // const fetchAggregators = async () => {
+  //   setLoadingAggregators(true)
+  //   try {
+  //     const response = await usersApi.getAggregators({ page: 1, limit: 100 })
+  //     setAggregators(response.usersByRole.results)
+  //   } catch (error) {
+  //     toast({
+  //       title: 'Error',
+  //       description: 'Failed to load aggregators',
+  //       variant: 'destructive',
+  //     })
+  //   } finally {
+  //     setLoadingAggregators(false)
+  //   }
+  // }
+
+  // Add this function to handle assign dialog
+  const openAssignDialog = async (product: ProductSummary) => {
+    setSelectedProductForAssign(product)
+    await mutate;
+
+    // Fetch already assigned aggregators
+    try {
+      const response = await productAssignmentsApi.getAssignedAggregators(product._id)
+      setAssignedAggregators(response.getAssignedAggregators)
+      setSelectedAggregators(response.getAssignedAggregators)
+    } catch (error) {
+      console.error('Failed to fetch assigned aggregators', error)
+    }
+
+    setIsAssignDialogOpen(true)
+  }
+
+  // Add this function to handle assignment
+  const handleAssignProduct = async () => {
+    if (!selectedProductForAssign) return
+
+    const toAssign = selectedAggregators.filter(id => !assignedAggregators.includes(id))
+    const toUnassign = assignedAggregators.filter(id => !selectedAggregators.includes(id))
+
+    try {
+      if (toAssign.length > 0) {
+        await productAssignmentsApi.assignToAggregators(selectedProductForAssign._id, toAssign)
+      }
+      if (toUnassign.length > 0) {
+        await productAssignmentsApi.unassignFromAggregators(selectedProductForAssign._id, toUnassign)
+      }
+
+      toast({
+        title: 'Success',
+        description: 'Product assignments updated successfully',
+      })
+      setIsAssignDialogOpen(false)
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update assignments',
+        variant: 'destructive',
+      })
+    }
+  }
+
   if (error) {
     return (
       <div className="text-center py-8">
@@ -266,39 +346,54 @@ export function LenderProducts(): JSX.Element {
                   <div>Actions</div>
                 </div>
                 <div className="space-y-1">
-                  {/* {filteredProducts.map((product, index) => (
-                    <motion.div
-                      key={product._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.05 }}
-                      className="grid grid-cols-7 gap-4 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
-                    >
-                      <div>
-                        <p className="text-white font-medium">{product.name}</p>
-                        <p className="text-sm text-gray-400 truncate">{product.description}</p>
-                      </div>
-                      <div className="text-gray-300">{product.productType}</div>
-                      <div className="text-gold">{product.interestRate}%</div>
-                      <div className="text-white">
-                        ₹{product.minLoanAmount.toLocaleString()} - ₹{product.maxLoanAmount.toLocaleString()}
-                      </div>
-                      <div className="text-gray-300">{product.loanTerm} months</div>
-                      <div>
-                        <Badge className={product.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
-                          {product.isActive ? 'Active' : 'Inactive'}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <Button variant="ghost" size="sm" className="text-gold hover:text-white" onClick={() => openEdit(product)}>
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-red-400 hover:text-white" onClick={() => handleDelete(product._id)}>
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </motion.div>
-                  ))} */}
+                  {filteredProducts.length === 0 ? (
+                    <div className="text-center py-12">
+                      <p className="text-gray-400">No products found</p>
+                    </div>
+                  ) : (
+                    filteredProducts.map((product, index) => (
+                      <motion.div
+                        key={product._id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                        className="grid grid-cols-7 gap-4 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
+                      >
+                        <div>
+                          <p className="text-white font-medium">{product.name}</p>
+                          <p className="text-sm text-gray-400 truncate">{product.description}</p>
+                        </div>
+                        <div className="text-gray-300">{product.productType}</div>
+                        <div className="text-gold">{product.interestRate}%</div>
+                        <div className="text-white">
+                          ₹{product.minAmount} - ₹{product.maxAmount}
+                        </div>
+                        <div className="text-gray-300">{product.loanTerm} months</div>
+                        <div>
+                          <Badge className={product.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}>
+                            {product.isActive ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-violet-400 hover:text-white"
+                            onClick={() => openAssignDialog(product)}
+                            title="Assign to Aggregators"
+                          >
+                            <UserCheck className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-gold hover:text-white" onClick={() => openEdit(product)}>
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="text-red-400 hover:text-white" onClick={() => handleDelete(product._id)}>
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))
+                  )}
                 </div>
               </div>
             )}
@@ -439,6 +534,72 @@ export function LenderProducts(): JSX.Element {
               </Button>
             </div>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Product Assignment Dialog */}
+      <Dialog open={isAssignDialogOpen} onOpenChange={setIsAssignDialogOpen}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Assign Product to Aggregators</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Select aggregators to assign "{selectedProductForAssign?.name}" to
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+            {loadingAggregators ? (
+              <div className="text-center py-8 text-gray-400">Loading aggregators...</div>
+            ) : aggregators.length === 0 ? (
+              <div className="text-center py-8 text-gray-400">No aggregators found</div>
+            ) : (
+              aggregators.map((aggregator) => (
+                <div
+                  key={aggregator._id}
+                  className="flex items-center space-x-3 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-colors"
+                >
+                  <Checkbox
+                    id={aggregator._id}
+                    checked={selectedAggregators.includes(aggregator._id)}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setSelectedAggregators([...selectedAggregators, aggregator._id])
+                      } else {
+                        setSelectedAggregators(selectedAggregators.filter(id => id !== aggregator._id))
+                      }
+                    }}
+                  />
+                  <Label
+                    htmlFor={aggregator._id}
+                    className="flex-1 cursor-pointer"
+                  >
+                    <div>
+                      <p className="font-medium text-white">{aggregator.username}</p>
+                      <p className="text-sm text-gray-400">{aggregator.email}</p>
+                      {aggregator.companyName && (
+                        <p className="text-sm text-gray-500">{aggregator.companyName}</p>
+                      )}
+                    </div>
+                  </Label>
+                  {assignedAggregators.includes(aggregator._id) && (
+                    <Badge className="bg-green-500/20 text-green-400">Currently Assigned</Badge>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          <div className="flex justify-end space-x-4 pt-4">
+            <Button variant="outline" onClick={() => setIsAssignDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignProduct}
+              className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white"
+            >
+              Save
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

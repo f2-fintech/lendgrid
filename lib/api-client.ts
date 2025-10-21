@@ -132,8 +132,6 @@ export const usersApi = {
     		`,
 			variables: { role, ...params },
 		}),
-	getAggregators: (params?: { page?: number; limit?: number }) =>
-		usersApi.findByRole('AGGREGATOR_ADMIN', params),
 	getUsers: (params?: { page?: number; limit?: number; status?: string }) =>
 		gqlFetch<{ users: { results: any[]; count: number; pages: number } }>({
 			query: `
@@ -197,11 +195,11 @@ export const settingsApi = {
 }
 
 export const applicationsApi = {
-	list: (params?: { page?: number; limit?: number; aggregatorId?: string; lenderId?: string }) =>
-		gqlFetch<{ applications: { results: any[]; count: number; page: number; pages: number } }>({
+	findAllApplications: (params?: { page?: number; limit?: number; aggregatorId?: string; lenderId?: string }) =>
+		gqlFetch<{ findAllApplications: { results: any[]; count: number; page: number; pages: number } }>({
 			query: `
-				query Applications($query: ApplicationPaginationQuery!) {
-					applications(query: $query) {
+				query FindAllApplications($paginationArgs: ApplicationPaginationQuery!) {
+					findAllApplications(paginationArgs: $paginationArgs) {
 						results {
 							_id
 							customerName
@@ -216,7 +214,7 @@ export const applicationsApi = {
 					}
 				}
 			`,
-			variables: { query: params },
+			variables: { paginationArgs: params },
 		}),
 	create: (payload: any) =>
 		gqlFetch({
@@ -296,18 +294,26 @@ export const productsApi = {
 			query: `
 		        query FindAllProducts($paginationArgs: ProductPaginationQuery!) {
     		        findAllProducts(paginationArgs: $paginationArgs) {
-        			    results {
-							_id
-							name
-							lenderName
-							interestRate
-							maxAmount
-							isActive
-						}
-						count
-						page
-						pages
-					}
+        			  results {
+				    	  _id
+					      name
+					      productType
+					      interestRate
+						  commissionPercent
+					      maxAmount
+					      minAmount
+					      loanTerm
+					      isActive
+					      lender {
+					        _id
+					        username
+					        email
+						    }
+					    }
+					    count
+					    page
+					    pages
+					  }
 				}
 			`,
 			variables: { paginationArgs: params },
@@ -333,7 +339,6 @@ export const productsApi = {
 						    message
 						    product {
 						      _id,
-						      lenderName,
 						      name,
 						      description,
 						      productType
@@ -366,3 +371,88 @@ export const productsApi = {
 			variables: { id },
 		}),
 }
+
+export const productAssignmentsApi = {
+	assignToAggregators: (productId: string, aggregatorIds: string[]) =>
+		gqlFetch<{ assignProductToAggregators: { success: boolean; message: string } }>({
+			query: `
+        mutation AssignProduct($assignProductInput: AssignProductDto!) {
+          assignProductToAggregators(assignProductInput: $assignProductInput) {
+            success
+            message
+          }
+        }
+      `,
+			variables: {
+				assignProductInput: { productId, aggregatorIds },
+			},
+		}),
+
+	unassignFromAggregators: (productId: string, aggregatorIds: string[]) =>
+		gqlFetch<{ unassignProductFromAggregators: { success: boolean; message: string } }>({
+			query: `
+        mutation UnassignProduct($unassignProductInput: UnassignProductDto!) {
+          unassignProductFromAggregators(unassignProductInput: $unassignProductInput) {
+            success
+            message
+          }
+        }
+      `,
+			variables: {
+				unassignProductInput: { productId, aggregatorIds },
+			},
+		}),
+
+	getAssignedAggregators: (productId: string) =>
+		gqlFetch<{ getAssignedAggregators: string[] }>({
+			query: `
+        query GetAssignedAggregators($productId: ID!) {
+          getAssignedAggregators(productId: $productId)
+        }
+      `,
+			variables: { productId },
+		}),
+
+	getMyAssignedProducts: (page: number = 1, limit: number = 10) =>
+		gqlFetch<{
+			getMyAssignedProducts: {
+				results: any[];
+				count: number;
+				page: number;
+				pages: number;
+			};
+		}>({
+			query: `
+        query GetMyAssignedProducts($page: Int!, $limit: Int!) {
+          getMyAssignedProducts(page: $page, limit: $limit) {
+            results {
+              _id
+              product {
+                _id
+                name
+                productType
+                interestRate
+				commissionPercent
+                minAmount
+                maxAmount
+                loanTerm
+                isActive
+              }
+              lender {
+                _id
+                username
+                email
+                companyName
+              }
+              isActive
+              createdAt
+            }
+            count
+            page
+            pages
+          }
+        }
+      `,
+			variables: { page, limit },
+		}),
+};

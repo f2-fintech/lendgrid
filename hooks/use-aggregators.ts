@@ -69,12 +69,12 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
             let totalCommission = 0
 
             try {
-              const appResponse = await applicationsApi.list({
+              const appResponse = await applicationsApi.findAllApplications({
                 aggregatorId: agg._id,
                 limit: 1000
               })
-              if (appResponse.applications) {
-                const applications = appResponse.applications.results
+              if (appResponse.findAllApplications) {
+                const applications = appResponse.findAllApplications.results
                 totalApplications = applications.length
                 approvedApplications = applications.filter((app: any) =>
                   app.status === 'approved' || app.status === 'disbursed'
