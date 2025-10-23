@@ -529,7 +529,7 @@ export function LenderProducts(): JSX.Element {
             </div>
             <div className="flex justify-end space-x-4 pt-4">
               <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button type="submit" className="bg-gradient-to-r from-gold to-blue text-dark">
+              <Button type="submit" className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
                 {isEditMode ? 'Save Changes' : 'Create Product'}
               </Button>
             </div>

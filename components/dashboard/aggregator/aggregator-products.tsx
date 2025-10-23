@@ -211,7 +211,7 @@ export function AggregatorProducts() {
                         <DialogTrigger asChild>
                           <Button
                             size="sm"
-                            className="bg-gradient-to-r from-gold to-blue hover:from-gold/80 hover:to-blue/80 text-dark"
+                            className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-white"
                             onClick={() => setSelectedProduct(p)}
                           >
                             <Plus className="w-4 h-4 mr-2" /> Apply
@@ -264,7 +264,7 @@ export function AggregatorProducts() {
                                   toast({ title: 'Submission failed', description: e?.message || 'Try again.' })
                                 }
                               }}
-                              className="bg-gradient-to-r from-green-600 to-blue-600"
+                              className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-white"
                             >
                               Submit Application
                             </Button>

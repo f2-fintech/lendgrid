@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Loader2 } from 'lucide-react'
+import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
 import { usersApi } from '@/lib/api-client'
 
@@ -44,6 +44,8 @@ type AddLenderFormData = z.infer<typeof addLenderSchema>
 export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onLenderUpdated?: () => void }) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const { toast } = useToast()
 
   const {
@@ -303,13 +305,25 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                   <Label htmlFor="password" className="text-gray-300 font-medium">
                     Password
                   </Label>
-                  <Input
-                    id="password"
-                    type="password"
-                    {...register('password')}
-                    className="glass-input text-black placeholder-gray-400 h-12"
-                    placeholder="Enter new password (optional)"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      type={showPassword ? 'text' : 'password'}
+                      {...register('password')}
+                      className="glass-input text-black placeholder-gray-400 pr-11 h-12"
+                      placeholder="Enter new password "
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
+                      onClick={() => setShowPassword(!showPassword)}
+                      tabIndex={-1}
+                    >
+                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </Button>
+                  </div>
                   {errors.password && (
                     <p className="text-red-400 text-sm">{errors.password.message}</p>
                   )}
@@ -319,13 +333,25 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
                   <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">
                     Confirm Password
                   </Label>
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    {...register('confirmPassword')}
-                    className="glass-input text-black placeholder-gray-400 h-12"
-                    placeholder="Confirm new password"
-                  />
+                  <div className="relative">
+                    <Input
+                      id="confirmPassword"
+                      type={showConfirmPassword ? 'text' : 'password'}
+                      {...register('confirmPassword')}
+                      className="glass-input text-black placeholder-gray-400 pr-11 h-12"
+                      placeholder="Confirm new password"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      tabIndex={-1}
+                    >
+                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                    </Button>
+                  </div>
                   {errors.confirmPassword && (
                     <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
                   )}

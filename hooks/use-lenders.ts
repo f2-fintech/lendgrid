@@ -66,7 +66,7 @@ export function useLenders({ page, limit }: { page?: number; limit?: number }) {
         totalVolume: 0,
         productsCount: 0, // Not available in current API
         avgCommission: 0, // Not available in current API
-        createdAt: user.createdAt,
+  createdAt: user.createdAt ? new Date(user.createdAt).toLocaleDateString('en-GB') : 'Unknown',
         lastActivity: user.loginHistory?.length > 0
           ? new Date(user.loginHistory[user.loginHistory.length - 1]).toLocaleDateString('en-GB')
           : 'Never',
