@@ -221,7 +221,16 @@ export const applicationsApi = {
 			query: `
 				mutation CreateApplication($createApplicationInput: CreateApplicationDto!) {
 					createApplication(createApplicationInput: $createApplicationInput) {
-						_id
+						success
+				    	message
+			    		application {
+							_id
+							customerName
+							loanAmount
+							productId
+							lenderId
+							aggregatorId
+						}
 					}
 				}
 			`,
@@ -436,6 +445,7 @@ export const productAssignmentsApi = {
                 minAmount
                 maxAmount
                 loanTerm
+				tenure
                 isActive
               }
               lender {

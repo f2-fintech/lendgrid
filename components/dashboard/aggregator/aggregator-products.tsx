@@ -58,11 +58,11 @@ export function AggregatorProducts() {
         p.product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.product.productType?.toLowerCase().includes(searchTerm.toLowerCase())
       )
-      const matchesType = typeFilter === 'all' || p.type === typeFilter
+      const matchesType = typeFilter === 'all' || p.product.productType === typeFilter
       return matchesSearch && matchesType
     })
   }, [products, searchTerm, typeFilter])
-  // console.log(viewProduct, 'viewproduct', viewProduct.product.name)
+
   return (
     <div className="space-y-6">
       <motion.div
@@ -206,6 +206,7 @@ export function AggregatorProducts() {
                           </div>
                         </DialogContent>
                       </Dialog>
+
                       <Dialog open={applyDialogOpen && selectedProduct?._id === p._id} onOpenChange={(o) => { if (!o) setSelectedProduct(null); setApplyDialogOpen(o) }}>
                         <DialogTrigger asChild>
                           <Button
@@ -216,9 +217,10 @@ export function AggregatorProducts() {
                             <Plus className="w-4 h-4 mr-2" /> Apply
                           </Button>
                         </DialogTrigger>
+
                         <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg">
                           <DialogHeader>
-                            <DialogTitle>Apply for {selectedProduct?.name}</DialogTitle>
+                            <DialogTitle>Apply for {selectedProduct?.product?.name}</DialogTitle>
                             <DialogDescription className="text-gray-400">Submit customer details to initiate application</DialogDescription>
                           </DialogHeader>
                           <div className="grid grid-cols-2 gap-4 py-2">
@@ -247,17 +249,11 @@ export function AggregatorProducts() {
                                   if (!selectedProduct) return
                                   await applicationsApi.create({
                                     aggregatorId: (user as any)?._id || (user as any)?.id,
-                                    lenderId: selectedProduct.lenderId?._id || selectedProduct.lenderId,
-                                    lenderName: selectedProduct.lenderName || selectedProduct.lenderId?.username || selectedProduct.lenderId?.email || 'Unknown',
-                                    productId: selectedProduct._id,
-                                    productName: selectedProduct.name,
-                                    productType: selectedProduct.type,
-                                    productInterestRate: selectedProduct.interestRate,
-                                    productCommissionPercent: selectedProduct.commissionPercent,
+                                    lenderId: selectedProduct.lender?._id,
+                                    productId: selectedProduct.product?._id,
                                     customerName: form.customerName,
                                     customerEmail: form.customerEmail,
                                     customerPhone: form.customerPhone,
-                                    loanType: selectedProduct.type,
                                     loanAmount: Number(form.loanAmount || 0),
                                   })
                                   toast({ title: 'Application submitted' })
