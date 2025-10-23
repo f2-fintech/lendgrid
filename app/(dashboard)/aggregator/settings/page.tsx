@@ -6,12 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { KycForm } from '@/components/dashboard/aggregator/kyc-form'
 import { SettingsForm } from '@/components/dashboard/aggregator/settings-form'
-import { AggregatorSettings } from '@/components/dashboard/aggregator/aggregator-settings'
-import { useState } from 'react'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { KycForm } from '@/components/dashboard/aggregator/kyc-form'
-import { SettingsForm } from '@/components/dashboard/aggregator/settings-form'
+
 export default function AggregatorSettingsPage() {
   return (
     <div className="space-y-8">
