@@ -211,7 +211,7 @@ export function LandingPage() {
               </Button>
             </Link>
             <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
-              List Your Lender Products
+              List Your Landing Products
               <Building2 className="ml-2 w-5 h-5" />
             </Button>
           </motion.div>
@@ -570,8 +570,16 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Lenders Carousel */}
-      <section id="lenders" className="px-6 py-20 relative z-10">
+
+      {
+        <section>
+
+        </section>
+      }
+
+
+      {/* Pain Points Section: Borrowers, Lenders, Aggregators */}
+      <section id="pain-points" className="px-6 py-20 relative z-10">
         <div className="max-w-7xl mx-auto text-center">
           <motion.h2
             className="text-4xl md:text-5xl font-bold mb-6 gradient-text"
@@ -579,7 +587,7 @@ export function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
           >
-            Trusted by Leading Lenders
+            Common Pain Points
           </motion.h2>
           <motion.p
             className="text-xl text-gray-300 mb-12"
@@ -587,10 +595,201 @@ export function LandingPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
-            Partner with India's top financial institutions
+            Challenges faced by Borrowers, Lenders and Aggregators...!
           </motion.p>
 
-          <LendersCarousel />
+          <div className="grid md:grid-cols-3 gap-6">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <Card className="enhanced-card h-full hover:shadow-2xl hover:-translate-y-2 transform transition-all duration-300 border-l-4 border-gold/60">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-lg bg-gold/20 flex items-center justify-center text-gold">
+                      <Users className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-gold mb-2 leading-tight">Borrowers</h3>
+                      <p className="text-gray-500 mb-3 leading-relaxed">Common issues borrowers face:
+                        <br />
+                        <br />
+                      </p>
+                      <ul className="text-gray-300 space-y-2 text-sm text-left">
+                        <li className="flex items-start"><span className="text-gold mr-2">●</span>slow approvals</li>
+                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Difficult to compare lenders</li>
+                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Confusing interest rates</li>
+                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Lack of transparency</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              <Card className="enhanced-card h-full hover:shadow-2xl hover:-translate-y-2 transform transition-all duration-300 border-l-4 border-blue/50">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-lg bg-blue/10 flex items-center justify-center text-blue">
+                      <Building2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-blue mb-2 leading-tight">Lenders</h3>
+                      <p className="text-gray-500 mb-3 leading-relaxed">Challenges lenders experience:
+                        <br />
+                        <br />
+                      </p>
+                      <ul className="text-gray-300 space-y-2 text-sm text-left">
+                        <li className="flex items-start"><span className="text-blue mr-2">●</span>incomplete applications</li>
+                        <li className="flex items-start"><span className="text-blue mr-2">●</span>High drop-offs</li>
+                        <li className="flex items-start"><span className="text-blue mr-2">●</span>Repeated follow-ups</li>
+                        <li className="flex items-start"><span className="text-blue mr-2">●</span>Low conversion rate</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+            >
+              <Card className="enhanced-card h-full hover:shadow-2xl hover:-translate-y-2 transform transition-all duration-300 border-l-4 border-green-400/40">
+                <CardContent className="p-6">
+                  <div className="flex items-start space-x-4">
+                    <div className="w-12 h-12 rounded-lg bg-green-100/10 flex items-center justify-center text-green-400">
+                      <Percent className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-semibold text-green-400 mb-2 leading-tight">Aggregators</h3>
+                      <p className="text-gray-500 mb-3 leading-relaxed">Pain points aggregators often report:
+                       <br />
+                       <br />
+                      </p>
+                      <ul className="text-gray-300 space-y-2 text-sm text-left">
+                        <li className="flex items-start"><span className="text-green-400 mr-2">●</span>no real time loan updates</li>
+                        <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Unclear commission terms</li>
+                        <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Slow lender responses</li>
+                        <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Lack of product training</li>
+                      </ul>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* How LendGrid Solves It - Features */}
+      <section id="features-solution" className="px-6 py-20 relative z-10">
+        <div className="max-w-7xl mx-auto text-center">
+          <motion.h2
+            className="text-4xl md:text-5xl font-bold mb-6 gradient-text"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            How LendGrid Solves It
+          </motion.h2>
+          <motion.p
+            className="text-xl text-gray-300 mb-12"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            One platform — powerful features to make lending simple, transparent and fast
+          </motion.p>
+
+          <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <Percent className="w-6 h-6 text-gold mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">All loans on one platform</h4>
+                  <p className="text-gray-300 text-sm">Browse and compare products across multiple lenders</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <TrendingUp className="w-6 h-6 text-blue mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">Track your loan live</h4>
+                  <p className="text-gray-300 text-sm">Real-time status updates from application to disbursal</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <CreditCard className="w-6 h-6 text-green-400 mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">Lowest interest rates</h4>
+                  <p className="text-gray-300 text-sm">Compare rates and pick the best fit for your needs</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <Calculator className="w-6 h-6 text-gold mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">Instant eligibility check</h4>
+                  <p className="text-gray-300 text-sm">Quick pre-checks to save time and reduce drop-offs</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <Users className="w-6 h-6 text-blue mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">Expert guidance</h4>
+                  <p className="text-gray-300 text-sm">Help at every step from product selection to disbursal</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <Zap className="w-6 h-6 text-green-400 mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">100% paperless process</h4>
+                  <p className="text-gray-300 text-sm">Fast, secure e-docs and e-sign workflows</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <Building2 className="w-6 h-6 text-gold mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">50+ lenders</h4>
+                  <p className="text-gray-300 text-sm">Access a large network of banks, NBFCs and fintech lenders</p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="enhanced-card">
+              <CardContent className="p-6 flex items-start space-x-4">
+                <Shield className="w-6 h-6 text-blue mt-1" />
+                <div className="text-left">
+                  <h4 className="font-semibold text-white">Safe, simple & transparent</h4>
+                  <p className="text-gray-300 text-sm">Secure transactions with clear terms and easy UX</p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </section>
 
@@ -654,6 +853,8 @@ export function LandingPage() {
         </div>
       </section>
 
+
+
       {/* Contact Form */}
       <section id="contact" className="px-6 py-20 relative z-10">
         <div className="max-w-4xl mx-auto">
@@ -689,7 +890,7 @@ export function LandingPage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">Full Name</label>
                       <Input
                         {...register("name", { required: "Name is required" })}
-                        className="glass-input text-white placeholder-gray-400"
+                        className="glass-input text-black placeholder-gray-400"
                         placeholder="Enter your full name"
                       />
                       {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message as string}</p>}
@@ -699,7 +900,7 @@ export function LandingPage() {
                       <Input
                         type="email"
                         {...register("email", { required: "Email is required" })}
-                        className="glass-input text-white placeholder-gray-400"
+                        className="glass-input text-black placeholder-gray-400"
                         placeholder="Enter your email"
                       />
                       {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email.message as string}</p>}
@@ -710,14 +911,14 @@ export function LandingPage() {
                     <div>
                       <label className="block text-sm font-medium mb-2 text-gray-300">Role</label>
                       <Select>
-                        <SelectTrigger className="glass-input text-white">
+                        <SelectTrigger className="glass-input text-gray-600">
                           <SelectValue placeholder="Select your role" />
                         </SelectTrigger>
                         <SelectContent className="glass-card border-white/10">
-                          <SelectItem value="aggregator" className="text-white hover:bg-white/10">
+                          <SelectItem value="aggregator" className="text-black hover:bg-white/10">
                             Loan Aggregator
                           </SelectItem>
-                          <SelectItem value="lender" className="text-white hover:bg-white/10">
+                          <SelectItem value="lender" className="text-black hover:bg-white/10">
                             Lender
                           </SelectItem>
                         </SelectContent>
@@ -727,7 +928,7 @@ export function LandingPage() {
                       <label className="block text-sm font-medium mb-2 text-gray-300">Company Name</label>
                       <Input
                         {...register("company", { required: "Company name is required" })}
-                        className="glass-input text-white placeholder-gray-400"
+                        className="glass-input text-black placeholder-gray-400"
                         placeholder="Enter company name"
                       />
                     </div>
@@ -737,7 +938,7 @@ export function LandingPage() {
                     <label className="block text-sm font-medium mb-2 text-gray-300">Message</label>
                     <Textarea
                       {...register("message")}
-                      className="glass-input text-white placeholder-gray-400 min-h-[120px]"
+                      className="glass-input text-black placeholder-gray-400 min-h-[120px]"
                       placeholder="Tell us about your requirements..."
                     />
                   </div>

@@ -16,6 +16,7 @@ export interface Aggregator {
   conversionRate?: number
   totalCommission?: number
   kycStatus?: string
+  createdAt?: string
   pincode: string
   gender: string
   dob: string
@@ -97,6 +98,7 @@ export function useAggregators({ page, limit }: { page?: number; limit?: number 
               username: agg.username,
               email: agg.email,
               contact: agg.contact,
+              createdAt: agg.createdAt ? new Date(agg.createdAt).toLocaleDateString('en-GB') : 'Unknown',
               status: agg.status,
               totalApplications,
               approvedApplications,

@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CreditCard, Eye, EyeOff, ArrowRight, Loader2 } from 'lucide-react';
+import { CreditCard, Eye, EyeOff, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
 
 import { usersApi } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
@@ -127,12 +127,23 @@ export function LoginForm() {
     >
       <Card className="enhanced-card">
         <CardHeader className="text-center pb-8">
+          <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="absolute left-3 top-3 text-gold "
+              onClick={() => router.push('/')}
+            >
+              <ArrowLeft className="w-4 h-4 text-gold " />
+              Back
+            </Button>
           <motion.div
             className="flex items-center justify-center mb-6"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
+            
             <div className="w-12 h-12 bg-gradient flex items-center justify-center shadow-2xl">
               <img
                 src="/logo.png" // Replace with your logo path

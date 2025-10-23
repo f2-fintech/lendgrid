@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, CreditCard, Loader2, Building2, Users } from 'lucide-react';
+import { Eye, EyeOff, CreditCard, Loader2, Building2, Users, ArrowLeft } from 'lucide-react';
 
 import { usersApi } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
@@ -91,8 +91,8 @@ export function SignupForm() {
       };
 
       // Register user
-      const createdUser = await usersApi.register(payload);
-      const result = createdUser?.createUser;
+  const createdUser = await usersApi.register(payload);
+  const result = (createdUser as any)?.createUser;
 
       // If registration failed, stop here and show toast
       if (!result?.success) {
@@ -164,7 +164,17 @@ export function SignupForm() {
       className="w-full max-w-md"
     >
       <Card className="enhanced-card">
-        <CardHeader className="text-center pb-8">
+        <CardHeader className="text-center pb-8 relative">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute left-3 top-3 text-gold "
+            onClick={() => router.push('/')}
+          >
+            <ArrowLeft className="w-4 h-4 text-gold " />
+            Back
+          </Button>
           <motion.div
             className="flex items-center justify-center mb-6"
             initial={{ scale: 0.8 }}
@@ -337,7 +347,7 @@ export function SignupForm() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary h-12 text-gold font-semibold rounded-xl mt-6"
+              className="w-full btn-primary h-12 text-gold font-semibold rounded-xl mt-6 "
             >
               {isLoading ? (
                 <>

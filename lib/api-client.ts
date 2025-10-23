@@ -111,9 +111,10 @@ export const usersApi = {
 		        usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }) {
         		  results {
         		    _id
-					username
+						username
 					email
 					contact
+						createdAt
 					companyName
 					gender
 					address
