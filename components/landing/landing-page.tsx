@@ -992,6 +992,22 @@ export function LandingPage() {
                 <h4 className="font-semibold mb-4 text-white text-lg">{section.title}</h4>
                 <ul className="space-y-3 text-gray-400">
                   {section.links.map((link, linkIndex) => {
+                    // Special handling for platform role links
+                    if (link === 'For Aggregators' || link === 'For Lenders') {
+                      const roleKey = link === 'For Aggregators' ? 'aggregator' : 'lender'
+                      // Directly navigate to login with role query param
+                      return (
+                        <li key={linkIndex}>
+                          <Link
+                            href={`${navigationPaths.login}?role=${roleKey === 'aggregator' ? 'aggregator_admin' : 'lender_admin'}`}
+                            className="hover:text-gold transition-colors duration-300 hover:underline cursor-pointer"
+                          >
+                            {link}
+                          </Link>
+                        </li>
+                      )
+                    }
+
                     const path =
                       `/` +
                       link
