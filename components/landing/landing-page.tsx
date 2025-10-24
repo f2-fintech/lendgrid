@@ -34,7 +34,7 @@ import { lenderNames, LendersCarousel } from "@/components/ui/carousel-lenders"
 const testimonials = [
   {
     name: "Rajesh Kumar",
-    company: "F2 Fintech",
+    company: "Aditiya Birla Finance",
     role: "CEO",
     image: "/placeholder.svg?height=60&width=60&text=RK",
     review: "LendGrid transformed our loan distribution process. 40% increase in commissions within 3 months!",
