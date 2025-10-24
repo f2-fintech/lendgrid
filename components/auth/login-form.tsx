@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { CreditCard, Eye, EyeOff, ArrowRight, Loader2, ArrowLeft } from 'lucide-react';
+import { CreditCard, Eye, EyeOff, ArrowRight, Loader2, ArrowLeft, Users, Building2, BrickWall } from 'lucide-react';
 
 import { usersApi } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
@@ -176,13 +176,22 @@ export function LoginForm() {
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
                   <SelectItem value="super_admin" className="text-black hover:bg-white/10 cursor-pointer">
+                  <div className="flex items-center">
+                  <BrickWall className="w-4 h-4 mr-2" />
                     Super Admin
+                    </div>
                   </SelectItem>
                   <SelectItem value="aggregator_admin" className="text-black hover:bg-white/10 cursor-pointer">
+                  <div className="flex items-center">
+                  <Users className="w-4 h-4 mr-2" />
                     Aggregator Admin
+                    </div>
                   </SelectItem>
                   <SelectItem value="lender_admin" className="text-black hover:bg-white/10 cursor-pointer">
+                  <div className="flex items-center">
+                  <Building2 className="w-4 h-4 mr-2 " />
                     Lender Admin
+                    </div>
                   </SelectItem>
                 </SelectContent>
               </Select>

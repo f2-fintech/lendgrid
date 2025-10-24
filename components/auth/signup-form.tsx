@@ -213,13 +213,13 @@ export function SignupForm() {
                   <SelectItem value="aggregator" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
                     <div className="flex items-center">
                       <Users className="w-4 h-4 mr-2" />
-                      Loan Aggregator
+                      Aggregator Admin
                     </div>
                   </SelectItem>
                   <SelectItem value="lender" className="text-bg-white/10 hover:bg-white/10 cursor-pointer">
                     <div className="flex items-center">
                       <Building2 className="w-4 h-4 mr-2 " />
-                      Lender
+                      Lender Admin
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -237,7 +237,7 @@ export function SignupForm() {
               <Input
                 id="companyName"
                 {...register('companyName')}
-                className="glass-input text-white placeholder-gray-500 h-11"
+                className="glass-input text-black placeholder-gray-500 h-11"
                 placeholder="Your Company Ltd."
                 disabled={isLoading}
               />
@@ -272,7 +272,7 @@ export function SignupForm() {
                 id="email"
                 type="email"
                 {...register('email')}
-                className="glass-input text-white placeholder-gray-500 h-11"
+                className="glass-input text-black placeholder-gray-500 h-11"
                 placeholder="john@company.com"
                 disabled={isLoading}
               />
@@ -322,7 +322,7 @@ export function SignupForm() {
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
                   {...register('confirmPassword')}
-                  className="glass-input text-white placeholder-gray-500 pr-11 h-11"
+                  className="glass-input text-black placeholder-gray-500 pr-11 h-11"
                   placeholder="Re-enter your password"
                   disabled={isLoading}
                 />
