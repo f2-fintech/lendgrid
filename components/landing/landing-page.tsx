@@ -211,7 +211,7 @@ export function LandingPage() {
               </Button>
             </Link>
             <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
-              List Your Landing Products
+              List Your Lending Products
               <Building2 className="ml-2 w-5 h-5" />
             </Button>
           </motion.div>
