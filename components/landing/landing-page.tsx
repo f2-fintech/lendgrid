@@ -153,7 +153,7 @@ export function LandingPage() {
             <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
           </motion.div>
           <div className="hidden md:flex items-center space-x-8">
-            {["Features", "Lenders", "Testimonials", "Contact"].map((item, index) => (
+            {["Features", "Solution", "Testimonials", "Contact"].map((item, index) => (
               <motion.a
                 key={item}
                 href={`#${item.toLowerCase()}`}
@@ -210,10 +210,12 @@ export function LandingPage() {
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
+            <Link href={navigationPaths.login}>
             <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
               List Your Lending Products
               <Building2 className="ml-2 w-5 h-5" />
             </Button>
+            </Link>
           </motion.div>
 
           {/* Commission Logic Visualization */}
@@ -609,7 +611,7 @@ export function LandingPage() {
                         <br />
                       </p>
                       <ul className="text-gray-300 space-y-2 text-sm text-left">
-                        <li className="flex items-start"><span className="text-gold mr-2">●</span>slow approvals</li>
+                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Slow approvals</li>
                         <li className="flex items-start"><span className="text-gold mr-2">●</span>Difficult to compare lenders</li>
                         <li className="flex items-start"><span className="text-gold mr-2">●</span>Confusing interest rates</li>
                         <li className="flex items-start"><span className="text-gold mr-2">●</span>Lack of transparency</li>
@@ -638,7 +640,7 @@ export function LandingPage() {
                         <br />
                       </p>
                       <ul className="text-gray-300 space-y-2 text-sm text-left">
-                        <li className="flex items-start"><span className="text-blue mr-2">●</span>incomplete applications</li>
+                        <li className="flex items-start"><span className="text-blue mr-2">●</span>Incomplete applications</li>
                         <li className="flex items-start"><span className="text-blue mr-2">●</span>High drop-offs</li>
                         <li className="flex items-start"><span className="text-blue mr-2">●</span>Repeated follow-ups</li>
                         <li className="flex items-start"><span className="text-blue mr-2">●</span>Low conversion rate</li>
@@ -662,12 +664,12 @@ export function LandingPage() {
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-green-400 mb-2 leading-tight">Aggregators</h3>
-                      <p className="text-gray-500 mb-3 leading-relaxed">Pain points aggregators often report:
+                      <p className="text-gray-500 mb-3 leading-relaxed">Aggregators often report:
                        <br />
                        <br />
                       </p>
                       <ul className="text-gray-300 space-y-2 text-sm text-left">
-                        <li className="flex items-start"><span className="text-green-400 mr-2">●</span>no real time loan updates</li>
+                        <li className="flex items-start"><span className="text-green-400 mr-2">●</span>No real time loan updates</li>
                         <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Unclear commission terms</li>
                         <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Slow lender responses</li>
                         <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Lack of product training</li>
@@ -682,7 +684,7 @@ export function LandingPage() {
       </section>
 
       {/* How LendGrid Solves It - Features */}
-      <section id="features-solution" className="px-6 py-20 relative z-10">
+      <section id="solution" className="px-6 py-20 relative z-10">
         <div className="max-w-7xl mx-auto text-center">
           <motion.h2
             className="text-4xl md:text-5xl font-bold mb-6 gradient-text"
