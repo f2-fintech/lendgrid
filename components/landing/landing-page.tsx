@@ -217,7 +217,7 @@ export function LandingPage() {
           </motion.div>
 
           {/* Commission Logic Visualization */}
-          <motion.div
+          {/* <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.8, delay: 0.4 }}
@@ -432,12 +432,12 @@ export function LandingPage() {
                 }}
               />
             </svg>
-          </motion.div>
+          </motion.div> */}
         </div>
       </section>
 
       {/* Features Section */}
-      <section id="features" className="px-6 py-20 relative z-10">
+      <section id="features" className="px-6 py-2 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <motion.h2
@@ -570,16 +570,8 @@ export function LandingPage() {
         </div>
       </section>
 
-
-      {
-        <section>
-
-        </section>
-      }
-
-
       {/* Pain Points Section: Borrowers, Lenders, Aggregators */}
-      <section id="pain-points" className="px-6 py-20 relative z-10">
+      <section id="pain-points" className="px-6 py-2 relative z-10">
         <div className="max-w-7xl mx-auto text-center">
           <motion.h2
             className="text-4xl md:text-5xl font-bold mb-6 gradient-text"
@@ -794,7 +786,7 @@ export function LandingPage() {
       </section>
 
       {/* Testimonials */}
-      <section id="testimonials" className="px-6 py-20 relative z-10">
+      <section id="testimonials" className="px-6 py-10 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-16">
             <motion.h2
@@ -856,7 +848,7 @@ export function LandingPage() {
 
 
       {/* Contact Form */}
-      <section id="contact" className="px-6 py-20 relative z-10">
+      <section id="contact" className="px-6 py-10 relative z-10">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-12">
             <motion.h2
@@ -955,7 +947,7 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-12 glass-card border-t border-white/10 relative z-10">
+      <footer className="px-6 py-10 glass-card border-t border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
