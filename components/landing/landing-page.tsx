@@ -204,19 +204,24 @@ export function LandingPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
           >
-            <Link href={navigationPaths.login}>
+            {/* LINK 1: Aggregator Admin Pre-select */}
+            {/* 1. Join as Loan Aggregator -> Sets role=aggregator_admin */}
+            <Link href={`${navigationPaths.login}?role=aggregator_admin`}>
               <Button className="btn-primary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 shadow-2xl  hover:text-gold">
                 Join as Loan Aggregator
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>
-            <Link href={navigationPaths.login}>
-            <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
-              List Your Lending Products
-              <Building2 className="ml-2 w-5 h-5" />
-            </Button>
+
+            {/* 2. List Your Lending Products -> Sets role=lender_admin */}
+            <Link href={`${navigationPaths.login}?role=lender_admin`}>
+              <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
+                List Your Lending Products
+                <Building2 className="ml-2 w-5 h-5" />
+              </Button>
             </Link>
           </motion.div>
+
 
           {/* Commission Logic Visualization */}
           {/* <motion.div
@@ -665,8 +670,8 @@ export function LandingPage() {
                     <div>
                       <h3 className="text-xl font-semibold text-green-400 mb-2 leading-tight">Aggregators</h3>
                       <p className="text-gray-500 mb-3 leading-relaxed">Aggregators often report:
-                       <br />
-                       <br />
+                        <br />
+                        <br />
                       </p>
                       <ul className="text-gray-300 space-y-2 text-sm text-left">
                         <li className="flex items-start"><span className="text-green-400 mr-2">●</span>No real time loan updates</li>

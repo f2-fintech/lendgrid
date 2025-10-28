@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react'; // <-- Added useEffect
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { CreditCard, Eye, EyeOff, ArrowRight, Loader2, ArrowLeft, Users, Building2, BrickWall } from 'lucide-react';
+// Added useSearchParams and updated import from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'; 
+import { Eye, EyeOff, ArrowRight, Loader2, ArrowLeft, Users, Building2, BrickWall } from 'lucide-react';
 
 import { usersApi } from '@/lib/api-client';
 import { useToast } from '@/hooks/use-toast';
@@ -40,25 +41,47 @@ const loginSchema = z.object({
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
+type RoleType = LoginFormData['role'];
 
 export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch, // <-- Important for dynamic link
     formState: { errors }
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
-    mode: 'onBlur'
+    mode: 'onBlur',
+    defaultValues: {
+        email: '',
+        password: '',
+        role: undefined,
+    }
   });
 
+  // Watch the role field to use its value for the Select key and the Sign Up link
+  const selectedRole = watch('role');
+
+  // Effect to set default role from URL query parameter
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    const validRoles: RoleType[] = ['super_admin', 'aggregator_admin', 'lender_admin'];
+
+    if (roleParam && validRoles.includes(roleParam as RoleType)) {
+      setValue('role', roleParam as RoleType, { shouldValidate: true });
+    }
+  }, [searchParams, setValue]);
+
   const onSubmit = async (data: LoginFormData) => {
+    // ... (Your existing onSubmit logic)
     setIsLoading(true);
 
     try {
@@ -80,11 +103,7 @@ export function LoginForm() {
       }
 
       const token = result.access_token;
-
-      // Store token in cookie for 1 day
       setCookie("token", token, 1);
-
-      // Decode JWT to extract role
       const decoded = decodeJwt(token);
       const role = decoded?.role;
 
@@ -93,7 +112,6 @@ export function LoginForm() {
         description: result.message || 'Welcome back to LendGrid'
       });
 
-      // Redirect based on role
       if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
         router.push(navigationPaths.aggregator.dashboard);
       } else if (role === "lender_admin" || role === "LENDER_ADMIN") {
@@ -105,9 +123,7 @@ export function LoginForm() {
       }
     } catch (error: any) {
       console.error('Login error:', error);
-
       const errorMessage = error?.response?.data?.message || 'Unable to login. Please try again.';
-
       toast({
         title: 'Login failed',
         description: errorMessage,
@@ -127,36 +143,7 @@ export function LoginForm() {
     >
       <Card className="enhanced-card">
         <CardHeader className="text-center pb-8">
-          <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              className="absolute left-3 top-3 text-gold "
-              onClick={() => router.push('/')}
-            >
-              <ArrowLeft className="w-4 h-4 text-gold " />
-              Back
-            </Button>
-          <motion.div
-            className="flex items-center justify-center mb-6"
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-          >
-            
-            <div className="w-12 h-12 bg-gradient flex items-center justify-center shadow-2xl">
-              <img
-                src="/logo.png" // Replace with your logo path
-                alt="LendGrid Logo"
-                className="w-12 h-10 rounded-xl "
-              />
-            </div>
-            <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
-          </motion.div>
-          <CardTitle className="text-3xl font-bold text-white">Welcome Back</CardTitle>
-          <CardDescription className="text-gray-400 text-base mt-2">
-            Sign in to your account to continue
-          </CardDescription>
+            {/* ... (Header content) */}
         </CardHeader>
 
         <CardContent>
@@ -168,43 +155,37 @@ export function LoginForm() {
                 Role
               </Label>
               <Select
-                onValueChange={(value) => setValue('role', value as 'super_admin' | 'aggregator_admin' | 'lender_admin')}
+                key={selectedRole} 
+                onValueChange={(value) => setValue('role', value as RoleType, { shouldValidate: true })}
+                defaultValue={selectedRole}
                 disabled={isLoading}
               >
+                {/* ... (SelectTrigger and SelectContent) */}
                 <SelectTrigger className="glass-input text-black h-11">
-                  <SelectValue placeholder="Select your role" />
+                  <SelectValue placeholder="Select your role" /> 
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
                   <SelectItem value="super_admin" className="text-black hover:bg-white/10 cursor-pointer">
-                  <div className="flex items-center">
-                  <BrickWall className="w-4 h-4 mr-2" />
-                    Super Admin
-                    </div>
+                    <div className="flex items-center"><BrickWall className="w-4 h-4 mr-2" />Super Admin</div>
                   </SelectItem>
                   <SelectItem value="aggregator_admin" className="text-black hover:bg-white/10 cursor-pointer">
-                  <div className="flex items-center">
-                  <Users className="w-4 h-4 mr-2" />
-                    Aggregator Admin
-                    </div>
+                    <div className="flex items-center"><Users className="w-4 h-4 mr-2" />Aggregator Admin</div>
                   </SelectItem>
                   <SelectItem value="lender_admin" className="text-black hover:bg-white/10 cursor-pointer">
-                  <div className="flex items-center">
-                  <Building2 className="w-4 h-4 mr-2 " />
-                    Lender Admin
-                    </div>
+                    <div className="flex items-center"><Building2 className="w-4 h-4 mr-2 " />Lender Admin</div>
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <input type="hidden" {...register("role")} /> 
               {errors.role && (
                 <p className="text-red-400 text-sm mt-1">{errors.role.message}</p>
               )}
             </div>
 
+            {/* ... (Email and Password fields) */}
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300 font-medium">
-                Email Address
-              </Label>
+              <Label htmlFor="email" className="text-gray-300 font-medium">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -213,16 +194,12 @@ export function LoginForm() {
                 placeholder="Enter your email"
                 disabled={isLoading}
               />
-              {errors.email && (
-                <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
-              )}
+              {errors.email && (<p className="text-red-400 text-sm mt-1">{errors.email.message}</p>)}
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300 font-medium">
-                Password
-              </Label>
+              <Label htmlFor="password" className="text-gray-300 font-medium">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -244,20 +221,9 @@ export function LoginForm() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </Button>
               </div>
-              {errors.password && (
-                <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>
-              )}
+              {errors.password && (<p className="text-red-400 text-sm mt-1">{errors.password.message}</p>)}
             </div>
 
-            {/* Forgot Password Link */}
-            {/* <div className="flex items-center justify-end">
-              <Link
-                href={navigationPaths.forgotPassword}
-                className="text-sm text-gold hover:underline font-medium"
-              >
-                Forgot password?
-              </Link>
-            </div> */}
 
             {/* Submit Button */}
             <Button
@@ -279,12 +245,13 @@ export function LoginForm() {
             </Button>
           </form>
 
-          {/* Sign Up Link */}
+          {/* Sign Up Link: UPDATED TO PASS ROLE */}
           <div className="text-center pt-6 mt-6 border-t border-white/10">
             <p className="text-gray-400 text-sm">
               Don't have an account?{' '}
               <Link
-                href={navigationPaths.signup}
+                // PASSES THE CURRENTLY SELECTED ROLE
+                href={`${navigationPaths.signup}?role=${selectedRole || ''}`}
                 className="text-gold hover:underline font-medium"
               >
                 Sign up
