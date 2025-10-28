@@ -86,8 +86,8 @@ export function useLenders({ page, limit }: { page?: number; limit?: number }) {
         pages: response.usersByRole.pages,
         metrics: {
           totalLenders: response.usersByRole.count,
-          activeLenders: activeLenders,
-          pendingApprovals: pendingLenders,
+          activeLenders:transformedLenders.filter(l => l.status === 'ACTIVE').length,
+          pendingApprovals: transformedLenders.filter(l => l.status === 'Pending').length,
           avgCommissionRate: 3.2
         }
       })

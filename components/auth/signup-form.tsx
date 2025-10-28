@@ -1,8 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react'; // <-- Added useEffect
+import { useRouter, useSearchParams } from 'next/navigation'; // <-- Added useSearchParams
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,6 +18,15 @@ import { navigationPaths } from '@/lib/navigation';
 import { decodeJwt, setCookie } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+// --- ROLE MAPPING UTILITY ---
+const mapLoginRoleToSignupType = (loginRole: string | null): 'aggregator' | 'lender' | undefined => {
+    if (loginRole === 'aggregator_admin') return 'aggregator';
+    if (loginRole === 'lender_admin') return 'lender';
+    return undefined;
+};
+// ----------------------------
+
 
 // Validation Schema
 const signupSchema = z.object({
@@ -54,6 +63,8 @@ const signupSchema = z.object({
 });
 
 type SignupFormData = z.infer<typeof signupSchema>;
+type UserType = SignupFormData['userType'];
+
 
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -61,17 +72,37 @@ export function SignupForm() {
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
+  const searchParams = useSearchParams(); // <-- Initialize useSearchParams
   const { toast } = useToast();
 
   const {
     register,
     handleSubmit,
     setValue,
+    watch, // <-- Important for Select key and setting default values
     formState: { errors }
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
-    mode: 'onBlur'
+    mode: 'onBlur',
+    defaultValues: {
+        userType: undefined, // Initialize as undefined
+    }
   });
+
+  // Watch the userType field for the Select key
+  const selectedUserType = watch('userType');
+
+  // --- EFFECT TO PRE-SELECT ROLE FROM URL ---
+  useEffect(() => {
+    const roleParam = searchParams.get('role');
+    const userType = mapLoginRoleToSignupType(roleParam);
+
+    if (userType) {
+      // Set the userType value and validate it
+      setValue('userType', userType, { shouldValidate: true });
+    }
+  }, [searchParams, setValue]); 
+  // ------------------------------------------
 
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
@@ -91,10 +122,11 @@ export function SignupForm() {
       };
 
       // Register user
-  const createdUser = await usersApi.register(payload);
-  const result = (createdUser as any)?.createUser;
+      const createdUser = await usersApi.register(payload);
+      const result = (createdUser as any)?.createUser;
 
-      // If registration failed, stop here and show toast
+      // ... (Rest of signup logic: check success, auto-login, redirect)
+
       if (!result?.success) {
         toast({
           title: "Signup failed",
@@ -105,7 +137,6 @@ export function SignupForm() {
         return;
       }
 
-      // Auto login after successful registration
       const loginResponse = await usersApi.login({
         email: data.email,
         password: data.password,
@@ -114,10 +145,7 @@ export function SignupForm() {
       const token = loginResponse?.login?.access_token;
 
       if (token) {
-        // Store token in cookie for 1 day
         setCookie("token", token, 1);
-
-        // Decode JWT to extract role
         const decoded = decodeJwt(token);
         const role = decoded?.role;
 
@@ -126,7 +154,6 @@ export function SignupForm() {
           description: "Welcome to LendGrid",
         });
 
-        // Redirect based on role
         if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
           router.push(navigationPaths.aggregator.dashboard);
         } else if (role === "lender_admin" || role === "LENDER_ADMIN") {
@@ -175,6 +202,7 @@ export function SignupForm() {
             <ArrowLeft className="w-4 h-4 text-gold " />
             Back
           </Button>
+          {/* ... (Logo and Title) */}
           <motion.div
             className="flex items-center justify-center mb-6"
             initial={{ scale: 0.8 }}
@@ -199,11 +227,14 @@ export function SignupForm() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-            {/* User Type */}
+            {/* User Type - Now uses key={selectedUserType} */}
             <div className="space-y-2">
               <Label className="text-gray-300 font-medium">User Type</Label>
               <Select
-                onValueChange={(value) => setValue('userType', value as 'aggregator' | 'lender')}
+                // Key forces re-render when userType is set by useEffect
+                key={selectedUserType} 
+                onValueChange={(value) => setValue('userType', value as UserType, { shouldValidate: true })}
+                defaultValue={selectedUserType} // Set the default value for display
                 disabled={isLoading}
               >
                 <SelectTrigger className="glass-input text-bg-white/10 h-11">
@@ -224,16 +255,17 @@ export function SignupForm() {
                   </SelectItem>
                 </SelectContent>
               </Select>
+              <input type="hidden" {...register("userType")} />
               {errors.userType && (
                 <p className="text-red-400 text-sm mt-1">{errors.userType.message}</p>
               )}
             </div>
 
+            {/* ... (Remaining fields: Company Name, Full Name, Email, Password, Confirm Password) */}
+            
             {/* Company Name */}
             <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-gray-300 font-medium">
-                Company Name
-              </Label>
+              <Label htmlFor="companyName" className="text-gray-300 font-medium">Company Name</Label>
               <Input
                 id="companyName"
                 {...register('companyName')}
@@ -241,16 +273,12 @@ export function SignupForm() {
                 placeholder="Your Company Ltd."
                 disabled={isLoading}
               />
-              {errors.companyName && (
-                <p className="text-red-400 text-sm mt-1">{errors.companyName.message}</p>
-              )}
+              {errors.companyName && (<p className="text-red-400 text-sm mt-1">{errors.companyName.message}</p>)}
             </div>
 
             {/* Full Name */}
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-gray-300 font-medium">
-                Full Name
-              </Label>
+              <Label htmlFor="fullName" className="text-gray-300 font-medium">Full Name</Label>
               <Input
                 id="fullName"
                 {...register('fullName')}
@@ -258,16 +286,12 @@ export function SignupForm() {
                 placeholder="John Doe"
                 disabled={isLoading}
               />
-              {errors.fullName && (
-                <p className="text-red-400 text-sm mt-1">{errors.fullName.message}</p>
-              )}
+              {errors.fullName && (<p className="text-red-400 text-sm mt-1">{errors.fullName.message}</p>)}
             </div>
 
             {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300 font-medium">
-                Email Address
-              </Label>
+              <Label htmlFor="email" className="text-gray-300 font-medium">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -276,16 +300,12 @@ export function SignupForm() {
                 placeholder="john@company.com"
                 disabled={isLoading}
               />
-              {errors.email && (
-                <p className="text-red-400 text-sm mt-1">{errors.email.message}</p>
-              )}
+              {errors.email && (<p className="text-red-400 text-sm mt-1">{errors.email.message}</p>)}
             </div>
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300 font-medium">
-                Password
-              </Label>
+              <Label htmlFor="password" className="text-gray-300 font-medium">Password</Label>
               <div className="relative">
                 <Input
                   id="password"
@@ -307,16 +327,12 @@ export function SignupForm() {
                   {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </Button>
               </div>
-              {errors.password && (
-                <p className="text-red-400 text-sm mt-1">{errors.password.message}</p>
-              )}
+              {errors.password && (<p className="text-red-400 text-sm mt-1">{errors.password.message}</p>)}
             </div>
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">
-                Confirm Password
-              </Label>
+              <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">Confirm Password</Label>
               <div className="relative">
                 <Input
                   id="confirmPassword"
@@ -338,9 +354,7 @@ export function SignupForm() {
                   {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                 </Button>
               </div>
-              {errors.confirmPassword && (
-                <p className="text-red-400 text-sm mt-1">{errors.confirmPassword.message}</p>
-              )}
+              {errors.confirmPassword && (<p className="text-red-400 text-sm mt-1">{errors.confirmPassword.message}</p>)}
             </div>
 
             {/* Submit Button */}
