@@ -1,82 +1,195 @@
-"use client"
+"use client";
 
-import { PageHero } from "@/components/brand/page-hero"
-import { GlassCard } from "@/components/brand/glass-card"
-import { Building2, Target, Users, Star, Sparkles } from 'lucide-react'
-import Image from "next/image"
+import React from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  ArrowLeft,
+  CheckCircle,
+  Users,
+  ShieldCheck,
+  TrendingUp,
+  Mail,
+} from "lucide-react";
 
 export default function AboutPage() {
+  const router = useRouter();
+
   return (
-    <div className="pb-24">
-      <PageHero
-        eyebrow="Company"
-        title="About LendGrid"
-        subtitle="Empowering the future of loan distribution with transparent payouts, actionable insights, and seamless integrations."
-        icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
-      />
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-white relative overflow-hidden">
+      {/* BACK BUTTON */}
+      {/* <button
+        onClick={() => {
+          if (window.history.length > 1) router.back();
+          else router.push("/");
+        }}
+        className="absolute top-6 left-6 flex items-center gap-2 text-sm md:text-base text-white hover:text-amber-400 font-medium transition z-20"
+      >
+        <ArrowLeft className="w-4 h-4" />
+        Back
+      </button> */}
 
-      <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 px-4 md:grid-cols-3">
-        <GlassCard className="p-6">
-          <div className="flex items-start gap-3">
-            <Target className="h-5 w-5 text-yellow-300/90" aria-hidden="true" />
-            <div>
-              <h3 className="text-lg font-semibold">Our Mission</h3>
-              <p className="mt-2 text-sm text-white/70">
-                To simplify and scale loan distribution for aggregators and lenders through automation, clarity, and trust.
-              </p>
-            </div>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-6">
-          <div className="flex items-start gap-3">
-            <Building2 className="h-5 w-5 text-yellow-300/90" aria-hidden="true" />
-            <div>
-              <h3 className="text-lg font-semibold">What We Build</h3>
-              <p className="mt-2 text-sm text-white/70">
-                Real-time commission tracking, automated payouts, and a verified network to connect high-quality partners.
-              </p>
-            </div>
-          </div>
-        </GlassCard>
-        <GlassCard className="p-6">
-          <div className="flex items-start gap-3">
-            <Users className="h-5 w-5 text-yellow-300/90" aria-hidden="true" />
-            <div>
-              <h3 className="text-lg font-semibold">Who We Serve</h3>
-              <p className="mt-2 text-sm text-white/70">
-                DSAs, aggregators, and lenders seeking transparency, efficiency, and growth.
-              </p>
-            </div>
-          </div>
-        </GlassCard>
-      </div>
+      {/* HERO SECTION */}
+      <section className="relative py-24 lg:py-32 overflow-hidden">
+        <div className="absolute -left-56 -top-40 w-[520px] h-[520px] bg-gradient-to-br from-[#05366b] to-[#0ea5a1] opacity-10 rounded-full blur-3xl"></div>
+        <div className="absolute right-[-120px] top-10 w-[420px] h-[420px] bg-gradient-to-tr from-[#ffb86b] to-[#ffd166] opacity-10 rounded-full blur-3xl"></div>
 
-      {/* Team preview */}
-      <div className="mx-auto mt-10 max-w-6xl px-4">
-        <GlassCard className="p-8">
-          <div className="mb-6 flex items-center gap-2">
-            <Star className="h-4 w-4 text-yellow-300/90" aria-hidden="true" />
-            <h3 className="text-lg font-semibold">Leadership</h3>
+        <div className="max-w-6xl mx-auto px-6 md:px-10 text-center relative z-10 pt-20">
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="text-5xl md:text-6xl font-extrabold mb-4"
+          >
+            About <span className="text-cyan-400">LendGrid</span>
+          </motion.h1>
+          <motion.h2
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-xl md:text-2xl font-semibold text-gray-300 mb-6"
+          >
+            Empowering Aggregators & Lenders with Cutting-Edge Fintech Solutions
+          </motion.h2>
+          <motion.p
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="max-w-3xl mx-auto text-gray-400 leading-relaxed"
+          >
+            LendGrid is a next-generation loan distribution infrastructure built
+            to connect loan aggregators with premium lenders. We simplify
+            commission tracking, automate payouts, and help financial businesses
+            scale faster with real-time analytics and complete transparency.
+          </motion.p>
+        </div>
+      </section>
+
+      {/* OUR MISSION */}
+      <section className="py-16 border-t border-gray-800">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 text-center">
+          <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
+          <h3 className="text-lg font-medium text-cyan-300 mb-4">
+            Simplifying digital loan distribution through technology and trust
+          </h3>
+          <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed">
+            Our mission is to transform how financial ecosystems operate by
+            making partnerships between lenders and aggregators effortless,
+            transparent, and scalable. We believe in technology that enables
+            growth without complexity — empowering partners to focus on what
+            truly matters: building better financial access for all.
+          </p>
+        </div>
+      </section>
+
+      {/* OUR VISION */}
+      <section className="py-16 border-t border-gray-800 bg-gradient-to-b from-[#061524] to-[#081322]">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 text-center">
+          <h2 className="text-3xl font-bold mb-4">Our Vision</h2>
+          <h3 className="text-lg font-medium text-cyan-300 mb-4">
+            Building the world’s most trusted loan aggregation network
+          </h3>
+          <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed">
+            We envision a future where every financial institution, from a
+            fintech startup to a leading bank, can collaborate seamlessly on one
+            intelligent, compliant, and transparent platform. LendGrid is paving
+            the way for that — one integration at a time.
+          </p>
+        </div>
+      </section>
+
+      {/* WHAT WE DO */}
+      <section className="py-16 border-t border-gray-800">
+        <div className="max-w-6xl mx-auto px-6 md:px-10">
+          <h2 className="text-3xl font-bold text-center mb-8">What We Do</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
+            {[
+              {
+                icon: <TrendingUp className="w-10 h-10 mx-auto text-cyan-300" />,
+                title: "Loan Aggregation Simplified",
+                desc: "Connect with top lenders and track deals with real-time data and automated workflows.",
+              },
+              {
+                icon: <Users className="w-10 h-10 mx-auto text-cyan-300" />,
+                title: "Automation & Analytics",
+                desc: "Automate commission tracking, payouts, and compliance to save time and boost profits.",
+              },
+              {
+                icon: <ShieldCheck className="w-10 h-10 mx-auto text-cyan-300" />,
+                title: "Secure & Compliant",
+                desc: "Enterprise-grade encryption and RBI-aligned frameworks for complete data protection.",
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                whileHover={{ y: -6 }}
+                className="p-6 rounded-2xl bg-gradient-to-br from-[#071226] to-[#071827] border border-gray-800 shadow-md"
+              >
+                {item.icon}
+                <h4 className="mt-4 font-semibold text-lg">{item.title}</h4>
+                <p className="mt-2 text-sm text-gray-300">{item.desc}</p>
+              </motion.div>
+            ))}
           </div>
-          <div className="grid grid-cols-2 gap-6 md:grid-cols-4">
-            {["A", "B", "C", "D"].map((p, i) => (
-              <div key={i} className="flex flex-col items-center gap-3">
-                <div className="relative h-20 w-20 overflow-hidden rounded-full ring-1 ring-white/10">
-                  <Image
-                    src="/placeholder.svg?height=80&width=80"
-                    alt={"Team member avatar " + (i + 1)}
-                    fill
-                    sizes="80px"
-                    className="object-cover"
-                  />
-                </div>
-                <div className="text-sm font-medium">Member {i + 1}</div>
-                <div className="text-xs text-white/60">Role</div>
+        </div>
+      </section>
+
+      {/* WHY CHOOSE US */}
+      <section className="py-16 border-t border-gray-800 bg-gradient-to-br from-[#08142b] to-[#071227]">
+        <div className="max-w-6xl mx-auto px-6 md:px-10 text-center">
+          <h2 className="text-3xl font-bold mb-4">Why Choose LendGrid?</h2>
+          <h3 className="text-lg font-medium text-cyan-300 mb-4">
+            The backbone of reliable financial distribution
+          </h3>
+          <p className="text-gray-400 max-w-3xl mx-auto mb-10">
+            We combine deep fintech expertise, advanced analytics, and
+            automation to help financial partners expand their reach, improve
+            compliance, and build sustainable relationships with aggregators.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-left">
+            {[
+              "End-to-end automation for commissions and settlements",
+              "Transparent and auditable performance tracking",
+              "24/7 technical support and dedicated partner onboarding",
+            ].map((text, i) => (
+              <div
+                key={i}
+                className="flex items-start gap-3 p-4 bg-[#061724]/40 rounded-xl border border-gray-700"
+              >
+                <CheckCircle className="w-5 h-5 text-cyan-300 flex-shrink-0" />
+                <p className="text-sm text-gray-300">{text}</p>
               </div>
             ))}
           </div>
-        </GlassCard>
-      </div>
+        </div>
+      </section>
+
+      {/* CTA SECTION */}
+      <section id="contact" className="py-20 border-t border-gray-800">
+        <div className="max-w-4xl mx-auto px-6 md:px-10 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            Ready to Grow with LendGrid?
+          </h2>
+          <p className="text-gray-400 mb-8">
+            Join a growing network of trusted aggregators and lenders. Scale
+            your business with automation, insight, and speed.
+          </p>
+          
+          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
+            <Mail className="w-4 h-4" />
+            <span>
+              email us at{" "}
+              <a
+                className="text-cyan-300 underline"
+                href="mailto:sales@lendgrid.com"
+              >
+                sales@lendgrid.com
+              </a>
+            </span>
+          </div>
+        </div>
+      </section>
     </div>
-  )
+  );
 }

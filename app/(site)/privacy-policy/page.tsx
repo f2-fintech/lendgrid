@@ -1,8 +1,9 @@
-"use client"
+"use client";
 
-import { PageHero } from "@/components/brand/page-hero"
-import { GlassCard } from "@/components/brand/glass-card"
-import { Shield, Sparkles } from 'lucide-react'
+import React from "react";
+import { motion } from "framer-motion";
+import { Shield } from "lucide-react";
+import { GlassCard } from "@/components/brand/glass-card";
 
 const sections = [
   {
@@ -32,33 +33,42 @@ const sections = [
   },
   {
     title: "Contact",
-    content:
-      "For privacy inquiries, reach us at privacy@lendgrid.example.",
+    content: "For privacy inquiries, reach us at privacy@lendgrid.com.",
   },
-]
+];
 
 export default function PrivacyPage() {
   return (
-    <div className="pb-24">
-      <PageHero
-        eyebrow="Legal"
-        title="Privacy Policy"
-        subtitle="How we collect, use, and protect your data."
-        icon={<Sparkles className="h-4 w-4" aria-hidden="true" />}
-      />
+    <main className="relative min-h-screen bg-gradient-to-b from-[#040d21] via-[#071227] to-[#081322] text-gray-100 antialiased pb-20">
+      {/* Hero Section */}
+      <section className="pt-28 text-center px-6">
+        <motion.h1
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-5xl font-extrabold mb-3"
+        >
+          Privacy <span className="text-cyan-400">Policy</span>
+        </motion.h1>
+        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          How we collect, use, and protect your information while keeping
+          transparency at our core.
+        </p>
+      </section>
+
+      {/* Sections */}
       <div className="mx-auto mt-10 max-w-4xl space-y-6 px-4">
         {sections.map((s, i) => (
-          <GlassCard key={i} className="p-6">
+          <GlassCard key={i} className="p-6 bg-[#081327]/40 border border-gray-800">
             <div className="flex items-start gap-3">
-              <Shield className="h-5 w-5 text-yellow-300/90" aria-hidden="true" />
+              <Shield className="h-5 w-5 text-cyan-300" />
               <div>
                 <h3 className="text-lg font-semibold">{s.title}</h3>
-                <p className="mt-2 text-sm text-white/70">{s.content}</p>
+                <p className="mt-2 text-sm text-gray-300">{s.content}</p>
               </div>
             </div>
           </GlassCard>
         ))}
       </div>
-    </div>
-  )
+    </main>
+  );
 }

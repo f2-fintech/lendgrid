@@ -1,11 +1,15 @@
 import * as React from "react"
 import { AuroraBackground } from "@/components/brand/aurora-background"
+import Navbar from "@/components/common/Navbar"
+import Footer from "@/components/common/Footer"
 
 export default function SiteLayout({ children }: { children: React.ReactNode }) {
   return (
-    <main className="relative min-h-[100svh] w-full bg-[#0B1220] text-white">
-      <AuroraBackground intensity={1} showParticles />
-      <div className="relative z-10">{children}</div>
-    </main>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-white relative overflow-hidden">
+      {/* <AuroraBackground intensity={1} showParticles /> */}
+      <Navbar />
+      <main className="relative z-10 flex-grow pt-20">{children}</main>
+      <Footer />
+    </div>
   )
 }
