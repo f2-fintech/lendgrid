@@ -30,6 +30,8 @@ import Link from "next/link"
 import Image from "next/image"
 import { navigationPaths } from "@/lib/navigation"
 import { lenderNames, LendersCarousel } from "@/components/ui/carousel-lenders"
+import Navbar from "@/components/common/Navbar"
+import Footer from "@/components/common/Footer"
 
 const testimonials = [
   {
@@ -136,7 +138,7 @@ export function LandingPage() {
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 w-full z-50 px-6 py-4 backdrop-blur-lg bg-opacity-50  border-white/10 ">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        {/* <div className="max-w-7xl mx-auto flex items-center justify-between">
           <motion.div
             className="flex items-center space-x-2"
             initial={{ opacity: 0, x: -20 }}
@@ -180,7 +182,8 @@ export function LandingPage() {
               <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">Sign Up</Button>
             </Link>
           </motion.div>
-        </div>
+        </div> */}
+        <Navbar/>
       </nav>
 
       {/* Hero Section */}
@@ -954,7 +957,7 @@ export function LandingPage() {
       </section>
 
       {/* Footer */}
-      <footer className="px-6 py-10 glass-card border-t border-white/10 relative z-10">
+      {/* <footer className="px-6 py-10 glass-card border-t border-white/10 relative z-10">
         <div className="max-w-7xl mx-auto">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
@@ -1033,7 +1036,9 @@ export function LandingPage() {
             <p>&copy; 2025 LendGrid. All rights reserved. Built for the future of financial services.</p>
           </div>
         </div>
-      </footer>
+      </footer> */}
+      <Footer/>
+      
     </div>
   )
 }
