@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
-import { usersApi } from './api-client'
+import { usersApi } from './users-api'
 import { decodeJwt } from './utils'
 
 export type AppRole = 'super_admin' | 'aggregator_admin' | 'lender_admin'

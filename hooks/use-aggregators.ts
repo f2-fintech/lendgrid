@@ -1,141 +1,291 @@
-import { useState, useEffect, useCallback } from 'react'
-import { usersApi, applicationsApi } from '@/lib/api-client'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { aggregatorProfileApi } from '@/lib/aggregator-api'
+import { queryKeys } from '@/lib/query-keys'
+import { useToast } from '@/hooks/use-toast'
+import type { KYCStatus, BusinessType, AggregatorDocuments } from '@/lib/api-types'
 
-export interface Aggregator {
-  _id: string
-  username: string
-  email: string
-  contact: string
-  status: string
-  role: string
-  profilePicture?: string
-  companyName?: string
-  address?: string
-  totalApplications?: number
-  approvedApplications?: number
-  conversionRate?: number
-  totalCommission?: number
-  kycStatus?: string
-  createdAt?: string
-  pincode: string
-  gender: string
-  dob: string
+interface UseAggregatorsProps {
+  page?: number
+  limit?: number
+  enabled?: boolean
 }
 
-export interface AggregatorMetrics {
-  totalAggregators: number
-  activeAggregators: number
-  pendingApprovals: number
-  avgConversionRate: number
-}
-
-interface AggregatorsResponse {
-  aggregators: Aggregator[]
-  total: number
-  pages: number
-  metrics: AggregatorMetrics
-}
-
-export function useAggregators({ page, limit }: { page?: number; limit?: number }) {
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [data, setData] = useState<AggregatorsResponse>({
-    aggregators: [],
-    total: 0,
-    pages: 0,
-    metrics: {
-      totalAggregators: 0,
-      activeAggregators: 0,
-      pendingApprovals: 0,
-      avgConversionRate: 0
-    }
+/**
+ * Fetch all aggregators
+ */
+export function useAggregators({ page = 1, limit = 10, enabled = true }: UseAggregatorsProps = {}) {
+  return useQuery({
+    queryKey: queryKeys.aggregators.list(page, limit),
+    queryFn: async () => {
+      const response = await aggregatorProfileApi.findAll({ page, limit })
+      return response.findAllAggregatorProfiles
+    },
+    enabled,
   })
+}
 
-  const fetchData = useCallback(async () => {
-    setLoading(true)
-    setError(null)
-    try {
-      const response = await usersApi.findByRole('AGGREGATOR_ADMIN', {
-        page: page || 1,
-        limit: limit || 10
+/**
+ * Fetch single aggregator by ID
+ */
+export function useAggregator(id: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.aggregators.detail(id),
+    queryFn: async () => {
+      const response = await aggregatorProfileApi.findOne(id)
+      return response.findOneAggregatorProfile
+    },
+    enabled: enabled && !!id,
+  })
+}
+
+/**
+ * Fetch current user's aggregator profile
+ */
+export function useMyAggregatorProfile(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.aggregators.myProfile(),
+    queryFn: async () => {
+      const response = await aggregatorProfileApi.getMyProfile()
+      return response.myAggregatorProfile
+    },
+    enabled,
+  })
+}
+
+/**
+ * Fetch aggregators by KYC status
+ */
+export function useAggregatorsByKycStatus(
+  kycStatus: KYCStatus,
+  { page = 1, limit = 10, enabled = true }: UseAggregatorsProps = {}
+) {
+  return useQuery({
+    queryKey: queryKeys.aggregators.byKycStatus(kycStatus, page, limit),
+    queryFn: async () => {
+      const response = await aggregatorProfileApi.findByKycStatus(kycStatus, { page, limit })
+      return response.aggregatorProfilesByKycStatus
+    },
+    enabled: enabled && !!kycStatus,
+  })
+}
+
+/**
+ * Search aggregators
+ */
+export function useSearchAggregators(
+  searchTerm: string,
+  { page = 1, limit = 10, enabled = true }: UseAggregatorsProps = {}
+) {
+  return useQuery({
+    queryKey: queryKeys.aggregators.search(searchTerm, page, limit),
+    queryFn: async () => {
+      const response = await aggregatorProfileApi.search(searchTerm, { page, limit })
+      return response.searchAggregatorProfiles
+    },
+    enabled: enabled && !!searchTerm && searchTerm.length > 0,
+  })
+}
+
+/**
+ * Create aggregator profile
+ */
+export function useCreateAggregatorProfile() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: (payload: {
+      userId: string
+      companyName: string
+      businessType?: BusinessType
+      registeredAddress?: string
+      city?: string
+      state?: string
+      pincode?: string
+      gstNumber?: string
+      panNumber?: string
+      tanNumber?: string
+      cinNumber?: string
+      websiteUrl?: string
+      pocName?: string
+      documents?: AggregatorDocuments
+      bankName?: string
+      accountNumber?: string
+      ifscCode?: string
+      accountHolderName?: string
+    }) => aggregatorProfileApi.create(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.all })
+      toast({
+        title: 'Success',
+        description: 'Aggregator profile created successfully',
       })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to create aggregator profile',
+        variant: 'destructive',
+      })
+    },
+  })
+}
 
-      if (response.usersByRole && response.usersByRole.results.length !== 0) {
-        const { results, count, pages } = response.usersByRole
+/**
+ * Update aggregator profile
+ */
+export function useUpdateAggregatorProfile() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
 
-        const transformedAggregators: Aggregator[] = await Promise.all(
-          results.map(async (agg: any) => {
-            let totalApplications = 0
-            let approvedApplications = 0
-            let totalCommission = 0
+  return useMutation({
+    mutationFn: (payload: {
+      id: string
+      companyName?: string
+      businessType?: BusinessType
+      registeredAddress?: string
+      city?: string
+      state?: string
+      pincode?: string
+      gstNumber?: string
+      panNumber?: string
+      websiteUrl?: string
+      pocName?: string
+      documents?: AggregatorDocuments
+      bankName?: string
+      accountNumber?: string
+      ifscCode?: string
+      accountHolderName?: string
+    }) => aggregatorProfileApi.update(payload),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.detail(variables.id) })
+      toast({
+        title: 'Success',
+        description: 'Aggregator profile updated successfully',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update aggregator profile',
+        variant: 'destructive',
+      })
+    },
+  })
+}
 
-            try {
-              const appResponse = await applicationsApi.findAllApplications({
-                aggregatorId: agg._id,
-                limit: 1000
-              })
-              if (appResponse.findAllApplications) {
-                const applications = appResponse.findAllApplications.results
-                totalApplications = applications.length
-                approvedApplications = applications.filter((app: any) =>
-                  app.status === 'approved' || app.status === 'disbursed'
-                ).length
-                totalCommission = applications
-                  .filter((app: any) => app.status === 'disbursed')
-                  .reduce((sum: number, app: any) => sum + (app.expectedCommission || 0), 0)
-              }
-            } catch (error) {
-              console.error(`Failed to fetch stats for aggregator ${agg._id}:`, error)
-            }
+/**
+ * Update aggregator KYC status
+ */
+export function useUpdateAggregatorKycStatus() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
 
-            const conversionRate = totalApplications > 0
-              ? (approvedApplications / totalApplications) * 100
-              : 0
+  return useMutation({
+    mutationFn: ({
+      id,
+      kycStatus,
+      rejectionReason,
+    }: {
+      id: string
+      kycStatus: KYCStatus
+      rejectionReason?: string
+    }) => aggregatorProfileApi.updateKycStatus(id, kycStatus, rejectionReason),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.detail(variables.id) })
+      toast({
+        title: 'Success',
+        description: 'KYC status updated successfully',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to update KYC status',
+        variant: 'destructive',
+      })
+    },
+  })
+}
 
-            return {
-              ...agg,
-              _id: agg._id,
-              username: agg.username,
-              email: agg.email,
-              contact: agg.contact,
-              createdAt: agg.createdAt ? new Date(agg.createdAt).toLocaleDateString('en-GB') : 'Unknown',
-              status: agg.status,
-              totalApplications,
-              approvedApplications,
-              conversionRate: Math.round(conversionRate * 10) / 10,
-              totalCommission,
-              kycStatus: agg.kycStatus || 'Under Review'
-            }
-          })
-        )
+/**
+ * Add team member
+ */
+export function useAddTeamMember() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
 
-        const newMetrics: AggregatorMetrics = {
-          totalAggregators: count,
-          activeAggregators: transformedAggregators.filter(agg => agg.status === 'ACTIVE').length,
-          pendingApprovals: transformedAggregators.filter(agg => agg.status === 'PENDING').length,
-          avgConversionRate: transformedAggregators.length > 0
-            ? transformedAggregators.reduce((sum, agg) => sum + (agg.conversionRate || 0), 0) / transformedAggregators.length
-            : 0
-        }
-        newMetrics.avgConversionRate = Math.round(newMetrics.avgConversionRate * 10) / 10
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
+      aggregatorProfileApi.addTeamMember(id, userId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.detail(variables.id) })
+      toast({
+        title: 'Success',
+        description: 'Team member added successfully',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to add team member',
+        variant: 'destructive',
+      })
+    },
+  })
+}
 
-        setData({
-          aggregators: transformedAggregators,
-          total: count,
-          pages: pages || Math.ceil(count / (limit || 10)),
-          metrics: newMetrics
-        })
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred while fetching aggregators')
-    } finally {
-      setLoading(false)
-    }
-  }, [page, limit])
+/**
+ * Remove team member
+ */
+export function useRemoveTeamMember() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
 
-  useEffect(() => {
-    fetchData()
-  }, [fetchData])
+  return useMutation({
+    mutationFn: ({ id, userId }: { id: string; userId: string }) =>
+      aggregatorProfileApi.removeTeamMember(id, userId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.detail(variables.id) })
+      toast({
+        title: 'Success',
+        description: 'Team member removed successfully',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to remove team member',
+        variant: 'destructive',
+      })
+    },
+  })
+}
 
-  return { ...data, loading, error, mutate: fetchData }
+/**
+ * Delete aggregator profile
+ */
+export function useDeleteAggregatorProfile() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: (id: string) => aggregatorProfileApi.remove(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.all })
+      toast({
+        title: 'Success',
+        description: 'Aggregator profile deleted successfully',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Error',
+        description: error.message || 'Failed to delete aggregator profile',
+        variant: 'destructive',
+      })
+    },
+  })
 }

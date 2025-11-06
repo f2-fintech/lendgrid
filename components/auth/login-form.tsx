@@ -1,19 +1,18 @@
 "use client";
 
-import { useState, useEffect } from 'react'; // <-- Added useEffect
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-// Added useSearchParams and updated import from 'next/navigation'
-import { useRouter, useSearchParams } from 'next/navigation'; 
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Eye, EyeOff, ArrowRight, Loader2, ArrowLeft, Users, Building2, BrickWall } from 'lucide-react';
 
-import { usersApi } from '@/lib/api-client';
+import { useLogin } from '@/hooks/use-users';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -35,7 +34,7 @@ const loginSchema = z.object({
     .regex(/[^\w]/, "Password Must Contain At Least 1 Special Character")
     .max(30, "Password cannot be more than 30 characters"),
 
-  role: z.enum(['super_admin', 'aggregator_admin', 'lender_admin'], {
+  role: z.enum(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'], {
     required_error: 'Please select your role'
   })
 });
@@ -49,31 +48,30 @@ export function LoginForm() {
 
   const router = useRouter();
   const searchParams = useSearchParams();
+  const loginMutation = useLogin();
   const { toast } = useToast();
 
   const {
     register,
     handleSubmit,
     setValue,
-    watch, // <-- Important for dynamic link
+    watch,
     formState: { errors }
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     mode: 'onBlur',
     defaultValues: {
-        email: '',
-        password: '',
-        role: undefined,
+      email: '',
+      password: '',
+      role: undefined,
     }
   });
 
-  // Watch the role field to use its value for the Select key and the Sign Up link
   const selectedRole = watch('role');
 
-  // Effect to set default role from URL query parameter
   useEffect(() => {
     const roleParam = searchParams.get('role');
-    const validRoles: RoleType[] = ['super_admin', 'aggregator_admin', 'lender_admin'];
+    const validRoles: RoleType[] = ['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'];
 
     if (roleParam && validRoles.includes(roleParam as RoleType)) {
       setValue('role', roleParam as RoleType, { shouldValidate: true });
@@ -81,11 +79,10 @@ export function LoginForm() {
   }, [searchParams, setValue]);
 
   const onSubmit = async (data: LoginFormData) => {
-    // ... (Your existing onSubmit logic)
     setIsLoading(true);
 
     try {
-      const response = await usersApi.login({
+      const response = await loginMutation.mutateAsync({
         email: data.email,
         password: data.password
       });
@@ -102,9 +99,8 @@ export function LoginForm() {
         return;
       }
 
-      const token = result.access_token;
-      setCookie("token", token, 1);
-      const decoded = decodeJwt(token);
+      setCookie("token", result.access_token, 1);
+      const decoded = decodeJwt(result.access_token);
       const role = decoded?.role;
 
       toast({
@@ -143,7 +139,7 @@ export function LoginForm() {
     >
       <Card className="enhanced-card">
         <CardHeader className="text-center pb-8">
-            {/* ... (Header content) */}
+          {/* ... (Header content) */}
         </CardHeader>
 
         <CardContent>
@@ -155,14 +151,14 @@ export function LoginForm() {
                 Role
               </Label>
               <Select
-                key={selectedRole} 
+                key={selectedRole}
                 onValueChange={(value) => setValue('role', value as RoleType, { shouldValidate: true })}
                 defaultValue={selectedRole}
                 disabled={isLoading}
               >
                 {/* ... (SelectTrigger and SelectContent) */}
                 <SelectTrigger className="glass-input text-black h-11">
-                  <SelectValue placeholder="Select your role" /> 
+                  <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
                   <SelectItem value="super_admin" className="text-black hover:bg-white/10 cursor-pointer">
@@ -176,7 +172,7 @@ export function LoginForm() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <input type="hidden" {...register("role")} /> 
+              <input type="hidden" {...register("role")} />
               {errors.role && (
                 <p className="text-red-400 text-sm mt-1">{errors.role.message}</p>
               )}

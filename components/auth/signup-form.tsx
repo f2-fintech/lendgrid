@@ -1,19 +1,19 @@
 "use client";
 
 import Link from 'next/link';
-import { useState, useEffect } from 'react'; // <-- Added useEffect
-import { useRouter, useSearchParams } from 'next/navigation'; // <-- Added useSearchParams
+import { useState, useEffect } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, CreditCard, Loader2, Building2, Users, ArrowLeft } from 'lucide-react';
 
-import { usersApi } from '@/lib/api-client';
-import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import { useRegister, useLogin } from '@/hooks/use-users';
 import { navigationPaths } from '@/lib/navigation';
 import { decodeJwt, setCookie } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,12 +21,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 // --- ROLE MAPPING UTILITY ---
 const mapLoginRoleToSignupType = (loginRole: string | null): 'aggregator' | 'lender' | undefined => {
-    if (loginRole === 'aggregator_admin') return 'aggregator';
-    if (loginRole === 'lender_admin') return 'lender';
-    return undefined;
+  if (loginRole === 'aggregator_admin') return 'aggregator';
+  if (loginRole === 'lender_admin') return 'lender';
+  return undefined;
 };
-// ----------------------------
-
 
 // Validation Schema
 const signupSchema = z.object({
@@ -65,44 +63,42 @@ const signupSchema = z.object({
 type SignupFormData = z.infer<typeof signupSchema>;
 type UserType = SignupFormData['userType'];
 
-
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const router = useRouter();
-  const searchParams = useSearchParams(); // <-- Initialize useSearchParams
+  const searchParams = useSearchParams();
+  const registerMutation = useRegister();
+  const loginMutation = useLogin();
   const { toast } = useToast();
 
   const {
     register,
     handleSubmit,
     setValue,
-    watch, // <-- Important for Select key and setting default values
+    watch,
     formState: { errors }
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     mode: 'onBlur',
     defaultValues: {
-        userType: undefined, // Initialize as undefined
+      userType: undefined,
     }
   });
 
   // Watch the userType field for the Select key
   const selectedUserType = watch('userType');
 
-  // --- EFFECT TO PRE-SELECT ROLE FROM URL ---
   useEffect(() => {
     const roleParam = searchParams.get('role');
     const userType = mapLoginRoleToSignupType(roleParam);
 
     if (userType) {
-      // Set the userType value and validate it
       setValue('userType', userType, { shouldValidate: true });
     }
-  }, [searchParams, setValue]); 
-  // ------------------------------------------
+  }, [searchParams, setValue]);
 
   const onSubmit = async (data: SignupFormData) => {
     setIsLoading(true);
@@ -121,11 +117,8 @@ export function SignupForm() {
         role: roleMap[data.userType],
       };
 
-      // Register user
-      const createdUser = await usersApi.register(payload);
-      const result = (createdUser as any)?.createUser;
-
-      // ... (Rest of signup logic: check success, auto-login, redirect)
+      const registerUserResponse = await registerMutation.mutateAsync(payload);
+      const result = (registerUserResponse as any)?.createUser;
 
       if (!result?.success) {
         toast({
@@ -137,7 +130,7 @@ export function SignupForm() {
         return;
       }
 
-      const loginResponse = await usersApi.login({
+      const loginResponse = await loginMutation.mutateAsync({
         email: data.email,
         password: data.password,
       });
@@ -232,7 +225,7 @@ export function SignupForm() {
               <Label className="text-gray-300 font-medium">User Type</Label>
               <Select
                 // Key forces re-render when userType is set by useEffect
-                key={selectedUserType} 
+                key={selectedUserType}
                 onValueChange={(value) => setValue('userType', value as UserType, { shouldValidate: true })}
                 defaultValue={selectedUserType} // Set the default value for display
                 disabled={isLoading}
@@ -262,7 +255,7 @@ export function SignupForm() {
             </div>
 
             {/* ... (Remaining fields: Company Name, Full Name, Email, Password, Confirm Password) */}
-            
+
             {/* Company Name */}
             <div className="space-y-2">
               <Label htmlFor="companyName" className="text-gray-300 font-medium">Company Name</Label>
