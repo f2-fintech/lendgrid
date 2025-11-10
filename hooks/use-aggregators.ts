@@ -211,30 +211,46 @@ export function useUpdateAggregatorKycStatus() {
 }
 
 /**
- * Add team member
+ * Add team member (with detailed GraphQL error handling)
  */
 export function useAddTeamMember() {
-  const queryClient = useQueryClient()
-  const { toast } = useToast()
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   return useMutation({
     mutationFn: ({ id, userId }: { id: string; userId: string }) =>
       aggregatorProfileApi.addTeamMember(id, userId),
+
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.detail(variables.id) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.detail(variables.id) });
       toast({
         title: 'Success',
-        description: 'Team member added successfully',
-      })
+        description: 'Team member added successfully.',
+      });
     },
+
     onError: (error: Error) => {
+      const msg = error.message || 'Failed to add team member';
+      let friendly = msg;
+
+      // Map GraphQL backend errors to friendly messages
+      if (msg.includes('already part of another aggregator team')) {
+        friendly = 'This user is already part of another aggregator team.';
+      } else if (msg.includes('Only users with AGGREGATOR_MEMBER role')) {
+        friendly = 'You can only add users with the Aggregator Member role.';
+      } else if (msg.includes('User already added as team member')) {
+        friendly = 'This user is already in your team.';
+      } else if (msg.includes('not found')) {
+        friendly = 'User or aggregator profile not found.';
+      }
+
       toast({
         title: 'Error',
-        description: error.message || 'Failed to add team member',
+        description: friendly,
         variant: 'destructive',
-      })
+      });
     },
-  })
+  });
 }
 
 /**

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -10,26 +10,40 @@ import {
     DialogDescription,
     DialogHeader,
     DialogTitle,
-    DialogTrigger,
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Loader2, Eye, EyeOff } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { usersApi } from '@/lib/api-client'
+
+import { useRegister, useUpdateUser, useProfile } from '@/hooks/use-users'
+import { useAddTeamMember, useMyAggregatorProfile } from '@/hooks/use-aggregators'
+import { useAuth } from '@/lib/auth'
+
+type RoleValueLower = 'aggregator_admin' | 'aggregator_member'
+type RoleEnumUpper = 'AGGREGATOR_ADMIN' | 'AGGREGATOR_MEMBER'
+type GenderLower = 'male' | 'female' | 'other'
+type GenderEnumUpper = 'MALE' | 'FEMALE' | 'OTHER'
+
+const toGraphQLRole = (r: RoleValueLower): RoleEnumUpper =>
+    r.toUpperCase() as RoleEnumUpper
+const toGraphQLGender = (g: GenderLower): GenderEnumUpper =>
+    g.toUpperCase() as GenderEnumUpper
 
 interface EditAggregatorData {
     _id: string
     username: string
     email: string
     contact: string
-    gender?: string
+    gender?: GenderLower | GenderEnumUpper
     dob?: string
     address?: string
-    pincode?: string
+    pincode?: string | number
     companyName?: string
+    role?: RoleValueLower | RoleEnumUpper
 }
 
 interface AddAggregatorDialogProps {
@@ -47,84 +61,101 @@ export function AddAggregatorDialog({
     isOpen = false,
     onClose
 }: AddAggregatorDialogProps = {}) {
-    const [open, setOpen] = useState(false)
-    const [isLoading, setIsLoading] = useState(false)
-    const [showPassword, setShowPassword] = useState(false)
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+    const { user } = useAuth()
     const { toast } = useToast()
+    const [addToTeam, setAddToTeam] = useState(false)
 
-    const addAggregatorSchema = z.object({
-        fullName: z.string().min(2, 'Person Name must be at least 2 characters'),
-        email: z.string().email('Please enter a valid email address'),
-        phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-        companyName: z.string().min(2, 'Company name must be at least 2 characters'),
-        address: z.string().min(5, 'Please enter a valid address'),
-        pincode: z.string().regex(/^\d+$/, 'Pincode must be a number string'),
-        gender: z.enum(['male', 'female', 'other']),
-        dob: z.string().refine((val) => !isNaN(Date.parse(val)), {
-            message: 'Date of Birth must be a valid date',
-        }),
-        password: z.string().optional(),
-        confirmPassword: z.string().optional(),
-    }).superRefine((data, ctx) => {
-        // Only validate passwords in add mode
-        if (mode === 'add') {
-            if (!data.password || data.password.length < 8) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: 'Password must be at least 8 characters',
-                    path: ['password'],
-                })
+    // Logged-in user (for super admin or aggregator admin)
+    const { data: userProfile } = useProfile(true)
+    // Aggregator admin's profile (to link members)
+    const { data: myAggregatorProfile } = useMyAggregatorProfile(true);
+    const registerMutation = useRegister()
+    const updateUserMutation = useUpdateUser()
+    const addTeamMemberMutation = useAddTeamMember()
+
+    const addAggregatorSchema = z
+        .object({
+            fullName: z.string().min(2, 'Person Name must be at least 2 characters'),
+            email: z.string().email('Please enter a valid email address'),
+            phone: z.string().min(10, 'Phone number must be at least 10 digits'),
+            companyName: z.string().min(2, 'Company name must be at least 2 characters'),
+            address: z.string().min(5, 'Please enter a valid address'),
+            pincode: z.string().regex(/^\d+$/, 'Pincode must be numeric'),
+            gender: z.enum(['male', 'female', 'other']),
+            dob: z.string().refine((val) => !isNaN(Date.parse(val)), {
+                message: 'Date of Birth must be valid',
+            }),
+            role: z.enum(['aggregator_admin', 'aggregator_member'], {
+                required_error: 'Please select role',
+            }),
+            password: z.string().optional(),
+            confirmPassword: z.string().optional(),
+        })
+        .superRefine((data, ctx) => {
+            if (mode === 'add') {
+                if (!data.password || data.password.length < 8) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: 'Password must be at least 8 characters',
+                        path: ['password'],
+                    })
+                }
+                if (data.password !== data.confirmPassword) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: "Passwords don't match",
+                        path: ['confirmPassword'],
+                    })
+                }
             }
-            if (data.password !== data.confirmPassword) {
-                ctx.addIssue({
-                    code: z.ZodIssueCode.custom,
-                    message: "Passwords don't match",
-                    path: ['confirmPassword'],
-                })
+        })
+
+    type FormData = z.infer<typeof addAggregatorSchema>
+
+    const defaultRole: RoleValueLower =
+        (editData?.role?.toString().toLowerCase() as RoleValueLower) || 'aggregator_admin'
+
+    const defaultValues = useMemo(() => {
+        if (mode === 'edit' && editData) {
+            return {
+                fullName: editData.username,
+                email: editData.email,
+                phone: editData.contact,
+                companyName: editData.companyName || '',
+                address: editData.address || '',
+                pincode: String(editData.pincode ?? ''),
+                gender: (editData.gender?.toString().toLowerCase() as GenderLower) || 'male',
+                dob: editData.dob ? new Date(editData.dob).toISOString().split('T')[0] : '',
+                role: defaultRole,
             }
         }
-    })
-
-    type AddAggregatorFormData = z.infer<typeof addAggregatorSchema>
+        return { role: 'aggregator_admin', gender: 'male' }
+    }, [mode, editData, defaultRole])
 
     const {
         register,
         handleSubmit,
         setValue,
+        watch,
         reset,
-        formState: { errors },
-    } = useForm<AddAggregatorFormData>({
+        formState: { errors, isSubmitting },
+    } = useForm<FormData>({
         resolver: zodResolver(addAggregatorSchema),
-        defaultValues: mode === 'edit' && editData ? {
-            fullName: editData.username,
-            email: editData.email,
-            phone: editData.contact,
-            companyName: editData.companyName || '',
-            address: editData.address || '',
-            pincode: editData.pincode || '',
-            gender: (editData.gender as 'male' | 'female' | 'other') || 'male',
-            dob: editData.dob ? new Date(editData.dob).toISOString().split('T')[0] : '',
-        } : undefined
+        defaultValues,
     })
 
     useEffect(() => {
-        if (mode === 'edit' && editData) {
-            setValue('fullName', editData.username)
-            setValue('email', editData.email)
-            setValue('phone', editData.contact)
-            setValue('companyName', editData.companyName || '')
-            setValue('address', editData.address || '')
-            setValue('pincode', editData.pincode || '')
-            setValue('gender', (editData.gender as 'male' | 'female' | 'other') || 'male')
-            setValue('dob', editData.dob ? new Date(editData.dob).toISOString().split('T')[0] : '')
-        } else {
-            reset();
+        if (isOpen) {
+            if (mode === 'edit' && editData) reset(defaultValues)
+            else reset({ role: 'aggregator_admin', gender: 'male' })
         }
-    }, [editData, mode, setValue, reset, isOpen])
+    }, [isOpen, mode, editData, reset, defaultValues])
 
-    const onSubmit = async (data: AddAggregatorFormData) => {
-        setIsLoading(true)
+    const onSubmit = async (data: FormData) => {
+        const dobIso = new Date(data.dob).toISOString()
+        const roleEnum = toGraphQLRole(data.role)
+        const genderEnum = toGraphQLGender(data.gender)
+
         try {
             if (mode === 'add') {
                 const payload = {
@@ -133,23 +164,38 @@ export function AddAggregatorDialog({
                     email: data.email,
                     contact: data.phone,
                     password: data.password!,
-                    dob: data.dob,
+                    dob: dobIso,
                     address: data.address,
-                    role: 'AGGREGATOR_ADMIN',
-                    gender: data.gender.toUpperCase(),
+                    role: roleEnum,
+                    gender: genderEnum,
                     pincode: Number(data.pincode),
                 }
 
-                const res: any = await usersApi.register(payload);
-                if (res?.createUser?.success) {
-                    toast({ title: 'Success', description: 'Aggregator created successfully!' });
-                    onSuccess?.();
-                    // onOpenChange(false);
+                const res: any = await registerMutation.mutateAsync(payload)
+                if (res?.createUser?.success && res?.createUser?.user?._id) {
+                    const newUserId = res.createUser.user._id
+
+                    // If adding aggregator_member and toggle ON → link to admin's team
+                    if (data.role === 'aggregator_member' && addToTeam && myAggregatorProfile?._id) {
+                        await addTeamMemberMutation.mutateAsync({
+                            id: myAggregatorProfile._id,
+                            userId: newUserId,
+                        })
+                        toast({
+                            title: 'Team Linked',
+                            description: 'Member successfully added to your team.',
+                        })
+                    }
+
+                    toast({ title: 'Success', description: 'Aggregator created successfully!' })
+                    onSuccess?.()
+                    onClose?.()
+                    reset()
+                    setAddToTeam(false)
                 } else {
-                    throw new Error(res?.createUser?.message || 'Failed to create aggregator');
+                    throw new Error(res?.createUser?.message || 'Failed to create user')
                 }
             } else {
-                // Edit mode
                 const payload = {
                     id: editData!._id,
                     companyName: data.companyName,
@@ -158,44 +204,33 @@ export function AddAggregatorDialog({
                     contact: data.phone,
                     address: data.address,
                     pincode: Number(data.pincode),
-                    gender: data.gender.toUpperCase(),
-                    dob: new Date(data.dob).toISOString(),
+                    gender: genderEnum,
+                    dob: dobIso,
+                    role: roleEnum,
                 }
 
-                const res: any = await usersApi.updateUser(payload);
-                if (res?.updateUser?.success) {
-                    toast({ title: 'Success', description: 'Aggregator updated successfully!' });
-                    onSuccess?.();
-                    // onOpenChange(false);
-                } else {
-                    throw new Error(res?.updateUser?.message || 'Failed to update aggregator');
-                }
+                await updateUserMutation.mutateAsync(payload)
+                toast({ title: 'Updated', description: 'Aggregator updated successfully!' })
+                onSuccess?.()
+                onClose?.()
+                reset()
             }
-
-            reset()
-            setOpen(false)
-            onSuccess?.()
-            onClose?.()
-            reset();
-        } catch (error) {
+        } catch (error: any) {
             console.error(`${mode} aggregator error:`, error)
             toast({
                 title: 'Error',
-                description: `Failed to ${mode} aggregator. Please try again.`,
-                variant: 'destructive'
+                description: error.message || `Failed to ${mode} aggregator`,
+                variant: 'destructive',
             })
-        } finally {
-            setIsLoading(false)
         }
     }
 
+    const selectedRole = watch('role')
+    const submitting =
+        isSubmitting || registerMutation.isPending || updateUserMutation.isPending
+
     return (
-        <Dialog open={isOpen} onOpenChange={(newOpen) => {
-            setOpen(newOpen)
-            if (!newOpen) {
-                onClose?.()
-            }
-        }}>
+        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
             <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">
@@ -203,198 +238,156 @@ export function AddAggregatorDialog({
                     </DialogTitle>
                     <DialogDescription className="text-gray-400">
                         {mode === 'add'
-                            ? 'Register a new loan aggregator to the platform'
-                            : 'Update aggregator information'
-                        }
+                            ? 'Register a new loan aggregator or team member.'
+                            : 'Update aggregator details.'}
                     </DialogDescription>
                 </DialogHeader>
+
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                     <div className="grid grid-cols-2 gap-6">
+                        {/* Role Selector */}
                         <div className="space-y-2">
-                            <Label htmlFor="companyName" className="text-gray-300 font-medium">
-                                Company Name
-                            </Label>
-                            <Input
-                                id="companyName"
-                                {...register('companyName')}
-                                className="glass-input text-black placeholder-gray-400 h-12"
-                                placeholder="Enter company name"
-                            />
-                            {errors.companyName && (
-                                <p className="text-red-400 text-sm">{errors.companyName.message}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="fullName" className="text-gray-300 font-medium">
-                                Contact Person Name
-                            </Label>
-                            <Input
-                                id="fullName"
-                                {...register('fullName')}
-                                className="glass-input text-black placeholder-gray-400 h-12"
-                                placeholder="Enter contact person name"
-                            />
-                            {errors.fullName && (
-                                <p className="text-red-400 text-sm">{errors.fullName.message}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="email" className="text-gray-300 font-medium">
-                                Email Address
-                            </Label>
-                            <Input
-                                id="email"
-                                type="email"
-                                {...register('email')}
-                                className="glass-input text-black placeholder-gray-400 h-12"
-                                placeholder="Enter email address"
-                            />
-                            {errors.email && (
-                                <p className="text-red-400 text-sm">{errors.email.message}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="phone" className="text-gray-300 font-medium">
-                                Phone Number
-                            </Label>
-                            <Input
-                                id="phone"
-                                {...register('phone')}
-                                className="glass-input text-black placeholder-gray-400 h-12"
-                                placeholder="Enter phone number"
-                            />
-                            {errors.phone && (
-                                <p className="text-red-400 text-sm">{errors.phone.message}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="dob" className="text-gray-300 font-medium">
-                                Date of Birth
-                            </Label>
-                            <Input
-                                id="dob"
-                                type="date"
-                                {...register('dob')}
-                                className="glass-input text-black placeholder-gray-400 h-12"
-                                placeholder="Select date of birth"
-                            />
-                            {errors.dob && (
-                                <p className="text-red-400 text-sm">{errors.dob.message}</p>
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="gender" className="text-gray-300 font-medium">
-                                Gender
-                            </Label>
+                            <Label>Role</Label>
                             <Select
-                                onValueChange={(value) => setValue('gender', value as 'male' | 'female' | 'other')}
-                                defaultValue={mode === 'edit' && editData?.gender ? editData.gender : undefined}
+                                defaultValue={defaultRole}
+                                onValueChange={(v) =>
+                                    setValue('role', v as RoleValueLower, { shouldValidate: true })
+                                }
                             >
                                 <SelectTrigger className="glass-input text-black h-12">
-                                    <SelectValue placeholder="Select gender" className='text-gray-500' />
+                                    <SelectValue placeholder="Select role" />
                                 </SelectTrigger>
                                 <SelectContent className="glass-card border-white/10">
-                                    <SelectItem value="male" className="text-black hover:bg-white/10">Male</SelectItem>
-                                    <SelectItem value="female" className="text-black hover:bg-white/10">Female</SelectItem>
-                                    <SelectItem value="other" className="text-black hover:bg-white/10">Other</SelectItem>
+                                    <SelectItem value="aggregator_admin">Aggregator Admin</SelectItem>
+                                    <SelectItem value="aggregator_member">Aggregator Member</SelectItem>
                                 </SelectContent>
                             </Select>
-                            {errors.gender && (
-                                <p className="text-red-400 text-sm">{errors.gender.message}</p>
+                            {errors.role && (
+                                <p className="text-red-400 text-sm">{errors.role.message}</p>
                             )}
                         </div>
 
-                        <div className="space-y-2 col-span-2">
-                            <Label htmlFor="address" className="text-gray-300 font-medium">
-                                Address
-                            </Label>
-                            <Input
-                                id="address"
-                                {...register('address')}
-                                className="glass-input text-black placeholder-gray-400 h-12"
-                                placeholder="Enter complete address"
-                            />
-                            {errors.address && (
-                                <p className="text-red-400 text-sm">{errors.address.message}</p>
-                            )}
-                        </div>
+                        {/* Only show toggle if adding member */}
+                        {selectedRole === 'aggregator_member' && (
+                            <div className="flex items-end space-x-2 pt-6">
+                                <Checkbox
+                                    id="addToTeam"
+                                    checked={addToTeam}
+                                    onCheckedChange={(v) => setAddToTeam(!!v)}
+                                />
+                                <Label htmlFor="addToTeam" className="text-gray-300 text-sm">
+                                    Also add to my team
+                                </Label>
+                            </div>
+                        )}
 
+                        {/* Company Name */}
                         <div className="space-y-2">
-                            <Label htmlFor="pincode" className="text-gray-300 font-medium">
-                                Pincode
-                            </Label>
+                            <Label>Company Name</Label>
                             <Input
-                                id="pincode"
+                                {...register('companyName')}
+                                className="glass-input text-black h-12"
+                                placeholder="Enter company name"
+                            />
+                        </div>
+
+                        {/* Contact Name */}
+                        <div className="space-y-2">
+                            <Label>Contact Person</Label>
+                            <Input
+                                {...register('fullName')}
+                                className="glass-input text-black h-12"
+                                placeholder="Enter name"
+                            />
+                        </div>
+
+                        {/* Email */}
+                        <div className="space-y-2">
+                            <Label>Email</Label>
+                            <Input
+                                type="email"
+                                {...register('email')}
+                                className="glass-input text-black h-12"
+                                placeholder="Enter email"
+                            />
+                        </div>
+
+                        {/* Phone */}
+                        <div className="space-y-2">
+                            <Label>Phone</Label>
+                            <Input
+                                {...register('phone')}
+                                className="glass-input text-black h-12"
+                                placeholder="Enter phone number"
+                            />
+                        </div>
+
+                        {/* Gender */}
+                        <div className="space-y-2">
+                            <Label>Gender</Label>
+                            <Select
+                                defaultValue="male"
+                                onValueChange={(v) =>
+                                    setValue('gender', v as GenderLower, { shouldValidate: true })
+                                }
+                            >
+                                <SelectTrigger className="glass-input text-black h-12">
+                                    <SelectValue placeholder="Select gender" />
+                                </SelectTrigger>
+                                <SelectContent className="glass-card border-white/10">
+                                    <SelectItem value="male">Male</SelectItem>
+                                    <SelectItem value="female">Female</SelectItem>
+                                    <SelectItem value="other">Other</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* DOB */}
+                        <div className="space-y-2">
+                            <Label>Date of Birth</Label>
+                            <Input type="date" {...register('dob')} className="glass-input text-black h-12" />
+                        </div>
+
+                        {/* Address */}
+                        <div className="space-y-2 col-span-2">
+                            <Label>Address</Label>
+                            <Input
+                                {...register('address')}
+                                className="glass-input text-black h-12"
+                                placeholder="Enter address"
+                            />
+                        </div>
+
+                        {/* Pincode */}
+                        <div className="space-y-2">
+                            <Label>Pincode</Label>
+                            <Input
                                 {...register('pincode')}
-                                className="glass-input text-black placeholder-gray-400 h-12"
+                                className="glass-input text-black h-12"
                                 placeholder="Enter pincode"
                             />
-                            {errors.pincode && (
-                                <p className="text-red-400 text-sm">{errors.pincode.message}</p>
-                            )}
                         </div>
 
+                        {/* Password fields only for Add */}
                         {mode === 'add' && (
                             <>
                                 <div className="space-y-2">
-                                    <Label htmlFor="password" className="text-gray-300 font-medium">
-                                        Password
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="password"
-                                            type={showPassword ? 'text' : 'password'}
-                                            {...register('password')}
-                                            className="glass-input text-black placeholder-gray-400 pr-11 h-12"
-                                            placeholder="Enter password"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
-                                            onClick={() => setShowPassword(!showPassword)}
-                                            tabIndex={-1}
-                                        >
-                                            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </Button>
-                                    </div>
-                                    {errors.password && (
-                                        <p className="text-red-400 text-sm">{errors.password.message}</p>
-                                    )}
+                                    <Label>Password</Label>
+                                    <Input
+                                        type="password"
+                                        {...register('password')}
+                                        className="glass-input text-black h-12"
+                                        placeholder="Enter password"
+                                    />
                                 </div>
-
                                 <div className="space-y-2">
-                                    <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">
-                                        Confirm Password
-                                    </Label>
-                                    <div className="relative">
-                                        <Input
-                                            id="confirmPassword"
-                                            type={showConfirmPassword ? 'text' : 'password'}
-                                            {...register('confirmPassword')}
-                                            className="glass-input text-black placeholder-gray-400 pr-11 h-12"
-                                            placeholder="Confirm password"
-                                        />
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="sm"
-                                            className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
-                                            onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            tabIndex={-1}
-                                        >
-                                            {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                                        </Button>
-                                    </div>
-                                    {errors.confirmPassword && (
-                                        <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
-                                    )}
+                                    <Label>Confirm Password</Label>
+                                    <Input
+                                        type="password"
+                                        {...register('confirmPassword')}
+                                        className="glass-input text-black h-12"
+                                        placeholder="Confirm password"
+                                    />
                                 </div>
                             </>
                         )}
@@ -404,25 +397,25 @@ export function AddAggregatorDialog({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={() => {
-                                onClose?.()
-                            }}
+                            onClick={() => onClose?.()}
                             className="border-gray-600 text-gray-300 hover:bg-gray-700"
                         >
                             Cancel
                         </Button>
                         <Button
                             type="submit"
-                            disabled={isLoading}
+                            disabled={submitting}
                             className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
                         >
-                            {isLoading ? (
+                            {submitting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    {mode === 'add' ? 'Adding Aggregator...' : 'Updating Aggregator...'}
+                                    {mode === 'add' ? 'Adding...' : 'Updating...'}
                                 </>
+                            ) : mode === 'add' ? (
+                                'Add Aggregator'
                             ) : (
-                                mode === 'add' ? 'Add Aggregator' : 'Update Aggregator'
+                                'Update Aggregator'
                             )}
                         </Button>
                     </div>

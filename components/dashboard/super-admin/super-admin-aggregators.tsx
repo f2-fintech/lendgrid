@@ -11,35 +11,52 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { usersApi } from '@/lib/api-client'
 import { AddAggregatorDialog } from './dialogs/add-aggregator-dialog'
 import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp } from 'lucide-react'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 import { useAggregators } from '@/hooks/use-aggregators'
+import { useUpdateUser } from '@/hooks/use-users'
+import { AggregatorProfile } from '@/lib'
 
 export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
-  const [selectedAggregator, setSelectedAggregator] = useState(null)
-  const [editingAggregator, setEditingAggregator] = useState(null)
+  const [selectedAggregator, setSelectedAggregator] = useState<AggregatorProfile | null>(null)
+  const [editingAggregator, setEditingAggregator] = useState<AggregatorProfile | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
-  const { toast } = useToast()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
+  const { mutate: updateUserStatus } = useUpdateUser()
+  const { toast } = useToast()
 
   const {
-    aggregators,
-    total,
-    pages,
-    metrics,
-    loading: isTableLoading,
+    data,
+    isLoading: isTableLoading,
+    isError,
     error,
-    mutate,
+    refetch,
   } = useAggregators({ page, limit: pageSize })
+
+  const aggregators = data?.results || []
+  const total = data?.count || 0
+  const pages = data?.pages || 1
+
+  // Optionally compute metrics here (to preserve your existing logic)
+  const metrics = useMemo(() => ({
+    totalAggregators: total,
+    activeAggregators: aggregators.filter(a => a.user?.status === 'ACTIVE').length,
+    pendingApprovals: aggregators.filter(a => a.user?.status === 'PENDING_APPROVAL').length,
+    // avgConversionRate: aggregators.length
+    //   ? Math.round(
+    //     aggregators.reduce((sum, a) => sum + (a.conversionRate || 0), 0) /
+    //     aggregators.length
+    //   )
+    //   : 0,
+  }), [aggregators, total])
 
   useEffect(() => {
     setPage(1)
@@ -48,6 +65,7 @@ export function SuperAdminAggregators() {
   const handleSuccess = () => {
     setIsAddEditDialogOpen(false)
     setEditingAggregator(null)
+    refetch();
   }
 
   const formatCurrency = (amount: number) => {
@@ -58,21 +76,24 @@ export function SuperAdminAggregators() {
     }).format(amount)
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
+    if (!status) return 'bg-gray-500/20 text-gray-400'
     switch (status.toUpperCase()) {
       case 'ACTIVE': return 'bg-green-500/20 text-green-400'
-      case 'PENDING': return 'bg-orange-500/20 text-orange-400'
+      case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
       case 'SUSPENDED':
       case 'INACTIVE': return 'bg-red-500/20 text-red-400'
       default: return 'bg-gray-500/20 text-gray-400'
     }
   }
 
-  const getKycStatusColor = (status: string) => {
+  const getKycStatusColor = (status?: string) => {
+    if (!status) return 'bg-gray-500/20 text-gray-400'
     switch (status) {
-      case 'Verified': return 'bg-green-500/20 text-green-400'
-      case 'Under Review': return 'bg-orange-500/20 text-orange-400'
-      case 'Rejected': return 'bg-red-500/20 text-red-400'
+      case 'PENDING': return 'bg-yellow-500/20 text-yellow-400'
+      case 'UNDER_REVIEW': return 'bg-orange-500/20 text-orange-400'
+      case 'APPROVED': return 'bg-green-500/20 text-green-400'
+      case 'REJECTED': return 'bg-red-500/20 text-red-400'
       default: return 'bg-gray-500/20 text-gray-400'
     }
   }
@@ -80,9 +101,9 @@ export function SuperAdminAggregators() {
   const filteredAggregators = useMemo(() => {
     return aggregators.filter((aggregator) => {
       const matchesSearch =
-        aggregator.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        aggregator.email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = !filterStatus || filterStatus === "all" || aggregator.status === filterStatus
+        aggregator.user?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        aggregator.user?.email.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = !filterStatus || filterStatus === "all" || aggregator.user?.status === filterStatus
       return matchesSearch && matchesStatus
     })
   }, [aggregators, searchTerm, filterStatus])
@@ -102,45 +123,49 @@ export function SuperAdminAggregators() {
     setPage(1)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-
-  const handleApprove = async (aggregatorId: string) => {
-    try {
-      await usersApi.updateUser({
-        id: aggregatorId,
-        status: 'ACTIVE'
-      })
-      toast({
-        title: 'Success',
-        description: 'Aggregator has been approved successfully.',
-      })
-    } catch (error) {
-      console.error('Approve aggregator error:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to approve aggregator. Please try again.',
-        variant: 'destructive',
-      })
-    }
+  console.log(selectedAggregator, 'aggregator')
+  const handleApprove = (userId: string) => {
+    updateUserStatus(
+      { id: userId, status: 'ACTIVE' },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Success',
+            description: 'Aggregator approved successfully.',
+          })
+          refetch() // re-fetch the aggregator list
+        },
+        onError: (error: Error) => {
+          toast({
+            title: 'Error',
+            description: error.message || 'Failed to approve aggregator.',
+            variant: 'destructive',
+          })
+        },
+      }
+    )
   }
 
-  const handleReject = async (aggregatorId: string) => {
-    try {
-      await usersApi.updateUser({
-        id: aggregatorId,
-        status: 'INACTIVE'
-      })
-      toast({
-        title: 'Success',
-        description: 'Aggregator has been rejected.',
-      })
-    } catch (error) {
-      console.error('Reject aggregator error:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to reject aggregator. Please try again.',
-        variant: 'destructive',
-      })
-    }
+  const handleReject = (userId: string) => {
+    updateUserStatus(
+      { id: userId, status: 'INACTIVE' },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Success',
+            description: 'Aggregator rejected successfully.',
+          })
+          refetch()
+        },
+        onError: (error: Error) => {
+          toast({
+            title: 'Error',
+            description: error.message || 'Failed to reject aggregator.',
+            variant: 'destructive',
+          })
+        },
+      }
+    )
   }
 
   const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
@@ -168,13 +193,15 @@ export function SuperAdminAggregators() {
     </motion.div>
   )
 
-  if (error) {
+  if (isError) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Aggregators</h3>
-          <p className="text-gray-400">{error}</p>
+          <h3 className="text-lg font-semibold text-white mb-2">
+            Error Loading Aggregators
+          </h3>
+          <p className="text-gray-400">{(error as Error)?.message}</p>
         </div>
       </div>
     )
@@ -237,7 +264,8 @@ export function SuperAdminAggregators() {
           />
           <MetricCard
             title="Avg Conversion Rate"
-            value={`${metrics.avgConversionRate}%`}
+            // value={`${metrics.avgConversionRate}%`}
+            value={`0%`}
             icon={TrendingUp}
             color="bg-gold/20 text-gold"
             subtitle="Platform average"
@@ -277,8 +305,9 @@ export function SuperAdminAggregators() {
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="ACTIVE">Active</SelectItem>
-                    {/* <SelectItem value="PENDING">Pending</SelectItem> */}
                     <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                    <SelectItem value="PENDING_APPROVAL">Pending Approval</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -296,7 +325,6 @@ export function SuperAdminAggregators() {
                     <div>Status</div>
                     <div>KYC Status</div>
                     <div>Applications</div>
-                    <div>Conversion Rate</div>
                     <div>Total Commission</div>
                     <div>Join Date</div>
                     <div>Actions</div>
@@ -311,30 +339,30 @@ export function SuperAdminAggregators() {
                         className="grid grid-cols-8 gap-4 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
                       >
                         <div>
-                          <p className="text-white font-medium">{aggregator.username}</p>
-                          <p className="text-sm text-gray-400">{aggregator.email}</p>
+                          <p className="text-white font-medium">{aggregator.user?.username}</p>
+                          <p className="text-sm text-gray-400">{aggregator.user?.email}</p>
                         </div>
                         <div>
-                          <Badge className={getStatusColor(aggregator.status)}>
-                            {aggregator.status}
+                          <Badge className={getStatusColor(aggregator.user?.status)}>
+                            {aggregator.user?.status}
                           </Badge>
                         </div>
                         <div>
-                          <Badge className={getKycStatusColor(aggregator.kycStatus || 'Verified')}>
-                            {aggregator.kycStatus || 'Verified'}
+                          <Badge className={getKycStatusColor(aggregator.kycStatus || 'UNKNOWN')}>
+                            {aggregator.kycStatus || 'UNKNOWN'}
                           </Badge>
                         </div>
                         <div className="text-white">
-                          <p>{aggregator.totalApplications || 0}</p>
+                          <p>{aggregator.totalApplicationsSubmitted || 0} worked</p>
                           <p className="text-sm text-gray-400">
-                            {aggregator.approvedApplications || 0} approved
+                            {aggregator.totalApplicationsSubmitted || 0} approved
                           </p>
                         </div>
-                        <div className="text-gold">
+                        {/* <div className="text-gold">
                           {(aggregator.conversionRate || 0) > 0 ? `${aggregator.conversionRate}%` : '-'}
-                        </div>
+                        </div> */}
                         <div className="text-white">
-                          {(aggregator.totalCommission || 0) > 0 ? formatCurrency(aggregator.totalCommission || 0) : '-'}
+                          {(aggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(aggregator.totalCommissionEarned || 0) : '0'}
                         </div>
                         <div className="text-gray-300">
                           {aggregator.createdAt}
@@ -363,7 +391,7 @@ export function SuperAdminAggregators() {
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            {aggregator.status === 'PENDING' && (
+                            {aggregator.user?.status === 'ACTIVE' && (
                               <>
                                 <Button
                                   variant="ghost"
@@ -417,22 +445,22 @@ export function SuperAdminAggregators() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label className="text-gray-300">Username</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.username}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.username}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Email</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.email}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.email}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Status</Label>
-                  <Badge className={`${getStatusColor(selectedAggregator.status)} mt-1`}>
-                    {selectedAggregator.status}
+                  <Badge className={`${getStatusColor(selectedAggregator.user?.status)} mt-1`}>
+                    {selectedAggregator.user?.status}
                   </Badge>
                 </div>
                 <div>
                   <Label className="text-gray-300">KYC Status</Label>
-                  <Badge className={`${getKycStatusColor(selectedAggregator.kycStatus || 'Verified')} mt-1`}>
-                    {selectedAggregator.kycStatus || 'Verified'}
+                  <Badge className={`${getKycStatusColor(selectedAggregator.kycStatus || 'UNKNOWN')} mt-1`}>
+                    {selectedAggregator.kycStatus || 'UNKNOWN'}
                   </Badge>
                 </div>
               </div>
@@ -440,7 +468,7 @@ export function SuperAdminAggregators() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label className="text-gray-300">Contact</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.contact || 'Not provided'}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.contact || 'Not provided'}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Company Name</Label>
@@ -448,7 +476,7 @@ export function SuperAdminAggregators() {
                 </div>
                 <div>
                   <Label className="text-gray-300">Address</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.address || 'Not provided'}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.address || 'Not provided'}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Join Date</Label>
@@ -461,7 +489,7 @@ export function SuperAdminAggregators() {
               <div className="grid grid-cols-3 gap-6">
                 <div>
                   <Label className="text-gray-300">Total Applications</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.totalApplications || 0}</p>
+                  <p className="text-white font-semibold mt-1">{selectedAggregator.totalApplicationsSubmitted || 0}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Approved Applications</Label>
@@ -479,7 +507,7 @@ export function SuperAdminAggregators() {
                 <div>
                   <Label className="text-gray-300">Total Commission Earned</Label>
                   <p className="text-white font-semibold mt-1">
-                    {(selectedAggregator.totalCommission || 0) > 0 ? formatCurrency(selectedAggregator.totalCommission || 0) : 'No earnings yet'}
+                    {(selectedAggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(selectedAggregator.totalCommissionEarned || 0) : 'No earnings yet'}
                   </p>
                 </div>
                 <div>
@@ -490,7 +518,7 @@ export function SuperAdminAggregators() {
                 </div>
               </div>
 
-              {selectedAggregator.status === 'Under Review' && (
+              {selectedAggregator.user?.status === 'PENDING_APPROVAL' && (
                 <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
                   <Button
                     className="bg-green-500 hover:bg-green-600 text-white"
@@ -529,6 +557,7 @@ export function SuperAdminAggregators() {
           setIsAddEditDialogOpen(false)
           setEditingAggregator(null)
         }}
+        refetch={refetch}
       />
     </div>
   )
