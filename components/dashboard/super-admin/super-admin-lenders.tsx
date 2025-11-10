@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useToast } from '@/hooks/use-toast'
-import { usersApi } from '@/lib/api-client'
+import { usersApi } from '@/lib'
 import { AddLenderDialog } from './dialogs/add-lender-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'

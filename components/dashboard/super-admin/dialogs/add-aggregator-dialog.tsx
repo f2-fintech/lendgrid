@@ -64,6 +64,7 @@ export function AddAggregatorDialog({
     const { user } = useAuth()
     const { toast } = useToast()
     const [addToTeam, setAddToTeam] = useState(false)
+    const [showPassword, setShowPassword] = useState(false)
 
     // Logged-in user (for super admin or aggregator admin)
     const { data: userProfile } = useProfile(true)
@@ -373,21 +374,39 @@ export function AddAggregatorDialog({
                             <>
                                 <div className="space-y-2">
                                     <Label>Password</Label>
-                                    <Input
-                                        type="password"
-                                        {...register('password')}
-                                        className="glass-input text-black h-12"
-                                        placeholder="Enter password"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            type={showPassword ? 'text' : 'password'}
+                                            {...register('password')}
+                                            className="glass-input text-black h-12 pr-10"
+                                            placeholder="Enter password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3"
+                                        >
+                                            {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="space-y-2">
                                     <Label>Confirm Password</Label>
-                                    <Input
-                                        type="password"
-                                        {...register('confirmPassword')}
-                                        className="glass-input text-black h-12"
-                                        placeholder="Confirm password"
-                                    />
+                                    <div className="relative">
+                                        <Input
+                                            type={showPassword ? 'text' : 'password'}
+                                            {...register('confirmPassword')}
+                                            className="glass-input text-black h-12 pr-10"
+                                            placeholder="Confirm password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute inset-y-0 right-0 flex items-center pr-3"
+                                        >
+                                            {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                                        </button>
+                                    </div>
                                 </div>
                             </>
                         )}
