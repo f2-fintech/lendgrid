@@ -21,8 +21,8 @@ import { TableSkeleton } from "@/components/ui/loading-skeleton"
 import { useAuth } from "@/lib/auth"
 import { Plus, Search, Edit, Trash2, AlertCircle, UserCheck } from "lucide-react"
 
-import { productsApi, CreateProductDto, ProductSummary, productAssignmentsApi } from "@/lib"
-import { createProduct, removeProduct, updateProduct, useProducts } from "@/hooks/use-products"
+import { CreateProductDto, ProductSummary, productAssignmentsApi } from "@/lib"
+import { useCreateProduct, useDeleteProduct, useUpdateProduct, useProducts } from "@/hooks/use-products"
 import { useAggregators } from "@/hooks/use-aggregators"
 
 const productSchema = z.object({

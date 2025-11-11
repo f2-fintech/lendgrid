@@ -538,7 +538,7 @@ export function SuperAdminAggregators() {
                     }}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
-                    Reject Application
+                    Reject Aggregator
                   </Button>
                 </div>
               )}

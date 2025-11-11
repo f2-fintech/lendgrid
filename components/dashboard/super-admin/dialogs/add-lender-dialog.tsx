@@ -1,269 +1,441 @@
-"use client"
+"use client";
 
-import { useState, useMemo, useEffect } from 'react'
-import { useForm } from 'react-hook-form'
-import { z } from 'zod'
-import { zodResolver } from '@hookform/resolvers/zod'
+import { useState, useMemo, useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { zodResolver } from "@hookform/resolvers/zod";
+
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
-import { useToast } from '@/hooks/use-toast'
+} from "@/components/ui/dialog";
 
-import { useRegister, useUpdateUser, useProfile } from '@/hooks/use-users'
-import { useCreateBranch } from '@/hooks/use-lenders'
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const addLenderSchema = z.object({
-  fullName: z.string().min(2, 'Contact person name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
-  phone: z.string().min(10, 'Phone number must be at least 10 digits'),
-  companyName: z.string().min(2, 'Company name must be at least 2 characters'),
-  lenderType: z.enum(['Bank', 'NBFC', 'Fintech']),
-  address: z.string().min(5, 'Please enter a valid address'),
-  pincode: z.string().regex(/^\d+$/, 'Pincode must be a number string'),
-  gender: z.enum(['male', 'female', 'other']),
-  dob: z.string().refine((val) => !isNaN(Date.parse(val)), {
-    message: 'Date of Birth must be a valid date',
-  }),
-  password: z.string().optional(),
-  confirmPassword: z.string().optional(),
-}).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
-  path: ["confirmPassword"],
-})
+import { Plus, Loader2, Eye, EyeOff } from "lucide-react";
 
-type AddLenderFormData = z.infer<typeof addLenderSchema>
+import { useToast } from "@/hooks/use-toast";
 
-export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onLenderUpdated?: () => void }) {
-  const [open, setOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const { toast } = useToast()
+import { useRegister, useUpdateUser } from "@/hooks/use-users";
+import { useCreateBranch } from "@/hooks/use-lenders";
 
+// ----------------------------------------------------------------------------------
+// TYPES
+// ----------------------------------------------------------------------------------
+type GenderLower = "male" | "female" | "other";
+type LenderTypeLower = "Bank" | "NBFC" | "Fintech";
+
+export type LenderFormValues = {
+  fullName: string;
+  email: string;
+  phone: string;
+  companyName: string;
+  lenderType: LenderTypeLower;
+  address: string;
+  pincode: string;
+  gender: GenderLower;
+  dob: string;
+  password?: string;
+  confirmPassword?: string;
+};
+
+// ----------------------------------------------------------------------------------
+// COMPONENT
+// ----------------------------------------------------------------------------------
+
+export function AddLenderDialog({
+  isOpen,
+  mode,
+  editData,
+  onClose,
+  onSuccess,
+  refetch,
+}: {
+  isOpen: boolean;
+  mode: "add" | "edit";
+  editData?: any;
+  onClose: () => void;
+  onSuccess: () => void;
+  refetch?: () => void;
+}) {
+  const { toast } = useToast();
+
+  const registerMutation = useRegister();
+  const updateUserMutation = useUpdateUser();
+
+  // Keep branch logic same as your original code
+  useCreateBranch();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // ----------------------------------------------------------------------------------
+  // ✅ ZOD SCHEMA (Strong password same as AddAggregator)
+  // ----------------------------------------------------------------------------------
+  const formSchema = useMemo(() => {
+    return z
+      .object({
+        fullName: z
+          .string()
+          .min(2, "Contact person name must be at least 2 characters")
+          .max(50, "Name is too long")
+          .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+
+        email: z.string().email("Enter valid email").toLowerCase().trim(),
+
+        phone: z
+          .string()
+          .min(10, "Phone must be at least 10 digits")
+          .max(15, "Phone too long")
+          .regex(/^[0-9]+$/, "Phone must contain only digits"),
+
+        companyName: z.string().min(2, "Company name must be at least 2 characters"),
+
+        lenderType: z.enum(["Bank", "NBFC", "Fintech"], {
+          required_error: "Select lender type",
+        }),
+
+        address: z.string().min(5, "Enter a valid address"),
+
+        pincode: z
+          .string()
+          .regex(/^[0-9]{4,10}$/, "Pincode must be numeric between 4-10 digits"),
+
+        gender: z.enum(["male", "female", "other"], {
+          required_error: "Select gender",
+        }),
+
+        dob: z.string().refine((v) => !isNaN(Date.parse(v)), {
+          message: "Invalid date",
+        }),
+
+        password: z.string().optional(),
+        confirmPassword: z.string().optional(),
+      })
+      .superRefine((data, ctx) => {
+        // ADD MODE → validate passwords strongly
+        if (mode === "add") {
+          if (!data.password) {
+            ctx.addIssue({
+              code: "custom",
+              message: "Password is required",
+              path: ["password"],
+            });
+          } else {
+            if (data.password.length < 8)
+              ctx.addIssue({
+                code: "custom",
+                message: "Password must be 8+ characters",
+                path: ["password"],
+              });
+
+            if (!/[A-Z]/.test(data.password))
+              ctx.addIssue({
+                code: "custom",
+                message: "Must include 1 uppercase",
+                path: ["password"],
+              });
+
+            if (!/[a-z]/.test(data.password))
+              ctx.addIssue({
+                code: "custom",
+                message: "Must include 1 lowercase",
+                path: ["password"],
+              });
+
+            if (!/[0-9]/.test(data.password))
+              ctx.addIssue({
+                code: "custom",
+                message: "Must include 1 number",
+                path: ["password"],
+              });
+
+            if (!/[^\w]/.test(data.password))
+              ctx.addIssue({
+                code: "custom",
+                message: "Must include 1 special character",
+                path: ["password"],
+              });
+          }
+
+          if (data.password !== data.confirmPassword) {
+            ctx.addIssue({
+              code: "custom",
+              message: "Passwords do not match",
+              path: ["confirmPassword"],
+            });
+          }
+        }
+
+        // EDIT MODE → block password
+        if (mode === "edit") {
+          if (data.password || data.confirmPassword) {
+            ctx.addIssue({
+              code: "custom",
+              message: "Password cannot be changed here",
+              path: ["password"],
+            });
+          }
+        }
+      });
+  }, [mode]);
+
+  // ----------------------------------------------------------------------------------
+  // ✅ DEFAULT VALUES
+  // ----------------------------------------------------------------------------------
+  const defaultValues: LenderFormValues = useMemo(() => {
+    if (mode === "edit" && editData) {
+      return {
+        fullName: editData.user?.username ?? "",
+        email: editData.user?.email ?? "",
+        phone: editData.user?.contact ?? "",
+        companyName: editData.companyName ?? "",
+        lenderType: (editData.lenderType || editData.type) as LenderTypeLower,
+        address: editData.user?.address ?? "",
+        pincode: String(editData.user?.pincode ?? ""),
+        gender: (editData.user?.gender?.toLowerCase() as GenderLower) ?? "male",
+        dob: editData.user?.dob
+          ? new Date(editData.user.dob).toISOString().split("T")[0]
+          : "",
+        password: undefined,
+        confirmPassword: undefined,
+      };
+    }
+
+    return {
+      fullName: "",
+      email: "",
+      phone: "",
+      companyName: "",
+      lenderType: "Bank",
+      address: "",
+      pincode: "",
+      gender: "male",
+      dob: "",
+      password: undefined,
+      confirmPassword: undefined,
+    };
+  }, [mode, editData]);
+
+  // ----------------------------------------------------------------------------------
+  // ✅ UseForm
+  // ----------------------------------------------------------------------------------
   const {
     register,
-    handleSubmit,
     setValue,
+    handleSubmit,
     reset,
     formState: { errors },
-  } = useForm<AddLenderFormData>({
-    resolver: zodResolver(addLenderSchema),
-  })
+  } = useForm<LenderFormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues,
+  });
 
   useEffect(() => {
-    if (open && lender) {
-      reset({
-        fullName: lender.name,
-        email: lender.email,
-        phone: lender.phone,
-        companyName: lender.companyName,
-        // lenderType: lender.type,
-        address: lender.address,
-        pincode: lender.pincode,
-        gender: lender.gender,
-        dob: lender.dob ? new Date(lender.dob).toISOString().split('T')[0] : '',
-      })
-    } else if (open && !lender) {
-      reset()
-    }
-  }, [lender, open, reset])
+    if (isOpen) reset(defaultValues);
+  }, [isOpen, defaultValues, reset]);
 
-  const onSubmit = async (data: AddLenderFormData) => {
-    setIsLoading(true)
+  // ----------------------------------------------------------------------------------
+  // ✅ SUBMIT HANDLER
+  // ----------------------------------------------------------------------------------
+  const onSubmit = async (data: LenderFormValues) => {
+    setIsLoading(true);
+
     try {
       const payload: any = {
-        id: lender?.id,
+        id: editData?.user?._id,
         username: data.fullName,
         email: data.email,
         contact: data.phone,
         companyName: data.companyName,
-        role: 'LENDER_ADMIN',
         address: data.address,
-        dob: new Date(data.dob).toISOString(),
+        role: "LENDER_ADMIN",
         gender: data.gender.toUpperCase(),
+        dob: new Date(data.dob).toISOString(),
         pincode: Number(data.pincode),
-        // lenderType: data.lenderType,
+        lenderType: data.lenderType,
+      };
+
+      if (mode === "add" && data.password) {
+        payload.password = data.password;
       }
 
-      if (data.password) {
-        payload.password = data.password
-      }
-
-      if (lender) {
-        console.log('Update payload:', payload, data, lender)
-        await usersApi.updateUser(payload)
-        toast({
-          title: 'Success',
-          description: 'Lender updated successfully.',
-        })
-        if (onLenderUpdated) {
-          onLenderUpdated()
-        }
+      if (mode === "edit") {
+        await updateUserMutation.mutateAsync(payload);
       } else {
-        await usersApi.register(payload)
-        toast({
-          title: 'Success',
-          description: 'Lender registration successful. An invite email will be sent to the provided email address.',
-        })
-        if (onLenderUpdated) {
-          onLenderUpdated()
-        }
+        await registerMutation.mutateAsync(payload);
       }
 
-      reset()
-      setOpen(false)
-    } catch (error) {
-      console.error('Add/Update lender error:', error)
       toast({
-        title: 'Error',
-        description: `Failed to ${lender ? 'update' : 'register'} lender. Please try again.`,
-        variant: 'destructive'
-      })
-    } finally {
-      setIsLoading(false)
-    }
-  }
+        title: "Success",
+        description:
+          mode === "edit"
+            ? "Lender updated successfully."
+            : "Lender registered successfully.",
+      });
 
+      onSuccess?.();
+      reset();
+      onClose();
+      refetch?.();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error?.message || "Something went wrong.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ----------------------------------------------------------------------------------
+  // ✅ RETURN JSX
+  // ----------------------------------------------------------------------------------
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {lender ? (
-          <Button variant="ghost" size="sm">Edit</Button>
-        ) : (
-          <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Lender
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl"
-      >
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">{lender ? 'Edit Lender' : 'Add New Lender'}</DialogTitle>
+          <DialogTitle className="text-xl font-bold">
+            {mode === "edit" ? "Edit Lender" : "Add New Lender"}
+          </DialogTitle>
           <DialogDescription className="text-gray-400">
-            {lender ? 'Update the details of the existing lending partner.' : 'Register a new lending partner to the platform'}
+            {mode === "edit"
+              ? "Update the details of this lender."
+              : "Register a new lender to the platform."}
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+
+        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
           <div className="grid grid-cols-2 gap-6">
+            {/* Company */}
             <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-gray-300 font-medium">
-                Company Name
-              </Label>
+              <Label>Company Name</Label>
               <Input
-                id="companyName"
-                {...register('companyName')}
-                className="glass-input text-black placeholder-gray-400 h-12"
+                {...register("companyName")}
+                className="glass-input text-black h-12"
                 placeholder="Enter company name"
               />
               {errors.companyName && (
-                <p className="text-red-400 text-sm">{errors.companyName.message}</p>
+                <p className="text-red-400 text-sm">
+                  {errors.companyName.message}
+                </p>
               )}
             </div>
 
+            {/* Lender Type */}
             <div className="space-y-2">
-              <Label htmlFor="lenderType" className="text-gray-300 font-medium">
-                Lender Type
-              </Label>
-              <Select onValueChange={(value) => setValue('lenderType', value as 'Bank' | 'NBFC' | 'Fintech')}>
+              <Label>Lender Type</Label>
+              <Select
+                defaultValue={defaultValues.lenderType}
+                onValueChange={(v) =>
+                  setValue("lenderType", v as LenderTypeLower, {
+                    shouldValidate: true,
+                  })
+                }
+              >
                 <SelectTrigger className="glass-input text-gray-500 h-12">
                   <SelectValue placeholder="Select lender type" />
                 </SelectTrigger>
-                <SelectContent className="glass-card border-white/10">
-                  <SelectItem value="Bank" className="text-black hover:bg-white/10">Bank</SelectItem>
-                  <SelectItem value="NBFC" className="text-black hover:bg-white/10">NBFC</SelectItem>
-                  <SelectItem value="Fintech" className="text-black hover:bg-white/10">Fintech</SelectItem>
+                <SelectContent>
+                  <SelectItem value="Bank">Bank</SelectItem>
+                  <SelectItem value="NBFC">NBFC</SelectItem>
+                  <SelectItem value="Fintech">Fintech</SelectItem>
                 </SelectContent>
               </Select>
               {errors.lenderType && (
-                <p className="text-red-400 text-sm">{errors.lenderType.message}</p>
+                <p className="text-red-400 text-sm">
+                  {errors.lenderType.message}
+                </p>
               )}
             </div>
 
+            {/* FullName */}
             <div className="space-y-2">
-              <Label htmlFor="fullName" className="text-gray-300 font-medium">
-                Contact Person Name
-              </Label>
+              <Label>Contact Person Name</Label>
               <Input
-                id="fullName"
-                {...register('fullName')}
-                className="glass-input text-black placeholder-gray-400 h-12"
-                placeholder="Enter contact person name"
+                {...register("fullName")}
+                className="glass-input text-black h-12"
+                placeholder="Enter name"
               />
               {errors.fullName && (
-                <p className="text-red-400 text-sm">{errors.fullName.message}</p>
+                <p className="text-red-400 text-sm">
+                  {errors.fullName.message}
+                </p>
               )}
             </div>
 
+            {/* Email */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-300 font-medium">
-                Email Address
-              </Label>
+              <Label>Email</Label>
               <Input
-                id="email"
                 type="email"
-                {...register('email')}
-                className="glass-input text-black placeholder-gray-400 h-12"
-                placeholder="Enter email address"
+                {...register("email")}
+                className="glass-input text-black h-12"
+                placeholder="Enter email"
               />
               {errors.email && (
                 <p className="text-red-400 text-sm">{errors.email.message}</p>
               )}
             </div>
 
+            {/* Phone */}
             <div className="space-y-2">
-              <Label htmlFor="phone" className="text-gray-300 font-medium">
-                Phone Number
-              </Label>
+              <Label>Phone</Label>
               <Input
-                id="phone"
-                {...register('phone')}
-                className="glass-input text-black placeholder-gray-400 h-12"
-                placeholder="Enter phone number"
+                {...register("phone")}
+                className="glass-input text-black h-12"
+                placeholder="Enter phone"
               />
               {errors.phone && (
                 <p className="text-red-400 text-sm">{errors.phone.message}</p>
               )}
             </div>
 
+            {/* DOB */}
             <div className="space-y-2">
-              <Label htmlFor="dob" className="text-gray-300 font-medium">
-                Date of Birth
-              </Label>
+              <Label>DOB</Label>
               <Input
-                id="dob"
                 type="date"
-                {...register('dob')}
-                className="glass-input text-black placeholder-gray-400 h-12"
-                placeholder="Select date of birth"
+                {...register("dob")}
+                className="glass-input text-black h-12"
               />
               {errors.dob && (
                 <p className="text-red-400 text-sm">{errors.dob.message}</p>
               )}
             </div>
 
+            {/* Gender */}
             <div className="space-y-2">
-              <Label htmlFor="gender" className="text-gray-300 font-medium">
-                Gender
-              </Label>
-              <Select onValueChange={(value) => setValue('gender', value as 'male' | 'female' | 'other')}>
+              <Label>Gender</Label>
+              <Select
+                defaultValue={defaultValues.gender}
+                onValueChange={(v) =>
+                  setValue("gender", v as GenderLower, {
+                    shouldValidate: true,
+                  })
+                }
+              >
                 <SelectTrigger className="glass-input text-gray-500 h-12">
                   <SelectValue placeholder="Select gender" />
                 </SelectTrigger>
-                <SelectContent className="glass-card border-white/10">
-                  <SelectItem value="male" className="text-black hover:bg-white/10">Male</SelectItem>
-                  <SelectItem value="female" className="text-black hover:bg-white/10">Female</SelectItem>
-                  <SelectItem value="other" className="text-black hover:bg-white/10">Other</SelectItem>
+                <SelectContent>
+                  <SelectItem value="male">Male</SelectItem>
+                  <SelectItem value="female">Female</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
                 </SelectContent>
               </Select>
               {errors.gender && (
@@ -271,29 +443,25 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
               )}
             </div>
 
+            {/* Address */}
             <div className="space-y-2 col-span-2">
-              <Label htmlFor="address" className="text-gray-300 font-medium">
-                Address
-              </Label>
+              <Label>Address</Label>
               <Input
-                id="address"
-                {...register('address')}
-                className="glass-input text-black placeholder-gray-400 h-12"
-                placeholder="Enter complete address"
+                {...register("address")}
+                className="glass-input text-black h-12"
+                placeholder="Enter address"
               />
               {errors.address && (
                 <p className="text-red-400 text-sm">{errors.address.message}</p>
               )}
             </div>
 
+            {/* Pincode */}
             <div className="space-y-2">
-              <Label htmlFor="pincode" className="text-gray-300 font-medium">
-                Pincode
-              </Label>
+              <Label>Pincode</Label>
               <Input
-                id="pincode"
-                {...register('pincode')}
-                className="glass-input text-black placeholder-gray-400 h-12"
+                {...register("pincode")}
+                className="glass-input text-black h-12"
                 placeholder="Enter pincode"
               />
               {errors.pincode && (
@@ -301,79 +469,79 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
               )}
             </div>
 
-            {!lender && (
+            {/* PASSWORD ONLY IN ADD MODE */}
+            {mode === "add" && (
               <>
+                {/* Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-gray-300 font-medium">
-                    Password
-                  </Label>
+                  <Label>Password</Label>
                   <div className="relative">
                     <Input
-                      id="password"
-                      type={showPassword ? 'text' : 'password'}
-                      {...register('password')}
-                      className="glass-input text-black placeholder-gray-400 pr-11 h-12"
-                      placeholder="Enter new password "
+                      type={showPassword ? "text" : "password"}
+                      {...register("password")}
+                      className="glass-input text-black pr-10 h-12"
+                      placeholder="Enter password"
                     />
                     <Button
+                      className="absolute right-0 top-0 h-full px-3"
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
                       onClick={() => setShowPassword(!showPassword)}
-                      tabIndex={-1}
                     >
-                      {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showPassword ? <EyeOff /> : <Eye />}
                     </Button>
                   </div>
                   {errors.password && (
-                    <p className="text-red-400 text-sm">{errors.password.message}</p>
+                    <p className="text-red-400 text-sm">
+                      {errors.password.message}
+                    </p>
                   )}
                 </div>
 
+                {/* Confirm Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">
-                    Confirm Password
-                  </Label>
+                  <Label>Confirm Password</Label>
                   <div className="relative">
                     <Input
-                      id="confirmPassword"
-                      type={showConfirmPassword ? 'text' : 'password'}
-                      {...register('confirmPassword')}
-                      className="glass-input text-black placeholder-gray-400 pr-11 h-12"
-                      placeholder="Confirm new password"
+                      type={showConfirmPassword ? "text" : "password"}
+                      {...register("confirmPassword")}
+                      className="glass-input text-black pr-10 h-12"
+                      placeholder="Confirm password"
                     />
                     <Button
+                      className="absolute right-0 top-0 h-full px-3"
                       type="button"
                       variant="ghost"
-                      size="sm"
-                      className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      tabIndex={-1}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
                     >
-                      {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                      {showConfirmPassword ? <EyeOff /> : <Eye />}
                     </Button>
                   </div>
                   {errors.confirmPassword && (
-                    <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
+                    <p className="text-red-400 text-sm">
+                      {errors.confirmPassword.message}
+                    </p>
                   )}
                 </div>
               </>
             )}
           </div>
 
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-4 pt-2">
             <Button
               type="button"
               variant="outline"
               onClick={() => {
-                reset()
-                setOpen(false)
+                reset();
+                onClose();
               }}
               className="border-gray-600 text-gray-300 hover:bg-gray-700"
             >
               Cancel
             </Button>
+
             <Button
               type="submit"
               disabled={isLoading}
@@ -381,16 +549,18 @@ export function AddLenderDialog({ lender, onLenderUpdated }: { lender?: any, onL
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  {lender ? 'Updating Lender...' : 'Adding Lender...'}
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  {mode === "edit" ? "Updating Lender..." : "Adding Lender..."}
                 </>
+              ) : mode === "edit" ? (
+                "Update Lender"
               ) : (
-                lender ? 'Update Lender' : 'Add Lender'
+                "Add Lender"
               )}
             </Button>
           </div>
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

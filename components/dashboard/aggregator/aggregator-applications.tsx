@@ -45,10 +45,10 @@ import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import { TablePagination } from '@/components/ui/pagination'
 import { useAuth } from '@/lib/auth'
-import { applicationsApi } from '@/lib/api-client'
+import { applicationsApi } from '@/lib/applications-api'
 import { useToast } from '@/hooks/use-toast'
 import { useProducts } from '@/hooks/use-products'
-import { useApplications, createApplication, removeApplication } from '@/hooks/use-applications'
+import { useApplications, useCreateApplication, useDeleteApplication } from '@/hooks/use-applications'
 
 
 export function AggregatorApplications() {
