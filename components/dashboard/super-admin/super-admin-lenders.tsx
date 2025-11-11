@@ -226,7 +226,16 @@ export function SuperAdminLenders() {
           <h1 className="text-3xl font-bold text-white">Lender Management</h1>
           <p className="text-gray-400 mt-1">Manage and monitor all registered lenders</p>
         </div>
-        <AddLenderDialog onLenderUpdated={() => { }} />
+        <Button
+          className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
+          onClick={() => {
+            setEditingLender(null)
+            setIsAddEditDialogOpen(true)
+          }}
+        >
+          <Plus className="w-4 h-4 mr-2" />
+          Add New Lender
+        </Button>
       </motion.div>
 
       {/* Metrics Cards */}
@@ -301,9 +310,10 @@ export function SuperAdminLenders() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    {/* <SelectItem value="Pending">Pending</SelectItem> */}
-                    <SelectItem value="Inactive">Inactive</SelectItem>
+                    <SelectItem value="ACTIVE">Active</SelectItem>
+                    <SelectItem value="INACTIVE">Inactive</SelectItem>
+                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
+                    <SelectItem value="PENDING_APPROVAL">Pending Approval</SelectItem>
                   </SelectContent>
                 </Select>
                 <Select value={filterType} onValueChange={setFilterType}>
@@ -359,11 +369,11 @@ export function SuperAdminLenders() {
                             {/* <p className="text-sm text-gray-400">{lender.contactPerson}</p> */}
                           </div>
                         </TableCell>
-                        {/* <TableCell>
+                        <TableCell>
                           <Badge variant="outline" className="border-gray-600 text-gray-300">
                             {lender.lenderType || 'N/A'}
                           </Badge>
-                        </TableCell> */}
+                        </TableCell>
                         <TableCell>
                           <Badge className={getStatusColor(lender.user?.status)}>
                             {lender.user?.status}
