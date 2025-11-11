@@ -4,8 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useToast } from '@/hooks/use-toast'
-import { usersApi } from '@/lib'
 import { AddLenderDialog } from './dialogs/add-lender-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +18,10 @@ import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 
+import { LenderProfile } from '@/lib'
 import { useLenders } from '@/hooks/use-lenders'
+import { useUpdateUser } from '@/hooks/use-users'
+import { useToast } from '@/hooks/use-toast'
 
 export function SuperAdminLenders() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -29,6 +30,9 @@ export function SuperAdminLenders() {
   const [selectedLender, setSelectedLender] = useState<any>(null)
   const [editingLender, setEditingLender] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
+
+  const { mutate: updateUserStatus } = useUpdateUser()
   const { toast } = useToast()
 
   const [page, setPage] = useState(1)
@@ -36,18 +40,39 @@ export function SuperAdminLenders() {
   const tableTopRef = useRef<HTMLDivElement | null>(null)
 
   const {
-    lenders,
-    total,
-    pages,
-    metrics,
-    loading: isTableLoading,
+    data,
+    isLoading: isTableLoading,
+    isError,
     error,
-    mutate,
+    refetch,
   } = useLenders({ page, limit: pageSize });
+
+  const lenders = data?.results || []
+  const total = data?.count || 0
+  const pages = data?.pages || 1
+
+  const metrics = useMemo(() => ({
+    totalLenders: total,
+    activeLenders: lenders.filter(l => l.user?.status === 'ACTIVE').length,
+    pendingApprovals: lenders.filter(l => l.user?.status === 'PENDING_APPROVAL').length,
+    // avgConversionRate: lenders.length
+    //   ? Math.round(
+    //     lenders.reduce((sum, a) => sum + (a.conversionRate || 0), 0) /
+    //     lenders.length
+    //   )
+    //   : 0,
+  }), [lenders, total])
+
 
   useEffect(() => {
     setPage(1)
   }, [searchTerm, filterStatus, filterType])
+
+  const handleSuccess = () => {
+    setIsAddEditDialogOpen(false)
+    setEditingLender(null)
+    refetch();
+  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -57,44 +82,37 @@ export function SuperAdminLenders() {
     }).format(amount)
   }
 
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status?: string) => {
+    if (!status) return 'bg-gray-500/20 text-gray-400'
     switch (status.toUpperCase()) {
       case 'ACTIVE': return 'bg-green-500/20 text-green-400'
-      case 'PENDING': return 'bg-orange-500/20 text-orange-400'
+      case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
       case 'SUSPENDED':
       case 'INACTIVE': return 'bg-red-500/20 text-red-400'
       default: return 'bg-gray-500/20 text-gray-400'
     }
   }
 
-  const getKycStatusColor = (status: string) => {
+  const getKycStatusColor = (status?: string) => {
+    if (!status) return 'bg-gray-500/20 text-gray-400'
     switch (status) {
-      case 'Verified': return 'bg-green-500/20 text-green-400'
-      case 'Under Review': return 'bg-orange-500/20 text-orange-400'
-      case 'Rejected': return 'bg-red-500/20 text-red-400'
+      case 'PENDING': return 'bg-yellow-500/20 text-yellow-400'
+      case 'UNDER_REVIEW': return 'bg-orange-500/20 text-orange-400'
+      case 'APPROVED': return 'bg-green-500/20 text-green-400'
+      case 'REJECTED': return 'bg-red-500/20 text-red-400'
       default: return 'bg-gray-500/20 text-gray-400'
     }
   }
 
-  const handleLenderUpdated = () => {
-    mutate()
-  }
-
   const filteredLenders = useMemo(() => {
-    if (!lenders) return []
     return lenders.filter((lender) => {
       const matchesSearch =
-        lender.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (lender.contact?.toLowerCase().includes(searchTerm.toLowerCase()))
-      const matchesStatus = !filterStatus || filterStatus === "all" || lender.status === filterStatus
-      const matchesType = !filterType || filterType === "all" || lender.lenderType === filterType
-      return matchesSearch && matchesStatus && matchesType
+        lender.user?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lender.user?.email.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = !filterStatus || filterStatus === "all" || lender.user?.status === filterStatus
+      return matchesSearch && matchesStatus
     })
-  }, [lenders, searchTerm, filterStatus, filterType])
-
-  // For server-side pagination, use filtered count
-  // const totalFiltered = filteredLenders.length
-  // const pagesFiltered = Math.ceil(totalFiltered / pageSize)
+  }, [lenders, searchTerm, filterStatus])
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize
@@ -111,55 +129,49 @@ export function SuperAdminLenders() {
     setPage(1)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-
-  const handleApprove = async (lenderId: string) => {
-    try {
-      await usersApi.updateUser({
-        id: lenderId,
-        status: 'ACTIVE'
-      })
-
-      // Show success message
-      toast({
-        title: 'Success',
-        description: 'Lender has been approved successfully.',
-      })
-
-      // Refresh data by updating the page state to trigger re-fetch
-      handleLenderUpdated()
-    } catch (error) {
-      console.error('Approve lender error:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to approve lender. Please try again.',
-        variant: 'destructive',
-      })
-    }
+  console.log(selectedLender, paginated, 'lender')
+  const handleApprove = (lenderId: string) => {
+    updateUserStatus(
+      { id: lenderId, status: 'ACTIVE' },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Success',
+            description: 'Lender approved successfully.',
+          })
+          refetch() // re-fetch the Lender list
+        },
+        onError: (error: Error) => {
+          toast({
+            title: 'Error',
+            description: error.message || 'Failed to approve Lender.',
+            variant: 'destructive',
+          })
+        },
+      }
+    )
   }
 
-  const handleReject = async (lenderId: string) => {
-    try {
-      await usersApi.updateUser({
-        id: lenderId,
-        status: 'INACTIVE'
-      })
-
-      // Show success message
-      toast({
-        title: 'Success',
-        description: 'Lender has been rejected.',
-      })
-
-      // Refresh data by updating the page state to trigger re-fetch
-      handleLenderUpdated()
-    } catch (error) {
-      console.error('Reject lender error:', error)
-      toast({
-        title: 'Error',
-        description: 'Failed to reject lender. Please try again.',
-        variant: 'destructive',
-      })
-    }
+  const handleReject = (lenderId: string) => {
+    updateUserStatus(
+      { id: lenderId, status: 'INACTIVE' },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Success',
+            description: 'Lender rejected successfully.',
+          })
+          refetch()
+        },
+        onError: (error: Error) => {
+          toast({
+            title: 'Error',
+            description: error.message || 'Failed to reject Lender.',
+            variant: 'destructive',
+          })
+        },
+      }
+    )
   }
 
   const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
@@ -186,6 +198,20 @@ export function SuperAdminLenders() {
       </Card>
     </motion.div>
   )
+
+  if (isError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-white mb-2">
+            Error Loading Lenders
+          </h3>
+          <p className="text-gray-400">{(error as Error)?.message}</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8">
@@ -311,9 +337,9 @@ export function SuperAdminLenders() {
                       {/* <TableHead className="text-gray-300">Type</TableHead> */}
                       <TableHead className="text-gray-300">Status</TableHead>
                       <TableHead className="text-gray-300">KYC Status</TableHead>
-                      <TableHead className="text-gray-300">Total Volume</TableHead>
+                      <TableHead className="text-gray-300">Disbursed Amount</TableHead>
                       <TableHead className="text-gray-300">Products</TableHead>
-                      <TableHead className="text-gray-300">Avg Commission</TableHead>
+                      <TableHead className="text-gray-300">Commission Paid</TableHead>
                       <TableHead className="text-gray-300">Join Date</TableHead>
                       <TableHead className="text-gray-300">Actions</TableHead>
                     </TableRow>
@@ -321,7 +347,7 @@ export function SuperAdminLenders() {
                   <TableBody>
                     {paginated.map((lender, index) => (
                       <motion.tr
-                        key={lender.id}
+                        key={lender._id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -329,7 +355,7 @@ export function SuperAdminLenders() {
                       >
                         <TableCell>
                           <div>
-                            <p className="text-white font-medium">{lender.username}</p>
+                            <p className="text-white font-medium">{lender.user?.username}</p>
                             {/* <p className="text-sm text-gray-400">{lender.contactPerson}</p> */}
                           </div>
                         </TableCell>
@@ -339,8 +365,8 @@ export function SuperAdminLenders() {
                           </Badge>
                         </TableCell> */}
                         <TableCell>
-                          <Badge className={getStatusColor(lender.status)}>
-                            {lender.status}
+                          <Badge className={getStatusColor(lender.user?.status)}>
+                            {lender.user?.status}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -349,11 +375,11 @@ export function SuperAdminLenders() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-white">
-                          {lender.totalVolume > 0 ? formatCurrency(lender.totalVolume) : '-'}
+                          {lender?.totalDisbursedAmount > 0 ? formatCurrency(lender.totalDisbursedAmount) : '-'}
                         </TableCell>
-                        <TableCell className="text-white">{lender.productsCount}</TableCell>
+                        <TableCell className="text-white">{lender.productsCount || 0}</TableCell>
                         <TableCell className="text-gold">
-                          {lender.avgCommission > 0 ? `${lender.avgCommission}%` : '-'}
+                          {lender?.totalCommissionPaid > 0 ? `${lender.totalCommissionPaid}%` : '-'}
                         </TableCell>
                         <TableCell className="text-gray-300">{lender.createdAt}</TableCell>
                         <TableCell>
@@ -380,13 +406,13 @@ export function SuperAdminLenders() {
                             >
                               <Edit className="w-4 h-4" />
                             </Button>
-                            {lender.status === 'Pending' && (
+                            {lender.user?.status === 'ACTIVE' && (
                               <>
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="text-green-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleApprove(lender.id)}
+                                  onClick={() => handleApprove(lender.user?._id)}
                                 >
                                   <CheckCircle className="w-4 h-4" />
                                 </Button>
@@ -394,7 +420,7 @@ export function SuperAdminLenders() {
                                   variant="ghost"
                                   size="sm"
                                   className="text-red-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleReject(lender.id)}
+                                  onClick={() => handleReject(lender.user?._id)}
                                 >
                                   <XCircle className="w-4 h-4" />
                                 </Button>
@@ -437,7 +463,7 @@ export function SuperAdminLenders() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label className="text-gray-300">Lender Name</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.username}</p>
+                  <p className="text-white font-semibold mt-1">{selectedLender.lenderName}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Type</Label>
@@ -445,8 +471,8 @@ export function SuperAdminLenders() {
                 </div>
                 <div>
                   <Label className="text-gray-300">Status</Label>
-                  <Badge className={`${getStatusColor(selectedLender.status)} mt-1`}>
-                    {selectedLender.status}
+                  <Badge className={`${getStatusColor(selectedLender.user?.status)} mt-1`}>
+                    {selectedLender.user?.status}
                   </Badge>
                 </div>
                 <div>
@@ -460,27 +486,27 @@ export function SuperAdminLenders() {
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <Label className="text-gray-300">Contact Person</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.contactPerson}</p>
+                  <p className="text-white font-semibold mt-1">{selectedLender.user?.username}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Email</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.email}</p>
+                  <p className="text-white font-semibold mt-1">{selectedLender.user?.email}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Phone</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.phone}</p>
+                  <p className="text-white font-semibold mt-1">{selectedLender.user?.contact}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Address</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.address}</p>
+                  <p className="text-white font-semibold mt-1">{selectedLender.user?.address}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-6">
                 <div>
-                  <Label className="text-gray-300">Total Volume</Label>
+                  <Label className="text-gray-300">Disbursed Amount</Label>
                   <p className="text-white font-semibold mt-1">
-                    {selectedLender.totalVolume > 0 ? formatCurrency(selectedLender.totalVolume) : 'No transactions yet'}
+                    {selectedLender.totalDisbursedAmount > 0 ? formatCurrency(selectedLender.totalDisbursedAmount) : 'No transactions yet'}
                   </p>
                 </div>
                 <div>
@@ -488,9 +514,9 @@ export function SuperAdminLenders() {
                   <p className="text-white font-semibold mt-1">{selectedLender.productsCount}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Avg Commission</Label>
+                  <Label className="text-gray-300">Commission Paid</Label>
                   <p className="text-white font-semibold mt-1">
-                    {selectedLender.avgCommission > 0 ? `${selectedLender.avgCommission}%` : 'Not applicable'}
+                    {selectedLender.totalCommissionPaid > 0 ? `${selectedLender.totalCommissionPaid}%` : 'Not applicable'}
                   </p>
                 </div>
               </div>
@@ -502,16 +528,16 @@ export function SuperAdminLenders() {
                 </div>
                 <div>
                   <Label className="text-gray-300">Last Activity</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.lastActivity}</p>
+                  <p className="text-white font-semibold mt-1">{selectedLender.user?.loginHistory}</p>
                 </div>
               </div>
 
-              {selectedLender.status === 'Under Review' && (
+              {selectedLender.user?.status === 'INACTIVE' && (
                 <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
                   <Button
                     className="bg-green-500 hover:bg-green-600 text-white"
                     onClick={() => {
-                      handleApprove(selectedLender.id)
+                      handleApprove(selectedLender.user?._id)
                       setIsViewDialogOpen(false)
                     }}
                   >
@@ -522,7 +548,7 @@ export function SuperAdminLenders() {
                     variant="outline"
                     className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
                     onClick={() => {
-                      handleReject(selectedLender.id)
+                      handleReject(selectedLender.user?._id)
                       setIsViewDialogOpen(false)
                     }}
                   >
@@ -536,7 +562,17 @@ export function SuperAdminLenders() {
         </DialogContent>
       </Dialog>
 
-      <AddLenderDialog lender={lenders} onLenderUpdated={handleLenderUpdated} />
+      <AddLenderDialog
+        isOpen={isAddEditDialogOpen}
+        mode={editingLender ? 'edit' : 'add'}
+        editData={editingLender}
+        onSuccess={handleSuccess}
+        onClose={() => {
+          setIsAddEditDialogOpen(false)
+          setEditingLender(null)
+        }}
+        refetch={refetch}
+      />
 
     </div>
   )

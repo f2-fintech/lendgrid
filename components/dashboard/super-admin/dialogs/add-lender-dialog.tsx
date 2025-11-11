@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -18,7 +18,9 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Plus, Loader2, Eye, EyeOff } from 'lucide-react'
 import { useToast } from '@/hooks/use-toast'
-import { usersApi } from '@/lib/api-client'
+
+import { useRegister, useUpdateUser, useProfile } from '@/hooks/use-users'
+import { useCreateBranch } from '@/hooks/use-lenders'
 
 const addLenderSchema = z.object({
   fullName: z.string().min(2, 'Contact person name must be at least 2 characters'),

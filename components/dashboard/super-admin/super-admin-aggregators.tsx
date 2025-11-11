@@ -45,7 +45,6 @@ export function SuperAdminAggregators() {
   const total = data?.count || 0
   const pages = data?.pages || 1
 
-  // Optionally compute metrics here (to preserve your existing logic)
   const metrics = useMemo(() => ({
     totalAggregators: total,
     activeAggregators: aggregators.filter(a => a.user?.status === 'ACTIVE').length,
@@ -397,7 +396,7 @@ export function SuperAdminAggregators() {
                                   variant="ghost"
                                   size="sm"
                                   className="text-green-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleApprove(aggregator._id)}
+                                  onClick={() => handleApprove(aggregator.user?._id)}
                                 >
                                   <CheckCircle className="w-4 h-4" />
                                 </Button>
@@ -405,7 +404,7 @@ export function SuperAdminAggregators() {
                                   variant="ghost"
                                   size="sm"
                                   className="text-red-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleReject(aggregator._id)}
+                                  onClick={() => handleReject(aggregator.user?._id)}
                                 >
                                   <XCircle className="w-4 h-4" />
                                 </Button>
@@ -518,12 +517,12 @@ export function SuperAdminAggregators() {
                 </div>
               </div>
 
-              {selectedAggregator.user?.status === 'PENDING_APPROVAL' && (
+              {selectedAggregator.user?.status === 'INACTIVE' && (
                 <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
                   <Button
                     className="bg-green-500 hover:bg-green-600 text-white"
                     onClick={() => {
-                      handleApprove(selectedAggregator._id)
+                      handleApprove(selectedAggregator.user?._id)
                       setIsViewDialogOpen(false)
                     }}
                   >
@@ -534,7 +533,7 @@ export function SuperAdminAggregators() {
                     variant="outline"
                     className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
                     onClick={() => {
-                      handleReject(selectedAggregator._id)
+                      handleReject(selectedAggregator.user?._id)
                       setIsViewDialogOpen(false)
                     }}
                   >
