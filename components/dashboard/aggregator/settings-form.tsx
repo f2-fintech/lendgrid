@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { settingsApi } from '@/lib/api-client'
+import { settingsApi } from '@/lib/misc-apis'
 
 const settingsSchema = z.object({
   emailNotifications: z.boolean(),

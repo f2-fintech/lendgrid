@@ -17,7 +17,7 @@ import { exportRevenueReport } from '@/lib/exporter'
 import { useToast } from "@/hooks/use-toast"
 import { ExportButton } from '@/components/ui/button-to-export'
 import { CardSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton'
-import { commissionsApi } from '@/lib/api-client'
+import { commissionsApi } from '@/lib'
 
 const mockData = {
   metrics: {
@@ -195,7 +195,7 @@ export function AggregatorCommission() {
       await exportRevenueReport({
         format,
         fileName: "revenue-report",
-        timeRange,
+        TimeRanges,
         selectedMetric,
         chartElement: chartRef.current ?? undefined,
         metrics: mockData.metrics,
@@ -203,7 +203,7 @@ export function AggregatorCommission() {
         lenderRevenue: mockData.lenderRevenue,
         recentTransactions: mockData.recentTransactions,
       })
-      toast({ title: "Export complete", description: `Saved ${format.toUpperCase()} report for ${timeRange}.` })
+      toast({ title: "Export complete", description: `Saved ${format.toUpperCase()} report for ${TimeRanges}.` })
     } catch (err: any) {
       toast({ variant: "destructive", title: "Export failed", description: err?.message ?? "Something went wrong." })
     } finally {
