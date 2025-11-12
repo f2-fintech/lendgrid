@@ -27,7 +27,7 @@ export function SuperAdminLenders() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterType, setFilterType] = useState('')
-  const [selectedLender, setSelectedLender] = useState<any>(null)
+  const [selectedLender, setSelectedLender] = useState<LenderProfile | null>(null)
   const [editingLender, setEditingLender] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
@@ -239,7 +239,7 @@ export function SuperAdminLenders() {
       </motion.div>
 
       {/* Metrics Cards */}
-      {isTableLoading ? (
+      {!isTableLoading && !lenders.length ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />

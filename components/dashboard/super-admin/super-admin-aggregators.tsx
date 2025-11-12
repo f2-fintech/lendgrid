@@ -23,7 +23,7 @@ export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [selectedAggregator, setSelectedAggregator] = useState<AggregatorProfile | null>(null)
-  const [editingAggregator, setEditingAggregator] = useState<AggregatorProfile | null>(null)
+  const [editingAggregator, setEditingAggregator] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
 
@@ -418,14 +418,17 @@ export function SuperAdminAggregators() {
                 </div>
               )}
             </div>
-            <TablePagination
-              page={page}
-              pageSize={pageSize}
-              total={total}
-              onPageChange={handlePageChange}
-              onPageSizeChange={handlePageSizeChange}
-              className="mt-4"
-            />
+
+            {!isTableLoading && (
+              <TablePagination
+                page={page}
+                pageSize={pageSize}
+                total={total}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                className="mt-4"
+              />
+            )}
           </CardContent>
         </Card>
       </motion.div>

@@ -50,11 +50,12 @@ interface EditAggregatorData {
 }
 
 interface AddAggregatorDialogProps {
-    onSuccess?: () => void;
-    editData?: EditAggregatorData | null;
-    mode?: "add" | "edit";
     isOpen?: boolean;
+    mode?: "add" | "edit";
+    editData?: EditAggregatorData | null;
+    onSuccess?: () => void;
     onClose?: () => void;
+    refetch?: () => void;
 }
 
 type FormValues = {
@@ -72,11 +73,12 @@ type FormValues = {
 };
 
 export function AddAggregatorDialog({
-    onSuccess,
-    editData,
-    mode = "add",
     isOpen = false,
+    mode = "add",
+    editData,
+    onSuccess,
     onClose,
+    refetch
 }: AddAggregatorDialogProps = {}) {
     const { toast } = useToast();
     const [addToTeam, setAddToTeam] = useState(false);
@@ -240,6 +242,7 @@ export function AddAggregatorDialog({
                     onSuccess?.();
                     onClose?.();
                     reset();
+                    refetch?.();
                     setAddToTeam(false);
                 } else {
                     throw new Error(res?.createUser?.message || "Failed to create user");
@@ -263,6 +266,7 @@ export function AddAggregatorDialog({
                 onSuccess?.();
                 onClose?.();
                 reset();
+                refetch?.();
             }
         } catch (error: any) {
             console.error(`${mode} aggregator error:`, error);
