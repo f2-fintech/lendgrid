@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { AddAggregatorDialog } from './dialogs/add-aggregator-dialog'
-import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp } from 'lucide-react'
+import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, User, Mail, Phone, Building, MapPin, Activity, Calendar } from 'lucide-react'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 import { useAggregators } from '@/hooks/use-aggregators'
@@ -283,7 +283,7 @@ export function SuperAdminAggregators() {
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-white">All Aggregators</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardDescription className="text-gray-400 mt-1">
                   Complete list of registered aggregators and their performance
                 </CardDescription>
               </div>
@@ -319,7 +319,7 @@ export function SuperAdminAggregators() {
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : (
                 <div className="min-w-full">
-                  <div className="grid grid-cols-8 gap-4 py-3 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
+                  <div className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
                     <div>Aggregator</div>
                     <div>Status</div>
                     <div>KYC Status</div>
@@ -335,11 +335,11 @@ export function SuperAdminAggregators() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="grid grid-cols-8 gap-4 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
+                        className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
                       >
                         <div>
                           <p className="text-white font-medium">{aggregator.user?.username}</p>
-                          <p className="text-sm text-gray-400">{aggregator.user?.email}</p>
+                          <p className="text-sm text-gray-400 truncate">{aggregator.user?.email}</p>
                         </div>
                         <div>
                           <Badge className={getStatusColor(aggregator.user?.status)}>
@@ -364,10 +364,10 @@ export function SuperAdminAggregators() {
                           {(aggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(aggregator.totalCommissionEarned || 0) : '0'}
                         </div>
                         <div className="text-gray-300">
-                          {aggregator.createdAt}
+                          {new Date(aggregator.createdAt).toLocaleDateString()}
                         </div>
                         <div>
-                          <div className="flex items-center space-x-2">
+                          <div className="flex items-center">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -435,109 +435,221 @@ export function SuperAdminAggregators() {
 
       {/* View Aggregator Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Aggregator Details</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Complete information about the selected aggregator
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <DialogHeader className="border-b border-gray-700/50 pb-4">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-white">
+              Aggregator Profile
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-sm">
+              Comprehensive overview of aggregator performance and details
             </DialogDescription>
           </DialogHeader>
+
           {selectedAggregator && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-gray-300">Username</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.username}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Email</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.email}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Status</Label>
-                  <Badge className={`${getStatusColor(selectedAggregator.user?.status)} mt-1`}>
+            <div className="space-y-6 pt-4 ">
+              {/* Status Badges Section */}
+              <div className="flex gap-3 justify-between items-start">
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    className={`${getStatusColor(selectedAggregator.user?.status)} border px-4 py-1.5 text-sm font-semibold`}
+                    title={`Status: ${selectedAggregator.user?.status}`}
+                    aria-label={`Status ${selectedAggregator.user?.status}`}
+                  >
                     {selectedAggregator.user?.status}
                   </Badge>
-                </div>
-                <div>
-                  <Label className="text-gray-300">KYC Status</Label>
-                  <Badge className={`${getKycStatusColor(selectedAggregator.kycStatus || 'UNKNOWN')} mt-1`}>
-                    {selectedAggregator.kycStatus || 'UNKNOWN'}
+
+                  <Badge
+                    className={`${getKycStatusColor(selectedAggregator.kycStatus)} border px-4 py-1.5 text-sm font-semibold`}
+                    title={`KYC: ${selectedAggregator.kycStatus}`}
+                    aria-label={`KYC status ${selectedAggregator.kycStatus}`}
+                  >
+                    KYC: {selectedAggregator.kycStatus}
                   </Badge>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-6">
+                {/* Top action buttons: show when application is pending */}
                 <div>
-                  <Label className="text-gray-300">Contact</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.contact || 'Not provided'}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Company Name</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.companyName || 'Not specified'}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Address</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.user?.address || 'Not provided'}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Join Date</Label>
-                  <p className="text-white font-semibold mt-1">
-                    {new Date(selectedAggregator.createdAt).toLocaleDateString()}
-                  </p>
-                </div>
-              </div>
+                  {selectedAggregator.kycStatus === "PENDING" && (
+                    <div className="flex items-center space-x-4">
+                      <Button
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                        onClick={() => {
+                          handleApprove(selectedAggregator.user?._id);
+                          setIsViewDialogOpen(false);
+                        }}
+                        aria-label="Approve lender"
+                        title="Approve lender"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Approve Lender
+                      </Button>
 
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <Label className="text-gray-300">Total Applications</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.totalApplicationsSubmitted || 0}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Approved Applications</Label>
-                  <p className="text-white font-semibold mt-1">{selectedAggregator.approvedApplications || 0}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Conversion Rate</Label>
-                  <p className="text-white font-semibold mt-1">
-                    {(selectedAggregator.conversionRate || 0) > 0 ? `${selectedAggregator.conversionRate}%` : 'Not applicable'}
-                  </p>
+                      <Button
+                        variant="outline"
+                        className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                        onClick={() => {
+                          handleReject(selectedAggregator.user?._id);
+                          setIsViewDialogOpen(false);
+                        }}
+                        aria-label="Reject application"
+                        title="Reject application"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Reject Application
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-gray-300">Total Commission Earned</Label>
-                  <p className="text-white font-semibold mt-1">
-                    {(selectedAggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(selectedAggregator.totalCommissionEarned || 0) : 'No earnings yet'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Last Activity</Label>
-                  <p className="text-white font-semibold mt-1">
-                    {new Date(selectedAggregator.updatedAt).toLocaleDateString()}
-                  </p>
+
+              {/* Personal Information Card */}
+              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-blue-400 flex items-center gap-2">
+                  <User className="w-5 h-5" />
+                  Personal Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
+                      <User className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Username</p>
+                      <p className="text-white font-semibold">{selectedAggregator.user?.username}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-purple-500/10 p-2 rounded-lg mt-1">
+                      <Mail className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Email</p>
+                      <p className="text-white font-semibold break-all">{selectedAggregator.user?.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-green-500/10 p-2 rounded-lg mt-1">
+                      <Phone className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Contact</p>
+                      <p className="text-white font-semibold">{selectedAggregator.user?.contact || 'Not provided'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-orange-500/10 p-2 rounded-lg mt-1">
+                      <Building className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Company Name</p>
+                      <p className="text-white font-semibold">{selectedAggregator.companyName || 'Not specified'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 md:col-span-2">
+                    <div className="bg-pink-500/10 p-2 rounded-lg mt-1">
+                      <MapPin className="w-4 h-4 text-pink-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Address</p>
+                      <p className="text-white font-semibold">{selectedAggregator.user?.address || 'Not provided'}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Performance Metrics Card */}
+              <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg p-6 border border-blue-700/30 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-purple-400 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Performance Metrics
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2">Total Applications</p>
+                    <p className="text-2xl font-bold text-blue-400">{selectedAggregator.totalApplicationsSubmitted || 0}</p>
+                  </div>
+
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2">Approved</p>
+                    <p className="text-2xl font-bold text-green-400">{selectedAggregator.approvedApplications || 0}</p>
+                  </div>
+
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2">Conversion Rate</p>
+                    <p className="text-2xl font-bold text-purple-400">
+                      {(selectedAggregator.conversionRate || 0) > 0 ? `${selectedAggregator.conversionRate.toFixed(1)}%` : 'N/A'}
+                    </p>
+                  </div>
+
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2">Commission Earned</p>
+                    <p className="text-xl font-bold text-yellow-400">
+                      {(selectedAggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(selectedAggregator.totalCommissionEarned || 0) : '₹0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Timeline Card */}
+              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Activity Timeline
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700/30">
+                    <Calendar className="w-5 h-5 text-blue-400" />
+                    <div>
+                      <p className="text-xs text-gray-400">Join Date</p>
+                      <p className="text-white font-semibold">
+                        {new Date(selectedAggregator.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700/30">
+                    <Activity className="w-5 h-5 text-green-400" />
+                    <div>
+                      <p className="text-xs text-gray-400">Last Activity</p>
+                      <p className="text-white font-semibold">
+                        {new Date(selectedAggregator.updatedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
               {selectedAggregator.user?.status === 'INACTIVE' && (
-                <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
+                <div className="flex gap-4 pt-4 border-t border-gray-700/50">
                   <Button
-                    className="bg-green-500 hover:bg-green-600 text-white"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-semibold py-3 shadow-lg shadow-green-500/20 transition-all duration-200"
                     onClick={() => {
-                      handleApprove(selectedAggregator.user?._id)
-                      setIsViewDialogOpen(false)
+                      handleApprove(selectedAggregator.user?._id);
+                      setIsViewDialogOpen(false);
                     }}
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
+                    <CheckCircle className="w-5 h-5 mr-2" />
                     Approve Aggregator
                   </Button>
                   <Button
-                    variant="outline"
-                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                    className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white font-semibold py-3 shadow-lg shadow-red-500/20 transition-all duration-200"
                     onClick={() => {
-                      handleReject(selectedAggregator.user?._id)
-                      setIsViewDialogOpen(false)
+                      handleReject(selectedAggregator.user?._id);
+                      setIsViewDialogOpen(false);
                     }}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
@@ -549,7 +661,6 @@ export function SuperAdminAggregators() {
           )}
         </DialogContent>
       </Dialog>
-
       <AddAggregatorDialog
         isOpen={isAddEditDialogOpen}
         mode={editingAggregator ? 'edit' : 'add'}
