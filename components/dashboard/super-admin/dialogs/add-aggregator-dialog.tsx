@@ -83,6 +83,7 @@ export function AddAggregatorDialog({
     const { toast } = useToast();
     const [addToTeam, setAddToTeam] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
     useProfile(true);
     const { data: myAggregatorProfile } = useMyAggregatorProfile(true);
@@ -279,7 +280,8 @@ export function AddAggregatorDialog({
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={(open) => !open && onClose?.()}>
+        <Dialog open={isOpen} onOpenChange={() => { }}>
+
             <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">
                 <DialogHeader>
                     <DialogTitle className="text-xl font-bold">
@@ -440,11 +442,21 @@ export function AddAggregatorDialog({
                                     <Label>Confirm Password</Label>
                                     <div className="relative">
                                         <Input
-                                            type={showPassword ? "text" : "password"}
+                                            type={showConfirmPassword ? "text" : "password"}
                                             {...register("confirmPassword")}
                                             className="glass-input text-black h-12 pr-10"
                                             placeholder="Confirm password"
                                         />
+                                        <Button
+                                            className="absolute right-0 top-0 h-full px-3"
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() =>
+                                                setShowConfirmPassword(!showConfirmPassword)
+                                            }
+                                        >
+                                            {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
+                                        </Button>
                                     </div>
                                     {errors.confirmPassword && (
                                         <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>

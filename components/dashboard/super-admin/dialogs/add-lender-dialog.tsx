@@ -488,7 +488,7 @@ export function AddLenderDialog({
                       variant="ghost"
                       onClick={() => setShowPassword(!showPassword)}
                     >
-                      {showPassword ? <EyeOff /> : <Eye />}
+                      {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
                     </Button>
                   </div>
                   {errors.password && (
@@ -516,7 +516,7 @@ export function AddLenderDialog({
                         setShowConfirmPassword(!showConfirmPassword)
                       }
                     >
-                      {showConfirmPassword ? <EyeOff /> : <Eye />}
+                      {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
                     </Button>
                   </div>
                   {errors.confirmPassword && (

@@ -13,7 +13,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
-import { Building2, Plus, Search, Filter, Edit, Trash2, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, Users, CreditCard } from 'lucide-react'
+import { Building2, Plus, Search, Filter, Edit, Trash2, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, Users, CreditCard, Activity, Calendar } from 'lucide-react'
 import { DashboardLayout } from "@/components/layout/dashboard-layout"
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
@@ -55,12 +55,12 @@ export function SuperAdminLenders() {
     totalLenders: total,
     activeLenders: lenders.filter(l => l.user?.status === 'ACTIVE').length,
     pendingApprovals: lenders.filter(l => l.user?.status === 'PENDING_APPROVAL').length,
-    // avgConversionRate: lenders.length
-    //   ? Math.round(
-    //     lenders.reduce((sum, a) => sum + (a.conversionRate || 0), 0) /
-    //     lenders.length
-    //   )
-    //   : 0,
+    avgCommissionRate: lenders.length
+      ? Math.round(
+        lenders.reduce((sum, a) => sum + (a.totalCommissionPaid || 0), 0) /
+        lenders.length
+      )
+      : 0,
   }), [lenders, total])
 
 
@@ -340,60 +340,52 @@ export function SuperAdminLenders() {
                   <p className="text-gray-400">No lenders found matching your criteria.</p>
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Lender</TableHead>
-                      {/* <TableHead className="text-gray-300">Type</TableHead> */}
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">KYC Status</TableHead>
-                      <TableHead className="text-gray-300">Disbursed Amount</TableHead>
-                      <TableHead className="text-gray-300">Products</TableHead>
-                      <TableHead className="text-gray-300">Commission Paid</TableHead>
-                      <TableHead className="text-gray-300">Join Date</TableHead>
-                      <TableHead className="text-gray-300">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                <div className="min-w-full">
+                  <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
+                    <div>Lender</div>
+                    <div>Status</div>
+                    <div>KYC Status</div>
+                    <div>Disbursed</div>
+                    <div>Products</div>
+                    <div>Commission Paid</div>
+                    <div>Join Date</div>
+                    <div>Actions</div>
+                  </div>
+                  <div className="space-y-1">
                     {paginated.map((lender, index) => (
-                      <motion.tr
+                      <motion.div
                         key={lender._id}
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border-gray-700 hover:bg-gray-800/50"
+                        className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded items-center"
                       >
-                        <TableCell>
-                          <div>
-                            <p className="text-white font-medium">{lender.user?.username}</p>
-                            {/* <p className="text-sm text-gray-400">{lender.contactPerson}</p> */}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="border-gray-600 text-gray-300">
-                            {lender.lenderType || 'N/A'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
+                        <div>
+                          <p className="text-white font-medium">{lender.user?.username}</p>
+                          <p className="text-sm text-gray-400 truncate">{lender.user?.email}</p>
+                        </div>
+                        <div>
                           <Badge className={getStatusColor(lender.user?.status)}>
                             {lender.user?.status}
                           </Badge>
-                        </TableCell>
-                        <TableCell>
+                        </div>
+                        <div>
                           <Badge className={getKycStatusColor(lender.kycStatus)}>
                             {lender.kycStatus}
                           </Badge>
-                        </TableCell>
-                        <TableCell className="text-white">
+                        </div>
+                        <div className="text-white">
                           {lender?.totalDisbursedAmount > 0 ? formatCurrency(lender.totalDisbursedAmount) : '-'}
-                        </TableCell>
-                        <TableCell className="text-white">{lender.productsCount || 0}</TableCell>
-                        <TableCell className="text-gold">
-                          {lender?.totalCommissionPaid > 0 ? `${lender.totalCommissionPaid}%` : '-'}
-                        </TableCell>
-                        <TableCell className="text-gray-300">{lender.createdAt}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
+                        </div>
+                        <div className="text-white">{lender.productsCount || 0}</div>
+                        <div className="text-white">
+                          {(lender.totalCommissionPaid || 0) > 0 ? formatCurrency(lender.totalCommissionPaid || 0) : '0'}
+                        </div>
+                        <div className="text-gray-300">
+                          {new Date(lender.createdAt).toLocaleDateString()}
+                        </div>
+                        <div>
+                          <div className="flex items-center">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -411,7 +403,7 @@ export function SuperAdminLenders() {
                               className="text-gold hover:text-white hover:bg-gray-700"
                               onClick={() => {
                                 setEditingLender(lender)
-                                setIsViewDialogOpen(true)
+                                setIsAddEditDialogOpen(true)
                               }}
                             >
                               <Edit className="w-4 h-4" />
@@ -437,11 +429,11 @@ export function SuperAdminLenders() {
                               </>
                             )}
                           </div>
-                        </TableCell>
-                      </motion.tr>
+                        </div>
+                      </motion.div>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                </div>
               )}
             </div>
 
@@ -461,105 +453,214 @@ export function SuperAdminLenders() {
 
       {/* View Lender Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Lender Details</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Complete information about the selected lender
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
+          <DialogHeader className="border-b border-gray-700/50 pb-4">
+            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-white">
+              Lender Profile
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-sm">
+              Comprehensive overview of lender performance and details
             </DialogDescription>
           </DialogHeader>
+
           {selectedLender && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-gray-300">Lender Name</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.lenderName}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Type</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.type}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Status</Label>
-                  <Badge className={`${getStatusColor(selectedLender.user?.status)} mt-1`}>
+            <div className="space-y-6 pt-4 ">
+              {/* Status Badges Section */}
+              <div className="flex gap-3 justify-between items-start">
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    className={`${getStatusColor(selectedLender.user?.status)} border px-4 py-1.5 text-sm font-semibold`}
+                    title={`Status: ${selectedLender.user?.status}`}
+                    aria-label={`Status ${selectedLender.user?.status}`}
+                  >
                     {selectedLender.user?.status}
                   </Badge>
-                </div>
-                <div>
-                  <Label className="text-gray-300">KYC Status</Label>
-                  <Badge className={`${getKycStatusColor(selectedLender.kycStatus)} mt-1`}>
-                    {selectedLender.kycStatus}
+
+                  <Badge
+                    className={`${getKycStatusColor(selectedLender.kycStatus)} border px-4 py-1.5 text-sm font-semibold`}
+                    title={`KYC: ${selectedLender.kycStatus}`}
+                    aria-label={`KYC status ${selectedLender.kycStatus}`}
+                  >
+                    KYC: {selectedLender.kycStatus}
                   </Badge>
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-6">
+                {/* Top action buttons: show when application is pending */}
                 <div>
-                  <Label className="text-gray-300">Contact Person</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.user?.username}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Email</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.user?.email}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Phone</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.user?.contact}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Address</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.user?.address}</p>
-                </div>
-              </div>
+                  {selectedLender.kycStatus === "PENDING" && (
+                    <div className="flex items-center space-x-4">
+                      <Button
+                        className="bg-green-500 hover:bg-green-600 text-white"
+                        onClick={() => {
+                          handleApprove(selectedLender.user?._id);
+                          setIsViewDialogOpen(false);
+                        }}
+                        aria-label="Approve lender"
+                        title="Approve lender"
+                      >
+                        <CheckCircle className="w-4 h-4 mr-2" />
+                        Approve Lender
+                      </Button>
 
-              <div className="grid grid-cols-3 gap-6">
-                <div>
-                  <Label className="text-gray-300">Disbursed Amount</Label>
-                  <p className="text-white font-semibold mt-1">
-                    {selectedLender.totalDisbursedAmount > 0 ? formatCurrency(selectedLender.totalDisbursedAmount) : 'No transactions yet'}
-                  </p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Products Count</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.productsCount}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Commission Paid</Label>
-                  <p className="text-white font-semibold mt-1">
-                    {selectedLender.totalCommissionPaid > 0 ? `${selectedLender.totalCommissionPaid}%` : 'Not applicable'}
-                  </p>
+                      <Button
+                        variant="outline"
+                        className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                        onClick={() => {
+                          handleReject(selectedLender.user?._id);
+                          setIsViewDialogOpen(false);
+                        }}
+                        aria-label="Reject application"
+                        title="Reject application"
+                      >
+                        <XCircle className="w-4 h-4 mr-2" />
+                        Reject Application
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-gray-300">Join Date</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.createdAt}</p>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Last Activity</Label>
-                  <p className="text-white font-semibold mt-1">{selectedLender.user?.loginHistory}</p>
+
+              {/* Personal Information Card */}
+              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-blue-400 flex items-center gap-2">
+                  <Users className="w-5 h-5" />
+                  Personal Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
+                      <Users className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Username</p>
+                      <p className="text-white font-semibold">{selectedLender.user?.username}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-purple-500/10 p-2 rounded-lg mt-1">
+                      <CreditCard className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Email</p>
+                      <p className="text-white font-semibold break-all">{selectedLender.user?.email}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-green-500/10 p-2 rounded-lg mt-1">
+                      <CreditCard className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Contact</p>
+                      <p className="text-white font-semibold">{selectedLender.user?.contact || 'Not provided'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-orange-500/10 p-2 rounded-lg mt-1">
+                      <Building2 className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Company Name</p>
+                      <p className="text-white font-semibold">{selectedLender.lenderName || 'Not specified'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3 md:col-span-2">
+                    <div className="bg-pink-500/10 p-2 rounded-lg mt-1">
+                      <CreditCard className="w-4 h-4 text-pink-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-gray-400 mb-1">Address</p>
+                      <p className="text-white font-semibold">{selectedLender.user?.address || 'Not provided'}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
+              {/* Performance Metrics Card */}
+              <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg p-6 border border-blue-700/30 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-purple-400 flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5" />
+                  Performance Metrics
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2">Total Disbursed</p>
+                    <p className="text-2xl font-bold text-blue-400">{formatCurrency(selectedLender.totalDisbursedAmount || 0)}</p>
+                  </div>
+
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2">Products</p>
+                    <p className="text-2xl font-bold text-green-400">{selectedLender.productsCount || 0}</p>
+                  </div>
+
+                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
+                    <p className="text-xs text-gray-400 mb-2">Commission Paid</p>
+                    <p className="text-xl font-bold text-yellow-400">
+                      {(selectedLender.totalCommissionPaid || 0) > 0 ? formatCurrency(selectedLender.totalCommissionPaid || 0) : '₹0'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Activity Timeline Card */}
+              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
+                  <Activity className="w-5 h-5" />
+                  Activity Timeline
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700/30">
+                    <Calendar className="w-5 h-5 text-blue-400" />
+                    <div>
+                      <p className="text-xs text-gray-400">Join Date</p>
+                      <p className="text-white font-semibold">
+                        {new Date(selectedLender.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700/30">
+                    <Activity className="w-5 h-5 text-green-400" />
+                    <div>
+                      <p className="text-xs text-gray-400">Last Activity</p>
+                      <p className="text-white font-semibold">
+                        {new Date(selectedLender.updatedAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric'
+                        })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
               {selectedLender.user?.status === 'INACTIVE' && (
-                <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
+                <div className="flex gap-4 pt-4 border-t border-gray-700/50">
                   <Button
-                    className="bg-green-500 hover:bg-green-600 text-white"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-semibold py-3 shadow-lg shadow-green-500/20 transition-all duration-200"
                     onClick={() => {
-                      handleApprove(selectedLender.user?._id)
-                      setIsViewDialogOpen(false)
+                      handleApprove(selectedLender.user?._id);
+                      setIsViewDialogOpen(false);
                     }}
                   >
-                    <CheckCircle className="w-4 h-4 mr-2" />
+                    <CheckCircle className="w-5 h-5 mr-2" />
                     Approve Lender
                   </Button>
                   <Button
-                    variant="outline"
-                    className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                    className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white font-semibold py-3 shadow-lg shadow-red-500/20 transition-all duration-200"
                     onClick={() => {
-                      handleReject(selectedLender.user?._id)
-                      setIsViewDialogOpen(false)
+                      handleReject(selectedLender.user?._id);
+                      setIsViewDialogOpen(false);
                     }}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
