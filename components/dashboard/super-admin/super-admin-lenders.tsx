@@ -129,7 +129,7 @@ export function SuperAdminLenders() {
     setPage(1)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-  console.log(selectedLender, paginated, 'lender')
+
   const handleApprove = (lenderId: string) => {
     updateUserStatus(
       { id: lenderId, status: 'ACTIVE' },
@@ -332,7 +332,7 @@ export function SuperAdminLenders() {
           </CardHeader>
           <CardContent>
             <div ref={tableTopRef} />
-            <div className="overflow-x-auto">
+            <div>
               {isTableLoading ? (
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : paginated.length === 0 ? (

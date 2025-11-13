@@ -20,6 +20,7 @@ export const aggregatorProfileApi = {
     city?: string
     state?: string
     pincode?: string
+    photo?: string
     gstNumber?: string
     panNumber?: string
     tanNumber?: string
@@ -31,6 +32,14 @@ export const aggregatorProfileApi = {
     accountNumber?: string
     ifscCode?: string
     accountHolderName?: string
+    isBankVerified?: boolean
+    teamMembers?: string[]
+    totalApplicationsSubmitted?: number
+    totalApplicationsDisbursed?: number
+    totalCommissionEarned?: number
+    totalPaidOut?: number
+    pendingPayout?: number
+    createdBy?: string
   }) =>
     gqlFetch<{ createAggregatorProfile: CreateResponse<AggregatorProfile> }>({
       query: `
@@ -47,7 +56,7 @@ export const aggregatorProfileApi = {
               state
               kycStatus
               createdAt
-              updatedAt
+              createdBy
             }
           }
         }
@@ -75,10 +84,11 @@ export const aggregatorProfileApi = {
               pincode
               kycStatus
               totalApplicationsSubmitted
+              totalApplicationsDisbursed
               totalCommissionEarned
               pendingPayout
               createdAt
-              updatedAt
+              createdBy
               user {
                 _id
                 username
@@ -112,6 +122,7 @@ export const aggregatorProfileApi = {
             city
             state
             pincode
+            photo
             gstNumber
             panNumber
             tanNumber
@@ -129,6 +140,7 @@ export const aggregatorProfileApi = {
             isBankVerified
             teamMembers
             totalApplicationsSubmitted
+            totalApplicationsDisbursed
             totalCommissionEarned
             totalPaidOut
             pendingPayout
@@ -139,11 +151,13 @@ export const aggregatorProfileApi = {
               username
               email
               role
+              status
             }
             kycApprovedByUser {
               _id
               username
               email
+              status
             }
             teamMemberUsers {
               _id
@@ -173,6 +187,7 @@ export const aggregatorProfileApi = {
             state
             kycStatus
             totalApplicationsSubmitted
+            totalApplicationsDisbursed
             totalCommissionEarned
             pendingPayout
             createdAt
@@ -181,6 +196,8 @@ export const aggregatorProfileApi = {
               _id
               username
               email
+              role
+              status
             }
           }
         }
@@ -208,6 +225,7 @@ export const aggregatorProfileApi = {
                 _id
                 username
                 email
+                status
               }
             }
             count
@@ -256,6 +274,7 @@ export const aggregatorProfileApi = {
     city?: string
     state?: string
     pincode?: string
+    photo?: string
     gstNumber?: string
     panNumber?: string
     websiteUrl?: string
@@ -265,6 +284,14 @@ export const aggregatorProfileApi = {
     accountNumber?: string
     ifscCode?: string
     accountHolderName?: string
+    isBankVerified?: boolean
+    teamMembers?: string[]
+    totalApplicationsSubmitted?: number
+    totalApplicationsDisbursed?: number
+    totalCommissionEarned?: number
+    totalPaidOut?: number
+    pendingPayout?: number
+    updatedBy?: string
   }) =>
     gqlFetch<{ updateAggregatorProfile: AggregatorProfile }>({
       query: `

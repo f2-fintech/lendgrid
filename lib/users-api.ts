@@ -31,7 +31,6 @@ export const usersApi = {
           username: string;
           email: string;
           role: string;
-          companyName?: string;
         };
       };
     }>({
@@ -45,7 +44,6 @@ export const usersApi = {
               username
               email
               role
-              companyName
             }
           }
         }
@@ -89,16 +87,9 @@ export const usersApi = {
               _id
               username
               email
-              contact
-              createdAt
-              companyName
-              gender
-              address
-              pincode
-              lenderType
-              profilePicture
               status
               role
+              createdAt
               loginHistory
             }
             count
@@ -120,6 +111,7 @@ export const usersApi = {
           users(paginationArgs: { page: $page, limit: $limit, status: $status }) {
             results {
               _id
+              username
               email
               role
               status
@@ -139,6 +131,7 @@ export const usersApi = {
     gqlFetch<{
       updateUser: {
         _id: string;
+        username: string;
         email: string;
         role: string;
         status: string;
@@ -148,6 +141,7 @@ export const usersApi = {
         mutation UpdateUser($updateUserInput: UpdateUserDto!) {
           updateUser(updateUserInput: $updateUserInput) {
             _id
+            username
             email
             role
             status
@@ -164,6 +158,7 @@ export const usersApi = {
     gqlFetch<{
       removeUser: {
         _id: string;
+        username: string;
         status: string;
       };
     }>({
@@ -171,6 +166,7 @@ export const usersApi = {
         mutation RemoveUser($id: ID!) {
           removeUser(id: $id) {
             _id
+            username
             status
           }
         }

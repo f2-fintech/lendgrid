@@ -119,6 +119,7 @@ export function useCreateLenderProfile() {
       city?: string
       state?: string
       pincode?: string
+      photo?: string
       gstNumber?: string
       panNumber: string
       tanNumber?: string
@@ -127,6 +128,12 @@ export function useCreateLenderProfile() {
       websiteUrl?: string
       pocName?: string
       documents?: LenderDocuments
+      branches?: string[]
+      totalApplicationsReceived?: number
+      totalDisbursedAmount?: number
+      totalCommissionPaid?: number
+      pendingCommissionPayouts?: number
+      createdBy?: string
     }) => lenderProfileApi.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.lenders.all })
@@ -161,11 +168,21 @@ export function useUpdateLenderProfile() {
       city?: string
       state?: string
       pincode?: string
+      photo?: string
       gstNumber?: string
-      panNumber?: string
+      panNumber: string
+      tanNumber?: string
+      cinNumber?: string
+      rbiLicenseNumber?: string
       websiteUrl?: string
       pocName?: string
       documents?: LenderDocuments
+      branches?: string[]
+      totalApplicationsReceived?: number
+      totalDisbursedAmount?: number
+      totalCommissionPaid?: number
+      pendingCommissionPayouts?: number
+      createdBy?: string
     }) => lenderProfileApi.update(payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.lenders.all })

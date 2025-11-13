@@ -64,11 +64,11 @@ export function useLogin() {
     return useMutation({
         mutationFn: (payload: { email: string; password: string }) => usersApi.login(payload),
         onSuccess: (data) => {
-            if (data.login.success && data.login.access_token) {
+            if (data?.login?.success && data?.login?.access_token) {
                 // Store token in cookie
                 document.cookie = `token=${encodeURIComponent(
                     data.login.access_token
-                )}; Path=/; Max-Age=2592000; SameSite=Lax`
+                )}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax`
                 toast({
                     title: 'Success',
                     description: 'Logged in successfully',

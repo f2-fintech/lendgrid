@@ -27,9 +27,8 @@ import {
 import { Plus, Loader2, Eye, EyeOff } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
-
 import { useRegister, useUpdateUser } from "@/hooks/use-users";
-import { useCreateBranch } from "@/hooks/use-lenders";
+import { useCreateBranch, useUpdateLenderProfile } from "@/hooks/use-lenders";
 
 // ----------------------------------------------------------------------------------
 // TYPES
@@ -74,16 +73,15 @@ export function AddLenderDialog({
 
   const registerMutation = useRegister();
   const updateUserMutation = useUpdateUser();
-
-  // Keep branch logic same as your original code
   useCreateBranch();
+  const updateLenderProfileMutation = useUpdateLenderProfile();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   // ----------------------------------------------------------------------------------
-  // ✅ ZOD SCHEMA (Strong password same as AddAggregator)
+  // ✅ ZOD SCHEMA (Strong password validation)
   // ----------------------------------------------------------------------------------
   const formSchema = useMemo(() => {
     return z
@@ -95,7 +93,6 @@ export function AddLenderDialog({
           .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
 
         email: z.string().email("Enter valid email").toLowerCase().trim(),
-
         phone: z
           .string()
           .min(10, "Phone must be at least 10 digits")
@@ -103,30 +100,23 @@ export function AddLenderDialog({
           .regex(/^[0-9]+$/, "Phone must contain only digits"),
 
         companyName: z.string().min(2, "Company name must be at least 2 characters"),
-
         lenderType: z.enum(["Bank", "NBFC", "Fintech"], {
           required_error: "Select lender type",
         }),
-
         address: z.string().min(5, "Enter a valid address"),
-
         pincode: z
           .string()
           .regex(/^[0-9]{4,10}$/, "Pincode must be numeric between 4-10 digits"),
-
         gender: z.enum(["male", "female", "other"], {
           required_error: "Select gender",
         }),
-
         dob: z.string().refine((v) => !isNaN(Date.parse(v)), {
           message: "Invalid date",
         }),
-
         password: z.string().optional(),
         confirmPassword: z.string().optional(),
       })
       .superRefine((data, ctx) => {
-        // ADD MODE → validate passwords strongly
         if (mode === "add") {
           if (!data.password) {
             ctx.addIssue({
@@ -180,42 +170,41 @@ export function AddLenderDialog({
           }
         }
 
-        // EDIT MODE → block password
-        if (mode === "edit") {
-          if (data.password || data.confirmPassword) {
-            ctx.addIssue({
-              code: "custom",
-              message: "Password cannot be changed here",
-              path: ["password"],
-            });
-          }
+        if (mode === "edit" && (data.password || data.confirmPassword)) {
+          ctx.addIssue({
+            code: "custom",
+            message: "Password cannot be changed here",
+            path: ["password"],
+          });
         }
       });
   }, [mode]);
 
   // ----------------------------------------------------------------------------------
-  // ✅ DEFAULT VALUES
+  // ✅ DEFAULT VALUES (correct field mapping)
   // ----------------------------------------------------------------------------------
   const defaultValues: LenderFormValues = useMemo(() => {
     if (mode === "edit" && editData) {
-      return {
-        fullName: editData.user?.username ?? "",
-        email: editData.user?.email ?? "",
-        phone: editData.user?.contact ?? "",
-        companyName: editData.companyName ?? "",
-        lenderType: (editData.lenderType || editData.type) as LenderTypeLower,
-        address: editData.user?.address ?? "",
-        pincode: String(editData.user?.pincode ?? ""),
-        gender: (editData.user?.gender?.toLowerCase() as GenderLower) ?? "male",
-        dob: editData.user?.dob
-          ? new Date(editData.user.dob).toISOString().split("T")[0]
-          : "",
+      const user = editData.user || {};
+      const mapped = {
+        fullName: user.username ?? "",
+        email: user.email ?? "",
+        phone: user.contact ?? "",
+        companyName: editData.lenderName ?? "",
+        lenderType: editData.lenderType as LenderTypeLower,
+        address: user.address ?? "",
+        pincode: user.pincode ? String(user.pincode) : "",
+        gender: (user.gender?.toLowerCase() as GenderLower) ?? "male",
+        dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : "",
         password: undefined,
         confirmPassword: undefined,
       };
+
+      console.debug("[AddLenderDialog] 🟡 Default values for edit:", mapped);
+      return mapped;
     }
 
-    return {
+    const mapped = {
       fullName: "",
       email: "",
       phone: "",
@@ -228,10 +217,13 @@ export function AddLenderDialog({
       password: undefined,
       confirmPassword: undefined,
     };
+
+    console.debug("[AddLenderDialog] 🟢 Default values for add:", mapped);
+    return mapped;
   }, [mode, editData]);
 
   // ----------------------------------------------------------------------------------
-  // ✅ UseForm
+  // ✅ useForm setup
   // ----------------------------------------------------------------------------------
   const {
     register,
@@ -239,59 +231,94 @@ export function AddLenderDialog({
     handleSubmit,
     reset,
     formState: { errors },
+    watch,
   } = useForm<LenderFormValues>({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
 
+  // ----------------------------------------------------------------------------------
+  // ✅ Reset when dialog opens or editData changes
+  // ----------------------------------------------------------------------------------
   useEffect(() => {
-    if (isOpen) reset(defaultValues);
-  }, [isOpen, defaultValues, reset]);
+    if (isOpen && (mode === "edit" || mode === "add")) {
+      console.debug("[AddLenderDialog] 🔁 Resetting form with:", defaultValues);
+      reset(defaultValues);
+    }
+  }, [isOpen, editData, mode, reset, defaultValues]);
 
   // ----------------------------------------------------------------------------------
-  // ✅ SUBMIT HANDLER
+  // ✅ Debug current form data
+  // ----------------------------------------------------------------------------------
+  useEffect(() => {
+    console.debug("[AddLenderDialog] 👀 editData:", editData);
+  }, [editData]);
+
+  // ----------------------------------------------------------------------------------
+  // ✅ onSubmit (same as before)
   // ----------------------------------------------------------------------------------
   const onSubmit = async (data: LenderFormValues) => {
     setIsLoading(true);
+    console.debug("[AddLenderDialog] 🚀 onSubmit called with:", data);
 
     try {
-      const payload: any = {
-        id: editData?.user?._id,
-        username: data.fullName,
-        email: data.email,
-        contact: data.phone,
-        companyName: data.companyName,
-        address: data.address,
-        role: "LENDER_ADMIN",
-        gender: data.gender.toUpperCase(),
-        dob: new Date(data.dob).toISOString(),
-        pincode: Number(data.pincode),
-        lenderType: data.lenderType,
-      };
+      if (mode === "add") {
+        const payload = {
+          username: data.fullName,
+          email: data.email,
+          contact: data.phone,
+          companyName: data.companyName,
+          address: data.address,
+          role: "LENDER_ADMIN",
+          gender: data.gender.toUpperCase(),
+          dob: new Date(data.dob).toISOString(),
+          pincode: Number(data.pincode),
+          lenderType: data.lenderType,
+          password: data.password,
+        };
+        console.debug("[AddLenderDialog] ➕ Register payload:", payload);
 
-      if (mode === "add" && data.password) {
-        payload.password = data.password;
-      }
-
-      if (mode === "edit") {
-        await updateUserMutation.mutateAsync(payload);
-      } else {
         await registerMutation.mutateAsync(payload);
+        toast({ title: "Success", description: "Lender registered successfully." });
       }
 
-      toast({
-        title: "Success",
-        description:
-          mode === "edit"
-            ? "Lender updated successfully."
-            : "Lender registered successfully.",
-      });
+      if (mode === "edit" && editData) {
+        const userPayload = {
+          id: editData.user?._id,
+          username: data.fullName,
+          email: data.email,
+          contact: data.phone,
+          address: data.address,
+          gender: data.gender.toUpperCase(),
+          dob: new Date(data.dob).toISOString(),
+          pincode: Number(data.pincode),
+        };
+
+        const lenderPayload = {
+          id: editData._id,
+          lenderName: data.companyName,
+          lenderType: data.lenderType,
+        };
+
+        console.debug("[AddLenderDialog] ✏️ Update payloads:", {
+          userPayload,
+          lenderPayload,
+        });
+
+        await Promise.all([
+          updateUserMutation.mutateAsync(userPayload),
+          updateLenderProfileMutation.mutateAsync(lenderPayload),
+        ]);
+
+        toast({ title: "Success", description: "Lender updated successfully." });
+      }
 
       onSuccess?.();
       reset();
       onClose();
       refetch?.();
     } catch (error: any) {
+      console.error("[AddLenderDialog] ❌ Error in onSubmit:", error);
       toast({
         title: "Error",
         description: error?.message || "Something went wrong.",
@@ -302,9 +329,6 @@ export function AddLenderDialog({
     }
   };
 
-  // ----------------------------------------------------------------------------------
-  // ✅ RETURN JSX
-  // ----------------------------------------------------------------------------------
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">

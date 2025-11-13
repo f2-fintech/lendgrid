@@ -102,6 +102,7 @@ export function useCreateAggregatorProfile() {
       city?: string
       state?: string
       pincode?: string
+      photo?: string
       gstNumber?: string
       panNumber?: string
       tanNumber?: string
@@ -113,6 +114,14 @@ export function useCreateAggregatorProfile() {
       accountNumber?: string
       ifscCode?: string
       accountHolderName?: string
+      isBankVerified?: boolean
+      teamMembers?: string[]
+      totalApplicationsSubmitted?: number
+      totalApplicationsDisbursed?: number
+      totalCommissionEarned?: number
+      totalPaidOut?: number
+      pendingPayout?: number
+      createdBy?: string
     }) => aggregatorProfileApi.create(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.all })
@@ -147,8 +156,11 @@ export function useUpdateAggregatorProfile() {
       city?: string
       state?: string
       pincode?: string
+      photo?: string
       gstNumber?: string
       panNumber?: string
+      tanNumber?: string
+      cinNumber?: string
       websiteUrl?: string
       pocName?: string
       documents?: AggregatorDocuments
@@ -156,6 +168,14 @@ export function useUpdateAggregatorProfile() {
       accountNumber?: string
       ifscCode?: string
       accountHolderName?: string
+      isBankVerified?: boolean
+      teamMembers?: string[]
+      totalApplicationsSubmitted?: number
+      totalApplicationsDisbursed?: number
+      totalCommissionEarned?: number
+      totalPaidOut?: number
+      pendingPayout?: number
+      updatedBy?: string
     }) => aggregatorProfileApi.update(payload),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.all })

@@ -22,6 +22,7 @@ export const lenderProfileApi = {
     city?: string
     state?: string
     pincode?: string
+    photo?: string
     gstNumber?: string
     panNumber: string
     tanNumber?: string
@@ -30,6 +31,12 @@ export const lenderProfileApi = {
     websiteUrl?: string
     pocName?: string
     documents?: LenderDocuments
+    branches?: string[]
+    totalApplicationsReceived?: number
+    totalDisbursedAmount?: number
+    totalCommissionPaid?: number
+    pendingCommissionPayouts?: number
+    createdBy?: string
   }) =>
     gqlFetch<{ createLenderProfile: CreateResponse<LenderProfile> }>({
       query: `
@@ -46,7 +53,7 @@ export const lenderProfileApi = {
               state
               kycStatus
               createdAt
-              updatedAt
+              createdBy
             }
           }
         }
@@ -78,14 +85,13 @@ export const lenderProfileApi = {
               totalCommissionPaid
               pendingCommissionPayouts
               createdAt
-              updatedAt
+              createdBy
               user {
                 _id
                 username
                 email
                 role
                 status
-                contact
                 loginHistory
               }
             }
@@ -114,6 +120,7 @@ export const lenderProfileApi = {
             city
             state
             pincode
+            photo
             gstNumber
             panNumber
             tanNumber
@@ -137,11 +144,13 @@ export const lenderProfileApi = {
               username
               email
               role
+              status
             }
             kycApprovedByUser {
               _id
               username
               email
+              status
             }
           }
         }
@@ -167,11 +176,13 @@ export const lenderProfileApi = {
             totalApplicationsReceived
             totalDisbursedAmount
             createdAt
-            updatedAt
+            createdBy
             user {
               _id
               username
               email
+              role
+              status
             }
           }
         }
@@ -200,6 +211,7 @@ export const lenderProfileApi = {
                 _id
                 username
                 email
+                status
               }
             }
             count
@@ -276,11 +288,18 @@ export const lenderProfileApi = {
     city?: string
     state?: string
     pincode?: string
+    photo?: string
     gstNumber?: string
     panNumber?: string
     websiteUrl?: string
     pocName?: string
     documents?: LenderDocuments
+    branches?: string[]
+    totalApplicationsReceived?: number
+    totalDisbursedAmount?: number
+    totalCommissionPaid?: number
+    pendingCommissionPayouts?: number
+    updatedBy?: string
   }) =>
     gqlFetch<{ updateLenderProfile: LenderProfile }>({
       query: `
@@ -290,6 +309,7 @@ export const lenderProfileApi = {
             lenderName
             kycStatus
             updatedAt
+            updatedBy
           }
         }
       `,

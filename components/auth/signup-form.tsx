@@ -7,7 +7,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, CreditCard, Loader2, Building2, Users, ArrowLeft } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Building2, Users, ArrowLeft } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,7 +113,7 @@ export function SignupForm() {
         username: data.fullName,
         email: data.email,
         password: data.password,
-        companyName: data.companyName,
+        companyName: data.companyName,  // to allow backend to auto-create profile
         role: roleMap[data.userType],
       };
 
@@ -135,8 +135,7 @@ export function SignupForm() {
         password: data.password,
       });
 
-      const token = loginResponse?.login?.access_token;
-
+      const token = (loginResponse as any)?.login?.access_token;
       if (token) {
         setCookie("token", token, 1);
         const decoded = decodeJwt(token);
