@@ -1,7 +1,9 @@
 "use client"
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import Link from 'next/link'
 import { motion } from 'framer-motion'
+import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, User, Mail, Phone, Building, MapPin, Activity, Calendar } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -11,8 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { AddAggregatorDialog } from './dialogs/add-aggregator-dialog'
-import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, User, Mail, Phone, Building, MapPin, Activity, Calendar } from 'lucide-react'
+import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 import { useAggregators } from '@/hooks/use-aggregators'
@@ -23,9 +24,8 @@ export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [selectedAggregator, setSelectedAggregator] = useState<AggregatorProfile | null>(null)
-  const [editingAggregator, setEditingAggregator] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -43,7 +43,6 @@ export function SuperAdminAggregators() {
 
   const aggregators = data?.results || []
   const total = data?.count || 0
-  const pages = data?.pages || 1
 
   const metrics = useMemo(() => ({
     totalAggregators: total,
@@ -60,12 +59,6 @@ export function SuperAdminAggregators() {
   useEffect(() => {
     setPage(1)
   }, [searchTerm, filterStatus])
-
-  const handleSuccess = () => {
-    setIsAddEditDialogOpen(false)
-    setEditingAggregator(null)
-    refetch();
-  }
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -220,10 +213,7 @@ export function SuperAdminAggregators() {
         </div>
         <Button
           className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
-          onClick={() => {
-            setEditingAggregator(null)
-            setIsAddEditDialogOpen(true)
-          }}
+          onClick={() => setIsAddDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           Add New Aggregator
@@ -338,7 +328,7 @@ export function SuperAdminAggregators() {
                         className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
                       >
                         <div>
-                          <p className="text-white font-medium">{aggregator.user?.username}</p>
+                          <p className="text-white font-medium">{aggregator.companyName}</p>
                           <p className="text-sm text-gray-400 truncate">{aggregator.user?.email}</p>
                         </div>
                         <div>
@@ -382,13 +372,12 @@ export function SuperAdminAggregators() {
                             <Button
                               variant="ghost"
                               size="sm"
+                              asChild
                               className="text-gold hover:text-white hover:bg-gray-700"
-                              onClick={() => {
-                                setEditingAggregator(aggregator)
-                                setIsAddEditDialogOpen(true)
-                              }}
                             >
-                              <Edit className="w-4 h-4" />
+                              <Link href="/aggregator/settings">
+                                <Edit className="w-4 h-4" />
+                              </Link>
                             </Button>
                             {aggregator.user?.status === 'ACTIVE' && (
                               <>
@@ -469,7 +458,7 @@ export function SuperAdminAggregators() {
 
                 {/* Top action buttons: show when application is pending */}
                 <div>
-                  {selectedAggregator.kycStatus === "PENDING" && (
+                  {selectedAggregator.user?.status === "INACTIVE" && (
                     <div className="flex items-center space-x-4">
                       <Button
                         className="bg-green-500 hover:bg-green-600 text-white"
@@ -481,7 +470,7 @@ export function SuperAdminAggregators() {
                         title="Approve lender"
                       >
                         <CheckCircle className="w-4 h-4 mr-2" />
-                        Approve Lender
+                        Approve Aggregator
                       </Button>
 
                       <Button
@@ -495,7 +484,7 @@ export function SuperAdminAggregators() {
                         title="Reject application"
                       >
                         <XCircle className="w-4 h-4 mr-2" />
-                        Reject Application
+                        Reject Aggregator
                       </Button>
                     </div>
                   )}
@@ -607,7 +596,7 @@ export function SuperAdminAggregators() {
                     <div>
                       <p className="text-xs text-gray-400">Join Date</p>
                       <p className="text-white font-semibold">
-                        {new Date(selectedAggregator.createdAt).toLocaleDateString('en-US', {
+                        {new Date(selectedAggregator.user?.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'short',
                           day: 'numeric'
@@ -662,14 +651,8 @@ export function SuperAdminAggregators() {
         </DialogContent>
       </Dialog>
       <AddAggregatorDialog
-        isOpen={isAddEditDialogOpen}
-        mode={editingAggregator ? 'edit' : 'add'}
-        editData={editingAggregator}
-        onSuccess={handleSuccess}
-        onClose={() => {
-          setIsAddEditDialogOpen(false)
-          setEditingAggregator(null)
-        }}
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
         refetch={refetch}
       />
     </div>
