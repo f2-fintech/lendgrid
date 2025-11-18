@@ -394,9 +394,7 @@ export function SuperAdminAggregators() {
                               className="text-gold hover:text-white hover:bg-gray-700"
                             >
                               <Link href="/aggregator/settings">
-                                <a>
-                                  <Edit className="w-4 h-4" />
-                                </a>
+                                <Edit className="w-4 h-4" />
                               </Link>
                             </Button>
                             {aggregator.user?.status === 'ACTIVE' && (

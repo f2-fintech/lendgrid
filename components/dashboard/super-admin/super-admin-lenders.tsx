@@ -1,123 +1,152 @@
-"use client"
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import {
+  Building2,
+  Plus,
+  Search,
+  AlertCircle,
+  TrendingUp,
+  CheckCircle,
+  XCircle,
+  Eye,
+  Activity,
+  Calendar,
+  Users,
+  CreditCard,
+  Edit,
+} from "lucide-react";
+import Link from "next/link";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AddLenderDialog } from './dialogs/add-lender-dialog'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Textarea } from '@/components/ui/textarea'
-import { Label } from '@/components/ui/label'
-import { Building2, Plus, Search, Filter, Edit, Trash2, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, Users, CreditCard, Activity, Calendar } from 'lucide-react'
-import { DashboardLayout } from "@/components/layout/dashboard-layout"
-import { TablePagination } from "@/components/ui/pagination"
-import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { AddLenderDialog } from "./dialogs/AddLenderDialog";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { TablePagination } from "@/components/ui/pagination";
+import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 
-import { LenderProfile } from '@/lib'
-import { useLenders } from '@/hooks/use-lenders'
-import { useUpdateUser } from '@/hooks/use-users'
-import { useToast } from '@/hooks/use-toast'
+import { useLenders } from "@/hooks/use-lenders";
+import { useUpdateUser } from "@/hooks/use-users";
+import { useToast } from "@/hooks/use-toast";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { LenderProfile } from "@/lib";
 
 export function SuperAdminLenders() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
-  const [filterType, setFilterType] = useState('')
-  const [selectedLender, setSelectedLender] = useState<LenderProfile | null>(null)
-  const [editingLender, setEditingLender] = useState<any>(null)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isAddEditDialogOpen, setIsAddEditDialogOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("");
+  const [filterType, setFilterType] = useState("");
 
-  const { mutate: updateUserStatus } = useUpdateUser()
-  const { toast } = useToast()
+  const [selectedLender, setSelectedLender] = useState<LenderProfile | null>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
-  const [page, setPage] = useState(1)
-  const [pageSize, setPageSize] = useState(10)
-  const tableTopRef = useRef<HTMLDivElement | null>(null)
+  const { mutate: updateUserStatus } = useUpdateUser();
+  const { toast } = useToast();
 
-  const {
-    data,
-    isLoading: isTableLoading,
-    isError,
-    error,
-    refetch,
-  } = useLenders({ page, limit: pageSize });
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const tableTopRef = useRef<HTMLDivElement | null>(null);
 
-  const lenders = data?.results || []
-  const total = data?.count || 0
-  const pages = data?.pages || 1
+  const { data, isLoading: isTableLoading, isError, error, refetch } = useLenders({
+    page,
+    limit: pageSize,
+  });
 
-  const metrics = useMemo(() => ({
-    totalLenders: total,
-    activeLenders: lenders.filter(l => l.user?.status === 'ACTIVE').length,
-    pendingApprovals: lenders.filter(l => l.user?.status === 'PENDING_APPROVAL').length,
-    avgCommissionRate: lenders.length
-      ? Math.round(
-        lenders.reduce((sum, a) => sum + (a.totalCommissionPaid || 0), 0) /
-        lenders.length
-      )
-      : 0,
-  }), [lenders, total])
-
+  const lenders = data?.results || [];
+  const total = data?.count || 0;
+  console.log(lenders, 'lenders')
+  const metrics = useMemo(
+    () => ({
+      totalLenders: total,
+      activeLenders: lenders.filter((l) => l.user?.status === "ACTIVE").length,
+      pendingApprovals: lenders.filter((l) => l.user?.status === "PENDING_APPROVAL").length,
+      avgCommissionRate: lenders.length
+        ? Math.round(
+          lenders.reduce((sum, a) => sum + (a.totalCommissionPaid || 0), 0) /
+          lenders.length
+        )
+        : 0,
+    }),
+    [lenders, total]
+  );
 
   useEffect(() => {
-    setPage(1)
-  }, [searchTerm, filterStatus, filterType])
+    setPage(1);
+  }, [searchTerm, filterStatus, filterType]);
 
-  const handleSuccess = () => {
-    setIsAddEditDialogOpen(false)
-    setEditingLender(null)
-    refetch();
-  }
-
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      minimumFractionDigits: 0
-    }).format(amount)
-  }
+  const formatCurrency = (amt: number) =>
+    new Intl.NumberFormat("en-IN", {
+      style: "currency",
+      currency: "INR",
+      minimumFractionDigits: 0,
+    }).format(amt);
 
   const getStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-500/20 text-gray-400'
+    if (!status) return "bg-gray-500/20 text-gray-400";
     switch (status.toUpperCase()) {
-      case 'ACTIVE': return 'bg-green-500/20 text-green-400'
-      case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
-      case 'SUSPENDED':
-      case 'INACTIVE': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+      case "ACTIVE":
+        return "bg-green-500/20 text-green-400";
+      case "PENDING_APPROVAL":
+        return "bg-orange-500/20 text-orange-400";
+      case "SUSPENDED":
+      case "INACTIVE":
+        return "bg-red-500/20 text-red-400";
+      default:
+        return "bg-gray-500/20 text-gray-400";
     }
-  }
+  };
 
   const getKycStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-500/20 text-gray-400'
+    if (!status) return "bg-gray-500/20 text-gray-400";
     switch (status) {
-      case 'PENDING': return 'bg-yellow-500/20 text-yellow-400'
-      case 'UNDER_REVIEW': return 'bg-orange-500/20 text-orange-400'
-      case 'APPROVED': return 'bg-green-500/20 text-green-400'
-      case 'REJECTED': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+      case "PENDING":
+        return "bg-yellow-500/20 text-yellow-400";
+      case "UNDER_REVIEW":
+        return "bg-orange-500/20 text-orange-400";
+      case "APPROVED":
+        return "bg-green-500/20 text-green-400";
+      case "REJECTED":
+        return "bg-red-500/20 text-red-400";
+      default:
+        return "bg-gray-500/20 text-gray-400";
     }
-  }
+  };
 
   const filteredLenders = useMemo(() => {
     return lenders.filter((lender) => {
       const matchesSearch =
         lender.user?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lender.user?.email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = !filterStatus || filterStatus === "all" || lender.user?.status === filterStatus
-      return matchesSearch && matchesStatus
-    })
-  }, [lenders, searchTerm, filterStatus])
+        lender.user?.email.toLowerCase().includes(searchTerm.toLowerCase());
+
+      const matchesStatus =
+        !filterStatus || filterStatus === "all" || lender.user?.status === filterStatus;
+
+      const matchesType =
+        !filterType || filterType === "all" || lender.lenderType === filterType;
+
+      return matchesSearch && matchesStatus && matchesType;
+    });
+  }, [lenders, searchTerm, filterStatus, filterType]);
 
   const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filteredLenders.slice(start, start + pageSize)
-  }, [filteredLenders, page, pageSize])
+    const start = (page - 1) * pageSize;
+    return filteredLenders.slice(start, start + pageSize);
+  }, [filteredLenders, page, pageSize]);
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -129,93 +158,52 @@ export function SuperAdminLenders() {
     setPage(1)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-  console.log(selectedLender, paginated, 'lender')
-  const handleApprove = (lenderId: string) => {
+
+  const handleApprove = (userId: string) => {
     updateUserStatus(
-      { id: lenderId, status: 'ACTIVE' },
+      { id: userId, status: "ACTIVE" },
       {
         onSuccess: () => {
           toast({
-            title: 'Success',
-            description: 'Lender approved successfully.',
-          })
-          refetch() // re-fetch the Lender list
-        },
-        onError: (error: Error) => {
-          toast({
-            title: 'Error',
-            description: error.message || 'Failed to approve Lender.',
-            variant: 'destructive',
-          })
+            title: "Success",
+            description: "Lender approved successfully.",
+          });
+          refetch();
         },
       }
-    )
-  }
+    );
+  };
 
-  const handleReject = (lenderId: string) => {
+  const handleReject = (userId: string) => {
     updateUserStatus(
-      { id: lenderId, status: 'INACTIVE' },
+      { id: userId, status: "INACTIVE" },
       {
         onSuccess: () => {
           toast({
-            title: 'Success',
-            description: 'Lender rejected successfully.',
-          })
-          refetch()
-        },
-        onError: (error: Error) => {
-          toast({
-            title: 'Error',
-            description: error.message || 'Failed to reject Lender.',
-            variant: 'destructive',
-          })
+            title: "Success",
+            description: "Lender rejected successfully.",
+          });
+          refetch();
         },
       }
-    )
-  }
-
-  const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-    >
-      <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-colors">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-gray-400">{title}</p>
-              <p className="text-2xl font-bold text-white mt-2">{value}</p>
-              {subtitle && (
-                <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
-              )}
-            </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
-              <Icon className="w-6 h-6" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
-  )
+    );
+  };
 
   if (isError) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">
-            Error Loading Lenders
-          </h3>
+          <h3 className="text-lg font-semibold text-white mb-2">Error Loading Lenders</h3>
           <p className="text-gray-400">{(error as Error)?.message}</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
+      {/* HEADER */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -228,17 +216,14 @@ export function SuperAdminLenders() {
         </div>
         <Button
           className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
-          onClick={() => {
-            setEditingLender(null)
-            setIsAddEditDialogOpen(true)
-          }}
+          onClick={() => setIsAddDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
           Add New Lender
         </Button>
       </motion.div>
 
-      {/* Metrics Cards */}
+      {/* METRICS */}
       {!isTableLoading && !lenders.length ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <CardSkeleton headerLines={2} bodyHeight={20} />
@@ -250,28 +235,28 @@ export function SuperAdminLenders() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Lenders"
-            value={metrics?.totalLenders || 0}
+            value={metrics.totalLenders}
             icon={Building2}
             color="bg-blue/20 text-blue"
             subtitle="Registered partners"
           />
           <MetricCard
             title="Active Lenders"
-            value={metrics?.activeLenders || 0}
+            value={metrics.activeLenders}
             icon={CheckCircle}
             color="bg-green-500/20 text-green-400"
             subtitle="Currently operational"
           />
           <MetricCard
             title="Pending Approvals"
-            value={metrics?.pendingApprovals || 0}
+            value={metrics.pendingApprovals}
             icon={AlertCircle}
             color="bg-orange-500/20 text-orange-400"
             subtitle="Awaiting review"
           />
           <MetricCard
             title="Avg Commission Rate"
-            value={`${metrics?.avgCommissionRate || 0}%`}
+            value={`${metrics.avgCommissionRate}%`}
             icon={TrendingUp}
             color="bg-gold/20 text-gold"
             subtitle="Platform average"
@@ -279,7 +264,7 @@ export function SuperAdminLenders() {
         </div>
       )}
 
-      {/* Lenders Table */}
+      {/* TABLE */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -294,9 +279,11 @@ export function SuperAdminLenders() {
                   Complete list of registered lenders and their status
                 </CardDescription>
               </div>
+
               <div className="flex items-center space-x-4">
+                {/* SEARCH */}
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
                     placeholder="Search lenders..."
                     value={searchTerm}
@@ -304,6 +291,8 @@ export function SuperAdminLenders() {
                     className="pl-10 bg-gray-900 border-gray-600 text-white w-64"
                   />
                 </div>
+
+                {/* STATUS FILTER */}
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
                   <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
                     <SelectValue placeholder="Status" />
@@ -316,6 +305,8 @@ export function SuperAdminLenders() {
                     <SelectItem value="PENDING_APPROVAL">Pending Approval</SelectItem>
                   </SelectContent>
                 </Select>
+
+                {/* LENDER TYPE FILTER */}
                 <Select value={filterType} onValueChange={setFilterType}>
                   <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
                     <SelectValue placeholder="Type" />
@@ -330,120 +321,137 @@ export function SuperAdminLenders() {
               </div>
             </div>
           </CardHeader>
+
           <CardContent>
             <div ref={tableTopRef} />
-            <div className="overflow-x-auto">
-              {isTableLoading ? (
-                <TableSkeleton columns={8} rows={pageSize} />
-              ) : paginated.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-gray-400">No lenders found matching your criteria.</p>
-                </div>
-              ) : (
-                <div className="min-w-full">
-                  <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
-                    <div>Lender</div>
-                    <div>Status</div>
-                    <div>KYC Status</div>
-                    <div>Disbursed</div>
-                    <div>Products</div>
-                    <div>Commission Paid</div>
-                    <div>Join Date</div>
-                    <div>Actions</div>
-                  </div>
-                  <div className="space-y-1">
-                    {paginated.map((lender, index) => (
-                      <motion.div
-                        key={lender._id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded items-center"
-                      >
-                        <div>
-                          <p className="text-white font-medium">{lender.user?.username}</p>
-                          <p className="text-sm text-gray-400 truncate">{lender.user?.email}</p>
-                        </div>
-                        <div>
-                          <Badge className={getStatusColor(lender.user?.status)}>
-                            {lender.user?.status}
-                          </Badge>
-                        </div>
-                        <div>
-                          <Badge className={getKycStatusColor(lender.kycStatus)}>
-                            {lender.kycStatus}
-                          </Badge>
-                        </div>
-                        <div className="text-white">
-                          {lender?.totalDisbursedAmount > 0 ? formatCurrency(lender.totalDisbursedAmount) : '-'}
-                        </div>
-                        <div className="text-white">{lender.productsCount || 0}</div>
-                        <div className="text-white">
-                          {(lender.totalCommissionPaid || 0) > 0 ? formatCurrency(lender.totalCommissionPaid || 0) : '0'}
-                        </div>
-                        <div className="text-gray-300">
-                          {new Date(lender.createdAt).toLocaleDateString()}
-                        </div>
-                        <div>
-                          <div className="flex items-center">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedLender(lender)
-                                setIsViewDialogOpen(true)
-                              }}
-                              className="text-blue hover:text-white hover:bg-gray-700"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-gold hover:text-white hover:bg-gray-700"
-                              onClick={() => {
-                                setEditingLender(lender)
-                                setIsAddEditDialogOpen(true)
-                              }}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            {lender.user?.status === 'ACTIVE' && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-green-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleApprove(lender.user?._id)}
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleReject(lender.user?._id)}
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
 
+            {/* SKELETON */}
+            {isTableLoading ? (
+              <TableSkeleton columns={8} rows={pageSize} />
+            ) : paginated.length === 0 ? (
+              <div className="text-center py-8">
+                <p className="text-gray-400">No lenders found.</p>
+              </div>
+            ) : (
+              <div className="min-w-full">
+                <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
+                  <div>Lender</div>
+                  <div>Status</div>
+                  <div>KYC Status</div>
+                  <div>Disbursed</div>
+                  <div>Products</div>
+                  <div>Commission Paid</div>
+                  <div>Join Date</div>
+                  <div>Actions</div>
+                </div>
+
+                <div className="space-y-1">
+                  {paginated.map((lender, index) => (
+                    <motion.div
+                      key={lender._id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.3, delay: index * 0.05 }}
+                      className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded items-center"
+                    >
+                      <div>
+                        <p className="text-white font-medium">{lender?.lenderName}</p>
+                        <p className="text-sm text-gray-400 truncate">{lender.user?.email}</p>
+                      </div>
+
+                      {/* Status */}
+                      <div>
+                        <Badge className={getStatusColor(lender.user?.status)}>
+                          {lender.user?.status}
+                        </Badge>
+                      </div>
+
+                      {/* KYC */}
+                      <div>
+                        <Badge className={getKycStatusColor(lender.kycStatus || 'UNKNOWN')}>
+                          {lender.kycStatus || 'UNKNOWN'}
+                        </Badge>
+                      </div>
+
+                      {/* Disbursed */}
+                      <div className="text-white">
+                        {lender?.totalDisbursedAmount > 0
+                          ? formatCurrency(lender.totalDisbursedAmount)
+                          : "-"}
+                      </div>
+
+                      <div className="text-white">{lender.productsCount || 0}</div>
+
+                      <div className="text-white">
+                        {(lender.totalCommissionPaid || 0) > 0
+                          ? formatCurrency(lender.totalCommissionPaid || 0)
+                          : "0"}
+                      </div>
+
+                      <div className="text-gray-300">
+                        {new Date(lender.createdAt).toLocaleDateString()}
+                      </div>
+
+                      {/* ACTIONS */}
+                      <div className="flex items-center">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedLender(lender);
+                            setIsViewDialogOpen(true);
+                          }}
+                          className="text-blue hover:text-white hover:bg-gray-700"
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          asChild
+                          className="text-gold hover:text-white hover:bg-gray-700"
+                        >
+                          <Link href="/lender/settings">
+                            <Edit className="w-4 h-4" />
+                          </Link>
+                        </Button>
+
+                        {lender.user?.status === "ACTIVE" && (
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-green-400 hover:text-white hover:bg-gray-700"
+                              onClick={() => handleApprove(lender.user?._id)}
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </Button>
+
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-400 hover:text-white hover:bg-gray-700"
+                              onClick={() => handleReject(lender.user?._id)}
+                            >
+                              <XCircle className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* PAGINATION */}
             {!isTableLoading && (
               <TablePagination
                 page={page}
                 pageSize={pageSize}
                 total={total}
-                onPageChange={handlePageChange}
-                onPageSizeChange={handlePageSizeChange}
+                onPageChange={setPage}
+                onPageSizeChange={setPageSize}
                 className="mt-4"
               />
             )}
@@ -451,7 +459,7 @@ export function SuperAdminLenders() {
         </Card>
       </motion.div>
 
-      {/* View Lender Dialog */}
+      {/* VIEW DIALOG (unchanged) */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
           <DialogHeader className="border-b border-gray-700/50 pb-4">
@@ -462,7 +470,6 @@ export function SuperAdminLenders() {
               Comprehensive overview of lender performance and details
             </DialogDescription>
           </DialogHeader>
-
           {selectedLender && (
             <div className="space-y-6 pt-4 ">
               {/* Status Badges Section */}
@@ -674,17 +681,33 @@ export function SuperAdminLenders() {
       </Dialog>
 
       <AddLenderDialog
-        isOpen={isAddEditDialogOpen}
-        mode={editingLender ? 'edit' : 'add'}
-        editData={editingLender}
-        onSuccess={handleSuccess}
-        onClose={() => {
-          setIsAddEditDialogOpen(false)
-          setEditingLender(null)
-        }}
+        isOpen={isAddDialogOpen}
+        onClose={() => setIsAddDialogOpen(false)}
         refetch={refetch}
       />
-
     </div>
-  )
+  );
 }
+
+const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
+  <motion.div
+    initial={{ opacity: 0, y: 20 }}
+    animate={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5 }}
+  >
+    <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-colors">
+      <CardContent className="p-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-sm font-medium text-gray-400">{title}</p>
+            <p className="text-2xl font-bold text-white mt-2">{value}</p>
+            {subtitle && <p className="text-sm text-gray-400 mt-1">{subtitle}</p>}
+          </div>
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
+            <Icon className="w-6 h-6" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  </motion.div>
+);

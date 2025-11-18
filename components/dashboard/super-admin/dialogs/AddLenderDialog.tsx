@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Cpu, Building, Landmark, Loader2, Eye, EyeOff } from "lucide-react";
 
 import {
   Dialog,
@@ -12,10 +13,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
@@ -23,543 +20,282 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-
-import { Plus, Loader2, Eye, EyeOff } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 import { useToast } from "@/hooks/use-toast";
-import { useRegister, useUpdateUser } from "@/hooks/use-users";
-import { useCreateBranch, useUpdateLenderProfile } from "@/hooks/use-lenders";
+import { useRegister } from "@/hooks/use-users";
+import { LenderType } from "@/lib";
 
-// ----------------------------------------------------------------------------------
-// TYPES
-// ----------------------------------------------------------------------------------
-type GenderLower = "male" | "female" | "other";
-type LenderTypeLower = "Bank" | "NBFC" | "Fintech";
+// ZOD SCHEMA
+const schema = z
+  .object({
+    fullName: z
+      .string()
+      .min(2, "Name must be at least 2 characters")
+      .max(50, "Name is too long")
+      .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
 
-export type LenderFormValues = {
-  fullName: string;
-  email: string;
-  phone: string;
-  companyName: string;
-  lenderType: LenderTypeLower;
-  address: string;
-  pincode: string;
-  gender: GenderLower;
-  dob: string;
-  password?: string;
-  confirmPassword?: string;
-};
+    email: z
+      .string()
+      .email("Please enter a valid email address")
+      .toLowerCase()
+      .trim(),
 
-// ----------------------------------------------------------------------------------
-// COMPONENT
-// ----------------------------------------------------------------------------------
+    companyName: z
+      .string()
+      .min(2, "Company name must be at least 2 characters")
+      .max(50, "Company name is too long"),
 
-export function AddLenderDialog({
-  isOpen,
-  mode,
-  editData,
-  onClose,
-  onSuccess,
-  refetch,
-}: {
-  isOpen: boolean;
-  mode: "add" | "edit";
-  editData?: any;
-  onClose: () => void;
-  onSuccess: () => void;
-  refetch?: () => void;
-}) {
-  const { toast } = useToast();
+    lenderType: z.enum(["bank", "nbfc", "fintech"], {
+      required_error: "Please select lender type",
+    }),
 
-  const registerMutation = useRegister();
-  const updateUserMutation = useUpdateUser();
-  useCreateBranch();
-  const updateLenderProfileMutation = useUpdateLenderProfile();
+    password: z
+      .string()
+      .min(8, "Password must be at least 8 characters")
+      .regex(/[A-Z]/, "Must contain 1 uppercase letter")
+      .regex(/[a-z]/, "Must contain 1 lowercase letter")
+      .regex(/[0-9]/, "Must contain 1 number")
+      .regex(/[^\w]/, "Must contain 1 special character")
+      .max(30, "Password cannot exceed 30 characters"),
 
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-
-  // ----------------------------------------------------------------------------------
-  // ✅ ZOD SCHEMA (Strong password validation)
-  // ----------------------------------------------------------------------------------
-  const formSchema = useMemo(() => {
-    return z
-      .object({
-        fullName: z
-          .string()
-          .min(2, "Contact person name must be at least 2 characters")
-          .max(50, "Name is too long")
-          .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
-
-        email: z.string().email("Enter valid email").toLowerCase().trim(),
-        phone: z
-          .string()
-          .min(10, "Phone must be at least 10 digits")
-          .max(15, "Phone too long")
-          .regex(/^[0-9]+$/, "Phone must contain only digits"),
-
-        companyName: z.string().min(2, "Company name must be at least 2 characters"),
-        lenderType: z.enum(["Bank", "NBFC", "Fintech"], {
-          required_error: "Select lender type",
-        }),
-        address: z.string().min(5, "Enter a valid address"),
-        pincode: z
-          .string()
-          .regex(/^[0-9]{4,10}$/, "Pincode must be numeric between 4-10 digits"),
-        gender: z.enum(["male", "female", "other"], {
-          required_error: "Select gender",
-        }),
-        dob: z.string().refine((v) => !isNaN(Date.parse(v)), {
-          message: "Invalid date",
-        }),
-        password: z.string().optional(),
-        confirmPassword: z.string().optional(),
-      })
-      .superRefine((data, ctx) => {
-        if (mode === "add") {
-          if (!data.password) {
-            ctx.addIssue({
-              code: "custom",
-              message: "Password is required",
-              path: ["password"],
-            });
-          } else {
-            if (data.password.length < 8)
-              ctx.addIssue({
-                code: "custom",
-                message: "Password must be 8+ characters",
-                path: ["password"],
-              });
-
-            if (!/[A-Z]/.test(data.password))
-              ctx.addIssue({
-                code: "custom",
-                message: "Must include 1 uppercase",
-                path: ["password"],
-              });
-
-            if (!/[a-z]/.test(data.password))
-              ctx.addIssue({
-                code: "custom",
-                message: "Must include 1 lowercase",
-                path: ["password"],
-              });
-
-            if (!/[0-9]/.test(data.password))
-              ctx.addIssue({
-                code: "custom",
-                message: "Must include 1 number",
-                path: ["password"],
-              });
-
-            if (!/[^\w]/.test(data.password))
-              ctx.addIssue({
-                code: "custom",
-                message: "Must include 1 special character",
-                path: ["password"],
-              });
-          }
-
-          if (data.password !== data.confirmPassword) {
-            ctx.addIssue({
-              code: "custom",
-              message: "Passwords do not match",
-              path: ["confirmPassword"],
-            });
-          }
-        }
-
-        if (mode === "edit" && (data.password || data.confirmPassword)) {
-          ctx.addIssue({
-            code: "custom",
-            message: "Password cannot be changed here",
-            path: ["password"],
-          });
-        }
-      });
-  }, [mode]);
-
-  // ----------------------------------------------------------------------------------
-  // ✅ DEFAULT VALUES (correct field mapping)
-  // ----------------------------------------------------------------------------------
-  const defaultValues: LenderFormValues = useMemo(() => {
-    if (mode === "edit" && editData) {
-      const user = editData.user || {};
-      const mapped = {
-        fullName: user.username ?? "",
-        email: user.email ?? "",
-        phone: user.contact ?? "",
-        companyName: editData.lenderName ?? "",
-        lenderType: editData.lenderType as LenderTypeLower,
-        address: user.address ?? "",
-        pincode: user.pincode ? String(user.pincode) : "",
-        gender: (user.gender?.toLowerCase() as GenderLower) ?? "male",
-        dob: user.dob ? new Date(user.dob).toISOString().split("T")[0] : "",
-        password: undefined,
-        confirmPassword: undefined,
-      };
-
-      console.debug("[AddLenderDialog] 🟡 Default values for edit:", mapped);
-      return mapped;
-    }
-
-    const mapped = {
-      fullName: "",
-      email: "",
-      phone: "",
-      companyName: "",
-      lenderType: "Bank",
-      address: "",
-      pincode: "",
-      gender: "male",
-      dob: "",
-      password: undefined,
-      confirmPassword: undefined,
-    };
-
-    console.debug("[AddLenderDialog] 🟢 Default values for add:", mapped);
-    return mapped;
-  }, [mode, editData]);
-
-  // ----------------------------------------------------------------------------------
-  // ✅ useForm setup
-  // ----------------------------------------------------------------------------------
-  const {
-    register,
-    setValue,
-    handleSubmit,
-    reset,
-    formState: { errors },
-    watch,
-  } = useForm<LenderFormValues>({
-    resolver: zodResolver(formSchema),
-    defaultValues,
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: "Passwords don't match",
+    path: ["confirmPassword"],
   });
 
-  // ----------------------------------------------------------------------------------
-  // ✅ Reset when dialog opens or editData changes
-  // ----------------------------------------------------------------------------------
+type FormValues = z.infer<typeof schema>;
+
+export function AddLenderDialog({
+  isOpen = false,
+  onClose,
+  refetch,
+}: {
+  isOpen?: boolean;
+  onClose?: () => void;
+  refetch?: () => void;
+}) {
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const { toast } = useToast();
+  const registerMutation = useRegister();
+
+  const {
+    register,
+    handleSubmit,
+    reset,
+    setValue,
+    formState: { errors, isSubmitting },
+  } = useForm<FormValues>({
+    resolver: zodResolver(schema),
+    defaultValues: {
+      fullName: "",
+      email: "",
+      companyName: "",
+      lenderType: "bank",
+      password: "",
+      confirmPassword: "",
+    },
+  });
+
   useEffect(() => {
-    if (isOpen && (mode === "edit" || mode === "add")) {
-      console.debug("[AddLenderDialog] 🔁 Resetting form with:", defaultValues);
-      reset(defaultValues);
-    }
-  }, [isOpen, editData, mode, reset, defaultValues]);
+    if (isOpen) reset();
+  }, [isOpen, reset]);
 
-  // ----------------------------------------------------------------------------------
-  // ✅ Debug current form data
-  // ----------------------------------------------------------------------------------
-  useEffect(() => {
-    console.debug("[AddLenderDialog] 👀 editData:", editData);
-  }, [editData]);
-
-  // ----------------------------------------------------------------------------------
-  // ✅ onSubmit (same as before)
-  // ----------------------------------------------------------------------------------
-  const onSubmit = async (data: LenderFormValues) => {
-    setIsLoading(true);
-    console.debug("[AddLenderDialog] 🚀 onSubmit called with:", data);
-
+  const onSubmit = async (data: FormValues) => {
     try {
-      if (mode === "add") {
-        const payload = {
-          username: data.fullName,
-          email: data.email,
-          contact: data.phone,
-          companyName: data.companyName,
-          address: data.address,
-          role: "LENDER_ADMIN",
-          gender: data.gender.toUpperCase(),
-          dob: new Date(data.dob).toISOString(),
-          pincode: Number(data.pincode),
-          lenderType: data.lenderType,
-          password: data.password,
-        };
-        console.debug("[AddLenderDialog] ➕ Register payload:", payload);
+      const payload = {
+        username: data.fullName,
+        email: data.email,
+        password: data.password,
+        companyName: data.companyName,
+        lenderType: data.lenderType.toUpperCase(),
+        role: "LENDER_ADMIN",
+      };
 
-        await registerMutation.mutateAsync(payload);
-        toast({ title: "Success", description: "Lender registered successfully." });
-      }
+      const res: any = await registerMutation.mutateAsync(payload);
 
-      if (mode === "edit" && editData) {
-        const userPayload = {
-          id: editData.user?._id,
-          username: data.fullName,
-          email: data.email,
-          contact: data.phone,
-          address: data.address,
-          gender: data.gender.toUpperCase(),
-          dob: new Date(data.dob).toISOString(),
-          pincode: Number(data.pincode),
-        };
-
-        const lenderPayload = {
-          id: editData._id,
-          lenderName: data.companyName,
-          lenderType: data.lenderType,
-        };
-
-        console.debug("[AddLenderDialog] ✏️ Update payloads:", {
-          userPayload,
-          lenderPayload,
+      if (res?.createUser?.success) {
+        toast({
+          title: "Success",
+          description: "Lender admin created successfully!",
         });
 
-        await Promise.all([
-          updateUserMutation.mutateAsync(userPayload),
-          updateLenderProfileMutation.mutateAsync(lenderPayload),
-        ]);
-
-        toast({ title: "Success", description: "Lender updated successfully." });
+        onClose?.();
+        refetch?.();
+        return;
       }
 
-      onSuccess?.();
-      reset();
-      onClose();
-      refetch?.();
-    } catch (error: any) {
-      console.error("[AddLenderDialog] ❌ Error in onSubmit:", error);
+      throw new Error(res?.createUser?.message || "Failed to create lender admin.");
+    } catch (err: any) {
       toast({
         title: "Error",
-        description: error?.message || "Something went wrong.",
+        description: err?.message || "Failed to create lender admin",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">
+    <Dialog open={isOpen} onOpenChange={() => { }}>
+      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-lg w-[95%] rounded-xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">
-            {mode === "edit" ? "Edit Lender" : "Add New Lender"}
-          </DialogTitle>
+          <DialogTitle className="text-xl font-bold">Add New Lender Admin</DialogTitle>
           <DialogDescription className="text-gray-400">
-            {mode === "edit"
-              ? "Update the details of this lender."
-              : "Register a new lender to the platform."}
+            Register a New Lender Administrator
           </DialogDescription>
         </DialogHeader>
 
-        <form className="space-y-6" onSubmit={handleSubmit(onSubmit)}>
-          <div className="grid grid-cols-2 gap-6">
-            {/* Company */}
-            <div className="space-y-2">
-              <Label>Company Name</Label>
-              <Input
-                {...register("companyName")}
-                className="glass-input text-black h-12"
-                placeholder="Enter company name"
-              />
-              {errors.companyName && (
-                <p className="text-red-400 text-sm">
-                  {errors.companyName.message}
-                </p>
-              )}
-            </div>
-
-            {/* Lender Type */}
-            <div className="space-y-2">
-              <Label>Lender Type</Label>
-              <Select
-                defaultValue={defaultValues.lenderType}
-                onValueChange={(v) =>
-                  setValue("lenderType", v as LenderTypeLower, {
-                    shouldValidate: true,
-                  })
-                }
-              >
-                <SelectTrigger className="glass-input text-gray-500 h-12">
-                  <SelectValue placeholder="Select lender type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Bank">Bank</SelectItem>
-                  <SelectItem value="NBFC">NBFC</SelectItem>
-                  <SelectItem value="Fintech">Fintech</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.lenderType && (
-                <p className="text-red-400 text-sm">
-                  {errors.lenderType.message}
-                </p>
-              )}
-            </div>
-
-            {/* FullName */}
-            <div className="space-y-2">
-              <Label>Contact Person Name</Label>
-              <Input
-                {...register("fullName")}
-                className="glass-input text-black h-12"
-                placeholder="Enter name"
-              />
-              {errors.fullName && (
-                <p className="text-red-400 text-sm">
-                  {errors.fullName.message}
-                </p>
-              )}
-            </div>
-
-            {/* Email */}
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                type="email"
-                {...register("email")}
-                className="glass-input text-black h-12"
-                placeholder="Enter email"
-              />
-              {errors.email && (
-                <p className="text-red-400 text-sm">{errors.email.message}</p>
-              )}
-            </div>
-
-            {/* Phone */}
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input
-                {...register("phone")}
-                className="glass-input text-black h-12"
-                placeholder="Enter phone"
-              />
-              {errors.phone && (
-                <p className="text-red-400 text-sm">{errors.phone.message}</p>
-              )}
-            </div>
-
-            {/* DOB */}
-            <div className="space-y-2">
-              <Label>DOB</Label>
-              <Input
-                type="date"
-                {...register("dob")}
-                className="glass-input text-black h-12"
-              />
-              {errors.dob && (
-                <p className="text-red-400 text-sm">{errors.dob.message}</p>
-              )}
-            </div>
-
-            {/* Gender */}
-            <div className="space-y-2">
-              <Label>Gender</Label>
-              <Select
-                defaultValue={defaultValues.gender}
-                onValueChange={(v) =>
-                  setValue("gender", v as GenderLower, {
-                    shouldValidate: true,
-                  })
-                }
-              >
-                <SelectTrigger className="glass-input text-gray-500 h-12">
-                  <SelectValue placeholder="Select gender" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="male">Male</SelectItem>
-                  <SelectItem value="female">Female</SelectItem>
-                  <SelectItem value="other">Other</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.gender && (
-                <p className="text-red-400 text-sm">{errors.gender.message}</p>
-              )}
-            </div>
-
-            {/* Address */}
-            <div className="space-y-2 col-span-2">
-              <Label>Address</Label>
-              <Input
-                {...register("address")}
-                className="glass-input text-black h-12"
-                placeholder="Enter address"
-              />
-              {errors.address && (
-                <p className="text-red-400 text-sm">{errors.address.message}</p>
-              )}
-            </div>
-
-            {/* Pincode */}
-            <div className="space-y-2">
-              <Label>Pincode</Label>
-              <Input
-                {...register("pincode")}
-                className="glass-input text-black h-12"
-                placeholder="Enter pincode"
-              />
-              {errors.pincode && (
-                <p className="text-red-400 text-sm">{errors.pincode.message}</p>
-              )}
-            </div>
-
-            {/* PASSWORD ONLY IN ADD MODE */}
-            {mode === "add" && (
-              <>
-                {/* Password */}
-                <div className="space-y-2">
-                  <Label>Password</Label>
-                  <div className="relative">
-                    <Input
-                      type={showPassword ? "text" : "password"}
-                      {...register("password")}
-                      className="glass-input text-black pr-10 h-12"
-                      placeholder="Enter password"
-                    />
-                    <Button
-                      className="absolute right-0 top-0 h-full px-3"
-                      type="button"
-                      variant="ghost"
-                      onClick={() => setShowPassword(!showPassword)}
-                    >
-                      {showPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
-                    </Button>
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-400 text-sm">
-                      {errors.password.message}
-                    </p>
-                  )}
-                </div>
-
-                {/* Confirm Password */}
-                <div className="space-y-2">
-                  <Label>Confirm Password</Label>
-                  <div className="relative">
-                    <Input
-                      type={showConfirmPassword ? "text" : "password"}
-                      {...register("confirmPassword")}
-                      className="glass-input text-black pr-10 h-12"
-                      placeholder="Confirm password"
-                    />
-                    <Button
-                      className="absolute right-0 top-0 h-full px-3"
-                      type="button"
-                      variant="ghost"
-                      onClick={() =>
-                        setShowConfirmPassword(!showConfirmPassword)
-                      }
-                    >
-                      {showConfirmPassword ? <EyeOff className="h-5 w-5 text-gray-400" /> : <Eye className="h-5 w-5 text-gray-400" />}
-                    </Button>
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-red-400 text-sm">
-                      {errors.confirmPassword.message}
-                    </p>
-                  )}
-                </div>
-              </>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+          {/* Company Name */}
+          <div className="space-y-2">
+            <Label>Company Name</Label>
+            <Input
+              {...register("companyName")}
+              className="glass-input text-black h-12"
+              placeholder="ABC Finance Pvt. Ltd."
+            />
+            {errors.companyName && (
+              <p className="text-red-400 text-sm">{errors.companyName.message}</p>
             )}
           </div>
 
-          <div className="flex justify-end space-x-4 pt-2">
+          {/* Lender Type */}
+          <div className="space-y-2">
+            <Label className="text-gray-300 font-medium">Lender Type</Label>
+            <Select
+              onValueChange={(value) => setValue("lenderType", value as LenderType, { shouldValidate: true })}
+              defaultValue="bank"
+            >
+              <SelectTrigger className="glass-input text-black h-11">
+                <SelectValue placeholder="Select Lender Type" />
+              </SelectTrigger>
+              <SelectContent className="glass-card border-white/10">
+                <SelectItem value="bank" className="text-black hover:bg-white/10 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Building className="w-4 h-4" />
+                    <span>Bank</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="nbfc" className="text-black hover:bg-white/10 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Landmark className="w-4 h-4" />
+                    <span>NBFC</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="fintech" className="text-black hover:bg-white/10 cursor-pointer">
+                  <div className="flex items-center gap-2">
+                    <Cpu className="w-4 h-4" />
+                    <span>Fintech</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {/* Hidden field to sync with react-hook-form */}
+            <input type="hidden" {...register("lenderType")} />
+            {errors.lenderType && (
+              <p className="text-red-400 text-sm">{errors.lenderType.message}</p>
+            )}
+          </div>
+
+          {/* Full Name */}
+          <div className="space-y-2">
+            <Label>Full Name</Label>
+            <Input
+              {...register("fullName")}
+              className="glass-input text-black h-12"
+              placeholder="John Doe"
+            />
+            {errors.fullName && (
+              <p className="text-red-400 text-sm">{errors.fullName.message}</p>
+            )}
+          </div>
+
+          {/* Email */}
+          <div className="space-y-2">
+            <Label>Email</Label>
+            <Input
+              type="email"
+              {...register("email")}
+              className="glass-input text-black h-12"
+              placeholder="john@company.com"
+            />
+            {errors.email && (
+              <p className="text-red-400 text-sm">{errors.email.message}</p>
+            )}
+          </div>
+
+          {/* Password */}
+          <div className="space-y-2">
+            <Label>Password</Label>
+            <div className="relative">
+              <Input
+                type={showPassword ? "text" : "password"}
+                {...register("password")}
+                className="glass-input text-black h-12 pr-12"
+                placeholder="Create password"
+              />
+
+              <button
+                type="button"
+                className="absolute right-3 top-0 h-full flex items-center"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? (
+                  <EyeOff className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <Eye className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+            </div>
+
+            {errors.password && (
+              <p className="text-red-400 text-sm">{errors.password.message}</p>
+            )}
+          </div>
+
+          {/* Confirm Password */}
+          <div className="space-y-2">
+            <Label>Confirm Password</Label>
+            <div className="relative">
+              <Input
+                type={showConfirmPassword ? "text" : "password"}
+                {...register("confirmPassword")}
+                className="glass-input text-black h-12 pr-12"
+                placeholder="Confirm password"
+              />
+
+              <button
+                type="button"
+                className="absolute right-3 top-0 h-full flex items-center"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              >
+                {showConfirmPassword ? (
+                  <EyeOff className="w-5 h-5 text-gray-500" />
+                ) : (
+                  <Eye className="w-5 h-5 text-gray-500" />
+                )}
+              </button>
+            </div>
+
+            {errors.confirmPassword && (
+              <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
+            )}
+          </div>
+
+          {/* Buttons */}
+          <div className="flex justify-end space-x-4">
             <Button
               type="button"
               variant="outline"
               onClick={() => {
                 reset();
-                onClose();
+                onClose?.();
               }}
               className="border-gray-600 text-gray-300 hover:bg-gray-700"
             >
@@ -568,18 +304,16 @@ export function AddLenderDialog({
 
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isSubmitting}
               className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
             >
-              {isLoading ? (
+              {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  {mode === "edit" ? "Updating Lender..." : "Adding Lender..."}
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Creating...
                 </>
-              ) : mode === "edit" ? (
-                "Update Lender"
               ) : (
-                "Add Lender"
+                "Create Lender Admin"
               )}
             </Button>
           </div>

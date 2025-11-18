@@ -61,19 +61,18 @@ type FormValues = z.infer<typeof schema>;
 
 export function AddAggregatorDialog({
     isOpen = false,
-    onSuccess,
     onClose,
     refetch,
 }: {
     isOpen?: boolean;
-    onSuccess?: () => void;
     onClose?: () => void;
     refetch?: () => void;
 }) {
-    const { toast } = useToast();
-
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const registerMutation = useRegister();
+    const { toast } = useToast();
 
     const {
         register,
@@ -95,8 +94,6 @@ export function AddAggregatorDialog({
         if (isOpen) reset();
     }, [isOpen, reset]);
 
-    const registerMutation = useRegister();
-
     const onSubmit = async (data: FormValues) => {
         try {
             const payload = {
@@ -115,7 +112,6 @@ export function AddAggregatorDialog({
                     description: "Aggregator created successfully!",
                 });
 
-                onSuccess?.();
                 onClose?.();
                 refetch?.();
                 return;
@@ -245,7 +241,10 @@ export function AddAggregatorDialog({
                         <Button
                             type="button"
                             variant="outline"
-                            onClick={onClose}
+                            onClick={() => {
+                                reset();
+                                onClose?.();
+                            }}
                             className="border-gray-600 text-gray-300 hover:bg-gray-700"
                         >
                             Cancel
