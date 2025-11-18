@@ -95,6 +95,8 @@ export const aggregatorProfileApi = {
                 email
                 role
                 status
+                createdAt
+                loginHistory
               }
             }
             count

@@ -92,6 +92,8 @@ export type LenderDocuments = {
 
 // PROFILE TYPES
 export type AggregatorProfile = {
+  approvedApplications: number
+  conversionRate: number
   _id: string
   userId: string
   companyName: string
