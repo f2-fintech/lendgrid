@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { AddLenderDialog } from './dialogs/AddLenderDialog'
+import { AddLenderDialog } from './dialogs/add-lender-dialog'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -129,7 +129,7 @@ export function SuperAdminLenders() {
     setPage(1)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-
+  console.log(selectedLender, paginated, 'lender')
   const handleApprove = (lenderId: string) => {
     updateUserStatus(
       { id: lenderId, status: 'ACTIVE' },
@@ -332,7 +332,7 @@ export function SuperAdminLenders() {
           </CardHeader>
           <CardContent>
             <div ref={tableTopRef} />
-            <div>
+            <div className="overflow-x-auto">
               {isTableLoading ? (
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : paginated.length === 0 ? (

@@ -3,14 +3,32 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
-import { Users, Plus, Search, Edit, CheckCircle, XCircle, Eye, AlertCircle, TrendingUp, User, Mail, Phone, Building, MapPin, Activity, Calendar } from 'lucide-react'
+import {
+  Users,
+  Plus,
+  Search,
+  Edit,
+  CheckCircle,
+  XCircle,
+  Eye,
+  AlertCircle,
+  TrendingUp,
+  User,
+  Mail,
+  Phone,
+  Building,
+  MapPin,
+  Activity,
+  Calendar,
+  X
+} from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
@@ -48,12 +66,6 @@ export function SuperAdminAggregators() {
     totalAggregators: total,
     activeAggregators: aggregators.filter(a => a.user?.status === 'ACTIVE').length,
     pendingApprovals: aggregators.filter(a => a.user?.status === 'PENDING_APPROVAL').length,
-    // avgConversionRate: aggregators.length
-    //   ? Math.round(
-    //     aggregators.reduce((sum, a) => sum + (a.conversionRate || 0), 0) /
-    //     aggregators.length
-    //   )
-    //   : 0,
   }), [aggregators, total])
 
   useEffect(() => {
@@ -92,9 +104,11 @@ export function SuperAdminAggregators() {
 
   const filteredAggregators = useMemo(() => {
     return aggregators.filter((aggregator) => {
+      const username = aggregator.user?.username || ''
+      const email = aggregator.user?.email || ''
       const matchesSearch =
-        aggregator.user?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        aggregator.user?.email.toLowerCase().includes(searchTerm.toLowerCase())
+        username.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        email.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesStatus = !filterStatus || filterStatus === "all" || aggregator.user?.status === filterStatus
       return matchesSearch && matchesStatus
     })
@@ -115,8 +129,15 @@ export function SuperAdminAggregators() {
     setPage(1)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-  console.log(selectedAggregator, 'aggregator')
-  const handleApprove = (userId: string) => {
+
+  // Robust lastLogin extraction: handles string entries or objects with createdAt/lastLogin
+  const rawLastLogin = selectedAggregator?.user?.loginHistory?.at(-1)
+  const lastLogin = rawLastLogin
+    ? (typeof rawLastLogin === 'string' ? rawLastLogin : (rawLastLogin.createdAt || rawLastLogin.lastLogin || null))
+    : null
+
+  const handleApprove = (userId: string | undefined) => {
+    if (!userId) return
     updateUserStatus(
       { id: userId, status: 'ACTIVE' },
       {
@@ -125,7 +146,7 @@ export function SuperAdminAggregators() {
             title: 'Success',
             description: 'Aggregator approved successfully.',
           })
-          refetch() // re-fetch the aggregator list
+          refetch()
         },
         onError: (error: Error) => {
           toast({
@@ -138,7 +159,8 @@ export function SuperAdminAggregators() {
     )
   }
 
-  const handleReject = (userId: string) => {
+  const handleReject = (userId: string | undefined) => {
+    if (!userId) return
     updateUserStatus(
       { id: userId, status: 'INACTIVE' },
       {
@@ -253,7 +275,6 @@ export function SuperAdminAggregators() {
           />
           <MetricCard
             title="Avg Conversion Rate"
-            // value={`${metrics.avgConversionRate}%`}
             value={`0%`}
             icon={TrendingUp}
             color="bg-gold/20 text-gold"
@@ -347,14 +368,11 @@ export function SuperAdminAggregators() {
                             {aggregator.totalApplicationsSubmitted || 0} approved
                           </p>
                         </div>
-                        {/* <div className="text-gold">
-                          {(aggregator.conversionRate || 0) > 0 ? `${aggregator.conversionRate}%` : '-'}
-                        </div> */}
                         <div className="text-white">
                           {(aggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(aggregator.totalCommissionEarned || 0) : '0'}
                         </div>
                         <div className="text-gray-300">
-                          {new Date(aggregator.createdAt).toLocaleDateString()}
+                          {aggregator.createdAt ? new Date(aggregator.createdAt).toLocaleDateString() : '-'}
                         </div>
                         <div>
                           <div className="flex items-center">
@@ -376,7 +394,9 @@ export function SuperAdminAggregators() {
                               className="text-gold hover:text-white hover:bg-gray-700"
                             >
                               <Link href="/aggregator/settings">
-                                <Edit className="w-4 h-4" />
+                                <a>
+                                  <Edit className="w-4 h-4" />
+                                </a>
                               </Link>
                             </Button>
                             {aggregator.user?.status === 'ACTIVE' && (
@@ -423,74 +443,82 @@ export function SuperAdminAggregators() {
       </motion.div>
 
       {/* View Aggregator Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-          <DialogHeader className="border-b border-gray-700/50 pb-4">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-white">
-              Aggregator Profile
-            </DialogTitle>
-            <DialogDescription className="text-gray-400 text-sm">
-              Comprehensive overview of aggregator performance and details
-            </DialogDescription>
+      <Dialog open={isViewDialogOpen} onOpenChange={(val) => {
+        // prevent closing when clicked outside or ESC in DialogContent by handling open state here as fallback
+        setIsViewDialogOpen(val)
+      }}>
+        <DialogContent
+          className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader className="border-b border-gray-700/50 pb-4 flex justify-between items-center">
+            <div>
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-white">
+                Aggregator Profile
+              </DialogTitle>
+              <DialogDescription className="text-gray-400 text-sm">
+                Comprehensive overview of aggregator performance and details
+              </DialogDescription>
+            </div>
+
+            <DialogClose asChild>
+              <button
+                className="p-2 rounded hover:bg-gray-700/50 transition"
+                aria-label="Close"
+                onClick={() => setIsViewDialogOpen(false)}
+              >
+                <X className="w-5 h-5 text-gray-300" />
+              </button>
+            </DialogClose>
           </DialogHeader>
 
           {selectedAggregator && (
-            <div className="space-y-6 pt-4 ">
+            <div className="space-y-6 pt-4">
+
               {/* Status Badges Section */}
               <div className="flex gap-3 justify-between items-start">
                 <div className="flex flex-wrap gap-2">
                   <Badge
                     className={`${getStatusColor(selectedAggregator.user?.status)} border px-4 py-1.5 text-sm font-semibold`}
-                    title={`Status: ${selectedAggregator.user?.status}`}
-                    aria-label={`Status ${selectedAggregator.user?.status}`}
                   >
                     {selectedAggregator.user?.status}
                   </Badge>
 
                   <Badge
                     className={`${getKycStatusColor(selectedAggregator.kycStatus)} border px-4 py-1.5 text-sm font-semibold`}
-                    title={`KYC: ${selectedAggregator.kycStatus}`}
-                    aria-label={`KYC status ${selectedAggregator.kycStatus}`}
                   >
                     KYC: {selectedAggregator.kycStatus}
                   </Badge>
                 </div>
 
-                {/* Top action buttons: show when application is pending */}
-                <div>
-                  {selectedAggregator.user?.status === "INACTIVE" && (
-                    <div className="flex items-center space-x-4">
-                      <Button
-                        className="bg-green-500 hover:bg-green-600 text-white"
-                        onClick={() => {
-                          handleApprove(selectedAggregator.user?._id);
-                          setIsViewDialogOpen(false);
-                        }}
-                        aria-label="Approve lender"
-                        title="Approve lender"
-                      >
-                        <CheckCircle className="w-4 h-4 mr-2" />
-                        Approve Aggregator
-                      </Button>
+                {selectedAggregator.user?.status === "INACTIVE" && (
+                  <div className="flex items-center space-x-4">
+                    <Button
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                      onClick={() => {
+                        handleApprove(selectedAggregator.user?._id)
+                        setIsViewDialogOpen(false)
+                      }}
+                    >
+                      <CheckCircle className="w-4 h-4 mr-2" />
+                      Approve Aggregator
+                    </Button>
 
-                      <Button
-                        variant="outline"
-                        className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
-                        onClick={() => {
-                          handleReject(selectedAggregator.user?._id);
-                          setIsViewDialogOpen(false);
-                        }}
-                        aria-label="Reject application"
-                        title="Reject application"
-                      >
-                        <XCircle className="w-4 h-4 mr-2" />
-                        Reject Aggregator
-                      </Button>
-                    </div>
-                  )}
-                </div>
+                    <Button
+                      variant="outline"
+                      className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                      onClick={() => {
+                        handleReject(selectedAggregator.user?._id)
+                        setIsViewDialogOpen(false)
+                      }}
+                    >
+                      <XCircle className="w-4 h-4 mr-2" />
+                      Reject Aggregator
+                    </Button>
+                  </div>
+                )}
               </div>
-
 
               {/* Personal Information Card */}
               <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
@@ -551,7 +579,7 @@ export function SuperAdminAggregators() {
                 </div>
               </div>
 
-              {/* Performance Metrics Card */}
+              {/* Performance Metrics */}
               <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg p-6 border border-blue-700/30 backdrop-blur-sm">
                 <h3 className="text-lg font-semibold mb-4 text-purple-400 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
@@ -578,13 +606,15 @@ export function SuperAdminAggregators() {
                   <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
                     <p className="text-xs text-gray-400 mb-2">Commission Earned</p>
                     <p className="text-xl font-bold text-yellow-400">
-                      {(selectedAggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(selectedAggregator.totalCommissionEarned || 0) : '₹0'}
+                      {(selectedAggregator.totalCommissionEarned || 0) > 0
+                        ? formatCurrency(selectedAggregator.totalCommissionEarned || 0)
+                        : '₹0'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Activity Timeline Card */}
+              {/* Activity Timeline */}
               <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
                 <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
                   <Activity className="w-5 h-5" />
@@ -596,11 +626,9 @@ export function SuperAdminAggregators() {
                     <div>
                       <p className="text-xs text-gray-400">Join Date</p>
                       <p className="text-white font-semibold">
-                        {new Date(selectedAggregator.user?.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                        {selectedAggregator?.user?.createdAt
+                          ? new Date(selectedAggregator.user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                          : 'N/A'}
                       </p>
                     </div>
                   </div>
@@ -610,25 +638,23 @@ export function SuperAdminAggregators() {
                     <div>
                       <p className="text-xs text-gray-400">Last Activity</p>
                       <p className="text-white font-semibold">
-                        {new Date(selectedAggregator.updatedAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
+                        {lastLogin
+                          ? new Date(lastLogin).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                          : 'N/A'}
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              {selectedAggregator.user?.status === 'INACTIVE' && (
+              {/* Footer action buttons (shows only when selectedAggregator exists and is INACTIVE) */}
+              {selectedAggregator && selectedAggregator.user?.status === 'INACTIVE' && (
                 <div className="flex gap-4 pt-4 border-t border-gray-700/50">
                   <Button
                     className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-semibold py-3 shadow-lg shadow-green-500/20 transition-all duration-200"
                     onClick={() => {
-                      handleApprove(selectedAggregator.user?._id);
-                      setIsViewDialogOpen(false);
+                      handleApprove(selectedAggregator.user?._id)
+                      setIsViewDialogOpen(false)
                     }}
                   >
                     <CheckCircle className="w-5 h-5 mr-2" />
@@ -637,8 +663,8 @@ export function SuperAdminAggregators() {
                   <Button
                     className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white font-semibold py-3 shadow-lg shadow-red-500/20 transition-all duration-200"
                     onClick={() => {
-                      handleReject(selectedAggregator.user?._id);
-                      setIsViewDialogOpen(false);
+                      handleReject(selectedAggregator.user?._id)
+                      setIsViewDialogOpen(false)
                     }}
                   >
                     <XCircle className="w-4 h-4 mr-2" />
@@ -650,6 +676,7 @@ export function SuperAdminAggregators() {
           )}
         </DialogContent>
       </Dialog>
+
       <AddAggregatorDialog
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
