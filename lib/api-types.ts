@@ -59,11 +59,7 @@ export interface User {
   email: string
   role: string
   contact?: string
-  companyName?: string
-  gender?: string
-  address?: string
-  pincode?: string
-  profilePicture?: string
+  photoUrl?: string
   status?: string
   loginHistory?: string[]
   createdAt?: string
@@ -72,6 +68,8 @@ export interface User {
 
 // DOCUMENT TYPES
 export type AggregatorDocuments = {
+  aadhaarFront?: string;
+  aadhaarBack?: string;
   panCard?: string
   gstCertificate?: string
   incorporationCertificate?: string

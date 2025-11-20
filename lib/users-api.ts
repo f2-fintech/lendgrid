@@ -58,18 +58,26 @@ export const usersApi = {
     gqlFetch<{
       profile: {
         _id: string;
+        profileId: string;
         username: string;
         email: string;
         role: string;
+        status: string;
+        contact: string;
+        photoUrl: string;
       };
     }>({
       query: `
         query Profile {
           profile {
             _id
+            profileId
             username
             email
             role
+            status
+            contact
+            photoUrl
           }
         }
       `,
@@ -133,8 +141,9 @@ export const usersApi = {
         _id: string;
         username: string;
         email: string;
-        role: string;
         status: string;
+        contact: string;
+        photoUrl: string;
       };
     }>({
       query: `
@@ -143,8 +152,9 @@ export const usersApi = {
             _id
             username
             email
-            role
             status
+            contact
+            photoUrl
           }
         }
       `,

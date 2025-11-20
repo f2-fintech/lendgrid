@@ -156,7 +156,6 @@ export function useUpdateAggregatorProfile() {
       city?: string
       state?: string
       pincode?: string
-      photo?: string
       gstNumber?: string
       panNumber?: string
       tanNumber?: string

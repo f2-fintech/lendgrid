@@ -20,7 +20,6 @@ export const aggregatorProfileApi = {
     city?: string
     state?: string
     pincode?: string
-    photo?: string
     gstNumber?: string
     panNumber?: string
     tanNumber?: string
@@ -114,62 +113,69 @@ export const aggregatorProfileApi = {
   findOne: (id: string) =>
     gqlFetch<{ findOneAggregatorProfile: AggregatorProfile }>({
       query: `
-        query FindOneAggregatorProfile($id: ID!) {
-          findOneAggregatorProfile(id: $id) {
+      query FindOneAggregatorProfile($id: ID!) {
+        findOneAggregatorProfile(id: $id) {
+          _id
+          userId
+          companyName
+          businessType
+          registeredAddress
+          city
+          state
+          pincode
+          gstNumber
+          panNumber
+          tanNumber
+          cinNumber
+          websiteUrl
+          pocName
+          documents {
+            panCard
+            gstCertificate
+            incorporationCertificate
+            bankStatement
+            cancelledCheque
+            addressProof
+            authorizedSignatory
+          }
+          kycStatus
+          kycRejectionReason
+          kycApprovedAt
+          bankName
+          accountNumber
+          ifscCode
+          accountHolderName
+          isBankVerified
+          totalApplicationsSubmitted
+          totalApplicationsDisbursed
+          totalCommissionEarned
+          totalPaidOut
+          pendingPayout
+          createdAt
+          updatedAt
+          user {
             _id
-            userId
-            companyName
-            businessType
-            registeredAddress
-            city
-            state
-            pincode
-            photo
-            gstNumber
-            panNumber
-            tanNumber
-            cinNumber
-            websiteUrl
-            pocName
-            documents
-            kycStatus
-            kycRejectionReason
-            kycApprovedAt
-            bankName
-            accountNumber
-            ifscCode
-            accountHolderName
-            isBankVerified
-            teamMembers
-            totalApplicationsSubmitted
-            totalApplicationsDisbursed
-            totalCommissionEarned
-            totalPaidOut
-            pendingPayout
-            createdAt
-            updatedAt
-            user {
-              _id
-              username
-              email
-              role
-              status
-            }
-            kycApprovedByUser {
-              _id
-              username
-              email
-              status
-            }
-            teamMemberUsers {
-              _id
-              username
-              email
-              role
-            }
+            username
+            email
+            role
+            status
+          }
+          kycApprovedByUser {
+            _id
+            username
+            email
+            status
+          }
+          teamMemberUsers {
+            _id
+            username
+            email
+            role
+            status
           }
         }
-      `,
+      }
+    `,
       variables: { id },
     }),
 
@@ -276,7 +282,6 @@ export const aggregatorProfileApi = {
     city?: string
     state?: string
     pincode?: string
-    photo?: string
     gstNumber?: string
     panNumber?: string
     websiteUrl?: string

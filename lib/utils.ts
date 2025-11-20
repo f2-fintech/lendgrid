@@ -40,3 +40,9 @@ export function decodeJwt(token: string | null | undefined): DecodedJwt | null {
     return null;
   }
 }
+
+export function createPublicFilePath(file: File, folder: string = "uploads") {
+  const cleanName = file.name.replace(/\s+/g, "_");
+  const time = Date.now();
+  return `/${folder}/${time}-${cleanName}`;
+}
