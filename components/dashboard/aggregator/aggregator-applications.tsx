@@ -91,7 +91,6 @@ export function AggregatorApplications() {
   // Fetch products for the dropdown
   const { products, loading: productsLoading } = useProducts({ limit: 100 })
 
-  console.log(applications, 'fetched apps', products, 'fetched products')
 
   // Calculate stats from real data
   const stats = useMemo(() => {
@@ -193,7 +192,6 @@ export function AggregatorApplications() {
       }
 
       const response = await createApplication(payload)
-      console.log(response, 'create application resp')
       if (response?.createApplication?.success) {
         toast({ title: 'Success', description: 'Application created successfully' })
         setIsCreateDialogOpen(false)

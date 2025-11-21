@@ -393,9 +393,10 @@ export function SuperAdminAggregators() {
                               asChild
                               className="text-gold hover:text-white hover:bg-gray-700"
                             >
-                              <Link href="/aggregator/settings">
+                              <Link href={`/super-admin/aggregators/profile/${aggregator?._id}`}>
                                 <Edit className="w-4 h-4" />
                               </Link>
+
                             </Button>
                             {aggregator.user?.status === 'ACTIVE' && (
                               <>
@@ -571,7 +572,7 @@ export function SuperAdminAggregators() {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-gray-400 mb-1">Address</p>
-                      <p className="text-white font-semibold">{selectedAggregator.user?.address || 'Not provided'}</p>
+                      <p className="text-white font-semibold">{selectedAggregator.registeredAddress || 'Not provided'}</p>
                     </div>
                   </div>
                 </div>

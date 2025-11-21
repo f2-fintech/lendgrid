@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
@@ -44,7 +43,7 @@ const DialogContent = React.forwardRef<
       {...props}
     >
       {children}
-      
+
     </DialogPrimitive.Content>
   </DialogPortal>
 ))
@@ -56,7 +55,7 @@ const DialogHeader = ({
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
     className={cn(
-      "flex flex-col space-y-1.5 text-center sm:text-left",
+      "flex items-start justify-between gap-4 sm:flex-row flex-col",
       className
     )}
     {...props}

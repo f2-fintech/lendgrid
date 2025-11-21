@@ -16,6 +16,7 @@ import {
   Users,
   CreditCard,
   Edit,
+  X
 } from "lucide-react";
 import Link from "next/link";
 
@@ -43,7 +44,7 @@ import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton";
 import { useLenders } from "@/hooks/use-lenders";
 import { useUpdateUser } from "@/hooks/use-users";
 import { useToast } from "@/hooks/use-toast";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LenderProfile } from "@/lib";
 
 export function SuperAdminLenders() {
@@ -69,7 +70,7 @@ export function SuperAdminLenders() {
 
   const lenders = data?.results || [];
   const total = data?.count || 0;
-  console.log(lenders, 'lenders')
+
   const metrics = useMemo(
     () => ({
       totalLenders: total,
@@ -411,7 +412,7 @@ export function SuperAdminLenders() {
                           asChild
                           className="text-gold hover:text-white hover:bg-gray-700"
                         >
-                          <Link href="/lender/settings">
+                          <Link href={`/super-admin/lenders/profile/${lender?._id}`}>
                             <Edit className="w-4 h-4" />
                           </Link>
                         </Button>
@@ -461,15 +462,31 @@ export function SuperAdminLenders() {
 
       {/* VIEW DIALOG (unchanged) */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl">
-          <DialogHeader className="border-b border-gray-700/50 pb-4">
-            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-white">
-              Lender Profile
-            </DialogTitle>
-            <DialogDescription className="text-gray-400 text-sm">
-              Comprehensive overview of lender performance and details
-            </DialogDescription>
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader className="border-b border-gray-700/50 pb-4 flex justify-between items-center">
+            <div>
+              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-white">
+                Lender Profile
+              </DialogTitle>
+              <DialogDescription className="text-gray-400 text-sm">
+                Comprehensive overview of lender performance and details
+              </DialogDescription>
+            </div>
+
+            <DialogClose asChild>
+              <button
+                className="p-2 rounded hover:bg-gray-700/50 transition"
+                aria-label="Close"
+                onClick={() => setIsViewDialogOpen(false)}
+              >
+                <X className="w-5 h-5 text-gray-300" />
+              </button>
+            </DialogClose>
           </DialogHeader>
+
           {selectedLender && (
             <div className="space-y-6 pt-4 ">
               {/* Status Badges Section */}

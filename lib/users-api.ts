@@ -58,7 +58,7 @@ export const usersApi = {
     gqlFetch<{
       profile: {
         _id: string;
-        profileId: string;
+        profileId?: string | null;
         username: string;
         email: string;
         role: string;

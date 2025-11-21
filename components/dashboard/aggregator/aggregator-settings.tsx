@@ -335,7 +335,6 @@ function ProfileTab() {
 function BusinessTab() {
   const { register, setValue, trigger, watch, formState: { errors } } = useFormContext<RootForm>();
   const businessType = watch("business.businessType")
-  console.log(businessType, 'businesstype')
   return (
     <Card className="bg-gray-900/50 border-gray-800">
       <CardHeader>
@@ -765,7 +764,7 @@ function KycTab() {
 export function AggregatorSettings() {
   const { user } = useAuth('aggregator_admin')
   const { data: userData, isLoading: userLoading } = useProfile(true)
-  const { data: aggData, isLoading: aggLoading } = useAggregator(user?.profileId, true)
+  const { data: aggData, isLoading: aggLoading } = useAggregator(user?.profileId ?? null, true)
   const updateUserHook = useUpdateUser()
   const updateAggHook = useUpdateAggregatorProfile()
   const updateKycStatusHook = useUpdateAggregatorKycStatus()

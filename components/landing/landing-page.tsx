@@ -129,7 +129,6 @@ export function LandingPage() {
 
   const onSubmit = (data: any) => {
     console.log("Form submitted:", data)
-    // Handle form submission
   }
 
   return (
@@ -183,7 +182,7 @@ export function LandingPage() {
             </Link>
           </motion.div>
         </div> */}
-        <Navbar/>
+        <Navbar />
       </nav>
 
       {/* Hero Section */}
@@ -216,13 +215,13 @@ export function LandingPage() {
               </Button>
             </Link>
 
-            {/* 2. List Your Lending Products -> Sets role=lender_admin */}
-            <Link href={`${navigationPaths.login}?role=lender_admin`}>
+            {/* 2. List Your Lending Products -> Sets role=lender_admin............not required now */}
+            {/* <Link href={`${navigationPaths.login}?role=lender_admin`}>
               <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
                 List Your Lending Products
                 <Building2 className="ml-2 w-5 h-5" />
               </Button>
-            </Link>
+            </Link> */}
           </motion.div>
 
 
@@ -1037,8 +1036,8 @@ export function LandingPage() {
           </div>
         </div>
       </footer> */}
-      <Footer/>
-      
+      <Footer />
+
     </div>
   )
 }

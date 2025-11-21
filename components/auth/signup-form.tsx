@@ -17,7 +17,6 @@ import { useRegister, useLogin } from '@/hooks/use-users';
 import { navigationPaths } from '@/lib/navigation';
 import { decodeJwt, setCookie } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // --- ROLE MAPPING UTILITY ---
 const mapLoginRoleToSignupType = (loginRole: string | null): 'aggregator' | 'lender' | undefined => {
@@ -32,6 +31,11 @@ const signupSchema = z.object({
     .min(2, 'Name must be at least 2 characters')
     .max(50, 'Name is too long')
     .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),
+
+  contact: z.string()
+    .min(9, 'Contact must be at least 9 characters')
+    .max(20, 'Contact is too long')
+    .regex(/^[0-9]+$/, 'Contact can only contain numbers'),
 
   email: z.string()
     .email('Please enter a valid email address')
@@ -83,9 +87,7 @@ export function SignupForm() {
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     mode: 'onBlur',
-    defaultValues: {
-      userType: undefined,
-    }
+    defaultValues: {}
   });
 
   // Watch the userType field for the Select key
@@ -113,8 +115,8 @@ export function SignupForm() {
         username: data.fullName,
         email: data.email,
         password: data.password,
-        companyName: data.companyName,  // to allow backend to auto-create profile
-        role: roleMap[data.userType],
+        companyName: data.companyName,  // to allow backend to auto-create profile of aggregator
+        role: 'AGGREGATOR_ADMIN',
       };
 
       const registerUserResponse = await registerMutation.mutateAsync(payload);
@@ -148,8 +150,6 @@ export function SignupForm() {
 
         if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
           router.push(navigationPaths.aggregator.dashboard);
-        } else if (role === "lender_admin" || role === "LENDER_ADMIN") {
-          router.push(navigationPaths.lender.dashboard);
         } else if (role === "super_admin" || role === "SUPER_ADMIN") {
           router.push(navigationPaths.superAdmin.dashboard);
         } else {
@@ -210,7 +210,6 @@ export function SignupForm() {
             </div>
             <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
           </motion.div>
-          <CardTitle className="text-3xl font-bold text-white">Join LendGrid</CardTitle>
           <CardDescription className="text-gray-400 text-base mt-2">
             Create your account to get started
           </CardDescription>
@@ -219,14 +218,13 @@ export function SignupForm() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
-            {/* User Type - Now uses key={selectedUserType} */}
-            <div className="space-y-2">
+            {/* User Type */}
+            {/* <div className="space-y-2">
               <Label className="text-gray-300 font-medium">User Type</Label>
               <Select
-                // Key forces re-render when userType is set by useEffect
                 key={selectedUserType}
                 onValueChange={(value) => setValue('userType', value as UserType, { shouldValidate: true })}
-                defaultValue={selectedUserType} // Set the default value for display
+                defaultValue={selectedUserType}
                 disabled={isLoading}
               >
                 <SelectTrigger className="glass-input text-bg-white/10 h-11">
@@ -251,9 +249,7 @@ export function SignupForm() {
               {errors.userType && (
                 <p className="text-red-400 text-sm mt-1">{errors.userType.message}</p>
               )}
-            </div>
-
-            {/* ... (Remaining fields: Company Name, Full Name, Email, Password, Confirm Password) */}
+            </div> */}
 
             {/* Company Name */}
             <div className="space-y-2">
@@ -281,6 +277,19 @@ export function SignupForm() {
               {errors.fullName && (<p className="text-red-400 text-sm mt-1">{errors.fullName.message}</p>)}
             </div>
 
+            {/* Contact */}
+            <div className="space-y-2">
+              <Label htmlFor="contact" className="text-gray-300 font-medium">Phone Number</Label>
+              <Input
+                id="contact"
+                {...register('contact')}
+                className="glass-input text-black placeholder-gray-500 h-11"
+                placeholder="9876543210"
+                disabled={isLoading}
+              />
+              {errors.contact && (<p className="text-red-400 text-sm mt-1">{errors.contact.message}</p>)}
+            </div>
+
             {/* Email */}
             <div className="space-y-2">
               <Label htmlFor="email" className="text-gray-300 font-medium">Email Address</Label>
@@ -297,7 +306,7 @@ export function SignupForm() {
 
             {/* Password */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-300 font-medium">Password</Label>
+              <Label htmlFor="password" className="text-gray-300 font-medium">Set Password</Label>
               <div className="relative">
                 <Input
                   id="password"

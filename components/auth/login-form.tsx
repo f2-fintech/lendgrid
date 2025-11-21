@@ -12,10 +12,9 @@ import { Eye, EyeOff, ArrowRight, Loader2, ArrowLeft, Users, Building2, BrickWal
 import { useLogin } from '@/hooks/use-users';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { navigationPaths } from '@/lib/navigation';
 import { decodeJwt, setCookie } from "@/lib/utils";
 
@@ -34,9 +33,8 @@ const loginSchema = z.object({
     .regex(/[^\w]/, "Password Must Contain At Least 1 Special Character")
     .max(30, "Password cannot be more than 30 characters"),
 
-  role: z.enum(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'], {
-    required_error: 'Please select your role'
-  })
+  role: z.enum(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'])
+    .optional()
 });
 
 type LoginFormData = z.infer<typeof loginSchema>;
@@ -63,7 +61,6 @@ export function LoginForm() {
     defaultValues: {
       email: '',
       password: '',
-      role: undefined,
     }
   });
 
@@ -110,8 +107,6 @@ export function LoginForm() {
 
       if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
         router.push(navigationPaths.aggregator.dashboard);
-      } else if (role === "lender_admin" || role === "LENDER_ADMIN") {
-        router.push(navigationPaths.lender.dashboard);
       } else if (role === "super_admin" || role === "SUPER_ADMIN") {
         router.push(navigationPaths.superAdmin.dashboard);
       } else {
@@ -139,14 +134,36 @@ export function LoginForm() {
     >
       <Card className="enhanced-card">
         <CardHeader className="text-center pb-8">
-          {/* ... (Header content) */}
+          <motion.div
+            className="flex items-center justify-center mb-6"
+            initial={{ scale: 0.8 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          >
+            <Link
+              href={navigationPaths.home}
+              className="text-gold font-medium"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-gradient items-center justify-center shadow-2xl">
+                <img
+                  src="/logo.png"
+                  alt="LendGrid Logo"
+                  className="w-12 h-10 rounded-xl "
+                />
+              </div>
+              <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
+            </Link>
+          </motion.div>
+          <CardDescription className="text-gray-400 text-base mt-2">
+            Welcome Back
+          </CardDescription>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
             {/* Role Selection */}
-            <div className="space-y-2">
+            {/* <div className="space-y-2">
               <Label htmlFor="role" className="text-gray-300 font-medium">
                 Role
               </Label>
@@ -156,7 +173,6 @@ export function LoginForm() {
                 defaultValue={selectedRole}
                 disabled={isLoading}
               >
-                {/* ... (SelectTrigger and SelectContent) */}
                 <SelectTrigger className="glass-input text-black h-11">
                   <SelectValue placeholder="Select your role" />
                 </SelectTrigger>
@@ -176,7 +192,7 @@ export function LoginForm() {
               {errors.role && (
                 <p className="text-red-400 text-sm mt-1">{errors.role.message}</p>
               )}
-            </div>
+            </div> */}
 
             {/* ... (Email and Password fields) */}
             {/* Email */}

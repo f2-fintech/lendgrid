@@ -92,6 +92,7 @@ export const aggregatorProfileApi = {
                 _id
                 username
                 email
+                contact
                 role
                 status
                 createdAt
@@ -157,8 +158,10 @@ export const aggregatorProfileApi = {
             _id
             username
             email
+            contact
             role
             status
+            photoUrl
           }
           kycApprovedByUser {
             _id
@@ -170,6 +173,7 @@ export const aggregatorProfileApi = {
             _id
             username
             email
+            contact
             role
             status
           }
@@ -204,8 +208,10 @@ export const aggregatorProfileApi = {
               _id
               username
               email
+              contact
               role
               status
+              photoUrl
             }
           }
         }

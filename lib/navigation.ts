@@ -11,7 +11,9 @@ export const navigationPaths = {
     revenue: '/super-admin/revenue',
     analytics: '/super-admin/analytics',
     lenders: '/super-admin/lenders',
+    lendersProfile: '/super-admin/lenders/profile',
     aggregators: '/super-admin/aggregators',
+    aggregatorsProfile: '/super-admin/aggregators/profile',
     commission: '/super-admin/commission',
     payouts: '/super-admin/payouts',
     settings: '/super-admin/settings'
@@ -44,9 +46,7 @@ export const getNavigationByRole = (role: string) => {
       return navigationPaths.superAdmin
     case 'aggregator_admin':
       return navigationPaths.aggregator
-    case 'lender_admin':
-      return navigationPaths.lender
     default:
-      return navigationPaths.aggregator
+      return navigationPaths.home
   }
 }
