@@ -41,8 +41,9 @@ import {
   useUpdateAggregatorProfile,
   useUpdateAggregatorKycStatus,
 } from "@/hooks/use-aggregators"
-import { BusinessType } from "@/lib";
+import { BusinessType, KYCStatus } from "@/lib";
 import { createPublicFilePath } from "@/lib/utils"
+import { Badge } from "@/components/ui/badge";
 
 /* -------------------------------
    Validation Schema (optional, validated)
@@ -74,7 +75,6 @@ const profileSchema = z.object({
 
   status: z.string().optional(),
   photoUrl: z.string().optional(),
-  isActive: z.boolean().optional(),
 })
 
 const kycSchema = z.object({
@@ -129,16 +129,6 @@ const businessSchema = z.object({
   tanNumber: z.string().optional(),
   cinNumber: z.string().optional(),
   pocName: z.string().optional(),
-
-  // Team members — simple comma separated input in UI, converted to array on save
-  teamMembers: z.string().optional(),
-
-  // Financials
-  totalApplicationsSubmitted: z.number().optional(),
-  totalApplicationsDisbursed: z.number().optional(),
-  totalCommissionEarned: z.number().optional(),
-  totalPaidOut: z.number().optional(),
-  pendingPayout: z.number().optional(),
 })
 
 const bankSchema = z.object({
@@ -155,7 +145,6 @@ const bankSchema = z.object({
     .refine(val => !val || /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val), "Invalid IFSC code"),
 
   bankName: z.string().optional(),
-  isBankVerified: z.boolean().optional(),
 })
 
 const documentsSchema = z.object({
@@ -228,13 +217,24 @@ function formatPhone(val?: string) {
   return val.replace(/[^0-9]/g, "").slice(0, 10)
 }
 
+const getStatusColor = (status?: string) => {
+  if (!status) return 'bg-gray-500/20 text-gray-400'
+  switch (status.toUpperCase()) {
+    case 'ACTIVE': return 'bg-green-500/20 text-green-400'
+    case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
+    case 'SUSPENDED':
+    case 'INACTIVE': return 'bg-red-500/20 text-red-400'
+    default: return 'bg-gray-500/20 text-gray-400'
+  }
+}
+
 /* ---------------------------------------------------------
    Profile Tab
 --------------------------------------------------------- */
 function ProfileTab() {
   const { register, setValue, watch, formState: { errors }, trigger } = useFormContext<RootForm>()
   const photo = watch("profile.photoUrl")
-  const isActive = watch("profile.isActive")
+  const profileStatus = watch("profile.status")
 
   return (
     <Card className="bg-gray-900/50 border-gray-800">
@@ -279,9 +279,12 @@ function ProfileTab() {
           </div>
         </div>
 
-        <div className="flex items-center justify-start space-x-3">
-          <Switch id="profileIsActive" checked={isActive} onCheckedChange={(v) => setValue("profile.isActive", v as boolean, { shouldValidate: true })} />
-          <Label className="text-gray-300">{isActive ? "Active" : "Inactive"}</Label>
+        <div className="flex flex-wrap gap-2">
+          <Badge
+            className={`${getStatusColor(profileStatus)} border px-4 py-1.5 text-sm font-semibold`}
+          >
+            {profileStatus || "N/A"}
+          </Badge>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -294,7 +297,7 @@ function ProfileTab() {
               })}
               className="bg-gray-800 border-gray-700 text-white"
             />
-            
+
             {errors.profile?.firstName && <p className="text-red-400 text-sm">{errors.profile.firstName.message}</p>}
           </div>
           <div className="space-y-2">
@@ -435,40 +438,6 @@ function BusinessTab() {
           {errors.business?.registeredAddress && <p className="text-red-400 text-sm">{errors.business.registeredAddress.message}</p>}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="teamMembers" className="text-white">Team Members</Label>
-            <Textarea id="teamMembers" {...register("business.teamMembers")} className="bg-gray-800 border-gray-700 text-white" rows={2} placeholder="Comma separated list of team member emails or IDs" />
-            <p className="text-gray-400 text-sm">Add team members to your aggregator account (comma separated).</p>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <h3 className="text-white font-semibold">Financial Snapshot</h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-            <div className="space-y-1">
-              <Label className="text-gray-300">Applications</Label>
-              <Input type="number" {...register("business.totalApplicationsSubmitted", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-gray-300">Disbursed</Label>
-              <Input type="number" {...register("business.totalApplicationsDisbursed", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-gray-300">Commission</Label>
-              <Input type="number" step="0.01" {...register("business.totalCommissionEarned", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-gray-300">Paid Out</Label>
-              <Input type="number" step="0.01" {...register("business.totalPaidOut", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-gray-300">Pending Payout</Label>
-              <Input type="number" step="0.01" {...register("business.pendingPayout", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-            </div>
-          </div>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="space-y-2">
             <Label htmlFor="website" className="text-white">Website</Label>
@@ -496,7 +465,6 @@ function BusinessTab() {
 --------------------------------------------------------- */
 function BankingTab() {
   const { register, formState: { errors }, trigger, setValue, watch } = useFormContext<RootForm>()
-  const bankVerified = watch("bank.isBankVerified")
   return (
     <Card className="bg-gray-900/50 border-gray-800">
       <CardHeader>
@@ -507,7 +475,6 @@ function BankingTab() {
         <div className="flex items-center justify-end mb-4">
           <div className="flex items-center space-x-3">
             <span className="text-gray-300">Bank Verified</span>
-            <Switch id="isBankVerified" checked={bankVerified} onCheckedChange={(v) => setValue("bank.isBankVerified", v as boolean, { shouldValidate: true })} />
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -577,9 +544,10 @@ function KycTab() {
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
                 <SelectContent className="glass-card border-white/10">
-                  <SelectItem value="PENDING">PENDING</SelectItem>
-                  <SelectItem value="APPROVED">APPROVED</SelectItem>
-                  <SelectItem value="REJECTED">REJECTED</SelectItem>
+                  <SelectItem value={KYCStatus.PENDING}>PENDING</SelectItem>
+                  <SelectItem value={KYCStatus.UNDER_REVIEW}>UNDER_REVIEW</SelectItem>
+                  <SelectItem value={KYCStatus.APPROVED}>APPROVED</SelectItem>
+                  <SelectItem value={KYCStatus.REJECTED}>REJECTED</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -783,17 +751,11 @@ export function AggregatorSettings() {
         lastName: "",
         email: "",
         contact: "",
-        isActive: true,
+        status: "",
       },
       business: {
         companyName: "",
         pocName: "",
-        teamMembers: "",
-        totalApplicationsSubmitted: undefined,
-        totalApplicationsDisbursed: undefined,
-        totalCommissionEarned: undefined,
-        totalPaidOut: undefined,
-        pendingPayout: undefined,
       },
       bank: {},
       documents: {},
@@ -817,7 +779,7 @@ export function AggregatorSettings() {
           email: userData.email || "",
           contact: userData.contact || "",
           photoUrl: userData.photoUrl || "",
-          isActive: (userData as any).isActive ?? true,
+          status: userData.status || "",
         },
         business: {
           id: agg._id,
@@ -832,34 +794,27 @@ export function AggregatorSettings() {
           registeredAddress: agg.registeredAddress || "",
           city: agg.city || "",
           state: agg.state || "",
-            pincode: agg.pincode || "",
-            pocName: agg.pocName || "",
-            teamMembers: (agg.teamMembers && Array.isArray(agg.teamMembers)) ? agg.teamMembers.join(", ") : "",
-            totalApplicationsSubmitted: (agg as any).totalApplicationsSubmitted || undefined,
-            totalApplicationsDisbursed: (agg as any).totalApplicationsDisbursed || undefined,
-            totalCommissionEarned: (agg as any).totalCommissionEarned || undefined,
-            totalPaidOut: (agg as any).totalPaidOut || undefined,
-            pendingPayout: (agg as any).pendingPayout || undefined,
+          pincode: agg.pincode || "",
+          pocName: agg.pocName || "",
         },
         bank: {
           accountHolderName: agg.accountHolderName || "",
           accountNumber: agg.accountNumber || "",
           ifscCode: agg.ifscCode || "",
           bankName: agg.bankName || "",
-            isBankVerified: (agg as any).isBankVerified || false,
         },
         documents: {
-            aadhaarNumber: "",
-            panNumber: agg.panNumber || "",
-            gstNumber: agg.gstNumber || "",
-            incorporationCertificate: (agg as any).documents?.incorporationCertificate || "",
-            bankStatement: (agg as any).documents?.bankStatement || "",
-            cancelledCheque: (agg as any).documents?.cancelledCheque || "",
-            addressProof: (agg as any).documents?.addressProof || "",
-            authorizedSignatory: (agg as any).documents?.authorizedSignatory || "",
+          aadhaarNumber: "",
+          panNumber: agg.panNumber || "",
+          gstNumber: agg.gstNumber || "",
+          incorporationCertificate: (agg as any).documents?.incorporationCertificate || "",
+          bankStatement: (agg as any).documents?.bankStatement || "",
+          cancelledCheque: (agg as any).documents?.cancelledCheque || "",
+          addressProof: (agg as any).documents?.addressProof || "",
+          authorizedSignatory: (agg as any).documents?.authorizedSignatory || "",
         },
         kyc: {
-          kycStatus: (agg as any).kycStatus || undefined,
+          kycStatus: (agg as any).kycStatus.toLowerCase(),
           kycRejectionReason: (agg as any).kycRejectionReason || "",
           kycApprovedAt: (agg as any).kycApprovedAt || "",
           kycApprovedBy: (agg as any).kycApprovedBy || "",
@@ -886,6 +841,7 @@ export function AggregatorSettings() {
         email: values.profile.email,
         contact: values.profile.contact,
         photoUrl: values.profile.photoUrl,
+        status: values.profile.status
       }
 
       console.log(userPayload, 'userpayload')
@@ -905,17 +861,10 @@ export function AggregatorSettings() {
         gstNumber: values.business.gstNumber,
         panNumber: values.business.panNumber,
         cinNumber: values.business.cinNumber,
-        teamMembers: values.business.teamMembers ? values.business.teamMembers.split(",").map((s: string) => s.trim()).filter(Boolean) : undefined,
-        totalApplicationsSubmitted: values.business.totalApplicationsSubmitted,
-        totalApplicationsDisbursed: values.business.totalApplicationsDisbursed,
-        totalCommissionEarned: values.business.totalCommissionEarned,
-        totalPaidOut: values.business.totalPaidOut,
-        pendingPayout: values.business.pendingPayout,
         bankName: values.bank.bankName,
         accountNumber: values.bank.accountNumber,
         ifscCode: values.bank.ifscCode,
         accountHolderName: values.bank.accountHolderName,
-        isBankVerified: values.bank.isBankVerified,
         documents: {
           panCard: values.documents?.panCard || "https://placeholder.com/pan-card.jpg",
           aadhaarFront: values.documents?.aadhaarFront || "https://placeholder.com/aadhaar-front.jpg",
@@ -927,10 +876,17 @@ export function AggregatorSettings() {
           addressProof: values.documents?.addressProof || "https://placeholder.com/address-proof.jpg",
           authorizedSignatory: values.documents?.authorizedSignatory || "https://placeholder.com/signatory.jpg",
         },
-        kycStatus: values.kyc?.kycStatus,
-        kycRejectionReason: values.kyc?.kycRejectionReason,
-        kycApprovedAt: values.kyc?.kycApprovedAt,
-        kycApprovedBy: values.kyc?.kycApprovedBy,
+        kycStatus: values.kyc?.kycStatus?.toUpperCase() as KYCStatus,
+        kycRejectionReason: values.kyc.kycRejectionReason?.trim() || undefined,
+        kycApprovedAt:
+          values.kyc.kycApprovedAt && values.kyc.kycApprovedAt.trim() !== ""
+            ? values.kyc.kycApprovedAt
+            : undefined,
+
+        kycApprovedBy:
+          values.kyc.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.kyc.kycApprovedBy)
+            ? values.kyc.kycApprovedBy
+            : undefined,
       }
 
       console.log(aggPayload, 'aggpayload')
