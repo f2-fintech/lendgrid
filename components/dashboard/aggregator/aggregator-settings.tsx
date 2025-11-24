@@ -15,8 +15,8 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge";
 import {
   User,
   Building2,
@@ -38,12 +38,10 @@ import { useAuth } from "@/lib/auth";
 import { useProfile, useUpdateUser } from "@/hooks/use-users"
 import {
   useAggregator,
-  useUpdateAggregatorProfile,
-  useUpdateAggregatorKycStatus,
+  useUpdateAggregatorProfile
 } from "@/hooks/use-aggregators"
 import { BusinessType, KYCStatus } from "@/lib";
 import { createPublicFilePath } from "@/lib/utils"
-import { Badge } from "@/components/ui/badge";
 
 /* -------------------------------
    Validation Schema (optional, validated)
@@ -356,9 +354,9 @@ function BusinessTab() {
             <Input id="pocName" {...register("business.pocName", { onBlur: () => trigger("business.pocName") })} className="bg-gray-800 border-gray-700 text-white" />
             {errors.business?.pocName && <p className="text-red-400 text-sm">{errors.business.pocName.message}</p>}
           </div>
-          {/* Lender Type */}
+          {/* Business Type */}
           <div className="space-y-2">
-            <Label className="text-gray-300 font-medium">Lender Type</Label>
+            <Label className="text-gray-300 font-medium">Business Type</Label>
             <Select
               value={businessType || ""}
               onValueChange={(value) =>
@@ -366,7 +364,7 @@ function BusinessTab() {
               }
             >
               <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-11">
-                <SelectValue placeholder="Select Lender Type" />
+                <SelectValue placeholder="Select Business Type" />
               </SelectTrigger>
               <SelectContent className="glass-card border-white/10">
                 <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-black hover:bg-white/10 cursor-pointer">
@@ -464,7 +462,7 @@ function BusinessTab() {
    Banking Tab
 --------------------------------------------------------- */
 function BankingTab() {
-  const { register, formState: { errors }, trigger, setValue, watch } = useFormContext<RootForm>()
+  const { register, formState: { errors }, trigger, setValue } = useFormContext<RootForm>()
   return (
     <Card className="bg-gray-900/50 border-gray-800">
       <CardHeader>
@@ -515,7 +513,8 @@ function BankingTab() {
    KYC Tab
 --------------------------------------------------------- */
 function KycTab() {
-  const { register, formState: { errors }, setValue, trigger } = useFormContext<RootForm>()
+  const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
+  const kycStatus = watch("kyc.kycStatus")
   const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState<string | null>(null)
   const [aadhaarBackPreview, setAadhaarBackPreview] = useState<string | null>(null)
   const [panImagePreview, setPanImagePreview] = useState<string | null>(null)
@@ -539,7 +538,10 @@ function KycTab() {
               <p className="text-gray-400 text-sm">Set or review the KYC verification status.</p>
             </div>
             <div className="flex items-center space-x-3">
-              <Select onValueChange={(v) => setValue("kyc.kycStatus", v as string, { shouldValidate: true })} defaultValue="">
+              <Select
+                value={kycStatus?.toUpperCase()}
+                onValueChange={(v) => setValue("kyc.kycStatus", v as string, { shouldValidate: true })}
+              >
                 <SelectTrigger className="glass-input text-black h-10 w-48">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
@@ -735,7 +737,6 @@ export function AggregatorSettings() {
   const { data: aggData, isLoading: aggLoading } = useAggregator(user?.profileId ?? null, true)
   const updateUserHook = useUpdateUser()
   const updateAggHook = useUpdateAggregatorProfile()
-  const updateKycStatusHook = useUpdateAggregatorKycStatus()
   const { toast } = useToast()
 
   const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "kyc">("profile")

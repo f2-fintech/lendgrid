@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Badge } from "@/components/ui/badge";
 import {
     User,
     Building2,
@@ -34,14 +35,13 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useToast } from "@/hooks/use-toast"
 
-import { useAuth } from "@/lib/auth";
-import { useProfile, useUpdateUser } from "@/hooks/use-users"
+import { useUpdateUser } from "@/hooks/use-users"
 import {
     useAggregator,
     useUpdateAggregatorProfile,
     useUpdateAggregatorKycStatus,
 } from "@/hooks/use-aggregators"
-import { BusinessType } from "@/lib";
+import { BusinessType, KYCStatus } from "@/lib";
 import { createPublicFilePath } from "@/lib/utils"
 
 /* -------------------------------
@@ -127,17 +127,7 @@ const businessSchema = z.object({
 
     tanNumber: z.string().optional(),
     cinNumber: z.string().optional(),
-    pocName: z.string().optional(),
-
-    // Team members — simple comma separated input in UI, converted to array on save
-    teamMembers: z.string().optional(),
-
-    // Financials
-    totalApplicationsSubmitted: z.number().optional(),
-    totalApplicationsDisbursed: z.number().optional(),
-    totalCommissionEarned: z.number().optional(),
-    totalPaidOut: z.number().optional(),
-    pendingPayout: z.number().optional(),
+    pocName: z.string().optional()
 })
 
 const bankSchema = z.object({
@@ -154,7 +144,6 @@ const bankSchema = z.object({
         .refine(val => !val || /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val), "Invalid IFSC code"),
 
     bankName: z.string().optional(),
-    isBankVerified: z.boolean().optional(),
 })
 
 const documentsSchema = z.object({
@@ -227,13 +216,24 @@ function formatPhone(val?: string) {
     return val.replace(/[^0-9]/g, "").slice(0, 10)
 }
 
+const getStatusColor = (status?: string) => {
+    if (!status) return 'bg-gray-500/20 text-gray-400'
+    switch (status.toUpperCase()) {
+        case 'ACTIVE': return 'bg-green-500/20 text-green-400'
+        case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
+        case 'SUSPENDED':
+        case 'INACTIVE': return 'bg-red-500/20 text-red-400'
+        default: return 'bg-gray-500/20 text-gray-400'
+    }
+}
+
 /* ---------------------------------------------------------
    Profile Tab
 --------------------------------------------------------- */
 function ProfileTab() {
     const { register, setValue, watch, formState: { errors }, trigger } = useFormContext<RootForm>()
     const photo = watch("profile.photoUrl")
-    const status = watch("profile.status")
+    const profileStatus = watch("profile.status")
 
     return (
         <Card className="bg-gray-900/50 border-gray-800">
@@ -278,9 +278,12 @@ function ProfileTab() {
                     </div>
                 </div>
 
-                <div className="flex items-center justify-start space-x-3">
-                    <Switch id="profileIsActive" checked={status} onCheckedChange={(v) => setValue("profile.status", { shouldValidate: true })} />
-                    <Label className="text-gray-300">{status ? "Active" : "Inactive"}</Label>
+                <div className="flex flex-wrap gap-2">
+                    <Badge
+                        className={`${getStatusColor(profileStatus)} border px-4 py-1.5 text-sm font-semibold`}
+                    >
+                        {profileStatus || "N/A"}
+                    </Badge>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -352,9 +355,9 @@ function BusinessTab() {
                         <Input id="pocName" {...register("business.pocName", { onBlur: () => trigger("business.pocName") })} className="bg-gray-800 border-gray-700 text-white" />
                         {errors.business?.pocName && <p className="text-red-400 text-sm">{errors.business.pocName.message}</p>}
                     </div>
-                    {/* Lender Type */}
+                    {/* Business Type */}
                     <div className="space-y-2">
-                        <Label className="text-gray-300 font-medium">Lender Type</Label>
+                        <Label className="text-gray-300 font-medium">Business Type</Label>
                         <Select
                             value={businessType || ""}
                             onValueChange={(value) =>
@@ -362,7 +365,7 @@ function BusinessTab() {
                             }
                         >
                             <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-11">
-                                <SelectValue placeholder="Select Lender Type" />
+                                <SelectValue placeholder="Select Business Type" />
                             </SelectTrigger>
                             <SelectContent className="glass-card border-white/10">
                                 <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-black hover:bg-white/10 cursor-pointer">
@@ -434,40 +437,6 @@ function BusinessTab() {
                     {errors.business?.registeredAddress && <p className="text-red-400 text-sm">{errors.business.registeredAddress.message}</p>}
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2 md:col-span-2">
-                        <Label htmlFor="teamMembers" className="text-white">Team Members</Label>
-                        <Textarea id="teamMembers" {...register("business.teamMembers")} className="bg-gray-800 border-gray-700 text-white" rows={2} placeholder="Comma separated list of team member emails or IDs" />
-                        <p className="text-gray-400 text-sm">Add team members to your aggregator account (comma separated).</p>
-                    </div>
-                </div>
-
-                <div className="space-y-4">
-                    <h3 className="text-white font-semibold">Financial Snapshot</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                        <div className="space-y-1">
-                            <Label className="text-gray-300">Applications</Label>
-                            <Input type="number" {...register("business.totalApplicationsSubmitted", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-300">Disbursed</Label>
-                            <Input type="number" {...register("business.totalApplicationsDisbursed", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-300">Commission</Label>
-                            <Input type="number" step="0.01" {...register("business.totalCommissionEarned", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-300">Paid Out</Label>
-                            <Input type="number" step="0.01" {...register("business.totalPaidOut", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-gray-300">Pending Payout</Label>
-                            <Input type="number" step="0.01" {...register("business.pendingPayout", { valueAsNumber: true })} className="bg-gray-800 border-gray-700 text-white" />
-                        </div>
-                    </div>
-                </div>
-
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="space-y-2">
                         <Label htmlFor="website" className="text-white">Website</Label>
@@ -494,8 +463,7 @@ function BusinessTab() {
    Banking Tab
 --------------------------------------------------------- */
 function BankingTab() {
-    const { register, formState: { errors }, trigger, setValue, watch } = useFormContext<RootForm>()
-    const bankVerified = watch("bank.isBankVerified")
+    const { register, formState: { errors }, trigger, setValue } = useFormContext<RootForm>()
     return (
         <Card className="bg-gray-900/50 border-gray-800">
             <CardHeader>
@@ -506,7 +474,6 @@ function BankingTab() {
                 <div className="flex items-center justify-end mb-4">
                     <div className="flex items-center space-x-3">
                         <span className="text-gray-300">Bank Verified</span>
-                        <Switch id="isBankVerified" checked={bankVerified} onCheckedChange={(v) => setValue("bank.isBankVerified", v as boolean, { shouldValidate: true })} />
                     </div>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -547,7 +514,8 @@ function BankingTab() {
    KYC Tab
 --------------------------------------------------------- */
 function KycTab() {
-    const { register, formState: { errors }, setValue, trigger } = useFormContext<RootForm>()
+    const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
+    const kycStatus = watch("kyc.kycStatus")
     const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState<string | null>(null)
     const [aadhaarBackPreview, setAadhaarBackPreview] = useState<string | null>(null)
     const [panImagePreview, setPanImagePreview] = useState<string | null>(null)
@@ -571,14 +539,18 @@ function KycTab() {
                             <p className="text-gray-400 text-sm">Set or review the KYC verification status.</p>
                         </div>
                         <div className="flex items-center space-x-3">
-                            <Select onValueChange={(v) => setValue("kyc.kycStatus", v as string, { shouldValidate: true })} defaultValue="">
+                            <Select
+                                value={kycStatus?.toUpperCase()}
+                                onValueChange={(v) => setValue("kyc.kycStatus", v as string, { shouldValidate: true })}
+                            >
                                 <SelectTrigger className="glass-input text-black h-10 w-48">
-                                    <SelectValue placeholder="Select status" />
+                                    <SelectValue placeholder="Change KYC Status" />
                                 </SelectTrigger>
                                 <SelectContent className="glass-card border-white/10">
-                                    <SelectItem value="PENDING">PENDING</SelectItem>
-                                    <SelectItem value="APPROVED">APPROVED</SelectItem>
-                                    <SelectItem value="REJECTED">REJECTED</SelectItem>
+                                    <SelectItem value={KYCStatus.PENDING}>PENDING</SelectItem>
+                                    <SelectItem value={KYCStatus.UNDER_REVIEW}>UNDER_REVIEW</SelectItem>
+                                    <SelectItem value={KYCStatus.APPROVED}>APPROVED</SelectItem>
+                                    <SelectItem value={KYCStatus.REJECTED}>REJECTED</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -760,7 +732,7 @@ function KycTab() {
 /* ---------------------------------------------------------
    Main Component
 --------------------------------------------------------- */
-export function AggregatorProfilePage({ id }) {
+export function AggregatorProfilePage({ id }: { id: string }) {
     const { data: aggData, isLoading: aggLoading } = useAggregator(id ?? null, true)
     const updateUserHook = useUpdateUser()
     const updateAggHook = useUpdateAggregatorProfile()
@@ -785,13 +757,7 @@ export function AggregatorProfilePage({ id }) {
             },
             business: {
                 companyName: "",
-                pocName: "",
-                teamMembers: "",
-                totalApplicationsSubmitted: undefined,
-                totalApplicationsDisbursed: undefined,
-                totalCommissionEarned: undefined,
-                totalPaidOut: undefined,
-                pendingPayout: undefined,
+                pocName: ""
             },
             bank: {},
             documents: {},
@@ -829,20 +795,13 @@ export function AggregatorProfilePage({ id }) {
                     city: aggData.city || "",
                     state: aggData.state || "",
                     pincode: aggData.pincode || "",
-                    pocName: aggData.pocName || "",
-                    teamMembers: (aggData.teamMembers && Array.isArray(aggData.teamMembers)) ? aggData.teamMembers.join(", ") : "",
-                    totalApplicationsSubmitted: (aggData as any).totalApplicationsSubmitted || undefined,
-                    totalApplicationsDisbursed: (aggData as any).totalApplicationsDisbursed || undefined,
-                    totalCommissionEarned: (aggData as any).totalCommissionEarned || undefined,
-                    totalPaidOut: (aggData as any).totalPaidOut || undefined,
-                    pendingPayout: (aggData as any).pendingPayout || undefined,
+                    pocName: aggData.pocName || ""
                 },
                 bank: {
                     accountHolderName: aggData.accountHolderName || "",
                     accountNumber: aggData.accountNumber || "",
                     ifscCode: aggData.ifscCode || "",
-                    bankName: aggData.bankName || "",
-                    isBankVerified: (aggData as any).isBankVerified || false,
+                    bankName: aggData.bankName || ""
                 },
                 documents: {
                     aadhaarNumber: "",
@@ -855,7 +814,7 @@ export function AggregatorProfilePage({ id }) {
                     authorizedSignatory: (aggData as any).documents?.authorizedSignatory || "",
                 },
                 kyc: {
-                    kycStatus: (aggData as any).kycStatus || undefined,
+                    kycStatus: (aggData as any).kycStatus.toLowerCase(),
                     kycRejectionReason: (aggData as any).kycRejectionReason || "",
                     kycApprovedAt: (aggData as any).kycApprovedAt || "",
                     kycApprovedBy: (aggData as any).kycApprovedBy || "",
@@ -882,6 +841,7 @@ export function AggregatorProfilePage({ id }) {
                 email: values.profile.email,
                 contact: values.profile.contact,
                 photoUrl: values.profile.photoUrl,
+                status: values.profile.status
             }
 
             console.log(userPayload, 'userpayload')
@@ -901,17 +861,10 @@ export function AggregatorProfilePage({ id }) {
                 gstNumber: values.business.gstNumber,
                 panNumber: values.business.panNumber,
                 cinNumber: values.business.cinNumber,
-                teamMembers: values.business.teamMembers ? values.business.teamMembers.split(",").map((s: string) => s.trim()).filter(Boolean) : undefined,
-                totalApplicationsSubmitted: values.business.totalApplicationsSubmitted,
-                totalApplicationsDisbursed: values.business.totalApplicationsDisbursed,
-                totalCommissionEarned: values.business.totalCommissionEarned,
-                totalPaidOut: values.business.totalPaidOut,
-                pendingPayout: values.business.pendingPayout,
                 bankName: values.bank.bankName,
                 accountNumber: values.bank.accountNumber,
                 ifscCode: values.bank.ifscCode,
                 accountHolderName: values.bank.accountHolderName,
-                isBankVerified: values.bank.isBankVerified,
                 documents: {
                     panCard: values.documents?.panCard || "https://placeholder.com/pan-card.jpg",
                     aadhaarFront: values.documents?.aadhaarFront || "https://placeholder.com/aadhaar-front.jpg",
@@ -923,10 +876,17 @@ export function AggregatorProfilePage({ id }) {
                     addressProof: values.documents?.addressProof || "https://placeholder.com/address-proof.jpg",
                     authorizedSignatory: values.documents?.authorizedSignatory || "https://placeholder.com/signatory.jpg",
                 },
-                kycStatus: values.kyc?.kycStatus,
-                kycRejectionReason: values.kyc?.kycRejectionReason,
-                kycApprovedAt: values.kyc?.kycApprovedAt,
-                kycApprovedBy: values.kyc?.kycApprovedBy,
+                kycStatus: values.kyc?.kycStatus?.toUpperCase() as KYCStatus,
+                kycRejectionReason: values.kyc.kycRejectionReason?.trim() || undefined,
+                kycApprovedAt:
+                    values.kyc.kycApprovedAt && values.kyc.kycApprovedAt.trim() !== ""
+                        ? values.kyc.kycApprovedAt
+                        : undefined,
+
+                kycApprovedBy:
+                    values.kyc.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.kyc.kycApprovedBy)
+                        ? values.kyc.kycApprovedBy
+                        : undefined,
             }
 
             console.log(aggPayload, 'aggpayload')
