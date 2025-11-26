@@ -96,8 +96,7 @@ export function useUpdateProduct() {
     const { toast } = useToast()
 
     return useMutation({
-        mutationFn: ({ id, payload }: { id: string; payload: any }) =>
-            productsApi.updateProduct(id, payload),
+        mutationFn: (payload: any) => productsApi.updateProduct(payload),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: queryKeys.products.all })
             toast({
@@ -149,22 +148,25 @@ export function useAssignProduct() {
     const { toast } = useToast()
 
     return useMutation({
-        mutationFn: ({ productId, aggregatorIds }: { productId: string; aggregatorIds: string[] }) =>
-            productAssignmentsApi.assignToAggregators(productId, aggregatorIds),
+        mutationFn: ({ productId, lenderId, aggregatorIds }:
+            { productId: string; lenderId: string; aggregatorIds: string[] }) =>
+            productAssignmentsApi.assignToAggregators(productId, lenderId, aggregatorIds),
+
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.products.assignedAggregators(variables.productId),
             })
             toast({
-                title: 'Success',
-                description: 'Product assigned successfully',
+                title: "Success",
+                description: "Product assigned successfully",
             })
         },
+
         onError: (error: Error) => {
             toast({
-                title: 'Error',
-                description: error.message || 'Failed to assign product',
-                variant: 'destructive',
+                title: "Error",
+                description: error.message || "Failed to assign product",
+                variant: "destructive",
             })
         },
     })

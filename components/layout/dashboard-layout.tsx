@@ -61,6 +61,7 @@ const navigationConfig = {
       title: "Management",
       items: [
         { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
+        { title: "Product Manager", url: navigationPaths.superAdmin.products, icon: CreditCard },
         { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: Users },
         { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard }
       ]

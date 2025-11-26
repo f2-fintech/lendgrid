@@ -1,29 +1,43 @@
 import { gqlFetch } from './http-client'
-import type { CreateProductDto } from './api-types'
+import type { CreateProductDto, ProductSummary } from './api-types'
 
 export const productsApi = {
-    /**
-     * Get all products with pagination and filters
-     */
-    findAllProducts: (params?: { page?: number; limit?: number; lenderId?: string }) =>
-        gqlFetch<{ findAllProducts: { results: any[]; count: number; page: number; pages: number } }>({
-            query: `
+  /**
+   * Get all products with pagination and filters
+   */
+  findAllProducts: (params?: { page?: number; limit?: number; lenderId?: string }) =>
+    gqlFetch<{ findAllProducts: { results: ProductSummary[]; count: number; page: number; pages: number } }>({
+      query: `
         query FindAllProducts($paginationArgs: ProductPaginationQuery!) {
           findAllProducts(paginationArgs: $paginationArgs) {
             results {
               _id
               name
+              description
               productType
               interestRate
               commissionPercent
+              processingFeePercent
               maxAmount
               minAmount
-              loanTerm
+              tenureMonths
+              ageRange
+              minIncome
+              minCreditScore
+              requiredDocuments
               isActive
               lender {
-                _id
-                username
-                email
+                user {
+                  _id
+                  username
+                  email
+                  status
+                }
+                profile {
+                  _id
+                  lenderName
+                  lenderType
+                }
               }
             }
             count
@@ -32,27 +46,21 @@ export const productsApi = {
           }
         }
       `,
-            variables: { paginationArgs: params },
-        }),
+      variables: { paginationArgs: params },
+    }),
 
-    /**
-     * Create new product
-     */
-    createProduct: (payload: CreateProductDto) =>
-        gqlFetch<{
-            createProduct: {
-                success: boolean
-                message: string
-                product?: {
-                    _id: string
-                    lenderName?: string
-                    name: string
-                    description?: string
-                    productType: string
-                }
-            }
-        }>({
-            query: `
+  /**
+   * Create new product
+   */
+  createProduct: (payload: CreateProductDto) =>
+    gqlFetch<{
+      createProduct: {
+        success: boolean
+        message: string
+        product?: ProductSummary
+      }
+    }>({
+      query: `
         mutation CreateProduct($createProductInput: CreateProductDto!) {
           createProduct(createProductInput: $createProductInput) {
             success
@@ -66,47 +74,59 @@ export const productsApi = {
           }
         }
       `,
-            variables: { createProductInput: payload },
-        }),
+      variables: { createProductInput: payload },
+    }),
 
-    /**
-     * Update product
-     */
-    updateProduct: (id: string, payload: any) =>
-        gqlFetch({
-            query: `
-        mutation UpdateProduct($id: ID!, $updateProductInput: UpdateProductDto!) {
-          updateProduct(id: $id, updateProductInput: $updateProductInput) {
-            _id
+  /**
+   * Update product
+   */
+  updateProduct: (payload: { id: string } & Partial<CreateProductDto>) =>
+    gqlFetch<{
+      updateProduct: {
+        success: boolean;
+        message: string;
+        product?: ProductSummary
+      };
+    }>({
+      query: `
+        mutation UpdateProduct($updateProductInput: UpdateProductDto!) {
+          updateProduct(updateProductInput: $updateProductInput) {
+            success
+            message
+            product {
+              _id
+              name
+              productType
+            }
           }
         }
       `,
-            variables: { id, updateProductInput: payload },
-        }),
+      variables: { updateProductInput: payload },
+    }),
 
-    /**
-     * Delete product
-     */
-    removeProduct: (id: string) =>
-        gqlFetch({
-            query: `
+  /**
+   * Delete product
+   */
+  removeProduct: (id: string) =>
+    gqlFetch({
+      query: `
         mutation RemoveProduct($id: ID!) {
           removeProduct(id: $id) {
             _id
           }
         }
       `,
-            variables: { id },
-        }),
+      variables: { id },
+    }),
 }
 
 export const productAssignmentsApi = {
-    /**
-     * Assign product to aggregators
-     */
-    assignToAggregators: (productId: string, aggregatorIds: string[]) =>
-        gqlFetch<{ assignProductToAggregators: { success: boolean; message: string } }>({
-            query: `
+  /**
+   * Assign product to aggregators
+   */
+  assignToAggregators: (productId: string, lenderId: string, aggregatorIds: string[]) =>
+    gqlFetch<{ assignProductToAggregators: { success: boolean; message: string } }>({
+      query: `
         mutation AssignProduct($assignProductInput: AssignProductDto!) {
           assignProductToAggregators(assignProductInput: $assignProductInput) {
             success
@@ -114,17 +134,15 @@ export const productAssignmentsApi = {
           }
         }
       `,
-            variables: {
-                assignProductInput: { productId, aggregatorIds },
-            },
-        }),
+      variables: { assignProductInput: { productId, lenderId, aggregatorIds } },
+    }),
 
-    /**
-     * Unassign product from aggregators
-     */
-    unassignFromAggregators: (productId: string, aggregatorIds: string[]) =>
-        gqlFetch<{ unassignProductFromAggregators: { success: boolean; message: string } }>({
-            query: `
+  /**
+   * Unassign product from aggregators
+   */
+  unassignFromAggregators: (productId: string, aggregatorIds: string[]) =>
+    gqlFetch<{ unassignProductFromAggregators: { success: boolean; message: string } }>({
+      query: `
         mutation UnassignProduct($unassignProductInput: UnassignProductDto!) {
           unassignProductFromAggregators(unassignProductInput: $unassignProductInput) {
             success
@@ -132,37 +150,37 @@ export const productAssignmentsApi = {
           }
         }
       `,
-            variables: {
-                unassignProductInput: { productId, aggregatorIds },
-            },
-        }),
+      variables: {
+        unassignProductInput: { productId, aggregatorIds },
+      },
+    }),
 
-    /**
-     * Get assigned aggregators for a product
-     */
-    getAssignedAggregators: (productId: string) =>
-        gqlFetch<{ getAssignedAggregators: string[] }>({
-            query: `
+  /**
+   * Get assigned aggregators for a product
+   */
+  getAssignedAggregators: (productId: string) =>
+    gqlFetch<{ getAssignedAggregators: string[] }>({
+      query: `
         query GetAssignedAggregators($productId: ID!) {
           getAssignedAggregators(productId: $productId)
         }
       `,
-            variables: { productId },
-        }),
+      variables: { productId },
+    }),
 
-    /**
-     * Get products assigned to current user (aggregator)
-     */
-    getMyAssignedProducts: (page: number = 1, limit: number = 10) =>
-        gqlFetch<{
-            getMyAssignedProducts: {
-                results: any[]
-                count: number
-                page: number
-                pages: number
-            }
-        }>({
-            query: `
+  /**
+   * Get products assigned to current user (aggregator)
+   */
+  getMyAssignedProducts: (page: number = 1, limit: number = 10) =>
+    gqlFetch<{
+      getMyAssignedProducts: {
+        results: any[]
+        count: number
+        page: number
+        pages: number
+      }
+    }>({
+      query: `
         query GetMyAssignedProducts($page: Int!, $limit: Int!) {
           getMyAssignedProducts(page: $page, limit: $limit) {
             results {
@@ -175,15 +193,17 @@ export const productAssignmentsApi = {
                 commissionPercent
                 minAmount
                 maxAmount
-                loanTerm
-                tenure
+                tenureMonths
+                ageRange
+                minIncome
+                minCreditScore
+                requiredDocuments
                 isActive
               }
               lender {
                 _id
-                username
-                email
-                companyName
+                lenderName
+                lenderType
               }
               isActive
               createdAt
@@ -194,6 +214,6 @@ export const productAssignmentsApi = {
           }
         }
       `,
-            variables: { page, limit },
-        }),
+      variables: { page, limit },
+    }),
 }

@@ -12,6 +12,7 @@ export const navigationPaths = {
     analytics: '/super-admin/analytics',
     lenders: '/super-admin/lenders',
     lendersProfile: '/super-admin/lenders/profile',
+    products: '/super-admin/lenders/products',
     aggregators: '/super-admin/aggregators',
     aggregatorsProfile: '/super-admin/aggregators/profile',
     commission: '/super-admin/commission',

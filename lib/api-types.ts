@@ -44,6 +44,19 @@ export enum LenderType {
   FINTECH = 'fintech',
 }
 
+export enum ProductType {
+  PERSONAL_LOAN = 'personal_loan',
+  BUSINESS_LOAN = 'business_loan',
+  HOME_LOAN = 'home_loan',
+  EDUCATION_LOAN = 'education_loan',
+  AUTO_LOAN = 'auto_loan',
+  MACHINERY_LOAN = 'machinery_loan',
+  DOCTOR_LOAN = 'doctor_loan',
+  CA_LOAN = 'ca_loan',
+  LAP = 'lap',
+  JUST_ENQUIRY = 'just_enquiry'
+}
+
 export enum Status {
   ACTIVE = 'ACTIVE',
   INACTIVE = 'INACTIVE',
@@ -238,13 +251,15 @@ export type Product = {
   lenderName?: string
   description?: string
   productType: string
-  interestRate: number
-  commissionPercent: number
   minAmount: number
   maxAmount: number
-  loanTerm: number
-  tenure?: string
-  eligibilityCriteria?: string[]
+  tenureMonths?: string
+  interestRate: number
+  commissionPercent: number
+  processingFeePercent?: number
+  ageRange?: string
+  minIncome?: number
+  minCreditScore?: number
   requiredDocuments?: string[]
   isActive: boolean
   lender?: User
@@ -254,12 +269,39 @@ export type Product = {
 
 export type ProductSummary = {
   _id: string
+  lenderId?: string
   name: string
-  lenderName?: string
-  interestRate: number
-  maxAmount: number
+  description?: string
   productType: string
-  isActive: boolean
+  minAmount: number
+  maxAmount: number
+  tenureMonths?: string
+  interestRate: number
+  commissionPercent: number
+  processingFeePercent?: number
+  ageRange?: string
+  minIncome?: number
+  minCreditScore?: number
+  requiredDocuments?: string[]
+  isActive?: boolean
+  createdAt?: string
+  updatedAt?: string
+  lender?: {
+    profile: {
+      _id: string;
+      lenderName?: string;
+      lenderType?: string;
+      companyName?: string;
+      gstNumber?: string;
+      address?: string;
+    };
+    user: {
+      _id: string;
+      username?: string;
+      email?: string;
+      status?: string;
+    };
+  };
 }
 
 export type CreateProductDto = {
@@ -268,13 +310,15 @@ export type CreateProductDto = {
   name: string
   description?: string
   productType: string
-  interestRate: number
-  commissionPercent: number
   minAmount: number
   maxAmount: number
-  loanTerm: number
-  tenure?: string
-  eligibilityCriteria?: string[]
+  tenureMonths?: string
+  interestRate: number
+  commissionPercent: number
+  processingFeePercent?: number
+  ageRange?: string,
+  minIncome?: number,
+  minCreditScore?: number
   requiredDocuments?: string[]
   isActive?: boolean
 }

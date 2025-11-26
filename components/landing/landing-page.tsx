@@ -210,7 +210,7 @@ export function LandingPage() {
             {/* 1. Join as Loan Aggregator -> Sets role=aggregator_admin */}
             <Link href={`${navigationPaths.login}?role=aggregator_admin`}>
               <Button className="btn-primary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 shadow-2xl  hover:text-gold">
-                Join as Loan Aggregator
+                Join as Loan Aggregator/Channel Partner
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
             </Link>

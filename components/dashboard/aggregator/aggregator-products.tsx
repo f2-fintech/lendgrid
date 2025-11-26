@@ -5,13 +5,12 @@ import { motion } from 'framer-motion'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { CardSkeleton } from '@/components/ui/loading-skeleton'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { applicationsApi, productAssignmentsApi } from '@/lib'
+import { applicationsApi, productAssignmentsApi, ProductType } from '@/lib'
 import { useAuth } from '@/lib/auth'
 import { useToast } from '@/hooks/use-toast'
 import { Search, Plus, Percent, Calendar, CreditCard, Users, TrendingUp } from 'lucide-react'
@@ -19,6 +18,7 @@ import { Search, Plus, Percent, Calendar, CreditCard, Users, TrendingUp } from '
 export function AggregatorProducts() {
   const { user } = useAuth('aggregator_admin')
   const { toast } = useToast()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [typeFilter, setTypeFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
@@ -27,6 +27,7 @@ export function AggregatorProducts() {
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewProduct, setViewProduct] = useState<any | null>(null)
+
   const [form, setForm] = useState({
     customerName: '',
     customerEmail: '',
@@ -38,27 +39,35 @@ export function AggregatorProducts() {
     let mounted = true
     async function load() {
       try {
-        const resp = await productAssignmentsApi.getMyAssignedProducts(1, 10)
+        const resp = await productAssignmentsApi.getMyAssignedProducts(1, 50)
         const results = resp?.getMyAssignedProducts?.results || []
+
         if (!mounted) return
         setProducts(results)
       } catch (e: any) {
-        toast({ title: 'Failed to load products', description: e?.message || 'Try again.' })
+        toast({
+          title: "Failed to load products",
+          description: e?.message || "Try again."
+        })
       } finally {
         if (mounted) setIsLoading(false)
       }
     }
+
     load()
     return () => { mounted = false }
   }, [])
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
-      const matchesSearch = (
-        p.product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.product.productType?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-      const matchesType = typeFilter === 'all' || p.product.productType === typeFilter
+      const prod = p.product
+      console.log(prod, 'product')
+      const matchesSearch =
+        prod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        prod.productType.toLowerCase().includes(searchTerm.toLowerCase())
+
+      const matchesType = typeFilter === "all" || prod.productType === typeFilter.toUpperCase()
+
       return matchesSearch && matchesType
     })
   }, [products, searchTerm, typeFilter])
@@ -97,10 +106,15 @@ export function AggregatorProducts() {
           </SelectTrigger>
           <SelectContent className="bg-white text-black border-none">
             <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="Personal Loan">Personal Loan</SelectItem>
-            <SelectItem value="Business Loan">Business Loan</SelectItem>
-            <SelectItem value="Home Loan">Home Loan</SelectItem>
-            <SelectItem value="Vehicle Loan">Vehicle Loan</SelectItem>
+            <SelectItem value={ProductType.PERSONAL_LOAN}>Personal Loan</SelectItem>
+            <SelectItem value={ProductType.BUSINESS_LOAN}>Business Loan</SelectItem>
+            <SelectItem value={ProductType.HOME_LOAN}>Home Loan</SelectItem>
+            <SelectItem value={ProductType.EDUCATION_LOAN}>Education Loan</SelectItem>
+            <SelectItem value={ProductType.AUTO_LOAN}>Auto Loan</SelectItem>
+            <SelectItem value={ProductType.MACHINERY_LOAN}>Machinery Loan</SelectItem>
+            <SelectItem value={ProductType.DOCTOR_LOAN}>Doctor Loan</SelectItem>
+            <SelectItem value={ProductType.CA_LOAN}>CA Loan</SelectItem>
+            <SelectItem value={ProductType.LAP}>Loan Against Property (LAP)</SelectItem>
           </SelectContent>
         </Select>
       </motion.div>
@@ -123,157 +137,177 @@ export function AggregatorProducts() {
                   <TableHead className="text-gray-300">Interest</TableHead>
                   <TableHead className="text-gray-300">Commission</TableHead>
                   <TableHead className="text-gray-300">Loan Range</TableHead>
-                  <TableHead className="text-gray-300 text-right">Actions</TableHead>
+                  <TableHead className="text-gray-300 text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((p) => (
-                  <TableRow key={p._id}>
-                    <TableCell className="text-white font-medium">{p.product.name}</TableCell>
-                    <TableCell className="text-gray-300">
-                      {p.lender.username || '—'}
-                    </TableCell>
-                    <TableCell className="text-gray-300">{p.product.productType}</TableCell>
-                    <TableCell className="text-gray-300">{p.product.interestRate}%</TableCell>
-                    <TableCell className="text-gray-300">{p.product.commissionPercent}%</TableCell>
-                    <TableCell className="text-gray-300">₹{(p.product.minAmount / 100000).toFixed(1)}L - ₹{(p.product.maxAmount / 100000).toFixed(1)}L</TableCell>
-                    <TableCell className="text-right space-x-2">
-                      <Dialog open={viewDialogOpen && viewProduct?._id === p._id} onOpenChange={(o) => { if (!o) setViewProduct(null); setViewDialogOpen(o) }}>
-                        <DialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="border-gray-700 text-gray-300 hover:bg-gray-800"
-                            onClick={() => setViewProduct(p)}
-                          >
-                            View
-                          </Button>
-                        </DialogTrigger>
-                        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>{viewProduct?.product?.name}</DialogTitle>
-                            <DialogDescription className="text-gray-400">Product details</DialogDescription>
-                          </DialogHeader>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-                            <div className="space-y-1">
-                              <div className="text-gray-400 text-sm">Lender</div>
-                              <div className="text-white">{viewProduct?.lender.username || '—'}</div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-gray-400 text-sm">Type</div>
-                              <div className="text-white">{viewProduct?.product.productType}</div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-gray-400 text-sm">Interest</div>
-                              <div className="text-white">{viewProduct?.product.interestRate}%</div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-gray-400 text-sm">Commission</div>
-                              <div className="text-white">{viewProduct?.product.commissionPercent}%</div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-gray-400 text-sm">Tenure</div>
-                              <div className="text-white">{viewProduct?.product.tenure}</div>
-                            </div>
-                            <div className="space-y-1">
-                              <div className="text-gray-400 text-sm">Loan Range</div>
-                              <div className="text-white">₹{(viewProduct?.product.minAmount / 100000).toFixed(1)}L - ₹{(viewProduct?.product.maxAmount / 100000).toFixed(1)}L</div>
-                            </div>
-                            <div className="md:col-span-2 space-y-1">
-                              <div className="text-gray-400 text-sm">Eligibility</div>
-                              <div className="text-white">
-                                {(viewProduct?.product.eligibility || []).length ? (
-                                  <ul className="list-disc pl-5 space-y-1 text-gray-200">
-                                    {(viewProduct?.product.eligibility || []).map((e: string, idx: number) => (
-                                      <li key={idx}>{e}</li>
-                                    ))}
-                                  </ul>
-                                ) : '—'}
-                              </div>
-                            </div>
-                            <div className="md:col-span-2 space-y-1">
-                              <div className="text-gray-400 text-sm">Required Documents</div>
-                              <div className="text-white">
-                                {(viewProduct?.product.requiredDocs || []).length ? (
-                                  <ul className="list-disc pl-5 space-y-1 text-gray-200">
-                                    {(viewProduct?.product.requiredDocs || []).map((d: string, idx: number) => (
-                                      <li key={idx}>{d}</li>
-                                    ))}
-                                  </ul>
-                                ) : '—'}
-                              </div>
-                            </div>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
+                {filtered.map((p) => {
+                  const prod = p.product
+                  const lender = p.lender
 
-                      <Dialog open={applyDialogOpen && selectedProduct?._id === p._id} onOpenChange={(o) => { if (!o) setSelectedProduct(null); setApplyDialogOpen(o) }}>
-                        <DialogTrigger asChild>
-                          <Button
-                            size="sm"
-                            className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-white"
-                            onClick={() => setSelectedProduct(p)}
-                          >
-                            <Plus className="w-4 h-4 mr-2" /> Apply
-                          </Button>
-                        </DialogTrigger>
+                  return (
+                    <TableRow key={p._id}>
+                      <TableCell className="text-white font-medium">{prod.name}</TableCell>
 
-                        <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg">
-                          <DialogHeader>
-                            <DialogTitle>Apply for {selectedProduct?.product?.name}</DialogTitle>
-                            <DialogDescription className="text-gray-400">Submit customer details to initiate application</DialogDescription>
-                          </DialogHeader>
-                          <div className="grid grid-cols-2 gap-4 py-2">
-                            <div className="col-span-2 space-y-1">
-                              <Label>Customer Name</Label>
-                              <Input value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label>Email</Label>
-                              <Input type="email" value={form.customerEmail} onChange={(e) => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700" />
-                            </div>
-                            <div className="space-y-1">
-                              <Label>Phone</Label>
-                              <Input value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700" />
-                            </div>
-                            <div className="col-span-2 space-y-1">
-                              <Label>Loan Amount</Label>
-                              <Input type="number" value={form.loanAmount} onChange={(e) => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700" />
-                            </div>
-                          </div>
-                          <div className="flex justify-end gap-2">
-                            <Button variant="outline" onClick={() => setApplyDialogOpen(false)}>Cancel</Button>
+                      <TableCell className="text-gray-300">{lender.lenderName}</TableCell>
+
+                      <TableCell className="text-gray-300">{prod.productType}</TableCell>
+
+                      <TableCell className="text-gray-300">{prod.interestRate}%</TableCell>
+
+                      <TableCell className="text-gray-300">{prod.commissionPercent}%</TableCell>
+
+                      <TableCell className="text-gray-300">
+                        ₹{(prod.minAmount / 100000).toFixed(1)}L - ₹
+                        {(prod.maxAmount / 100000).toFixed(1)}L
+                      </TableCell>
+
+                      <TableCell className="text-right space-x-2">
+
+                        {/* VIEW PRODUCT */}
+                        <Dialog
+                          open={viewDialogOpen && viewProduct?._id === p._id}
+                          onOpenChange={(o) => {
+                            if (!o) setViewProduct(null)
+                            setViewDialogOpen(o)
+                          }}
+                        >
+                          <DialogTrigger asChild>
                             <Button
-                              onClick={async () => {
-                                try {
-                                  if (!selectedProduct) return
-                                  await applicationsApi.create({
-                                    aggregatorId: (user as any)?._id || (user as any)?.id,
-                                    lenderId: selectedProduct.lender?._id,
-                                    productId: selectedProduct.product?._id,
-                                    customerName: form.customerName,
-                                    customerEmail: form.customerEmail,
-                                    customerPhone: form.customerPhone,
-                                    loanAmount: Number(form.loanAmount || 0),
-                                  })
-                                  toast({ title: 'Application submitted' })
-                                  setApplyDialogOpen(false)
-                                  setSelectedProduct(null)
-                                  setForm({ customerName: '', customerEmail: '', customerPhone: '', loanAmount: '' })
-                                } catch (e: any) {
-                                  toast({ title: 'Submission failed', description: e?.message || 'Try again.' })
-                                }
-                              }}
-                              className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-white"
+                              variant="outline"
+                              size="sm"
+                              className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                              onClick={() => setViewProduct(p)}
                             >
-                              Submit Application
+                              View
                             </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                          </DialogTrigger>
+
+                          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
+                            <DialogHeader>
+                              <DialogTitle>{prod.name}</DialogTitle>
+                              <DialogDescription className="text-gray-400">
+                                Product details
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
+                              <div>
+                                <div className="text-gray-400 text-sm">Lender</div>
+                                <div className="text-white">{lender.lenderName}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-sm">Type</div>
+                                <div className="text-white">{prod.productType}</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-sm">Interest</div>
+                                <div className="text-white">{prod.interestRate}%</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-gray-400 text-sm">Commission</div>
+                                <div className="text-white">{prod.commissionPercent}%</div>
+                              </div>
+                              <div>
+                                <div className="text-gray-400 text-sm">Tenure</div>
+                                <div className="text-white">{prod.tenureMonths}</div>
+                              </div>
+                              <div className="space-y-1">
+                                <div className="text-gray-400 text-sm">Loan Range</div>
+                                <div className="text-white">₹{(prod.minAmount / 100000).toFixed(1)}L - ₹{(prod.maxAmount / 100000).toFixed(1)}L</div>
+                              </div>
+                              <div className="md:col-span-2 space-y-1">
+                                <div className="text-gray-400 text-sm">Required Documents</div>
+                                <div className="text-white">
+                                  {(prod.requiredDocuments || []).length ? (
+                                    <ul className="list-disc pl-5 space-y-1 text-gray-200">
+                                      {(prod.requiredDocuments || []).map((d: string, idx: number) => (
+                                        <li key={idx}>{d}</li>
+                                      ))}
+                                    </ul>
+                                  ) : '—'}
+                                </div>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+
+                        {/* APPLY */}
+                        <Dialog
+                          open={applyDialogOpen && selectedProduct?._id === p._id}
+                          onOpenChange={(o) => {
+                            if (!o) setSelectedProduct(null)
+                            setApplyDialogOpen(o)
+                          }}
+                        >
+                          <DialogTrigger asChild>
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-white"
+                              onClick={() => setSelectedProduct(p)}
+                            >
+                              <Plus className="w-4 h-4 mr-2" /> Apply
+                            </Button>
+                          </DialogTrigger>
+
+                          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg">
+                            <DialogHeader>
+                              <DialogTitle>Apply for {prod.name}</DialogTitle>
+                              <DialogDescription className="text-gray-400">Submit customer details to initiate application</DialogDescription>
+                            </DialogHeader>
+
+                            {/* Form */}
+                            <div className="grid grid-cols-2 gap-4 py-2">
+                              <div className="col-span-2 space-y-1">
+                                <Label>Customer Name</Label>
+                                <Input value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700" />
+                              </div>
+                              <div className="space-y-1">
+                                <Label>Email</Label>
+                                <Input type="email" value={form.customerEmail} onChange={(e) => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700" />
+                              </div>
+                              <div className="space-y-1">
+                                <Label>Phone</Label>
+                                <Input value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700" />
+                              </div>
+                              <div className="col-span-2 space-y-1">
+                                <Label>Loan Amount</Label>
+                                <Input type="number" value={form.loanAmount} onChange={(e) => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700" />
+                              </div>
+                            </div>
+                            <div className="flex justify-end gap-2">
+                              <Button variant="outline" onClick={() => setApplyDialogOpen(false)}>Cancel</Button>
+                              <Button
+                                className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue/80 text-white"
+                                onClick={async () => {
+                                  try {
+                                    if (!selectedProduct) return
+                                    await applicationsApi.create({
+                                      aggregatorId: (user as any)?._id || (user as any)?.id,
+                                      lenderId: p.lenderId._id,
+                                      productId: p.productId._id,
+                                      customerName: form.customerName,
+                                      customerEmail: form.customerEmail,
+                                      customerPhone: form.customerPhone,
+                                      loanAmount: Number(form.loanAmount || 0),
+                                    })
+                                    toast({ title: 'Application submitted' })
+                                    setApplyDialogOpen(false)
+                                    setSelectedProduct(null)
+                                    setForm({ customerName: '', customerEmail: '', customerPhone: '', loanAmount: '' })
+                                  } catch (e: any) {
+                                    toast({ title: 'Submission failed', description: e?.message || 'Try again.' })
+                                  }
+                                }}
+                              >
+                                Submit Application
+                              </Button>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
               </TableBody>
             </Table>
           </CardContent>
