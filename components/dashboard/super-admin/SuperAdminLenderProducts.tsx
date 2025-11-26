@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useMemo, useRef, useState } from "react"
+import React, { useEffect, useMemo, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -74,6 +74,13 @@ export function SuperAdminLenderProducts(): JSX.Element {
     const [selectedProductForAssign, setSelectedProductForAssign] = useState<ProductSummary | null>(null)
     const [selectedAggregators, setSelectedAggregators] = useState<string[]>([])
     const [assignedAggregators, setAssignedAggregators] = useState<string[]>([])
+
+    // --- Assignment dialog controls (search & sort) ---
+    const [assignSearch, setAssignSearch] = useState<string>('') 
+    const [debouncedAssignSearch, setDebouncedAssignSearch] = useState<string>('') 
+    const [assignSortBy, setAssignSortBy] = useState<'ascending' | 'descending'>('ascending')
+    const [assignSortDir, setAssignSortDir] = useState<'asc' | 'desc'>('asc')
+    // --------------------------------------------------
 
     const createProductMutation = useCreateProduct();
     const updateProductMutation = useUpdateProduct();
@@ -264,6 +271,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
         // Fetch already assigned aggregators
         try {
             const response = await productAssignmentsApi.getAssignedAggregators(product._id)
+            // ensure we store aggregator _ids (server response should return aggregator ids)
             setAssignedAggregators(response.getAssignedAggregators)
             setSelectedAggregators(response.getAssignedAggregators)
         } catch (error) {
@@ -273,11 +281,40 @@ export function SuperAdminLenderProducts(): JSX.Element {
         setIsAssignDialogOpen(true)
     }
 
+    // Debounce assignSearch -> debouncedAssignSearch
+    useEffect(() => {
+        const t = setTimeout(() => setDebouncedAssignSearch(assignSearch.trim().toLowerCase()), 250)
+        return () => clearTimeout(t)
+    }, [assignSearch])
+
+    // Compute filtered + sorted aggregators for the dialog
+    const visibleAggregators = useMemo(() => {
+        if (isAggLoading) return []
+        const s = debouncedAssignSearch
+        const filtered = aggregators.filter((agg) => {
+            const username = (agg.user?.username || '').toLowerCase()
+            const email = (agg.user?.email || '').toLowerCase()
+            const company = (agg.companyName || '').toLowerCase()
+            if (!s) return true
+            return username.includes(s) || email.includes(s) || company.includes(s)
+        })
+
+        const sorted = filtered.sort((a, b) => {
+            const aKey = a.user?.username ?? ''
+            const bKey = b.user?.username ?? ''
+            const cmp = aKey.localeCompare(bKey, undefined, { sensitivity: 'base' })
+            return assignSortBy === 'ascending' ? cmp : -cmp
+        })
+
+        return sorted
+    }, [aggregators, debouncedAssignSearch, assignSortBy, assignSortDir, isAggLoading])
+
     // Add this function to handle assignment
     const handleAssignProduct = async () => {
         if (!selectedProductForAssign) return
 
         const lenderId = selectedProductForAssign.lender!.profile!._id!;
+        // selectedAggregators and assignedAggregators are arrays of aggregator._id
         const toAssign = selectedAggregators.filter(id => !assignedAggregators.includes(id))
         const toUnassign = assignedAggregators.filter(id => !selectedAggregators.includes(id))
 
@@ -304,6 +341,15 @@ export function SuperAdminLenderProducts(): JSX.Element {
                 description: 'Failed to update assignments',
                 variant: 'destructive',
             })
+        }
+    }
+
+    // helper to toggle selection by aggregator._id
+    const toggleAggregatorSelection = (aggId: string) => {
+        if (selectedAggregators.includes(aggId)) {
+            setSelectedAggregators(selectedAggregators.filter(id => id !== aggId))
+        } else {
+            setSelectedAggregators([...selectedAggregators, aggId])
         }
     }
 
@@ -644,26 +690,53 @@ export function SuperAdminLenderProducts(): JSX.Element {
                             Select aggregators to assign "{selectedProductForAssign?.name}" to
                         </DialogDescription>
                     </DialogHeader>
+                    
+                    {/* Search + Sort controls */}
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-3 px-4">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                            <Input
+                                placeholder="Search aggregators..."
+                                value={assignSearch}
+                                onChange={(e) => setAssignSearch(e.currentTarget.value)}
+                                className="pl-10 bg-gray-900 border-gray-600 text-white w-full"
+                            />
+                        </div>
 
-                    <div className="space-y-4 max-h-[60vh] overflow-y-auto">
+                        <div className="flex items-center space-x-2 mt-3 sm:mt-0">
+                            <Select onValueChange={(v) => setAssignSortBy(v as any)} defaultValue={assignSortBy}>
+                                <SelectTrigger className="w-40 h-10 text-sm bg-gray-900 border-gray-600 text-white">
+                                    <SelectValue placeholder="Sort by" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-gray-900 text-white">
+                                    <SelectItem value="ascending">Ascending</SelectItem>
+                                    <SelectItem value="descending">Descending</SelectItem>
+                                </SelectContent>
+                            </Select>
+
+                           
+                        </div>
+                    </div>
+
+                    <div className="space-y-4 max-h-[60vh] overflow-y-auto px-4">
                         {isAggLoading ? (
                             <div className="text-center py-8 text-gray-400">Loading aggregators...</div>
-                        ) : aggregators.length === 0 ? (
+                        ) : visibleAggregators.length === 0 ? (
                             <div className="text-center py-8 text-gray-400">No aggregators found</div>
                         ) : (
-                            aggregators.map((aggregator) => (
+                            visibleAggregators.map((aggregator) => (
                                 <div
                                     key={aggregator._id}
                                     className="flex items-center space-x-3 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-colors"
                                 >
                                     <Checkbox
                                         id={aggregator._id}
-                                        checked={selectedAggregators.includes(aggregator.userId)}
+                                        checked={selectedAggregators.includes(aggregator._id)}
                                         onCheckedChange={(checked) => {
                                             if (checked) {
-                                                setSelectedAggregators([...selectedAggregators, aggregator.userId])
+                                                setSelectedAggregators([...selectedAggregators, aggregator._id])
                                             } else {
-                                                setSelectedAggregators(selectedAggregators.filter(id => id !== aggregator.userId))
+                                                setSelectedAggregators(selectedAggregators.filter(id => id !== aggregator._id))
                                             }
                                         }}
                                     />
