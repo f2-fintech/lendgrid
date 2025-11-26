@@ -42,6 +42,7 @@ import {
 } from "@/hooks/use-aggregators"
 import { BusinessType, KYCStatus } from "@/lib";
 import { createPublicFilePath } from "@/lib/utils"
+import { ProfileCompletionBanner } from "@/components/ui/progressbar";
 
 /* -------------------------------
    Validation Schema (optional, validated)
@@ -150,11 +151,6 @@ const documentsSchema = z.object({
     .string()
     .optional()
     .refine(val => !val || /^[0-9]{12}$/.test(val), "Aadhaar must be 12 digits"),
-
-  panNumber: z
-    .string()
-    .optional()
-    .refine(val => !val || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(val), "Invalid PAN Number"),
 
   gstNumber: z
     .string()
@@ -424,8 +420,8 @@ function BusinessTab() {
             {errors.business?.gstNumber && <p className="text-red-400 text-sm">{errors.business.gstNumber.message}</p>}
           </div>
           <div className="space-y-2">
-            <Label htmlFor="panNumber" className="text-white">TAN Number</Label>
-            <Input id="panNumber" {...register("business.tanNumber", { onBlur: () => trigger("business.tanNumber") })} className="bg-gray-800 border-gray-700 text-white" />
+            <Label htmlFor="tanNumber" className="text-white">TAN Number</Label>
+            <Input id="tanNumber" {...register("business.tanNumber", { onBlur: () => trigger("business.tanNumber") })} className="bg-gray-800 border-gray-700 text-white" />
             {errors.business?.tanNumber && <p className="text-red-400 text-sm">{errors.business.tanNumber.message}</p>}
           </div>
         </div>
@@ -515,6 +511,7 @@ function BankingTab() {
 function KycTab() {
   const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
   const kycStatus = watch("kyc.kycStatus")
+  const approvedBy = watch("kyc.kycApprovedBy")
   const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState<string | null>(null)
   const [aadhaarBackPreview, setAadhaarBackPreview] = useState<string | null>(null)
   const [panImagePreview, setPanImagePreview] = useState<string | null>(null)
@@ -566,7 +563,13 @@ function KycTab() {
             </div>
             <div className="md:col-span-2">
               <Label className="text-gray-300">Approved By</Label>
-              <Input {...register("kyc.kycApprovedBy")} className="bg-gray-800 border-gray-700 text-white" />
+              <div className="bg-gray-800 border border-gray-700 text-white px-3 py-2 rounded">
+                {approvedBy && approvedBy.trim() !== "" ? (
+                  <span>{approvedBy}</span>
+                ) : (
+                  <span className="text-gray-400">Not set</span>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -617,15 +620,15 @@ function KycTab() {
 
         <div className="space-y-2">
           <Label htmlFor="panNumber" className="text-gray-300">PAN Number</Label>
-          <Input id="panNumber" {...register("documents.panNumber", {
+          <Input id="panNumber" {...register("business.panNumber", {
             onBlur: (e: any) => {
               const formatted = formatPan(e.target.value)
               e.target.value = formatted
-              setValue("documents.panNumber", formatted, { shouldValidate: true })
-              trigger("documents.panNumber")
+              setValue("business.panNumber", formatted, { shouldValidate: true })
+              trigger("business.panNumber")
             }
           })} className="bg-gray-800 border-gray-700 text-white" placeholder="Enter 10-character PAN" />
-          {errors.documents?.panNumber && <p className="text-red-400 text-sm">{errors.documents.panNumber.message}</p>}
+          {errors.business?.panNumber && <p className="text-red-400 text-sm">{errors.business.panNumber.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -742,6 +745,8 @@ export function AggregatorSettings() {
   const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "kyc">("profile")
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(["profile"]))
   const [isSaving, setIsSaving] = useState(false)
+  const [profileCompletePct, setProfileCompletePct] = useState<number>(100)
+  const [firstIncompleteTab, setFirstIncompleteTab] = useState<string | null>(null)
 
   const methods = useForm<RootForm>({
     resolver: zodResolver(rootSchema),
@@ -806,7 +811,6 @@ export function AggregatorSettings() {
         },
         documents: {
           aadhaarNumber: "",
-          panNumber: agg.panNumber || "",
           gstNumber: agg.gstNumber || "",
           incorporationCertificate: (agg as any).documents?.incorporationCertificate || "",
           bankStatement: (agg as any).documents?.bankStatement || "",
@@ -827,6 +831,62 @@ export function AggregatorSettings() {
   useEffect(() => {
     setVisitedTabs((prev) => new Set(prev).add(activeTab))
   }, [activeTab])
+
+  // compute profile completeness and first incomplete tab
+  useEffect(() => {
+    if (!userData && !aggData) return
+
+    // groups checks
+    const profileChecks = [
+      Boolean(userData?.username),
+      Boolean(userData?.email),
+      Boolean(userData?.contact),
+      Boolean(userData?.status),
+      Boolean(userData?.photoUrl),
+    ]
+
+    const businessChecks = [
+      Boolean(aggData?.companyName),
+      Boolean(aggData?.pocName),
+      Boolean(aggData?.registeredAddress),
+      Boolean(aggData?.city),
+      Boolean(aggData?.state),
+      Boolean(aggData?.pincode),
+      Boolean(aggData?.gstNumber),
+      Boolean(aggData?.panNumber),
+      Boolean(aggData?.cinNumber),
+    ]
+
+    const bankChecks = [
+      Boolean(aggData?.bankName),
+      Boolean(aggData?.accountNumber),
+      Boolean(aggData?.ifscCode),
+      Boolean(aggData?.accountHolderName),
+    ]
+
+    const docs = (aggData as any)?.documents || {}
+    const documentsChecks = [
+      Boolean(docs?.aadhaarFront),
+      Boolean(docs?.aadhaarBack),
+      Boolean(docs?.panCard),
+      Boolean(docs?.gstCertificate),
+      Boolean(docs?.bankStatement),
+      Boolean(docs?.incorporationCertificate),
+    ]
+
+    const allChecks = [...profileChecks, ...businessChecks, ...bankChecks, ...documentsChecks]
+    const total = allChecks.length
+    const filled = allChecks.filter(Boolean).length
+    const pct = total > 0 ? Math.round((filled / total) * 100) : 100
+    setProfileCompletePct(pct)
+
+    // determine first incomplete tab in order
+    if (profileChecks.some(c => !c)) setFirstIncompleteTab("profile")
+    else if (businessChecks.some(c => !c)) setFirstIncompleteTab("business")
+    else if (bankChecks.some(c => !c)) setFirstIncompleteTab("banking")
+    else if (documentsChecks.some(c => !c)) setFirstIncompleteTab("kyc")
+    else setFirstIncompleteTab(null)
+  }, [userData, aggData])
 
   const allTabsVisited = visitedTabs.has("profile") && visitedTabs.has("business") &&
     visitedTabs.has("banking") && visitedTabs.has("kyc")
@@ -919,6 +979,13 @@ export function AggregatorSettings() {
   return (
     <FormProvider {...methods}>
       <div className="space-y-6">
+             {/* Profile completion banner */}
+              {profileCompletePct < 100 && (
+                <ProfileCompletionBanner
+                  percent={profileCompletePct}
+                  showAction={false}
+                />
+              )}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -950,6 +1017,8 @@ export function AggregatorSettings() {
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </motion.div>
+
+
 
         <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-6 ">
           <TabsList className="bg-gray-900/50 border-gray-800 grid w-full grid-cols-4">

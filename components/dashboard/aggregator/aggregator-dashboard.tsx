@@ -2,10 +2,15 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, DollarSign, CreditCard, Building2, Download, Search, Calendar } from 'lucide-react'
+import { TrendingUp, DollarSign, CreditCard, Building2, Download, Search, Calendar, Icon, ArrowRight } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { ProgressBar, ProfileCompletionBanner } from '@/components/ui/progressbar'
+import { useAuth } from '@/lib/auth'
+import { useProfile } from '@/hooks/use-users'
+import { useAggregator } from '@/hooks/use-aggregators'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -70,6 +75,10 @@ const mockData = {
 }
 
 export function AggregatorDashboard() {
+  const { user } = useAuth('aggregator_admin')
+  const { data: userData, isLoading: userLoading } = useProfile(true)
+  const { data: aggData, isLoading: aggLoading } = useAggregator(user?.profileId, true)
+  const router = useRouter()
   const [searchTerm, setSearchTerm] = useState('')
   const [filterLender, setFilterLender] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -83,6 +92,71 @@ export function AggregatorDashboard() {
 
   const tableTopRef = useRef<HTMLDivElement | null>(null)
   const { toast } = useToast()
+
+  const [profileCompletePct, setProfileCompletePct] = useState<number>(100)
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false)
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mq = window.matchMedia('(prefers-reduced-motion: reduce)')
+      setPrefersReducedMotion(mq.matches)
+      const handler = (e: any) => setPrefersReducedMotion(e.matches)
+      if (mq.addEventListener) mq.addEventListener('change', handler)
+      else mq.addListener(handler)
+      return () => {
+        if (mq.removeEventListener) mq.removeEventListener('change', handler)
+        else mq.removeListener(handler)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    // calculate completeness when data loads
+    if (!userData && !aggData) return
+
+    const checks: boolean[] = []
+
+    // user fields
+    checks.push(Boolean(userData?.username))
+    checks.push(Boolean(userData?.email))
+    checks.push(Boolean(userData?.contact))
+    checks.push(Boolean(userData?.photoUrl))
+
+    // business fields
+    checks.push(Boolean(aggData?.companyName))
+    checks.push(Boolean(aggData?.pocName))
+    checks.push(Boolean(aggData?.registeredAddress))
+    checks.push(Boolean(aggData?.city))
+    checks.push(Boolean(aggData?.state))
+    checks.push(Boolean(aggData?.pincode))
+    checks.push(Boolean(aggData?.gstNumber))
+    checks.push(Boolean(aggData?.panNumber))
+    checks.push(Boolean(aggData?.cinNumber))
+
+    // banking
+    checks.push(Boolean(aggData?.bankName))
+    checks.push(Boolean(aggData?.accountNumber))
+    checks.push(Boolean(aggData?.ifscCode))
+    checks.push(Boolean(aggData?.accountHolderName))
+
+    // documents
+    const docs = (aggData as any)?.documents || {}
+    const documentsChecks = [
+      Boolean(docs?.aadhaarFront),
+      Boolean(docs?.aadhaarBack),
+      Boolean(docs?.panCard),
+      Boolean(docs?.gstCertificate),
+      Boolean(docs?.bankStatement),
+      Boolean(docs?.incorporationCertificate),
+    ]
+
+    // include document checks so completeness matches settings page
+    const allChecks = [...checks, ...documentsChecks]
+    const total = allChecks.length
+    const filled = allChecks.filter(Boolean).length
+    const pct = total > 0 ? Math.round((filled / total) * 100) : 100
+    setProfileCompletePct(pct)
+  }, [userData, aggData])
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -188,6 +262,13 @@ export function AggregatorDashboard() {
 
   return (
     <div className="space-y-8">
+      {/* Profile completion banner */}
+      {profileCompletePct < 100 && (
+        <ProfileCompletionBanner
+          percent={profileCompletePct}
+          onAction={() => router.push('/aggregator/settings')}
+        />
+      )}
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -267,7 +348,7 @@ export function AggregatorDashboard() {
                   <XAxis dataKey="month" stroke="#9CA3AF" />
                   <YAxis stroke="#9CA3AF" />
                   <Tooltip
-                  cursor={false}
+                    cursor={false}
                     contentStyle={{
                       backgroundColor: '#1F2937',
                       border: '1px solid #374151',
