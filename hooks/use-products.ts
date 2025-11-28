@@ -148,9 +148,9 @@ export function useAssignProduct() {
     const { toast } = useToast()
 
     return useMutation({
-        mutationFn: ({ productId, lenderId, aggregatorIds }:
-            { productId: string; lenderId: string; aggregatorIds: string[] }) =>
-            productAssignmentsApi.assignToAggregators(productId, lenderId, aggregatorIds),
+        mutationFn: ({ productId, lenderProfileId, aggregatorIds }:
+            { productId: string; lenderProfileId: string; aggregatorIds: string[] }) =>
+            productAssignmentsApi.assignToAggregators(productId, lenderProfileId, aggregatorIds),
 
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
@@ -180,8 +180,9 @@ export function useUnassignProduct() {
     const { toast } = useToast()
 
     return useMutation({
-        mutationFn: ({ productId, aggregatorIds }: { productId: string; aggregatorIds: string[] }) =>
-            productAssignmentsApi.unassignFromAggregators(productId, aggregatorIds),
+        mutationFn: ({ productId, lenderProfileId, aggregatorIds }:
+            { productId: string; lenderProfileId: string; aggregatorIds: string[] }) =>
+            productAssignmentsApi.unassignFromAggregators(productId, lenderProfileId, aggregatorIds),
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({
                 queryKey: queryKeys.products.assignedAggregators(variables.productId),

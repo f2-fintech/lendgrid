@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
@@ -13,6 +13,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
+import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,14 +22,21 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useRegister } from "@/hooks/use-users";
 
-// SAME SCHEMA AS SIGNUP FORM
+// Validation SCHEMA
 const schema = z
     .object({
+        isOmsEnabled: z.boolean().optional(),
+
         fullName: z
             .string()
             .min(2, "Name must be at least 2 characters")
             .max(50, "Name is too long")
             .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
+
+        contact: z.string()
+            .min(9, 'Contact must be at least 9 characters')
+            .max(20, 'Contact is too long')
+            .regex(/^[0-9]+$/, 'Contact can only contain numbers'),
 
         email: z
             .string()
@@ -75,6 +83,7 @@ export function AddAggregatorDialog({
     const { toast } = useToast();
 
     const {
+        control,
         register,
         handleSubmit,
         reset,
@@ -83,10 +92,12 @@ export function AddAggregatorDialog({
         resolver: zodResolver(schema),
         defaultValues: {
             fullName: "",
+            contact: "",
             email: "",
             companyName: "",
             password: "",
             confirmPassword: "",
+            isOmsEnabled: false
         },
     });
 
@@ -98,10 +109,13 @@ export function AddAggregatorDialog({
         try {
             const payload = {
                 username: data.fullName,
+                contact: data.contact,
                 email: data.email,
                 password: data.password,
-                companyName: data.companyName,
                 role: "AGGREGATOR_ADMIN",
+                // Aggregator Profile Fields
+                companyName: data.companyName,
+                isOmsEnabled: data.isOmsEnabled,
             };
 
             const res: any = await registerMutation.mutateAsync(payload);
@@ -111,7 +125,6 @@ export function AddAggregatorDialog({
                     title: "Success",
                     description: "Aggregator created successfully!",
                 });
-
                 onClose?.();
                 refetch?.();
                 return;
@@ -157,21 +170,33 @@ export function AddAggregatorDialog({
                         <Input
                             {...register("fullName")}
                             className="glass-input text-black h-12"
-                            placeholder="John Doe"
+                            placeholder="ABC"
                         />
                         {errors.fullName && (
                             <p className="text-red-400 text-sm">{errors.fullName.message}</p>
                         )}
                     </div>
 
+                    {/* Contact */}
+                    <div className="space-y-2">
+                        <Label htmlFor="contact" className="text-gray-300 font-medium">Phone Number</Label>
+                        <Input
+                            id="contact"
+                            {...register('contact')}
+                            className="glass-input text-black placeholder-gray-500 h-11"
+                            placeholder="9876543210"
+                        />
+                        {errors.contact && (<p className="text-red-400 text-sm mt-1">{errors.contact.message}</p>)}
+                    </div>
+
                     {/* Email */}
                     <div className="space-y-2">
-                        <Label>Email</Label>
+                        <Label>Email Address</Label>
                         <Input
                             type="email"
                             {...register("email")}
                             className="glass-input text-black h-12"
-                            placeholder="john@company.com"
+                            placeholder="abc@company.com"
                         />
                         {errors.email && (
                             <p className="text-red-400 text-sm">{errors.email.message}</p>
@@ -180,13 +205,13 @@ export function AddAggregatorDialog({
 
                     {/* Password */}
                     <div className="space-y-2">
-                        <Label>Password</Label>
+                        <Label>Set Password</Label>
                         <div className="relative">
                             <Input
                                 type={showPassword ? "text" : "password"}
                                 {...register("password")}
                                 className="glass-input text-black h-12 pr-12"
-                                placeholder="Create password"
+                                placeholder="Create a strong password"
                             />
 
                             <button
@@ -215,7 +240,7 @@ export function AddAggregatorDialog({
                                 type={showConfirmPassword ? "text" : "password"}
                                 {...register("confirmPassword")}
                                 className="glass-input text-black h-12 pr-12"
-                                placeholder="Confirm password"
+                                placeholder="Re-renter your password"
                             />
 
                             <button
@@ -234,6 +259,16 @@ export function AddAggregatorDialog({
                         {errors.confirmPassword && (
                             <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
                         )}
+                    </div>
+
+                    {/* OMS Enabled */}
+                    <div className="flex items-center space-x-2">
+                        <Controller name="isOmsEnabled" control={control} render={({ field }) => (
+                            <div className="flex items-center space-x-2">
+                                <Checkbox id="isOmsEnabled" checked={field.value} onCheckedChange={field.onChange} />
+                                <Label htmlFor="isOmsEnabled">Enable OMS Integration</Label>
+                            </div>
+                        )} />
                     </div>
 
                     {/* Buttons */}
@@ -257,7 +292,7 @@ export function AddAggregatorDialog({
                         >
                             {isSubmitting ? (
                                 <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                                     Creating...
                                 </>
                             ) : (

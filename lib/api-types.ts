@@ -63,6 +63,15 @@ export enum Status {
   PENDING = 'PENDING',
 }
 
+export enum ApplicationStatus {
+  SUBMITTED = 'submitted',
+  UNDER_REVIEW = 'under_review',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+  DISBURSED = 'disbursed',
+  CANCELLED = 'cancelled'
+}
+
 // USER & AUTH TYPES
 export type AppRole = 'super_admin' | 'aggregator_admin' | 'lender_admin'
 
@@ -202,46 +211,54 @@ export type LenderBranch = {
 // APPLICATION TYPES
 export interface Application {
   _id: string
+
+  // IDs
   aggregatorId: string
   lenderId: string
   productId: string
+
+  // Populated references
+  aggregator?: User
+  lender?: User
+  product?: Product
+
+  // Customer Details
   customerName: string
   customerEmail: string
   customerPhone: string
+  customerPan?: string | null
+  customerAddress?: string | null
+  customerCity?: string | null
+  customerState?: string | null
+  customerPincode?: string | null
+
+  // Loan Details
   loanAmount: number
+  tenureMonths?: number | null
   status: string
+
+  // Files
   documents: string[]
-  formData?: Record<string, any>
-  disbursedAmount?: number
-  disbursedDate?: string
-  commissionRate: number
-  expectedCommission: number
-  rejectionReason?: string
+
+  // Stored JSON snapshot
+  formData?: Record<string, any> | null
+
+  // Disbursal Information
+  approvedAmount?: number | null
+  disbursedAmount?: number | null
+  disbursedDate?: string | null
+
+  // Commission Details
+  commissionPercent?: number
+  platformCommission?: number
+  rejectionReason?: string | null
+
+  // Admin actions
+  rejectedBy?: string | null
+  cancellationReason?: string | null
+  cancelledBy?: string | null
   createdAt: string
   updatedAt: string
-  // Populated fields
-  aggregator?: {
-    _id: string
-    username: string
-    email: string
-    companyName?: string
-  }
-  lender?: {
-    _id: string
-    username: string
-    email: string
-    companyName?: string
-    lenderType?: string
-  }
-  product?: {
-    _id: string
-    name: string
-    productType: string
-    interestRate: number
-    commissionPercent: number
-    minAmount: number
-    maxAmount: number
-  }
 }
 
 // PRODUCT TYPES

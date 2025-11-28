@@ -26,7 +26,7 @@ import { useAggregators } from "@/hooks/use-aggregators"
 import { useLenders } from "@/hooks/use-lenders"
 
 const productSchema = z.object({
-    lenderId: z.string().nonempty("Lender is required"),
+    lenderProfileId: z.string().nonempty("Lender is required"),
     name: z.string().min(3, 'Product name must be at least 3 characters'),
     description: z.string().optional(),
     productType: z.string().nonempty('Product type is required'),
@@ -76,11 +76,9 @@ export function SuperAdminLenderProducts(): JSX.Element {
     const [assignedAggregators, setAssignedAggregators] = useState<string[]>([])
 
     // --- Assignment dialog controls (search & sort) ---
-    const [assignSearch, setAssignSearch] = useState<string>('') 
-    const [debouncedAssignSearch, setDebouncedAssignSearch] = useState<string>('') 
+    const [assignSearch, setAssignSearch] = useState<string>('')
+    const [debouncedAssignSearch, setDebouncedAssignSearch] = useState<string>('')
     const [assignSortBy, setAssignSortBy] = useState<'ascending' | 'descending'>('ascending')
-    const [assignSortDir, setAssignSortDir] = useState<'asc' | 'desc'>('asc')
-    // --------------------------------------------------
 
     const createProductMutation = useCreateProduct();
     const updateProductMutation = useUpdateProduct();
@@ -117,7 +115,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
         resolver: zodResolver(productSchema),
         mode: "onBlur",
         defaultValues: {
-            lenderId: "",
+            lenderProfileId: "",
             name: "",
             description: "",
             productType: "",
@@ -139,7 +137,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
         setIsEditMode(false)
         setSelectedProduct(null)
         reset({
-            lenderId: "",
+            lenderProfileId: "",
             name: "",
             description: "",
             productType: "",
@@ -164,7 +162,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
         setIsDialogOpen(true)
 
         reset({
-            lenderId: product.lender?.profile?._id || "",
+            lenderProfileId: product.lender?.profile?._id || "",
             name: product.name || "",
             description: product.description ?? "",
             productType: product.productType?.toLowerCase() || "",
@@ -204,7 +202,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
     const submit = handleSubmit(async (formData) => {
         try {
             const payload: CreateProductDto = {
-                lenderId: formData.lenderId,
+                lenderId: formData.lenderProfileId,
                 name: formData.name,
                 description: formData.description,
                 productType: formData.productType,
@@ -234,7 +232,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
                 })
                 toast({ title: 'Success', description: 'Product updated successfully.' })
             } else {
-                console.log(payload, 'this is the payload')
+                console.log(payload, 'this is the payload for create product')
                 await createProductMutation.mutateAsync(payload)
                 toast({ title: 'Success', description: 'Product created successfully.' })
             }
@@ -271,7 +269,6 @@ export function SuperAdminLenderProducts(): JSX.Element {
         // Fetch already assigned aggregators
         try {
             const response = await productAssignmentsApi.getAssignedAggregators(product._id)
-            // ensure we store aggregator _ids (server response should return aggregator ids)
             setAssignedAggregators(response.getAssignedAggregators)
             setSelectedAggregators(response.getAssignedAggregators)
         } catch (error) {
@@ -307,13 +304,13 @@ export function SuperAdminLenderProducts(): JSX.Element {
         })
 
         return sorted
-    }, [aggregators, debouncedAssignSearch, assignSortBy, assignSortDir, isAggLoading])
+    }, [aggregators, debouncedAssignSearch, assignSortBy, isAggLoading])
 
     // Add this function to handle assignment
     const handleAssignProduct = async () => {
         if (!selectedProductForAssign) return
 
-        const lenderId = selectedProductForAssign.lender!.profile!._id!;
+        const lenderProfileId = selectedProductForAssign.lender!.profile!._id!;
         // selectedAggregators and assignedAggregators are arrays of aggregator._id
         const toAssign = selectedAggregators.filter(id => !assignedAggregators.includes(id))
         const toUnassign = assignedAggregators.filter(id => !selectedAggregators.includes(id))
@@ -322,12 +319,13 @@ export function SuperAdminLenderProducts(): JSX.Element {
             if (toAssign.length > 0) {
                 await assignProduct.mutateAsync({
                     productId: selectedProductForAssign._id,
-                    lenderId,
+                    lenderProfileId,
                     aggregatorIds: toAssign,
                 })
+                console.log(lenderProfileId, toAssign, selectedProductForAssign._id, 'this is payload for assign product')
             }
             if (toUnassign.length > 0) {
-                await productAssignmentsApi.unassignFromAggregators(selectedProductForAssign._id, toUnassign)
+                await productAssignmentsApi.unassignFromAggregators(selectedProductForAssign._id, lenderProfileId, toUnassign)
             }
 
             toast({
@@ -530,10 +528,10 @@ export function SuperAdminLenderProducts(): JSX.Element {
                         <div className="grid grid-cols-3 gap-3">
                             {/* LENDER SELECT */}
                             <div className="space-y-2">
-                                <Label htmlFor="lenderId">Select Lender</Label>
+                                <Label htmlFor="lenderProfileId">Select Lender</Label>
 
                                 <Controller
-                                    name="lenderId"
+                                    name="lenderProfileId"
                                     control={control}
                                     rules={{ required: "Lender is required" }}
                                     render={({ field }) => (
@@ -552,8 +550,8 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                         </Select>
                                     )}
                                 />
-                                {errors.lenderId && (
-                                    <p className="text-red-400 text-sm">{errors.lenderId.message}</p>
+                                {errors.lenderProfileId && (
+                                    <p className="text-red-400 text-sm">{errors.lenderProfileId.message}</p>
                                 )}
                             </div>
 
@@ -627,7 +625,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
 
                         <div className="grid grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="tenureMonths">Tenure (e.g., "12-60 months")</Label>
+                                <Label htmlFor="tenureMonths">Tenure</Label>
                                 <Input id="tenureMonths" {...register('tenureMonths')} className="glass-input text-black placeholder-gray-400 h-12" />
                             </div>
 
@@ -690,7 +688,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
                             Select aggregators to assign "{selectedProductForAssign?.name}" to
                         </DialogDescription>
                     </DialogHeader>
-                    
+
                     {/* Search + Sort controls */}
                     <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-3 mb-3 px-4">
                         <div className="relative flex-1">
@@ -714,7 +712,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                 </SelectContent>
                             </Select>
 
-                           
+
                         </div>
                     </div>
 
@@ -730,18 +728,18 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                     className="flex items-center space-x-3 p-4 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-colors"
                                 >
                                     <Checkbox
-                                        id={aggregator._id}
-                                        checked={selectedAggregators.includes(aggregator._id)}
+                                        id={aggregator.userId}
+                                        checked={selectedAggregators.includes(aggregator.userId)}
                                         onCheckedChange={(checked) => {
                                             if (checked) {
-                                                setSelectedAggregators([...selectedAggregators, aggregator._id])
+                                                setSelectedAggregators([...selectedAggregators, aggregator.userId])
                                             } else {
-                                                setSelectedAggregators(selectedAggregators.filter(id => id !== aggregator._id))
+                                                setSelectedAggregators(selectedAggregators.filter(id => id !== aggregator.userId))
                                             }
                                         }}
                                     />
                                     <Label
-                                        htmlFor={aggregator._id}
+                                        htmlFor={aggregator.userId}
                                         className="flex-1 cursor-pointer"
                                     >
                                         <div>
@@ -752,7 +750,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                             )}
                                         </div>
                                     </Label>
-                                    {assignedAggregators.includes(aggregator._id) && (
+                                    {assignedAggregators.includes(aggregator.userId) && (
                                         <Badge className="bg-green-500/20 text-green-400">Currently Assigned</Badge>
                                     )}
                                 </div>

@@ -76,28 +76,33 @@ export function AggregatorApplications() {
 
   // Fetch applications using the hook
   const {
-    applications,
-    total,
-    pages,
-    loading: isTableLoading,
-    mutate: refetchApplications
+    data: applications,
+    isLoading: isTableLoading,
+    refetch
   } = useApplications({
     page,
     limit: pageSize,
     aggregatorId: user?._id || user?.id,
     status: filterStatus && filterStatus !== 'all' ? filterStatus : undefined,
   })
+  const total = applications?.count || 0
 
   // Fetch products for the dropdown
-  const { products, loading: productsLoading } = useProducts({ limit: 100 })
+  const {
+    data: products,
+    isLoading: loading,
+    error,
+  } = useProducts({ page, limit: 100 });
 
+  const createApplicationMutation = useCreateApplication();
+  const deleteApplicationMutation = useDeleteApplication();
 
   // Calculate stats from real data
   const stats = useMemo(() => {
-    const totalApps = applications.length
-    const underReview = applications.filter(app => app.status === 'UNDER_REVIEW').length
-    const approved = applications.filter(app => app.status === 'APPROVED').length
-    const disbursed = applications.filter(app => app.status === 'DISBURSED').length
+    const totalApps = applications?.results;
+    const underReview = totalApps?.filter(app => app.status === 'UNDER_REVIEW').length || 0
+    const approved = totalApps?.filter(app => app.status === 'APPROVED').length || 0
+    const disbursed = totalApps?.filter(app => app.status === 'DISBURSED').length || 0
 
     return [
       {
@@ -133,7 +138,7 @@ export function AggregatorApplications() {
 
   // Transform API data to match UI format
   const transformedApplications = useMemo(() => {
-    return applications.map(app => ({
+    return applications?.results.map(app => ({
       id: app._id,
       customerName: app.customerName,
       customerEmail: app.customerEmail,
@@ -144,18 +149,17 @@ export function AggregatorApplications() {
       status: app.status,
       applicationDate: app.createdAt,
       lastUpdated: app.updatedAt,
-      commissionRate: app.commissionRate,
-      expectedCommission: app.expectedCommission,
+      commissionRate: app.commissionPercent,
       documents: app.documents || [],
       avatar: '/placeholder.svg?height=40&width=40',
       // Keep original data for view dialog
       _original: app
     }))
-  }, [applications])
+  }, [applications?.results])
 
   // Client-side filtering for search and lender
   const filteredApplications = useMemo(() => {
-    return transformedApplications.filter(app => {
+    return transformedApplications?.filter(app => {
       const matchesSearch = app.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.id.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesLender = !filterLender || filterLender === 'all' || app.lenderName === filterLender
@@ -191,7 +195,7 @@ export function AggregatorApplications() {
         loanAmount: Number(form.loanAmount || 0),
       }
 
-      const response = await createApplication(payload)
+      const response = await createApplicationMutation.mutateAsync(payload)
       if (response?.createApplication?.success) {
         toast({ title: 'Success', description: 'Application created successfully' })
         setIsCreateDialogOpen(false)
@@ -205,7 +209,7 @@ export function AggregatorApplications() {
           lenderId: ''
         })
         // Refetch applications
-        refetchApplications()
+        refetch();
       } else {
         toast({
           title: 'Error',
@@ -225,7 +229,7 @@ export function AggregatorApplications() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
       try {
-        await removeApplication(id)
+        await deleteApplicationMutation.mutateAsync(id);
         toast({ title: 'Success', description: 'Product deleted successfully.' })
       } catch (err) {
         toast({
@@ -239,7 +243,7 @@ export function AggregatorApplications() {
 
   // Get unique lenders for filter dropdown
   const uniqueLenders = useMemo(() => {
-    const lenders = new Set(transformedApplications.map(app => app.lenderName))
+    const lenders = new Set(transformedApplications?.map(app => app.lenderName))
     return Array.from(lenders)
   }, [transformedApplications])
 
@@ -319,7 +323,7 @@ export function AggregatorApplications() {
               <div className="space-y-2">
                 <Label htmlFor="product" className="text-gray-300">Product</Label>
                 <Select value={form.productId} onValueChange={(v) => {
-                  const selectedProduct = products.find(p => p._id === v)
+                  const selectedProduct = products?.results?.find(p => p._id === v)
                   setForm({
                     ...form,
                     productId: v,
@@ -330,7 +334,7 @@ export function AggregatorApplications() {
                     <SelectValue placeholder="Select product" />
                   </SelectTrigger>
                   <SelectContent className="bg-gray-800 border-gray-700">
-                    {products.map(product => (
+                    {products?.results?.map(product => (
                       <SelectItem key={product._id} value={product._id}>
                         {product.name} - {product.productType}
                       </SelectItem>
@@ -484,7 +488,7 @@ export function AggregatorApplications() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredApplications.map((application, index) => {
+                    {filteredApplications?.map((application, index) => {
                       const StatusIcon = getStatusIcon(application.status)
                       return (
                         <motion.tr
@@ -684,14 +688,8 @@ export function AggregatorApplications() {
                 </h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <Label className="text-gray-400">Commission Rate</Label>
+                    <Label className="text-gray-400">Commission Percent</Label>
                     <p className="text-gold font-medium">{selectedApplication.commissionRate}%</p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-400">Expected Commission</Label>
-                    <p className="text-gold font-medium">
-                      {selectedApplication.expectedCommission > 0 ? formatCurrency(selectedApplication.expectedCommission) : 'N/A'}
-                    </p>
                   </div>
                 </div>
               </div>

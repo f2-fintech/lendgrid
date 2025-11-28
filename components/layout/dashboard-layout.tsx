@@ -1,6 +1,23 @@
 "use client"
 
 import { useState, useRef, useEffect } from "react"
+import {
+  LayoutDashboard,
+  TrendingUp,
+  FileText,
+  Settings,
+  CreditCard,
+  Building2,
+  Users,
+  BarChart3,
+  Bell,
+  LogOut,
+  User,
+  ChevronUp
+} from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+
 import { useAuth, AppRole } from '@/lib/auth'
 import { useLogout } from '@/lib/logout'
 import {
@@ -23,23 +40,8 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
-import {
-  LayoutDashboard,
-  TrendingUp,
-  FileText,
-  Settings,
-  CreditCard,
-  Building2,
-  Users,
-  BarChart3,
-  Bell,
-  LogOut,
-  User,
-  ChevronUp
-} from 'lucide-react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { navigationPaths } from '@/lib/navigation'
+import { getCookie, decodeJwt } from "@/lib/utils";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 
 interface DashboardLayoutProps {
@@ -74,7 +76,7 @@ const navigationConfig = {
       ]
     }
   ],
-  aggregator: [
+  aggregator: (isOmsEnabled: boolean) => [
     {
       title: "Overview",
       items: [
@@ -88,7 +90,10 @@ const navigationConfig = {
       title: "Management",
       items: [
         { title: "Applications", url: navigationPaths.aggregator.applications, icon: CreditCard },
-        { title: "Settings", url: navigationPaths.aggregator.settings, icon: Settings }
+        { title: "Settings", url: navigationPaths.aggregator.settings, icon: Settings },
+        ...(isOmsEnabled
+          ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
+          : [])
       ]
     }
   ],
@@ -112,20 +117,21 @@ const navigationConfig = {
   ]
 }
 
-function AppSidebar({ userRole, user }: { userRole: 'super_admin' | 'aggregator' | 'lender', user?: any }) {
+function AppSidebar({
+  userRole,
+  user,
+  isOmsEnabled
+}: {
+  userRole: 'super_admin' | 'aggregator' | 'lender',
+  user?: any,
+  isOmsEnabled?: boolean
+}) {
   const router = useRouter()
   const logout = useLogout()
-  const navigation = navigationConfig[userRole]
-
-  if (!navigation || !Array.isArray(navigation)) {
-    return (
-      <Sidebar variant="inset" className="bg-gray-900 border-gray-800">
-        <SidebarHeader>
-          <div className="p-4 text-white">Loading...</div>
-        </SidebarHeader>
-      </Sidebar>
-    )
-  }
+  const navigation =
+    userRole === "aggregator"
+      ? navigationConfig.aggregator(isOmsEnabled!)
+      : navigationConfig[userRole]
 
   const handleLogout = () => logout()
 
@@ -145,6 +151,16 @@ function AppSidebar({ userRole, user }: { userRole: 'super_admin' | 'aggregator'
     .slice(0, 2)
     .join('')
 
+  if (!navigation || !Array.isArray(navigation)) {
+    return (
+      <Sidebar variant="inset" className="bg-gray-900 border-gray-800">
+        <SidebarHeader>
+          <div className="p-4 text-white">Loading...</div>
+        </SidebarHeader>
+      </Sidebar>
+    )
+  }
+
   return (
     <Sidebar variant="inset" className="bg-gray-900 border-gray-800">
       <SidebarHeader>
@@ -154,7 +170,7 @@ function AppSidebar({ userRole, user }: { userRole: 'super_admin' | 'aggregator'
               <Link href={navigationPaths.home}>
                 <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient text-sidebar-primary-foreground">
                   <img
-                    src="/logo.png" // Replace with your logo path
+                    src="/logo.png"
                     alt="LendGrid Logo"
                     className="w-12 h-10 rounded-xl "
                   />
@@ -209,6 +225,7 @@ function AppSidebar({ userRole, user }: { userRole: 'super_admin' | 'aggregator'
                   <ChevronUp className="ml-auto size-4 text-gray-400" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
+
               <DropdownMenuContent
                 className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-gray-800 border-gray-700"
                 side="bottom"
@@ -241,13 +258,17 @@ function AppSidebar({ userRole, user }: { userRole: 'super_admin' | 'aggregator'
 }
 
 export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
-  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'lender_admin'] as AppRole[])
-  const normalizedRole: 'super_admin' | 'aggregator' | 'lender' =
-    role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : 'lender'
-
   const [showNotifications, setShowNotifications] = useState(false)
   const panelRef = useRef<HTMLDivElement | null>(null)
   const router = useRouter()
+
+  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'lender_admin'] as AppRole[])
+  const normalizedRole: 'super_admin' | 'aggregator' | 'lender' =
+    role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : 'lender'
+  const token = getCookie("token");
+  const decoded = decodeJwt(token);
+  const isOmsEnabled = decoded?.isOmsEnabled ?? false;
+  console.log(decoded, isOmsEnabled, 'this is from dashboard layout')
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -267,7 +288,11 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
 
   return (
     <SidebarProvider>
-      <AppSidebar userRole={userRole ?? normalizedRole} user={user} />
+      <AppSidebar
+        userRole={userRole ?? normalizedRole}
+        user={user}
+        isOmsEnabled={isOmsEnabled}
+      />
 
       <SidebarInset className="w-full h-full bg-gray-900 !p-0 !m-0">
         <header className="flex h-16 items-center gap-2 px-4 bg-gray-900 border-b border-gray-800 sticky top-0 z-50">

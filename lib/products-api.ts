@@ -124,7 +124,7 @@ export const productAssignmentsApi = {
   /**
    * Assign product to aggregators
    */
-  assignToAggregators: (productId: string, lenderId: string, aggregatorIds: string[]) =>
+  assignToAggregators: (productId: string, lenderProfileId: string, aggregatorIds: string[]) =>
     gqlFetch<{ assignProductToAggregators: { success: boolean; message: string } }>({
       query: `
         mutation AssignProduct($assignProductInput: AssignProductDto!) {
@@ -134,13 +134,13 @@ export const productAssignmentsApi = {
           }
         }
       `,
-      variables: { assignProductInput: { productId, lenderId, aggregatorIds } },
+      variables: { assignProductInput: { productId, lenderProfileId, aggregatorIds } },
     }),
 
   /**
    * Unassign product from aggregators
    */
-  unassignFromAggregators: (productId: string, aggregatorIds: string[]) =>
+  unassignFromAggregators: (productId: string, lenderProfileId: string, aggregatorIds: string[]) =>
     gqlFetch<{ unassignProductFromAggregators: { success: boolean; message: string } }>({
       query: `
         mutation UnassignProduct($unassignProductInput: UnassignProductDto!) {
@@ -151,7 +151,7 @@ export const productAssignmentsApi = {
         }
       `,
       variables: {
-        unassignProductInput: { productId, aggregatorIds },
+        unassignProductInput: { productId, lenderProfileId, aggregatorIds },
       },
     }),
 

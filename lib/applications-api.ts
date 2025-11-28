@@ -1,49 +1,53 @@
 import { gqlFetch } from './http-client'
 
 export const applicationsApi = {
-    /**
-     * Get all applications with pagination and filters
-     */
-    findAllApplications: (params?: {
-        page?: number
-        limit?: number
-        aggregatorId?: string
-        lenderId?: string
-        productId?: string
-        status?: string
-    }) =>
-        gqlFetch<{ findAllApplications: { results: any[]; count: number; page: number; pages: number } }>({
-            query: `
+  /**
+   * Get all applications with pagination and filters
+   */
+  findAllApplications: (params?: {
+    page?: number
+    limit?: number
+    aggregatorId?: string
+    lenderId?: string
+    productId?: string
+    status?: string
+  }) =>
+    gqlFetch<{ findAllApplications: { success: boolean; message: string; results: any[]; count: number; page: number; pages: number } }>({
+      query: `
         query FindAllApplications($paginationArgs: ApplicationPaginationQuery!) {
           findAllApplications(paginationArgs: $paginationArgs) {
             success
             message
             results {
               _id
+              applicationNumber
               customerName
               customerEmail
               customerPhone
+              customerPan
+              customerAddress
+              customerCity
+              customerState
+              customerPincode
               loanAmount
+              tenureMonths
               status
               documents
+              approvedAmount
               disbursedAmount
               disbursedDate
-              commissionRate
-              expectedCommission
+              commissionPercent
               rejectionReason
               createdAt
               updatedAt
               aggregator {
                 _id
-                username
-                email
                 companyName
               }
               lender {
                 _id
-                username
-                email
-                companyName
+                lenderName
+                lenderType
               }
               product {
                 _id
@@ -53,7 +57,6 @@ export const applicationsApi = {
                 commissionPercent
                 minAmount
                 maxAmount
-                loanTerm
               }
             }
             count
@@ -62,21 +65,22 @@ export const applicationsApi = {
           }
         }
       `,
-            variables: { paginationArgs: params || {} },
-        }),
+      variables: { paginationArgs: params || {} },
+    }),
 
-    /**
-     * Create new application
-     */
-    create: (payload: any) =>
-        gqlFetch({
-            query: `
+  /**
+   * Create new application
+   */
+  create: (payload: any) =>
+    gqlFetch({
+      query: `
         mutation CreateApplication($createApplicationInput: CreateApplicationDto!) {
           createApplication(createApplicationInput: $createApplicationInput) {
             success
             message
             application {
               _id
+              applicationNumber
               customerName
               loanAmount
               createdAt
@@ -87,30 +91,30 @@ export const applicationsApi = {
               }
               lender {
                 _id
-                username
-                companyName
+                lenderType
+                lenderName
               }
               aggregator {
                 _id
-                username
                 companyName
               }
             }
           }
         }
       `,
-            variables: { createApplicationInput: payload },
-        }),
+      variables: { createApplicationInput: payload },
+    }),
 
-    /**
-     * Update application
-     */
-    update: (id: string, payload: any) =>
-        gqlFetch({
-            query: `
+  /**
+   * Update application
+   */
+  update: (id: string, payload: any) =>
+    gqlFetch({
+      query: `
         mutation UpdateApplication($updateApplicationInput: UpdateApplicationDto!) {
           updateApplication(updateApplicationInput: $updateApplicationInput) {
             _id
+            applicationNumber
             customerName
             loanAmount
             status
@@ -118,22 +122,23 @@ export const applicationsApi = {
           }
         }
       `,
-            variables: { updateApplicationInput: { id, ...payload } },
-        }),
+      variables: { updateApplicationInput: { id, ...payload } },
+    }),
 
-    /**
-     * Delete application
-     */
-    remove: (id: string) =>
-        gqlFetch({
-            query: `
+  /**
+   * Delete application
+   */
+  remove: (id: string) =>
+    gqlFetch({
+      query: `
         mutation RemoveApplication($id: ID!) {
           removeApplication(id: $id) {
             _id
+            applicationNumber
             customerName
           }
         }
       `,
-            variables: { id },
-        }),
+      variables: { id },
+    }),
 }

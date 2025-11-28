@@ -96,13 +96,15 @@ export function SignupForm() {
   useEffect(() => {
     const roleParam = searchParams.get('role');
     const userType = mapLoginRoleToSignupType(roleParam);
-
+    console.log(userType, 'useeffect')
     if (userType) {
+      console.log(userType, 'condition')
       setValue('userType', userType, { shouldValidate: true });
     }
   }, [searchParams, setValue]);
 
   const onSubmit = async (data: SignupFormData) => {
+    console.log('submit hua', data)
     setIsLoading(true);
 
     try {
@@ -113,10 +115,11 @@ export function SignupForm() {
 
       const payload = {
         username: data.fullName,
+        contact: data.contact,
         email: data.email,
         password: data.password,
-        companyName: data.companyName,  // to allow backend to auto-create profile of aggregator
         role: 'AGGREGATOR_ADMIN',
+        companyName: data.companyName,  // to allow backend to auto-create profile of aggregator
       };
 
       const registerUserResponse = await registerMutation.mutateAsync(payload);
@@ -271,7 +274,7 @@ export function SignupForm() {
                 id="fullName"
                 {...register('fullName')}
                 className="glass-input text-black placeholder-gray-500 h-11"
-                placeholder="John Doe"
+                placeholder="ABC"
                 disabled={isLoading}
               />
               {errors.fullName && (<p className="text-red-400 text-sm mt-1">{errors.fullName.message}</p>)}
@@ -298,7 +301,7 @@ export function SignupForm() {
                 type="email"
                 {...register('email')}
                 className="glass-input text-black placeholder-gray-500 h-11"
-                placeholder="john@company.com"
+                placeholder="abc@company.com"
                 disabled={isLoading}
               />
               {errors.email && (<p className="text-red-400 text-sm mt-1">{errors.email.message}</p>)}

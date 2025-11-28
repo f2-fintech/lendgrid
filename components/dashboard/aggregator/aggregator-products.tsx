@@ -1,19 +1,22 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
-import { motion } from 'framer-motion'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CardSkeleton } from '@/components/ui/loading-skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { applicationsApi, productAssignmentsApi, ProductType } from '@/lib'
-import { useAuth } from '@/lib/auth'
-import { useToast } from '@/hooks/use-toast'
-import { Search, Plus, Percent, Calendar, CreditCard, Users, TrendingUp } from 'lucide-react'
+import { useEffect, useMemo, useState } from "react"
+import { motion } from "framer-motion"
+import { Search, Plus, Eye } from "lucide-react"
+
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { CardSkeleton } from "@/components/ui/loading-skeleton"
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
+import { productAssignmentsApi, ProductType } from "@/lib"
+import { useAuth } from "@/lib/auth"
+import { useToast } from "@/hooks/use-toast"
+import { useLenders } from "@/hooks/use-lenders"
+import { useCreateApplication } from "@/hooks/use-applications"
 
 export function AggregatorProducts() {
   const { user } = useAuth('aggregator_admin')
@@ -23,8 +26,12 @@ export function AggregatorProducts() {
   const [typeFilter, setTypeFilter] = useState('all')
   const [isLoading, setIsLoading] = useState(true)
   const [products, setProducts] = useState<any[]>([])
+
+  // Apply modal state
   const [applyDialogOpen, setApplyDialogOpen] = useState(false)
+  const [selectedLender, setSelectedLender] = useState("")
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
+
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
   const [viewProduct, setViewProduct] = useState<any | null>(null)
 
@@ -34,6 +41,10 @@ export function AggregatorProducts() {
     customerPhone: '',
     loanAmount: '',
   })
+
+  const createApplicationMutation = useCreateApplication();
+  const { data: lenderData } = useLenders({ page: 1, limit: 100 })
+  const allLenders = lenderData?.results || []
 
   useEffect(() => {
     let mounted = true
@@ -60,17 +71,61 @@ export function AggregatorProducts() {
 
   const filtered = useMemo(() => {
     return products.filter((p) => {
-      const prod = p.product
-      console.log(prod, 'product')
+      const prod = p.product;
+
       const matchesSearch =
         prod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prod.productType.toLowerCase().includes(searchTerm.toLowerCase())
+        prod.productType.toLowerCase().includes(searchTerm.toLowerCase());
 
-      const matchesType = typeFilter === "all" || prod.productType === typeFilter.toUpperCase()
+      const matchesType =
+        typeFilter === "all" || prod.productType === typeFilter.toUpperCase();
 
-      return matchesSearch && matchesType
-    })
-  }, [products, searchTerm, typeFilter])
+      return matchesSearch && matchesType;
+    });
+  }, [products, searchTerm, typeFilter]);
+
+  console.log(allLenders, selectedLender, selectedProduct, 'this is all lenders')
+  // LENDERS DROPDOWN LIST
+  const lenders = useMemo(() => {
+    return allLenders.map((l) => ({
+      id: l._id,
+      name: l.lenderName
+    }));
+  }, [allLenders]);
+
+  // FILTER PRODUCTS BY SELECTED LENDER
+  const productsByLender = useMemo(() => {
+    if (!selectedLender) return [];
+    return products.filter((p) => p.lender._id === selectedLender);
+  }, [selectedLender, products]);
+
+  // SUBMIT APPLICATION
+  async function submitApplication() {
+    try {
+      if (!selectedProduct) return
+
+      const payload = {
+        aggregatorId: user?._id || user?.id,
+        lenderId: selectedProduct.lender._id,
+        productId: selectedProduct.product._id,
+        customerName: form.customerName,
+        customerEmail: form.customerEmail,
+        customerPhone: form.customerPhone,
+        loanAmount: Number(form.loanAmount),
+      };
+
+      console.log(payload, 'this is application payload')
+      await createApplicationMutation.mutateAsync(payload)
+      toast({ title: "Application submitted successfully" })
+
+      setApplyDialogOpen(false)
+      setSelectedProduct(null)
+      setSelectedLender("")
+      setForm({ customerName: "", customerEmail: "", customerPhone: "", loanAmount: "" })
+    } catch (e: any) {
+      toast({ title: "Submission failed", description: e?.message || "Try again." })
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -83,6 +138,156 @@ export function AggregatorProducts() {
           <h1 className="text-3xl font-bold text-white">Browse Loan Products</h1>
           <p className="text-gray-400 mt-1">Pick a product and submit an application</p>
         </div>
+
+        {/* Apply Button */}
+        <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+          <DialogTrigger asChild>
+            <Button className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue/80 text-white mt-4 sm:mt-0">
+              <Plus className="w-4 h-4 mr-2" /> Apply
+            </Button>
+          </DialogTrigger>
+
+          {/* Apply Form */}
+          <DialogContent className="bg-[#0d1117] border border-gray-700 text-white max-w-lg rounded-xl shadow-2xl">
+            <DialogHeader className="border-b border-gray-700 pb-3">
+              <DialogTitle className="text-xl font-semibold text-white">
+                Submit Application
+              </DialogTitle>
+              <DialogDescription className="text-gray-400">
+                Fill customer details and select lender & product
+              </DialogDescription>
+            </DialogHeader>
+
+            <div className="space-y-5 py-4">
+              {/* LENDER */}
+              <div className="space-y-2">
+                <Label className="text-gray-300">Select Lender</Label>
+                <Select
+                  value={selectedLender}
+                  onValueChange={(id) => {
+                    setSelectedLender(id);
+                    setSelectedProduct(null);
+                  }}
+                >
+                  <SelectTrigger className="bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 transition">
+                    <SelectValue placeholder="Choose Lender" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
+                    {lenders.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* PRODUCT */}
+              <div className="space-y-2">
+                <Label className="text-gray-300">Select Product</Label>
+
+                {/* If lender selected but has 0 products */}
+                {selectedLender && productsByLender.length === 0 ? (
+                  <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 text-sm italic">
+                    No products available for this lender.
+                  </div>
+                ) : (
+                  <Select
+                    disabled={!selectedLender}
+                    value={selectedProduct?._id}
+                    onValueChange={(id) => {
+                      const prod = productsByLender.find((p) => p._id === id);
+                      setSelectedProduct(prod || null);
+                    }}
+                  >
+                    <SelectTrigger className="bg-gray-800 border border-gray-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition">
+                      <SelectValue
+                        placeholder={
+                          selectedLender ? "Choose Product" : "Select lender first"
+                        }
+                      />
+                    </SelectTrigger>
+
+                    <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
+                      {productsByLender.map((p) => (
+                        <SelectItem key={p._id} value={p._id}>
+                          {p.product.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+
+              {/* FORM FIELDS */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-gray-300">Customer Name</Label>
+                  <Input
+                    className="bg-gray-800 border-gray-700 text-white"
+                    value={form.customerName}
+                    onChange={(e) =>
+                      setForm({ ...form, customerName: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Email</Label>
+                  <Input
+                    type="email"
+                    className="bg-gray-800 border-gray-700 text-white"
+                    value={form.customerEmail}
+                    onChange={(e) =>
+                      setForm({ ...form, customerEmail: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Phone</Label>
+                  <Input
+                    className="bg-gray-800 border-gray-700 text-white"
+                    value={form.customerPhone}
+                    onChange={(e) =>
+                      setForm({ ...form, customerPhone: e.target.value })
+                    }
+                  />
+                </div>
+
+                <div className="col-span-2 space-y-2">
+                  <Label className="text-gray-300">Loan Amount</Label>
+                  <Input
+                    type="number"
+                    className="bg-gray-800 border-gray-700 text-white"
+                    value={form.loanAmount}
+                    onChange={(e) =>
+                      setForm({ ...form, loanAmount: e.target.value })
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* FOOTER */}
+            <div className="flex justify-end gap-3 border-t border-gray-700 pt-4">
+              <Button
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                onClick={() => setApplyDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!selectedProduct}
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:to-blue-700 text-white shadow-lg disabled:opacity-40"
+                onClick={submitApplication}
+              >
+                Submit Application
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </motion.div>
 
       <motion.div
@@ -91,7 +296,7 @@ export function AggregatorProducts() {
         transition={{ delay: 0.1 }}
         className="flex flex-col sm:flex-row gap-4"
       >
-        <div className="relative flex-1">
+        <div className="relative max-w-xs w-full">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
             placeholder="Search products..."
@@ -119,6 +324,7 @@ export function AggregatorProducts() {
         </Select>
       </motion.div>
 
+      {/* Products Table */}
       {isLoading ? (
         <CardSkeleton bodyHeight={300} />
       ) : (
@@ -162,8 +368,7 @@ export function AggregatorProducts() {
                         {(prod.maxAmount / 100000).toFixed(1)}L
                       </TableCell>
 
-                      <TableCell className="text-right space-x-2">
-
+                      <TableCell className="text-center space-x-2">
                         {/* VIEW PRODUCT */}
                         <Dialog
                           open={viewDialogOpen && viewProduct?._id === p._id}
@@ -174,12 +379,12 @@ export function AggregatorProducts() {
                         >
                           <DialogTrigger asChild>
                             <Button
-                              variant="outline"
+                              variant="ghost"
                               size="sm"
-                              className="border-gray-700 text-gray-300 hover:bg-gray-800"
                               onClick={() => setViewProduct(p)}
+                              className="text-blue hover:text-white hover:bg-gray-700"
                             >
-                              View
+                              <Eye className="w-5 h-5" />
                             </Button>
                           </DialogTrigger>
 
@@ -227,80 +432,6 @@ export function AggregatorProducts() {
                                   ) : '—'}
                                 </div>
                               </div>
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-
-                        {/* APPLY */}
-                        <Dialog
-                          open={applyDialogOpen && selectedProduct?._id === p._id}
-                          onOpenChange={(o) => {
-                            if (!o) setSelectedProduct(null)
-                            setApplyDialogOpen(o)
-                          }}
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              size="sm"
-                              className="bg-gradient-to-r from-blue to-cyan-500  hover:to-blue/80 text-white"
-                              onClick={() => setSelectedProduct(p)}
-                            >
-                              <Plus className="w-4 h-4 mr-2" /> Apply
-                            </Button>
-                          </DialogTrigger>
-
-                          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-lg">
-                            <DialogHeader>
-                              <DialogTitle>Apply for {prod.name}</DialogTitle>
-                              <DialogDescription className="text-gray-400">Submit customer details to initiate application</DialogDescription>
-                            </DialogHeader>
-
-                            {/* Form */}
-                            <div className="grid grid-cols-2 gap-4 py-2">
-                              <div className="col-span-2 space-y-1">
-                                <Label>Customer Name</Label>
-                                <Input value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700" />
-                              </div>
-                              <div className="space-y-1">
-                                <Label>Email</Label>
-                                <Input type="email" value={form.customerEmail} onChange={(e) => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700" />
-                              </div>
-                              <div className="space-y-1">
-                                <Label>Phone</Label>
-                                <Input value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700" />
-                              </div>
-                              <div className="col-span-2 space-y-1">
-                                <Label>Loan Amount</Label>
-                                <Input type="number" value={form.loanAmount} onChange={(e) => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700" />
-                              </div>
-                            </div>
-                            <div className="flex justify-end gap-2">
-                              <Button variant="outline" onClick={() => setApplyDialogOpen(false)}>Cancel</Button>
-                              <Button
-                                className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue/80 text-white"
-                                onClick={async () => {
-                                  try {
-                                    if (!selectedProduct) return
-                                    await applicationsApi.create({
-                                      aggregatorId: (user as any)?._id || (user as any)?.id,
-                                      lenderId: p.lenderId._id,
-                                      productId: p.productId._id,
-                                      customerName: form.customerName,
-                                      customerEmail: form.customerEmail,
-                                      customerPhone: form.customerPhone,
-                                      loanAmount: Number(form.loanAmount || 0),
-                                    })
-                                    toast({ title: 'Application submitted' })
-                                    setApplyDialogOpen(false)
-                                    setSelectedProduct(null)
-                                    setForm({ customerName: '', customerEmail: '', customerPhone: '', loanAmount: '' })
-                                  } catch (e: any) {
-                                    toast({ title: 'Submission failed', description: e?.message || 'Try again.' })
-                                  }
-                                }}
-                              >
-                                Submit Application
-                              </Button>
                             </div>
                           </DialogContent>
                         </Dialog>
