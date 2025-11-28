@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
-import { Search, Plus, Eye } from "lucide-react"
+import { Search, Plus, Eye, Landmark, Percent, Clock, Wallet, Calendar, User, FileText, BadgeCheck, X } from "lucide-react"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,25 @@ import { useAuth } from "@/lib/auth"
 import { useToast } from "@/hooks/use-toast"
 import { useLenders } from "@/hooks/use-lenders"
 import { useCreateApplication } from "@/hooks/use-applications"
+import { Badge } from "@/components/ui/badge"
+
+const InfoItem = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
+  <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
+    <Icon className={`w-8 h-8 ${color} mb-2`} />
+    <p className="text-sm text-gray-400">{label}</p>
+    <p className="text-lg font-bold text-white">{value}</p>
+  </div>
+);
+
+const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
+  <div className="flex items-start gap-3">
+    <Icon className={`w-5 h-5 ${color} mt-1`} />
+    <div>
+      <p className="text-sm text-gray-400">{label}</p>
+      <p className="font-semibold text-white">{value}</p>
+    </div>
+  </div>
+);
 
 export function AggregatorProducts() {
   const { user } = useAuth('aggregator_admin')
@@ -351,6 +370,20 @@ export function AggregatorProducts() {
                   const prod = p.product
                   const lender = p.lender
 
+                  console.log(prod, 'this is product in table row', prod?.isActive === true ? "Active" : "Inactive")
+
+                  const getStatusColor = (status?: string) => {
+                    console.log(status, 'status check')
+                    if (!status) return 'bg-gray-500/20 text-gray-400'
+                    switch (status.toUpperCase()) {
+                      case 'ACTIVE': return 'bg-green-500/20 text-green-400'
+                      case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
+                      case 'SUSPENDED':
+                      case 'INACTIVE': return 'bg-red-500/20 text-red-400'
+                      default: return 'bg-gray-500/20 text-gray-400'
+                    }
+                  }
+
                   return (
                     <TableRow key={p._id}>
                       <TableCell className="text-white font-medium">{prod.name}</TableCell>
@@ -388,51 +421,70 @@ export function AggregatorProducts() {
                             </Button>
                           </DialogTrigger>
 
-                          <DialogContent className="bg-gray-900 border-gray-800 text-white max-w-2xl">
+                          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
                             <DialogHeader>
-                              <DialogTitle>{prod.name}</DialogTitle>
-                              <DialogDescription className="text-gray-400">
-                                Product details
-                              </DialogDescription>
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                                    {prod.name}
+                                  </DialogTitle>
+                                  <DialogDescription className="text-gray-400 pt-1">
+                                    Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{lender.lenderName}</span>
+                                  </DialogDescription>
+                                  <Badge
+                                  className={`${getStatusColor(prod?.isActive === true ? "active" : "inactive")} border px-3 py-1 my-2 text-xs font-bold flex-shrink-0`}
+                                >
+                                  {prod?.isActive ? "Active" : "Inactive"}
+                                </Badge>
+                                </div>
+                              </div>
                             </DialogHeader>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
-                              <div>
-                                <div className="text-gray-400 text-sm">Lender</div>
-                                <div className="text-white">{lender.lenderName}</div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setViewDialogOpen(false)}
+                              className="absolute top-4 right-4 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+                            >
+                              <X className="w-5 h-5" />
+                            </Button>
+                            <div className="py-4 space-y-6">
+                              {/* Key Details */}
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                                <InfoItem icon={Landmark} color="text-yellow-500" label="Lender" value={lender.lenderName} />
+                                <InfoItem icon={Percent} color="text-blue" label="Interest Rate" value={`${prod.interestRate}%`} />
+                                <InfoItem icon={Percent} color="text-green-400" label="Commission" value={`${prod.commissionPercent}%`} />
+                                <InfoItem icon={Clock} color="text-red-400" label="Tenure" value={prod.tenureMonths} />
                               </div>
-                              <div>
-                                <div className="text-gray-400 text-sm">Type</div>
-                                <div className="text-white">{prod.productType}</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400 text-sm">Interest</div>
-                                <div className="text-white">{prod.interestRate}%</div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-gray-400 text-sm">Commission</div>
-                                <div className="text-white">{prod.commissionPercent}%</div>
-                              </div>
-                              <div>
-                                <div className="text-gray-400 text-sm">Tenure</div>
-                                <div className="text-white">{prod.tenureMonths}</div>
-                              </div>
-                              <div className="space-y-1">
-                                <div className="text-gray-400 text-sm">Loan Range</div>
-                                <div className="text-white">₹{(prod.minAmount / 100000).toFixed(1)}L - ₹{(prod.maxAmount / 100000).toFixed(1)}L</div>
-                              </div>
-                              <div className="md:col-span-2 space-y-1">
-                                <div className="text-gray-400 text-sm">Required Documents</div>
-                                <div className="text-white">
-                                  {(prod.requiredDocuments || []).length ? (
-                                    <ul className="list-disc pl-5 space-y-1 text-gray-200">
-                                      {(prod.requiredDocuments || []).map((d: string, idx: number) => (
-                                        <li key={idx}>{d}</li>
+
+                              {/* Loan & Eligibility */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
+                                <div className="space-y-4">
+                                  <h3 className="font-semibold text-lg text-cyan-300">Loan Details</h3>
+                                  <InfoLine icon={Wallet} color="text-red-400" label="Loan Range" value={`₹${(prod.minAmount / 100000).toFixed(1)}L - ₹${(prod.maxAmount / 100000).toFixed(1)}L`} />
+                                  <h3 className="font-semibold text-lg text-cyan-300 mb-3 flex items-center gap-2"><FileText className="w-5 h-5" />Required Documents</h3>
+                                  {(prod.requiredDocuments || []).length > 0 ? (
+                                    <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+                                      {(prod.requiredDocuments || []).map((doc: string, idx: number) => (
+                                        <div key={idx} className="flex items-center gap-2 text-gray-300">
+                                          <BadgeCheck className="w-4 h-4 text-green-400" />
+                                          <span>{doc}</span>
+                                        </div>
                                       ))}
-                                    </ul>
-                                  ) : '—'}
+                                    </div>
+                                  ) : (
+                                    <p className="text-gray-500 italic">No specific documents listed.</p>
+                                  )}
+                                </div>
+                                <div className="space-y-4">
+                                  <h3 className="font-semibold text-lg text-cyan-300">Eligibility Criteria</h3>
+                                  <InfoLine icon={Calendar} color="text-blue" label="Age Range" value={prod.ageRange || 'N/A'} />
+                                  <InfoLine icon={Wallet} color="text-green-400" label="Minimum Income" value={prod.minIncome ? `₹${prod.minIncome.toLocaleString()}` : 'N/A'} />
+                                  <InfoLine icon={User} color="text-yellow-500" label="Minimum Credit Score" value={prod.minCreditScore || 'N/A'} />
+
                                 </div>
                               </div>
                             </div>
+
                           </DialogContent>
                         </Dialog>
                       </TableCell>
