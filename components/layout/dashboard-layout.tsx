@@ -268,7 +268,6 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const token = getCookie("token");
   const decoded = decodeJwt(token);
   const isOmsEnabled = decoded?.isOmsEnabled ?? false;
-  console.log(decoded, isOmsEnabled, 'this is from dashboard layout')
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {

@@ -41,34 +41,35 @@ import {
 
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import { TablePagination } from '@/components/ui/pagination'
 import { useAuth } from '@/lib/auth'
-import { applicationsApi } from '@/lib/applications-api'
 import { useToast } from '@/hooks/use-toast'
 import { useProducts } from '@/hooks/use-products'
 import { useApplications, useCreateApplication, useDeleteApplication } from '@/hooks/use-applications'
 
-
 export function AggregatorApplications() {
   const { user } = useAuth('aggregator_admin')
+  const { toast } = useToast()
+
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterLender, setFilterLender] = useState('')
+
   const [selectedApplication, setSelectedApplication] = useState<any>(null)
+  const [selectedLenderId, setSelectedLenderId] = useState("")
+  const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+
   const [form, setForm] = useState({
     customerName: '',
     customerEmail: '',
     customerPhone: '',
     loanAmount: '',
-    loanType: '',
     productId: '',
     lenderId: ''
   })
-  const { toast } = useToast()
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -88,11 +89,7 @@ export function AggregatorApplications() {
   const total = applications?.count || 0
 
   // Fetch products for the dropdown
-  const {
-    data: products,
-    isLoading: loading,
-    error,
-  } = useProducts({ page, limit: 100 });
+  const { data: products } = useProducts({ page, limit: 100 });
 
   const createApplicationMutation = useCreateApplication();
   const deleteApplicationMutation = useDeleteApplication();
@@ -136,36 +133,16 @@ export function AggregatorApplications() {
     ]
   }, [applications, total])
 
-  // Transform API data to match UI format
-  const transformedApplications = useMemo(() => {
-    return applications?.results.map(app => ({
-      id: app._id,
-      customerName: app.customerName,
-      customerEmail: app.customerEmail,
-      customerPhone: app.customerPhone,
-      loanType: app.product?.productType || app.product?.name || 'N/A',
-      loanAmount: app.loanAmount,
-      lenderName: app.lender?.companyName || app.lender?.username || 'N/A',
-      status: app.status,
-      applicationDate: app.createdAt,
-      lastUpdated: app.updatedAt,
-      commissionRate: app.commissionPercent,
-      documents: app.documents || [],
-      avatar: '/placeholder.svg?height=40&width=40',
-      // Keep original data for view dialog
-      _original: app
-    }))
-  }, [applications?.results])
 
   // Client-side filtering for search and lender
   const filteredApplications = useMemo(() => {
-    return transformedApplications?.filter(app => {
+    return applications?.results?.filter(app => {
       const matchesSearch = app.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
         app.id.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesLender = !filterLender || filterLender === 'all' || app.lenderName === filterLender
       return matchesSearch && matchesLender
     })
-  }, [transformedApplications, searchTerm, filterLender])
+  }, [applications?.results, searchTerm, filterLender])
 
   // Reset page when filters change
   useEffect(() => {
@@ -183,8 +160,35 @@ export function AggregatorApplications() {
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
+  const lenders = useMemo(() => {
+    if (!products?.results) return [];
+
+    // Unique lenders
+    const map = new Map();
+    products.results.forEach(p => {
+      if (p.lender?.profile?._id) {
+        map.set(p.lender.profile._id, {
+          id: p.lender.profile._id,
+          name: p.lender.profile.lenderName,
+        });
+      }
+    });
+
+    return Array.from(map.values());
+  }, [products]);
+
+  const productsByLender = useMemo(() => {
+    if (!selectedLenderId) return [];
+    return products?.results?.filter(
+      (p) => p.lender?.profile._id === selectedLenderId
+    ) || [];
+  }, [products, selectedLenderId]);
+
+  console.log(form, 'this is form values', selectedApplication, 'this is appli')
   const handleCreateApplication = async () => {
     try {
+      if (!selectedProduct) return;
+
       const payload = {
         aggregatorId: user?._id || user?.id,
         productId: form.productId,
@@ -196,15 +200,18 @@ export function AggregatorApplications() {
       }
 
       const response = await createApplicationMutation.mutateAsync(payload)
+      console.log(response.createApplication.application, 'create application')
+
       if (response?.createApplication?.success) {
         toast({ title: 'Success', description: 'Application created successfully' })
         setIsCreateDialogOpen(false)
+        setSelectedProduct(null);
+        setSelectedLenderId("")
         setForm({
           customerName: '',
           customerEmail: '',
           customerPhone: '',
           loanAmount: '',
-          loanType: '',
           productId: '',
           lenderId: ''
         })
@@ -227,25 +234,18 @@ export function AggregatorApplications() {
   }
 
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await deleteApplicationMutation.mutateAsync(id);
-        toast({ title: 'Success', description: 'Product deleted successfully.' })
-      } catch (err) {
-        toast({
-          title: 'Error',
-          description: 'Failed to delete product.',
-          variant: 'destructive',
-        })
-      }
+    if (!confirm('Are you sure you want to delete')) return
+    try {
+      await deleteApplicationMutation.mutateAsync(id);
+      toast({ title: 'Success', description: 'Application deleted successfully.' })
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete Application.',
+        variant: 'destructive',
+      })
     }
   }
-
-  // Get unique lenders for filter dropdown
-  const uniqueLenders = useMemo(() => {
-    const lenders = new Set(transformedApplications?.map(app => app.lenderName))
-    return Array.from(lenders)
-  }, [transformedApplications])
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -279,20 +279,20 @@ export function AggregatorApplications() {
 
   return (
 
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-between"
+        className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold bg-gradient-to-r from-blue to-cyan-500 bg-clip-text text-transparent">
-            Loan Applications
-          </h1>
+          <h1 className="text-3xl font-bold text-white"> Loan Applications </h1>
           <p className="text-gray-400 mt-1">Manage and track all loan applications</p>
         </div>
+
+        {/* Apply Button */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button onClick={() => setIsCreateDialogOpen(true)} className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700">
@@ -307,111 +307,154 @@ export function AggregatorApplications() {
                 Submit a new loan application for your customer
               </DialogDescription>
             </DialogHeader>
-            <div className="grid grid-cols-2 gap-4">
+
+            <div className="space-y-5 py-4">
+              {/* LENDER SELECT */}
               <div className="space-y-2">
-                <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
-                <Input id="customerName" value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customerEmail" className="text-gray-300">Email</Label>
-                <Input id="customerEmail" type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="customerPhone" className="text-gray-300">Phone</Label>
-                <Input id="customerPhone" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="product" className="text-gray-300">Product</Label>
-                <Select value={form.productId} onValueChange={(v) => {
-                  const selectedProduct = products?.results?.find(p => p._id === v)
-                  setForm({
-                    ...form,
-                    productId: v,
-                    lenderId: selectedProduct?.lender?._id || ''
-                  })
-                }}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue placeholder="Select product" />
+                <Label className="text-gray-300">Select Lender</Label>
+                <Select
+                  value={selectedLenderId}
+                  onValueChange={(id) => {
+                    setSelectedLenderId(id);
+                    setSelectedProduct(null);
+                    setForm({ ...form, lenderId: id, productId: "" });
+                  }}
+                >
+                  <SelectTrigger className="bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 transition">
+                    <SelectValue placeholder="Choose Lender" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    {products?.results?.map(product => (
-                      <SelectItem key={product._id} value={product._id}>
-                        {product.name} - {product.productType}
+                  <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
+                    {lenders.map((l) => (
+                      <SelectItem key={l.id} value={l.id}>
+                        {l.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
 
+              {/* PRODUCT SELECT */}
               <div className="space-y-2">
-                <Label htmlFor="loanAmount" className="text-gray-300">Loan Amount</Label>
-                <Input id="loanAmount" type="number" value={form.loanAmount} onChange={e => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                <Label className="text-gray-300">Select Product</Label>
+
+                {/* If lender selected but has 0 products */}
+                {selectedLenderId && productsByLender.length === 0 ? (
+                  <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 text-sm italic">
+                    No products available for this lender.
+                  </div>
+                ) : (
+                  <Select
+                    disabled={!selectedLenderId}
+                    value={selectedProduct?._id}
+                    onValueChange={(id) => {
+                      const prod = productsByLender.find((p) => p._id === id);
+                      setSelectedProduct(prod || null);
+
+                      setForm({
+                        ...form,
+                        productId: prod?._id || "",
+                        lenderId: prod?.lender?.profile?._id || ""
+                      });
+                    }}
+                  >
+                    <SelectTrigger className="bg-gray-800 border border-gray-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition">
+                      <SelectValue
+                        placeholder={
+                          selectedLenderId ? "Choose Product" : "Select lender first"
+                        }
+                      />
+                    </SelectTrigger>
+                    <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
+                      {productsByLender.map((p) => (
+                        <SelectItem key={p._id} value={p._id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               </div>
-              {/* <div className="space-y-2">
-                <Label htmlFor="lender" className="text-gray-300">Preferred Lender</Label>
-                <Select value={form.lenderName} onValueChange={(v) => setForm({ ...form, lenderName: v, lenderId: v })}>
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                    <SelectValue placeholder="Select lender" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value="HDFC Bank">HDFC Bank</SelectItem>
-                    <SelectItem value="ICICI Bank">ICICI Bank</SelectItem>
-                    <SelectItem value="Bajaj Finance">Bajaj Finance</SelectItem>
-                    <SelectItem value="Axis Bank">Axis Bank</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div> */}
-              <div className="col-span-2 space-y-2">
-                <Label htmlFor="notes" className="text-gray-300">Additional Notes</Label>
-                <Textarea id="notes" className="bg-gray-800 border-gray-700 text-white" />
+
+              {/* FORM FIELDS */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2 space-y-2">
+                  <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
+                  <Input id="customerName" value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customerEmail" className="text-gray-300">Email</Label>
+                  <Input id="customerEmail" type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="customerPhone" className="text-gray-300">Phone</Label>
+                  <Input id="customerPhone" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="loanAmount" className="text-gray-300">Loan Amount</Label>
+                  <Input id="loanAmount" type="number" value={form.loanAmount} onChange={e => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                </div>
               </div>
             </div>
-            <Button
-              onClick={handleCreateApplication}
-              disabled={!form.customerName || !form.customerEmail || !form.productId || !form.loanAmount}
-              className="w-full bg-gradient-to-r from-green-600 to-blue-600 mt-4"
-            >
-              Submit Application
-            </Button>
+
+            {/* FOOTER */}
+            <div className="flex justify-end gap-3 border-t border-gray-700 pt-4">
+              <Button
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!form.customerName || !form.customerEmail || !form.productId || !form.loanAmount}
+                onClick={handleCreateApplication}
+                variant="outline"
+                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:to-blue-700 text-white shadow-lg disabled:opacity-40"
+              >
+                Submit Application
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
-      </motion.div>
+      </motion.div >
 
       {/* Stats Cards */}
-      {isTableLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={stat.title}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-            >
-              <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-sm font-medium text-gray-400">{stat.title}</p>
-                      <p className="text-2xl font-bold text-white mt-2">{stat.value}</p>
-                      <p className="text-green-400 text-sm mt-1">{stat.change} from last month</p>
+      {
+        isTableLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <CardSkeleton headerLines={2} bodyHeight={20} />
+            <CardSkeleton headerLines={2} bodyHeight={20} />
+            <CardSkeleton headerLines={2} bodyHeight={20} />
+            <CardSkeleton headerLines={2} bodyHeight={20} />
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.title}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+              >
+                <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-sm font-medium text-gray-400">{stat.title}</p>
+                        <p className="text-2xl font-bold text-white mt-2">{stat.value}</p>
+                        <p className="text-green-400 text-sm mt-1">{stat.change} from last month</p>
+                      </div>
+                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-gray-900/50 ${stat.color}`}>
+                        <stat.icon className="w-6 h-6" />
+                      </div>
                     </div>
-                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-gray-900/50 ${stat.color}`}>
-                      <stat.icon className="w-6 h-6" />
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-      )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
+        )
+      }
 
       {/* Filters */}
       <motion.div
@@ -448,8 +491,8 @@ export function AggregatorApplications() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Lenders</SelectItem>
-            {uniqueLenders.map(lender => (
-              <SelectItem key={lender} value={lender}>{lender}</SelectItem>
+            {applications?.results?.map(app => (
+              <SelectItem key={app.lender._id} value={app.lender.lenderName}>{app.lender.lenderName}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -477,12 +520,11 @@ export function AggregatorApplications() {
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Application</TableHead>
+                      <TableHead className="text-gray-300">Application Number</TableHead>
                       <TableHead className="text-gray-300">Customer</TableHead>
-                      <TableHead className="text-gray-300">Loan Details</TableHead>
+                      <TableHead className="text-gray-300">Product Details</TableHead>
                       <TableHead className="text-gray-300">Lender</TableHead>
                       <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Commission</TableHead>
                       <TableHead className="text-gray-300">Date</TableHead>
                       <TableHead className="text-gray-300">Actions</TableHead>
                     </TableRow>
@@ -492,7 +534,7 @@ export function AggregatorApplications() {
                       const StatusIcon = getStatusIcon(application.status)
                       return (
                         <motion.tr
-                          key={application.id}
+                          key={application._id}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
@@ -500,8 +542,7 @@ export function AggregatorApplications() {
                         >
                           <TableCell>
                             <div>
-                              <p className="text-white font-medium">{application.id.slice(0, 4)}</p>
-                              <p className="text-gray-400 text-sm">{application.loanType}</p>
+                              <p className="text-white font-medium">{application.applicationNumber}</p>
                             </div>
                           </TableCell>
                           <TableCell>
@@ -509,7 +550,7 @@ export function AggregatorApplications() {
                               <Avatar className="w-8 h-8">
                                 <AvatarImage src={application.avatar || "/placeholder.svg"} />
                                 <AvatarFallback className="bg-gray-800 text-gray-300 text-xs">
-                                  {application.customerName.split(' ').map(n => n[0]).join('')}
+                                  {application.customerName.split(' ').map((n: string) => n[0]).join('')}
                                 </AvatarFallback>
                               </Avatar>
                               <div>
@@ -521,26 +562,23 @@ export function AggregatorApplications() {
                           <TableCell>
                             <div>
                               <p className="text-white font-medium">{formatCurrency(application.loanAmount)}</p>
-                              <p className="text-gray-400 text-sm">{application.loanType}</p>
+                              <p className="text-gray-400 text-sm">{application.product.productType.replace('_', ' ')}</p>
                             </div>
                           </TableCell>
-                          <TableCell className="text-gray-300">{application.lenderName}</TableCell>
+                          <TableCell>
+                            <div>
+                              <p className="text-white font-medium">{application.lender.lenderName}</p>
+                              <p className="text-white font-medium">{application.lender.lenderType}</p>
+                            </div>
+                          </TableCell>
                           <TableCell>
                             <Badge className={getStatusColor(application.status)}>
                               <StatusIcon className="w-3 h-3 mr-1" />
                               {application.status.replace('_', ' ')}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-gold font-medium">{application.commissionRate}%</p>
-                              <p className="text-gray-400 text-sm">
-                                {application.expectedCommission > 0 ? formatCurrency(application.expectedCommission) : '-'}
-                              </p>
-                            </div>
-                          </TableCell>
                           <TableCell className="text-gray-400">
-                            {new Date(application.applicationDate).toLocaleDateString()}
+                            {new Date(application.createdAt).toLocaleDateString()}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -560,7 +598,7 @@ export function AggregatorApplications() {
                                   <Eye className="w-4 h-4 mr-2" />
                                   View Details
                                 </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-400 cursor-pointer hover:text-white" onClick={() => handleDelete(application.id)}>
+                                <DropdownMenuItem className="text-red-400 cursor-pointer hover:text-white" onClick={() => handleDelete(application._id)}>
                                   <Trash2 className="w-4 h-4" />
                                   Delete
                                 </DropdownMenuItem>
@@ -614,7 +652,6 @@ export function AggregatorApplications() {
                     </Avatar>
                     <div>
                       <p className="text-white font-medium">{selectedApplication.customerName}</p>
-                      <p className="text-gray-400 text-sm">Customer</p>
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -639,7 +676,7 @@ export function AggregatorApplications() {
                 <div className="grid grid-cols-3 gap-4">
                   <div>
                     <Label className="text-gray-400">Loan Type</Label>
-                    <p className="text-white font-medium">{selectedApplication.loanType}</p>
+                    <p className="text-white font-medium">{selectedApplication.product.productType.replace('_', ' ')}</p>
                   </div>
                   <div>
                     <Label className="text-gray-400">Loan Amount</Label>
@@ -647,7 +684,7 @@ export function AggregatorApplications() {
                   </div>
                   <div>
                     <Label className="text-gray-400">Lender</Label>
-                    <p className="text-white font-medium">{selectedApplication.lenderName}</p>
+                    <p className="text-white font-medium">{selectedApplication.lender.lenderName}</p>
                   </div>
                 </div>
               </div>
@@ -660,21 +697,21 @@ export function AggregatorApplications() {
                 </h3>
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <Label className="text-gray-400">Current Status</Label>
+                    <Label className="text-gray-400">Application Number</Label>
+                    <p className="text-white font-medium">
+                      {selectedApplication.applicationNumber}
+                    </p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-400">Current Status</Label><br />
                     <Badge className={`${getStatusColor(selectedApplication.status)} mt-1`}>
                       {selectedApplication.status.replace('_', ' ')}
                     </Badge>
                   </div>
                   <div>
-                    <Label className="text-gray-400">Application Date</Label>
-                    <p className="text-white font-medium">
-                      {new Date(selectedApplication.applicationDate).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div>
                     <Label className="text-gray-400">Last Updated</Label>
                     <p className="text-white font-medium">
-                      {new Date(selectedApplication.lastUpdated).toLocaleDateString()}
+                      {new Date(selectedApplication.updatedAt).toLocaleDateString()}
                     </p>
                   </div>
                 </div>
@@ -689,7 +726,11 @@ export function AggregatorApplications() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label className="text-gray-400">Commission Percent</Label>
-                    <p className="text-gold font-medium">{selectedApplication.commissionRate}%</p>
+                    <p className="text-gold font-medium">{selectedApplication.product.commissionPercent}%</p>
+                  </div>
+                  <div>
+                    <Label className="text-gray-400">Processing Fee Percent</Label>
+                    <p className="text-gold font-medium">{selectedApplication.product.processingFeePercent}%</p>
                   </div>
                 </div>
               </div>
@@ -709,6 +750,6 @@ export function AggregatorApplications() {
           )}
         </DialogContent>
       </Dialog>
-    </div>
+    </div >
   )
 }

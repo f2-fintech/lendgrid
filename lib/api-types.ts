@@ -308,7 +308,6 @@ export type ProductSummary = {
       _id: string;
       lenderName?: string;
       lenderType?: string;
-      companyName?: string;
       gstNumber?: string;
       address?: string;
     };

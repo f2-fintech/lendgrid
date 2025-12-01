@@ -30,13 +30,13 @@ export const applicationsApi = {
               customerState
               customerPincode
               loanAmount
-              tenureMonths
+              tenure
               status
               documents
               approvedAmount
+              approvedDate
               disbursedAmount
               disbursedDate
-              commissionPercent
               rejectionReason
               createdAt
               updatedAt
@@ -55,8 +55,11 @@ export const applicationsApi = {
                 productType
                 interestRate
                 commissionPercent
+                processingFeePercent
                 minAmount
                 maxAmount
+                tenureMonths
+                requiredDocuments
               }
             }
             count

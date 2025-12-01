@@ -46,10 +46,6 @@ const signupSchema = z.object({
     .min(2, 'Company name must be at least 2 characters')
     .max(50, 'Company name is too long'),
 
-  userType: z.enum(['aggregator', 'lender'], {
-    required_error: 'Please select a user type'
-  }),
-
   password: z.string()
     .min(8, "Password Must Be 8 Characters Long")
     .regex(/[A-Z]/, "Password Must Contain At Least 1 Uppercase Letter")
@@ -65,7 +61,6 @@ const signupSchema = z.object({
 });
 
 type SignupFormData = z.infer<typeof signupSchema>;
-type UserType = SignupFormData['userType'];
 
 export function SignupForm() {
   const [showPassword, setShowPassword] = useState(false);
@@ -82,7 +77,6 @@ export function SignupForm() {
     register,
     handleSubmit,
     setValue,
-    watch,
     formState: { errors }
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -90,21 +84,15 @@ export function SignupForm() {
     defaultValues: {}
   });
 
-  // Watch the userType field for the Select key
-  const selectedUserType = watch('userType');
-
   useEffect(() => {
     const roleParam = searchParams.get('role');
     const userType = mapLoginRoleToSignupType(roleParam);
-    console.log(userType, 'useeffect')
     if (userType) {
       console.log(userType, 'condition')
-      setValue('userType', userType, { shouldValidate: true });
     }
   }, [searchParams, setValue]);
 
   const onSubmit = async (data: SignupFormData) => {
-    console.log('submit hua', data)
     setIsLoading(true);
 
     try {

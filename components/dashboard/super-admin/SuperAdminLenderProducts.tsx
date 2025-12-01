@@ -401,14 +401,15 @@ export function SuperAdminLenderProducts(): JSX.Element {
                             <TableSkeleton columns={8} rows={pageSize} />
                         ) : (
                             <div className="min-w-full">
-                                <div className="grid grid-cols-8 gap-4 py-3 px-4 bg-gray-900/60 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-700 text-xs font-semibold tracking-wide text-gray-300 uppercase">
+                                <div className="grid grid-cols-9 gap-3 py-3 px-4 bg-gray-900/60 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-700 text-xs font-semibold tracking-wide text-gray-300 uppercase">
                                     <div className="w-52">Product</div>
+                                    <div className="w-22">Lender</div>
                                     <div className="w-32">Type</div>
+                                    <div className="w-44 text-center">Amount</div>
                                     <div className="w-24 text-right">Interest</div>
-                                    <div className="w-44 text-right">Loan Amount</div>
+                                    <div className="w-28 text-center">Commission</div>
                                     <div className="w-28 text-right">Tenure</div>
                                     <div className="w-24 text-center">Status</div>
-                                    <div className="w-28 text-center">Commission</div>
                                     <div className="w-28 text-center">Actions</div>
                                 </div>
                                 <div className="space-y-1">
@@ -435,9 +436,19 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                                     </p>
                                                 </div>
 
+                                                {/* Lender */}
+                                                <div className="w-44 text-white text-sm whitespace-nowrap">
+                                                    {product.lender?.profile.lenderName}- {product.lender?.profile.lenderType}
+                                                </div>
+
                                                 {/* TYPE */}
                                                 <div className="w-32 text-gray-300 uppercase text-sm font-medium truncate">
                                                     {product.productType.replace("_", " ")}
+                                                </div>
+
+                                                {/* LOAN AMOUNT */}
+                                                <div className="w-44 text-right text-white text-sm whitespace-nowrap">
+                                                    {formatCurrency(product.minAmount)} – {formatCurrency(product.maxAmount)}
                                                 </div>
 
                                                 {/* INTEREST */}
@@ -445,9 +456,9 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                                     {product.interestRate}%
                                                 </div>
 
-                                                {/* LOAN AMOUNT */}
-                                                <div className="w-44 text-right text-white text-sm whitespace-nowrap">
-                                                    {formatCurrency(product.minAmount)} – {formatCurrency(product.maxAmount)}
+                                                {/* COMMISSION */}
+                                                <div className="w-28 text-center text-cyan-300 font-medium text-sm whitespace-nowrap">
+                                                    {product.commissionPercent}%
                                                 </div>
 
                                                 {/* TENURE */}
@@ -462,11 +473,6 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                                     >
                                                         {product.isActive ? "Active" : "Inactive"}
                                                     </Badge>
-                                                </div>
-
-                                                {/* COMMISSION */}
-                                                <div className="w-28 text-center text-cyan-300 font-medium text-sm whitespace-nowrap">
-                                                    {product.commissionPercent}%
                                                 </div>
 
                                                 {/* ACTIONS */}
@@ -625,7 +631,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
 
                         <div className="grid grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="tenureMonths">Tenure</Label>
+                                <Label htmlFor="tenureMonths">Tenure in Years</Label>
                                 <Input id="tenureMonths" {...register('tenureMonths')} className="glass-input text-black placeholder-gray-400 h-12" />
                             </div>
 
@@ -743,11 +749,9 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                         className="flex-1 cursor-pointer"
                                     >
                                         <div>
-                                            <p className="font-medium text-white">{aggregator.user?.username}</p>
+                                            <p className="font-medium text-white">{aggregator?.companyName}</p>
                                             <p className="text-sm text-gray-400">{aggregator.user?.email}</p>
-                                            {aggregator.companyName && (
-                                                <p className="text-sm text-gray-500">{aggregator.companyName}</p>
-                                            )}
+                                            <p className="text-sm text-gray-500">{aggregator.user?.username}</p>
                                         </div>
                                     </Label>
                                     {assignedAggregators.includes(aggregator.userId) && (

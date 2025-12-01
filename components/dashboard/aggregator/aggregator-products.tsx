@@ -48,7 +48,7 @@ export function AggregatorProducts() {
 
   // Apply modal state
   const [applyDialogOpen, setApplyDialogOpen] = useState(false)
-  const [selectedLender, setSelectedLender] = useState("")
+  const [selectedLenderId, setSelectedLenderId] = useState("")
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
 
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
@@ -83,7 +83,6 @@ export function AggregatorProducts() {
         if (mounted) setIsLoading(false)
       }
     }
-
     load()
     return () => { mounted = false }
   }, [])
@@ -103,7 +102,7 @@ export function AggregatorProducts() {
     });
   }, [products, searchTerm, typeFilter]);
 
-  console.log(allLenders, selectedLender, selectedProduct, 'this is all lenders')
+  console.log(allLenders, selectedLenderId, selectedProduct, 'this is all lenders')
   // LENDERS DROPDOWN LIST
   const lenders = useMemo(() => {
     return allLenders.map((l) => ({
@@ -114,9 +113,9 @@ export function AggregatorProducts() {
 
   // FILTER PRODUCTS BY SELECTED LENDER
   const productsByLender = useMemo(() => {
-    if (!selectedLender) return [];
-    return products.filter((p) => p.lender._id === selectedLender);
-  }, [selectedLender, products]);
+    if (!selectedLenderId) return [];
+    return products.filter((p) => p.lender._id === selectedLenderId);
+  }, [selectedLenderId, products]);
 
   // SUBMIT APPLICATION
   async function submitApplication() {
@@ -139,7 +138,7 @@ export function AggregatorProducts() {
 
       setApplyDialogOpen(false)
       setSelectedProduct(null)
-      setSelectedLender("")
+      setSelectedLenderId("")
       setForm({ customerName: "", customerEmail: "", customerPhone: "", loanAmount: "" })
     } catch (e: any) {
       toast({ title: "Submission failed", description: e?.message || "Try again." })
@@ -185,60 +184,77 @@ export function AggregatorProducts() {
               <X className="w-5 h-5" />
             </Button>
 
-            <div className="space-y-6 py-4 flex-grow overflow-y-auto pr-4">
-              {/* Lender & Product Selection */}
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
-                <h3 className="font-semibold text-lg text-cyan-300">1. Select Product</h3>
-                <div className="space-y-2">
-                  <Label className="text-gray-300">Lender</Label>
-                  <Select
-                    value={selectedLender}
-                    onValueChange={(id) => {
-                      setSelectedLender(id);
-                      setSelectedProduct(null);
-                    }}
-                  >
-                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
-                      <SelectValue placeholder="Choose a lender" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-900 text-white border-gray-700">
-                      {lenders.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
-                          {l.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* LENDER */}
+            <div className="space-y-2">
+              <Label className="text-gray-300">Select Lender</Label>
+              <Select
+                value={selectedLenderId}
+                onValueChange={(id) => {
+                  setSelectedLenderId(id);
+                  setSelectedProduct(null);
+                }}
+              >
+                <SelectTrigger className="bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 transition">
+                  <SelectValue placeholder="Choose Lender" />
+                </SelectTrigger>
+                <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
+                  {lenders.map((l) => (
+                    <SelectItem key={l.id} value={l.id}>
+                      {l.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
 
-                <div className="space-y-2">
-                  <Label className="text-gray-300">Product</Label>
-                  {selectedLender && productsByLender.length === 0 ? (
-                    <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border-gray-700 text-gray-400 text-sm italic">
-                      No products available for this lender.
-                    </div>
-                  ) : (
-                    <Select
-                      disabled={!selectedLender}
-                      value={selectedProduct?._id}
-                      onValueChange={(id) => {
-                        const prod = productsByLender.find((p) => p._id === id);
-                        setSelectedProduct(prod || null);
-                      }}
-                    >
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white disabled:opacity-50">
-                        <SelectValue placeholder={selectedLender ? "Choose a product" : "Select a lender first"} />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-900 text-white border-gray-700">
-                        {productsByLender.map((p) => (
-                          <SelectItem key={p._id} value={p._id}>
-                            {p.product.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
+            {/* PRODUCT */}
+            <div className="space-y-2">
+              <Label className="text-gray-300">Select Product</Label>
+
+              {/* If lender selected but has 0 products */}
+              {selectedLenderId && productsByLender.length === 0 ? (
+                <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 text-sm italic">
+                  No products available for this lender.
                 </div>
+              ) : (
+                <Select
+                  disabled={!selectedLenderId}
+                  value={selectedProduct?._id}
+                  onValueChange={(id) => {
+                    const prod = productsByLender.find((p) => p._id === id);
+                    setSelectedProduct(prod || null);
+                  }}
+                >
+                  <SelectTrigger className="bg-gray-800 border border-gray-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition">
+                    <SelectValue
+                      placeholder={
+                        selectedLenderId ? "Choose Product" : "Select lender first"
+                      }
+                    />
+                  </SelectTrigger>
+
+                  <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
+                    {productsByLender.map((p) => (
+                      <SelectItem key={p._id} value={p._id}>
+                        {p.product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* FORM FIELDS */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 space-y-2">
+                <Label className="text-gray-300">Customer Name</Label>
+                <Input
+                  className="bg-gray-800 border-gray-700 text-white"
+                  value={form.customerName}
+                  onChange={(e) =>
+                    setForm({ ...form, customerName: e.target.value })
+                  }
+                />
               </div>
 
               {/* Customer Details */}
@@ -267,7 +283,7 @@ export function AggregatorProducts() {
 
             {/* FOOTER */}
             <div className="flex justify-between items-center pt-4 border-t border-gray-700 flex-shrink-0">
-            
+
               <Button
                 disabled={!selectedProduct || !form.customerName || !form.loanAmount}
                 className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg disabled:opacity-50"
@@ -341,10 +357,7 @@ export function AggregatorProducts() {
                   const prod = p.product
                   const lender = p.lender
 
-                  console.log(prod, 'this is product in table row', prod?.isActive === true ? "Active" : "Inactive")
-
                   const getStatusColor = (status?: string) => {
-                    console.log(status, 'status check')
                     if (!status) return 'bg-gray-500/20 text-gray-400'
                     switch (status.toUpperCase()) {
                       case 'ACTIVE': return 'bg-green-500/20 text-green-400'
@@ -361,7 +374,7 @@ export function AggregatorProducts() {
 
                       <TableCell className="text-gray-300">{lender.lenderName}</TableCell>
 
-                      <TableCell className="text-gray-300">{prod.productType}</TableCell>
+                      <TableCell className="text-gray-300">{prod.productType.replace('_', ' ')}</TableCell>
 
                       <TableCell className="text-gray-300">{prod.interestRate}%</TableCell>
 
@@ -394,15 +407,20 @@ export function AggregatorProducts() {
 
                           <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
                             <DialogHeader>
-                              <div className="flex items-center justify-between">
-                                <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-                                  {prod.name}
-                                </DialogTitle>
-                                <Badge
-                                  className={`${getStatusColor(prod?.isActive === true ? "active" : "inactive")} border px-3 py-1 text-xs font-bold`}
-                                >
-                                  {prod?.isActive ? "Active" : "Inactive"}
-                                </Badge>
+                              <div className="flex items-start justify-between gap-4">
+                                <div>
+                                  <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                                    {prod.name}
+                                  </DialogTitle>
+                                  <DialogDescription className="text-gray-400 pt-1">
+                                    Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{lender.lenderName}</span>
+                                  </DialogDescription>
+                                  <Badge
+                                    className={`${getStatusColor(prod?.isActive === true ? "active" : "inactive")} border px-3 py-1 my-2 text-xs font-bold flex-shrink-0`}
+                                  >
+                                    {prod?.isActive ? "Active" : "Inactive"}
+                                  </Badge>
+                                </div>
                               </div>
                               <DialogDescription className="text-gray-400 pt-1">
                                 Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{lender.lenderName}</span>
@@ -453,7 +471,6 @@ export function AggregatorProducts() {
                                 </div>
                               </div>
                             </div>
-
                           </DialogContent>
                         </Dialog>
                       </TableCell>
