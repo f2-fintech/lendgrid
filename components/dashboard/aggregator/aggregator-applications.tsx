@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Plus, MoreHorizontal, Eye, Edit, Trash2, FileText, Clock, CheckCircle, XCircle, AlertCircle, Phone, Mail, MapPin, Calendar, DollarSign, Building2, User } from 'lucide-react'
+import { Search, Plus, MoreHorizontal, Eye, Edit, Trash2, FileText, Clock, CheckCircle, XCircle, AlertCircle, Phone, Mail, MapPin, Calendar, DollarSign, Building2, User, X, Landmark, Percent, Contact2Icon } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -47,6 +47,25 @@ import { useAuth } from '@/lib/auth'
 import { useToast } from '@/hooks/use-toast'
 import { useProducts } from '@/hooks/use-products'
 import { useApplications, useCreateApplication, useDeleteApplication } from '@/hooks/use-applications'
+import React from 'react'
+
+const InfoItem = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
+  <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
+    <Icon className={`w-8 h-8 ${color} mb-2`} />
+    <p className="text-sm text-gray-400">{label}</p>
+    <p className="text-lg font-bold text-white">{value}</p>
+  </div>
+);
+
+const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
+  <div className="flex items-start gap-3">
+    <Icon className={`w-5 h-5 ${color} mt-1`} />
+    <div>
+      <p className="text-sm text-gray-400">{label}</p>
+      <p className="font-semibold text-white">{value}</p>
+    </div>
+  </div>
+);
 
 export function AggregatorApplications() {
   const { user } = useAuth('aggregator_admin')
@@ -277,6 +296,10 @@ export function AggregatorApplications() {
     }).format(amount)
   }
 
+  function setApplyDialogOpen(arg0: boolean): void {
+    throw new Error('Function not implemented.')
+  }
+
   return (
 
     <div className="space-y-6">
@@ -300,116 +323,119 @@ export function AggregatorApplications() {
               New Application
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-900 border-gray-800 max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-white">Create New Application</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                Submit a new loan application for your customer
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-5 py-4">
-              {/* LENDER SELECT */}
-              <div className="space-y-2">
-                <Label className="text-gray-300">Select Lender</Label>
-                <Select
-                  value={selectedLenderId}
-                  onValueChange={(id) => {
-                    setSelectedLenderId(id);
-                    setSelectedProduct(null);
-                    setForm({ ...form, lenderId: id, productId: "" });
-                  }}
-                >
-                  <SelectTrigger className="bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 transition">
-                    <SelectValue placeholder="Choose Lender" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
-                    {lenders.map((l) => (
-                      <SelectItem key={l.id} value={l.id}>
-                        {l.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* Apply Form */}
+          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-h-screen rounded-xl shadow-xl">
+            <DialogHeader className="flex-shrink-0">
+              <div>
+                <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                  Create New Application
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 pt-1">
+                  Submit a new loan application for your customer
+                </DialogDescription>
               </div>
+            </DialogHeader>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsCreateDialogOpen(false)}
+              className="absolute top-4 right-4 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+            >
+              <X className="w-5 h-5" />
+            </Button>
 
-              {/* PRODUCT SELECT */}
-              <div className="space-y-2">
-                <Label className="text-gray-300">Select Product</Label>
-
-                {/* If lender selected but has 0 products */}
-                {selectedLenderId && productsByLender.length === 0 ? (
-                  <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 text-sm italic">
-                    No products available for this lender.
-                  </div>
-                ) : (
+            <div className="space-y-2 py-2 flex-grow overflow-y-auto pr-2">
+              {/* Lender & Product Selection */}
+              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
+                <h3 className="font-semibold text-lg text-cyan-300">1. Select Product</h3>
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Lender</Label>
                   <Select
-                    disabled={!selectedLenderId}
-                    value={selectedProduct?._id}
+                    value={selectedLenderId}
                     onValueChange={(id) => {
-                      const prod = productsByLender.find((p) => p._id === id);
-                      setSelectedProduct(prod || null);
-
-                      setForm({
-                        ...form,
-                        productId: prod?._id || "",
-                        lenderId: prod?.lender?.profile?._id || ""
-                      });
+                      setSelectedLenderId(id);
+                      setSelectedProduct(null);
+                      setForm({ ...form, lenderId: id, productId: "" });
                     }}
                   >
-                    <SelectTrigger className="bg-gray-800 border border-gray-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition">
-                      <SelectValue
-                        placeholder={
-                          selectedLenderId ? "Choose Product" : "Select lender first"
-                        }
-                      />
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectValue placeholder="Choose a lender" />
                     </SelectTrigger>
-                    <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
-                      {productsByLender.map((p) => (
-                        <SelectItem key={p._id} value={p._id}>
-                          {p.name}
+                    <SelectContent className="bg-gray-900 text-white border-gray-700">
+                      {lenders.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
-                )}
+                </div>
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Product</Label>
+                  {selectedLenderId && productsByLender.length === 0 ? (
+                    <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border-gray-700 text-gray-400 text-sm italic">
+                      No products available for this lender.
+                    </div>
+                  ) : (
+                    <Select
+                      disabled={!selectedLenderId}
+                      value={selectedProduct?._id}
+                      onValueChange={(id) => {
+                        const prod = productsByLender.find((p) => p._id === id);
+                        setSelectedProduct(prod || null);
+                        setForm({
+                          ...form,
+                          productId: prod?._id || "",
+                          lenderId: prod?.lender?.profile?._id || ""
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white disabled:opacity-50">
+                        <SelectValue placeholder={selectedLenderId ? "Choose a product" : "Select a lender first"} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 text-white border-gray-700">
+                        {productsByLender.map((p) => (
+                          <SelectItem key={p._id} value={p._id}>
+                            {p.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </div>
 
-              {/* FORM FIELDS */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2 space-y-2">
-                  <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
-                  <Input id="customerName" value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customerEmail" className="text-gray-300">Email</Label>
-                  <Input id="customerEmail" type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="customerPhone" className="text-gray-300">Phone</Label>
-                  <Input id="customerPhone" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="loanAmount" className="text-gray-300">Loan Amount</Label>
-                  <Input id="loanAmount" type="number" value={form.loanAmount} onChange={e => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+              {/* Customer Details */}
+              <div className="p-2 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
+                <h3 className="font-semibold text-lg text-cyan-300">2. Customer Details</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="md:col-span-2 space-y-2">
+                    <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
+                    <Input id="customerName" value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="customerEmail" className="text-gray-300">Email</Label>
+                    <Input id="customerEmail" type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="customerPhone" className="text-gray-300">Phone</Label>
+                    <Input id="customerPhone" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                  </div>
+                  <div className="md:col-span-2 space-y-2">
+                    <Label htmlFor="loanAmount" className="text-gray-300">Loan Amount</Label>
+                    <Input id="loanAmount" type="number" value={form.loanAmount} onChange={e => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* FOOTER */}
-            <div className="flex justify-end gap-3 border-t border-gray-700 pt-4">
-              <Button
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                Cancel
-              </Button>
+            <div className="flex justify-between items-center pt-0  border-gray-700 flex-shrink-0">
+
               <Button
                 disabled={!form.customerName || !form.customerEmail || !form.productId || !form.loanAmount}
                 onClick={handleCreateApplication}
-                variant="outline"
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 hover:to-blue-700 text-white shadow-lg disabled:opacity-40"
+                className="bg-gradient-to-r from-blue to-cyan-500 text-white "
               >
                 Submit Application
               </Button>
@@ -627,126 +653,77 @@ export function AggregatorApplications() {
 
       {/* View Application Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-gray-900 border-gray-800 max-w-4xl">
-          <DialogHeader>
-            <DialogTitle className="text-white">Application Details</DialogTitle>
-            <DialogDescription className="text-gray-400">
-              Complete information about the loan application
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
           {selectedApplication && (
-            <div className="space-y-6">
-              {/* Customer Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <User className="w-5 h-5 mr-2" />
-                  Customer Information
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={selectedApplication.avatar || "/placeholder.svg"} />
-                      <AvatarFallback className="bg-gray-800 text-gray-300">
-                        {selectedApplication.customerName.split(' ').map((n: string) => n[0]).join('')}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="text-white font-medium">{selectedApplication.customerName}</p>
+            <>
+              <DialogHeader>
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                      {selectedApplication.product.name}
+                    </DialogTitle>
+                    <DialogDescription className="text-gray-400 pt-1">
+                      Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{selectedApplication.lender.lenderName}</span>
+                    </DialogDescription>
+                  </div>
+
+                </div>
+
+              </DialogHeader>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsViewDialogOpen(false)}
+                className="absolute top-4 right-4 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+              <Badge
+                className={`${getStatusColor(selectedApplication.status)} border px-3 py-1 bg-transparent text-green-600 text-xs font-bold flex-shrink-0 w-min`}
+              >
+                {selectedApplication.status.replace('_', ' ')}
+              </Badge>
+
+              <div className="py-4 space-y-6">
+                {/* Key Details */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+                  <InfoItem icon={User} color="text-yellow-400" label="Customer" value={selectedApplication.customerName} />
+                  <InfoItem icon={DollarSign} color="text-green-400" label="Loan Amount" value={formatCurrency(selectedApplication.loanAmount)} />
+                  <InfoItem icon={Landmark} color="text-blue" label="Lender" value={selectedApplication.lender.lenderName} />
+                  <InfoItem icon={Calendar} color="text-purple-400" label="Last Updated" value={new Date(selectedApplication.updatedAt).toLocaleDateString()} />
+                </div>
+
+                {/* Loan & Commission */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><DollarSign className="w-5 h-5" /> Details</h3>
+                    <InfoLine icon={FileText} color="text-yellow-400" label="Product Name" value={selectedApplication.product.name} />
+                    <InfoLine icon={FileText} color="text-blue" label="Loan Type" value={selectedApplication.product.productType.replace('_', ' ')} />
+                    <InfoLine icon={Percent} color="text-green-400" label="Commission" value={`${selectedApplication.product.commissionPercent}%`} />
+                    <InfoLine icon={Percent} color="text-purple-400" label="Processing Fee" value={`${selectedApplication.product.processingFeePercent}%`} />
+                  </div>
+
+                  {/* Customer & Documents */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><Contact2Icon className="w-5 h-5" />Contact & Documents</h3>
+                    <InfoLine icon={Mail} color="text-blue" label="Email" value={selectedApplication.customerEmail} />
+                    <InfoLine icon={Phone} color="text-green-400" label="Phone" value={selectedApplication.customerPhone} />
+                    <div className="pt-2">
+                      <h4 className="font-semibold text-cyan-300 mb-2 flex items-center gap-2"><FileText className="w-5 h-5" />Documents</h4>
+                      {(selectedApplication.documents || []).length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {selectedApplication.documents.map((doc: string, index: number) => (
+                            <Badge key={index} variant="outline" className="border-gray-600 text-gray-300">{doc}</Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 italic">No documents submitted.</p>
+                      )}
                     </div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center space-x-2 text-gray-300">
-                      <Mail className="w-4 h-4" />
-                      <span>{selectedApplication.customerEmail}</span>
-                    </div>
-                    <div className="flex items-center space-x-2 text-gray-300">
-                      <Phone className="w-4 h-4" />
-                      <span>{selectedApplication.customerPhone}</span>
-                    </div>
-                  </div>
                 </div>
               </div>
-
-              {/* Loan Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <DollarSign className="w-5 h-5 mr-2" />
-                  Loan Information
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-gray-400">Loan Type</Label>
-                    <p className="text-white font-medium">{selectedApplication.product.productType.replace('_', ' ')}</p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-400">Loan Amount</Label>
-                    <p className="text-white font-medium">{formatCurrency(selectedApplication.loanAmount)}</p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-400">Lender</Label>
-                    <p className="text-white font-medium">{selectedApplication.lender.lenderName}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Application Status */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <FileText className="w-5 h-5 mr-2" />
-                  Application Status
-                </h3>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label className="text-gray-400">Application Number</Label>
-                    <p className="text-white font-medium">
-                      {selectedApplication.applicationNumber}
-                    </p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-400">Current Status</Label><br />
-                    <Badge className={`${getStatusColor(selectedApplication.status)} mt-1`}>
-                      {selectedApplication.status.replace('_', ' ')}
-                    </Badge>
-                  </div>
-                  <div>
-                    <Label className="text-gray-400">Last Updated</Label>
-                    <p className="text-white font-medium">
-                      {new Date(selectedApplication.updatedAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Commission Information */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center">
-                  <Building2 className="w-5 h-5 mr-2" />
-                  Commission Information
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-gray-400">Commission Percent</Label>
-                    <p className="text-gold font-medium">{selectedApplication.product.commissionPercent}%</p>
-                  </div>
-                  <div>
-                    <Label className="text-gray-400">Processing Fee Percent</Label>
-                    <p className="text-gold font-medium">{selectedApplication.product.processingFeePercent}%</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Documents */}
-              <div>
-                <h3 className="text-lg font-semibold text-white mb-4">Documents Submitted</h3>
-                <div className="flex flex-wrap gap-2">
-                  {selectedApplication.documents.map((doc: string, index: number) => (
-                    <Badge key={index} variant="outline" className="border-gray-600 text-gray-300">
-                      {doc}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
+            </>
           )}
         </DialogContent>
       </Dialog>
