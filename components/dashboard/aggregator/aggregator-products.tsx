@@ -166,14 +166,16 @@ export function AggregatorProducts() {
           </DialogTrigger>
 
           {/* Apply Form */}
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-lg rounded-xl shadow-2xl flex flex-col max-h-[95vh]">
-            <DialogHeader className="flex-direction ">
-              <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-                New Loan Application
-              </DialogTitle>
-              <DialogDescription className="text-gray-400 pt-1">
-                Enter customer details to submit a new application.
-              </DialogDescription>
+                    <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-h-screen rounded-xl shadow-xl">
+            <DialogHeader className="flex-shrink-0">
+              <div>
+                <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                  New Loan Application
+                </DialogTitle>
+                <DialogDescription className="text-gray-400">
+                  Enter customer details to submit a new application.
+                </DialogDescription>
+              </div>
             </DialogHeader>
             <Button
               variant="ghost"
@@ -184,81 +186,64 @@ export function AggregatorProducts() {
               <X className="w-5 h-5" />
             </Button>
 
-            {/* LENDER */}
-            <div className="space-y-2">
-              <Label className="text-gray-300">Select Lender</Label>
-              <Select
-                value={selectedLenderId}
-                onValueChange={(id) => {
-                  setSelectedLenderId(id);
-                  setSelectedProduct(null);
-                }}
-              >
-                <SelectTrigger className="bg-gray-800 border border-gray-700 text-white hover:bg-gray-700 transition">
-                  <SelectValue placeholder="Choose Lender" />
-                </SelectTrigger>
-                <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
-                  {lenders.map((l) => (
-                    <SelectItem key={l.id} value={l.id}>
-                      {l.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* PRODUCT */}
-            <div className="space-y-2">
-              <Label className="text-gray-300">Select Product</Label>
-
-              {/* If lender selected but has 0 products */}
-              {selectedLenderId && productsByLender.length === 0 ? (
-                <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border border-gray-700 text-gray-400 text-sm italic">
-                  No products available for this lender.
+            <div className="space-y-2 py-2 flex-grow overflow-y-auto pr-2">
+              {/* Lender & Product Selection */}
+              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
+                <h3 className="font-semibold text-lg text-cyan-300">1. Select Product</h3>
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Lender</Label>
+                  <Select
+                    value={selectedLenderId}
+                    onValueChange={(id) => {
+                      setSelectedLenderId(id);
+                      setSelectedProduct(null);
+                    }}
+                  >
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                      <SelectValue placeholder="Choose a lender" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-gray-900 text-white border-gray-700">
+                      {lenders.map((l) => (
+                        <SelectItem key={l.id} value={l.id}>
+                          {l.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              ) : (
-                <Select
-                  disabled={!selectedLenderId}
-                  value={selectedProduct?._id}
-                  onValueChange={(id) => {
-                    const prod = productsByLender.find((p) => p._id === id);
-                    setSelectedProduct(prod || null);
-                  }}
-                >
-                  <SelectTrigger className="bg-gray-800 border border-gray-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition">
-                    <SelectValue
-                      placeholder={
-                        selectedLenderId ? "Choose Product" : "Select lender first"
-                      }
-                    />
-                  </SelectTrigger>
 
-                  <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
-                    {productsByLender.map((p) => (
-                      <SelectItem key={p._id} value={p._id}>
-                        {p.product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-
-            {/* FORM FIELDS */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="col-span-2 space-y-2">
-                <Label className="text-gray-300">Customer Name</Label>
-                <Input
-                  className="bg-gray-800 border-gray-700 text-white"
-                  value={form.customerName}
-                  onChange={(e) =>
-                    setForm({ ...form, customerName: e.target.value })
-                  }
-                />
+                <div className="space-y-2">
+                  <Label className="text-gray-300">Product</Label>
+                  {selectedLenderId && productsByLender.length === 0 ? (
+                    <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border-gray-700 text-gray-400 text-sm italic">
+                      No products available for this lender.
+                    </div>
+                  ) : (
+                    <Select
+                      disabled={!selectedLenderId}
+                      value={selectedProduct?._id}
+                      onValueChange={(id) => {
+                        const prod = productsByLender.find((p) => p._id === id);
+                        setSelectedProduct(prod || null);
+                      }}
+                    >
+                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white disabled:opacity-50">
+                        <SelectValue placeholder={selectedLenderId ? "Choose a product" : "Select a lender first"} />
+                      </SelectTrigger>
+                      <SelectContent className="bg-gray-900 text-white border-gray-700">
+                        {productsByLender.map((p) => (
+                          <SelectItem key={p._id} value={p._id}>
+                            {p.product.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
               </div>
 
               {/* Customer Details */}
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
+              <div className="p-2 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
                 <h3 className="font-semibold text-lg text-cyan-300">2. Customer Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="md:col-span-2 space-y-2">
@@ -282,11 +267,11 @@ export function AggregatorProducts() {
             </div>
 
             {/* FOOTER */}
-            <div className="flex justify-between items-center pt-4 border-t border-gray-700 flex-shrink-0">
+            <div className="flex justify-between items-center pt-0  border-gray-700 flex-shrink-0">
 
               <Button
                 disabled={!selectedProduct || !form.customerName || !form.loanAmount}
-                className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white shadow-lg disabled:opacity-50"
+                className="bg-gradient-to-r from-blue to-cyan-500 text-white "
                 onClick={submitApplication}
               >
                 Submit Application
@@ -422,9 +407,7 @@ export function AggregatorProducts() {
                                   </Badge>
                                 </div>
                               </div>
-                              <DialogDescription className="text-gray-400 pt-1">
-                                Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{lender.lenderName}</span>
-                              </DialogDescription>
+                              
                             </DialogHeader>
                             <Button
                               variant="ghost"
