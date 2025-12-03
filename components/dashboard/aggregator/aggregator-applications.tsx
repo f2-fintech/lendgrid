@@ -2,7 +2,22 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Search, Plus, MoreHorizontal, Eye, Edit, Trash2, FileText, Clock, CheckCircle, XCircle, AlertCircle, Phone, Mail, MapPin, Calendar, DollarSign, Building2, User, X, Landmark, Percent, Contact2Icon } from 'lucide-react'
+import {
+  Search, Plus, MoreHorizontal, Eye, Edit, Trash2, FileText, Clock, CheckCircle, XCircle, AlertCircle, Phone, Mail,
+  Calendar, DollarSign, Building2, User, X, Landmark, Percent, Contact2Icon,
+  FileWarning,
+  Upload,
+  Send,
+  PauseCircle,
+  ThumbsUp,
+  ArrowRightCircle,
+  BadgeCheck,
+  BadgeDollarSign,
+  Ban,
+  LucideTrash,
+  LayoutGrid,
+  List
+} from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -39,6 +54,7 @@ import {
   SelectValue
 } from '@/components/ui/select'
 
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
@@ -46,8 +62,44 @@ import { TablePagination } from '@/components/ui/pagination'
 import { useAuth } from '@/lib/auth'
 import { useToast } from '@/hooks/use-toast'
 import { useProducts } from '@/hooks/use-products'
-import { useApplications, useCreateApplication, useDeleteApplication } from '@/hooks/use-applications'
-import React from 'react'
+import { useApplications, useCreateApplication, useUpdateApplication, useDeleteApplication } from '@/hooks/use-applications'
+import { useLenders } from '@/hooks/use-lenders'
+import { ApplicationStatus } from '@/lib'
+
+export const pretty = (v: string) => v?.toLowerCase()?.replace(/_/g, " ");
+
+export const STATUS_STYLE: Record<string, string> = {
+  "under credit review": "bg-amber-500/20 text-amber-300 border-amber-500/30",
+  operations: "bg-sky-600/20 text-sky-400 border-sky-500/40",
+  "pendency in file": "bg-red-500/20 text-red-300 border-red-500/30",
+  "file send to banker": "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+  hold: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+  "to be approved": "bg-green-500/20 text-green-300 border-green-500/30",
+  "to be disbursed": "bg-purple-500/20 text-purple-300 border-purple-500/30",
+  approved: "bg-lime-500/20 text-lime-300 border-lime-500/30",
+  disbursed: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+  rejected: "bg-red-600/20 text-red-400 border-red-600/30",
+  drop: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+  submitted: "bg-blue-500/20 text-blue-300 border-blue-500/30"
+};
+
+export const STATUS_META: Record<string, { icon: JSX.Element }> = {
+  "under credit review": { icon: <FileWarning size={16} /> },
+  operations: { icon: <Send size={16} /> },
+  "pendency in file": { icon: <Clock size={16} /> },
+  "file send to banker": { icon: <Send size={16} /> },
+  hold: { icon: <PauseCircle size={16} /> },
+  "to be approved": { icon: <ThumbsUp size={16} /> },
+  "to be disbursed": { icon: <ArrowRightCircle size={16} /> },
+  approved: { icon: <BadgeCheck size={16} /> },
+  disbursed: { icon: <BadgeDollarSign size={16} /> },
+  rejected: { icon: <Ban size={16} /> },
+  drop: { icon: <LucideTrash size={16} /> },
+  submitted: { icon: <Send size={16} /> }
+};
+
+export const getStatusIcon = (status: string) =>
+  STATUS_META[pretty(status)]?.icon || <Clock size={16} />;
 
 const InfoItem = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
   <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
@@ -67,10 +119,481 @@ const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType
   </div>
 );
 
+// APPLICATION CARD COMPONENT
+interface ApplicationCardProps {
+  application: any;
+  onView: () => void;
+  onDelete: () => void;
+  onStatusClick: () => void;
+  formatCurrency: (amount: number) => string;
+}
+
+const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatCurrency }: ApplicationCardProps) => {
+  // State to toggle between details and history
+  const [showHistory, setShowHistory] = useState(false);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.3 }}
+      className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10"
+    >
+      <div className="p-6">
+        {/* Card Header - Application Number Only */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Application</p>
+            <p className="text-white font-bold text-lg">{application.applicationNumber}</p>
+          </div>
+        </div>
+
+        {/* Customer Info */}
+        <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-700">
+          <Avatar className="w-12 h-12">
+            <AvatarImage src={application.avatar || "/placeholder.svg"} />
+            <AvatarFallback className="bg-gray-800 text-gray-300">
+              {application.customerName.split(' ').map((n: string) => n[0]).join('')}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex-1 min-w-0">
+            <p className="text-white font-semibold truncate">{application.customerName}</p>
+            <p className="text-gray-400 text-sm truncate">{application.customerEmail}</p>
+          </div>
+        </div>
+
+        {/* Flip Animation Container */}
+        <div className="relative" style={{ minHeight: '280px' }}>
+          {/* FRONT SIDE - Product & Loan Details */}
+          <motion.div
+            initial={false}
+            animate={{
+              rotateY: showHistory ? 180 : 0,
+              opacity: showHistory ? 0 : 1,
+            }}
+            transition={{ duration: 0.6 }}
+            style={{
+              backfaceVisibility: 'hidden',
+              position: showHistory ? 'absolute' : 'relative',
+              width: '100%',
+            }}
+            className="space-y-3 mb-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <DollarSign className="w-4 h-4" />
+                <span>Loan Amount</span>
+              </div>
+              <p className="text-white font-bold">{formatCurrency(application.loanAmount)}</p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <FileText className="w-4 h-4" />
+                <span>Product Type</span>
+              </div>
+              <p className="text-white text-sm">{application.product.productType.replace('_', ' ')}</p>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <Building2 className="w-4 h-4" />
+                <span>Lender</span>
+              </div>
+              <div className="text-right">
+                <p className="text-white text-sm font-medium">{application.lender.lenderName}</p>
+                <p className="text-gray-400 text-xs">{application.lender.lenderType}</p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-gray-400 text-sm">
+                <Calendar className="w-4 h-4" />
+                <span>Last Updated</span>
+              </div>
+              <p className="text-gray-300 text-sm">{new Date(application.updatedAt).toLocaleDateString()}</p>
+            </div>
+
+            {/* CARD ACTIONS SECTION - Status Badge & Action Buttons */}
+            <div className="space-y-3 pt-4 border-t border-gray-700">
+              {/* Status Badge - Clickable with hover effect */}
+              <div
+                onClick={onStatusClick}
+                className={`w-full cursor-pointer rounded-lg transition-all duration-200 hover:scale-[1.02] ${STATUS_STYLE[pretty(application.status)]} p-3 flex items-center justify-center gap-2`}
+                title="Click to update status"
+              >
+                {getStatusIcon(application.status)}
+                <span className="font-medium">{pretty(application.status)}</span>
+              </div>
+
+              {/* Action Buttons - View, Delete & History */}
+              <div className="grid grid-cols-3 gap-2">
+                <Button
+                  onClick={onView}
+                  variant="outline"
+                  size="sm"
+                  className="w-full bg-gray-900/50 border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 hover:border-blue-500/50 transition-all"
+                >
+                  <Eye className="w-4 h-4 mr-1" />
+                  View
+                </Button>
+
+                <Button
+                  onClick={onDelete}
+                  variant="outline"
+                  size="sm"
+                  className="w-full bg-gray-900/50 border-gray-600 text-red-400 hover:text-white hover:bg-red-600/20 hover:border-red-500/50 transition-all"
+                >
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete
+                </Button>
+
+                <Button
+                  onClick={() => setShowHistory(true)}
+                  variant="outline"
+                  size="sm"
+                  className="w-full bg-gray-900/50 border-gray-600 text-cyan-400 hover:text-white hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
+                >
+                  <Clock className="w-4 h-4 mr-1" />
+                  History
+                </Button>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* BACK SIDE - Work History */}
+          <motion.div
+            initial={false}
+            animate={{
+              rotateY: showHistory ? 0 : -180,
+              opacity: showHistory ? 1 : 0,
+            }}
+            transition={{ duration: 0.6 }}
+            style={{
+              backfaceVisibility: 'hidden',
+              position: showHistory ? 'relative' : 'absolute',
+              width: '100%',
+              top: 0,
+            }}
+            className="space-y-3"
+          >
+            <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-700">
+              <h3 className="text-white font-semibold flex items-center gap-2">
+                <Clock className="w-5 h-5 text-cyan-400" />
+                Work History
+              </h3>
+            </div>
+
+            {/* History List - Scrollable */}
+            <div className="space-y-3 max-h-[200px] overflow-y-auto custom-scrollbar pr-2">
+              {application.workHistory && application.workHistory.length > 0 ? (
+                application.workHistory.map((history: any, index: number) => (
+                  <div
+                    key={index}
+                    className="bg-gray-900/50 rounded-lg p-3 border border-gray-700 space-y-2"
+                  >
+                    <p className="text-white text-sm font-medium leading-relaxed">
+                      {history.action}
+                    </p>
+                    {history.comment && (
+                      <p className="text-gray-400 text-xs italic">
+                        💬 {history.comment}
+                      </p>
+                    )}
+                    <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-700/50">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {new Date(history.timestamp).toLocaleString('en-IN', {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="text-center py-8">
+                  <Clock className="w-12 h-12 text-gray-600 mx-auto mb-2" />
+                  <p className="text-gray-500 text-sm">No history available</p>
+                </div>
+              )}
+            </div>
+
+            {/* Close History Button */}
+            <Button
+              onClick={() => setShowHistory(false)}
+              variant="outline"
+              size="sm"
+              className="w-full mt-3 bg-gray-900/50 border-gray-600 text-cyan-400 hover:text-white hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
+            >
+              <X className="w-4 h-4 mr-1.5" />
+              Close History
+            </Button>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Custom Scrollbar Styles */}
+      <style jsx>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(31, 41, 55, 0.5);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(75, 85, 99, 0.8);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(107, 114, 128, 1);
+        }
+      `}</style>
+    </motion.div>
+  );
+};
+
+
+// TABLE ROW WITH ACCORDION
+interface ApplicationTableRowProps {
+  application: any;
+  index: number;
+  onView: () => void;
+  onDelete: () => void;
+  onStatusClick: () => void;
+  formatCurrency: (amount: number) => string;
+}
+
+const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusClick, formatCurrency }: ApplicationTableRowProps) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  return (
+    <>
+      {/* Main Table Row */}
+      <motion.tr
+        initial={{ opacity: 0, x: -20 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, delay: index * 0.05 }}
+        className={`border-gray-700 hover:bg-gray-800/50 transition-colors ${isExpanded ? 'bg-gray-800/30' : ''}`}
+      >
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="h-6 w-6 p-0 text-gray-400 hover:text-cyan-400 transition-colors"
+              title={isExpanded ? "Hide History" : "Show History"}
+            >
+              <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                <ArrowRightCircle className="w-4 h-4" />
+              </motion.div>
+            </Button>
+            <p className="text-white font-medium">{application.applicationNumber}</p>
+          </div>
+        </TableCell>
+        <TableCell>
+          <div className="flex items-center space-x-3">
+            <Avatar className="w-8 h-8">
+              <AvatarImage src={application.avatar || "/placeholder.svg"} />
+              <AvatarFallback className="bg-gray-800 text-gray-300 text-xs">
+                {application.customerName.split(' ').map((n: string) => n[0]).join('')}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <p className="text-white font-medium">{application.customerName}</p>
+              <p className="text-gray-400 text-sm">{application.customerEmail}</p>
+            </div>
+          </div>
+        </TableCell>
+        <TableCell>
+          <div>
+            <p className="text-white font-medium">{formatCurrency(application.loanAmount)}</p>
+            <p className="text-gray-400 text-sm">{application.product.productType.replace('_', ' ')}</p>
+          </div>
+        </TableCell>
+        <TableCell>
+          <div>
+            <p className="text-white font-medium">{application.lender.lenderName}</p>
+            <p className="text-white font-medium">{application.lender.lenderType}</p>
+          </div>
+        </TableCell>
+        <TableCell>
+          <Badge
+            onClick={onStatusClick}
+            className={`cursor-pointer flex items-center gap-1 ${STATUS_STYLE[pretty(application.status)]} hover:scale-105 transition-transform`}
+            title="Click to update status"
+          >
+            {getStatusIcon(application.status)}
+            {pretty(application.status)}
+          </Badge>
+        </TableCell>
+        <TableCell className="text-gray-400">
+          {new Date(application.updatedAt).toLocaleDateString()}
+        </TableCell>
+        <TableCell>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
+                <MoreHorizontal className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="bg-gray-900 border-gray-800">
+              <DropdownMenuItem onClick={onView} className="text-gray-300 cursor-pointer hover:text-white">
+                <Eye className="w-4 h-4 mr-2" />
+                View Details
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={onDelete} className="text-red-400 cursor-pointer hover:text-white">
+                <Trash2 className="w-4 h-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </TableCell>
+      </motion.tr>
+
+      {/* Expandable History Row */}
+      {isExpanded && (
+        <motion.tr
+          initial={{ opacity: 0, height: 0 }}
+          animate={{ opacity: 1, height: 'auto' }}
+          exit={{ opacity: 0, height: 0 }}
+          transition={{ duration: 0.3 }}
+          className="border-gray-700 bg-gray-900/50"
+        >
+          <TableCell colSpan={7} className="p-0">
+            <motion.div
+              initial={{ y: -20 }}
+              animate={{ y: 0 }}
+              transition={{ duration: 0.3 }}
+              className="p-6"
+            >
+              <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-700">
+                <Clock className="w-5 h-5 text-cyan-400" />
+                <h3 className="text-white font-semibold text-lg">Work History</h3>
+                <Badge variant="outline" className="ml-2 border-cyan-500/30 text-cyan-400">
+                  {application.workHistory?.length || 0} {application.workHistory?.length === 1 ? 'entry' : 'entries'}
+                </Badge>
+              </div>
+
+              <div className="max-h-[300px] overflow-y-auto custom-scrollbar pr-2">
+                {application.workHistory && application.workHistory.length > 0 ? (
+                  <div className="space-y-3">
+                    {application.workHistory.map((history: any, idx: number) => (
+                      <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.3, delay: idx * 0.1 }}
+                        className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 hover:border-cyan-500/30 transition-colors"
+                      >
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="bg-cyan-500/10 rounded-full p-2 mt-0.5">
+                            <FileText className="w-4 h-4 text-cyan-400" />
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white text-sm font-medium leading-relaxed">
+                              {history.action}
+                            </p>
+                            {history.comment && (
+                              <div className="mt-2 bg-gray-900/50 rounded-md p-3 border-l-2 border-cyan-500/50">
+                                <p className="text-gray-400 text-xs flex items-start gap-2">
+                                  <span className="text-cyan-400 mt-0.5">💬</span>
+                                  <span className="italic">{history.comment}</span>
+                                </p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-700/50">
+                          <div className="flex items-center gap-1.5 bg-gray-900/50 rounded-md px-2 py-1">
+                            <Calendar className="w-3 h-3 text-green-400" />
+                            <span className="text-gray-400">
+                              {new Date(history.timestamp).toLocaleString('en-IN', {
+                                day: '2-digit',
+                                month: 'short',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: true
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <Clock className="w-16 h-16 text-gray-600 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">No work history available</p>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          </TableCell>
+        </motion.tr>
+      )}
+    </>
+  );
+};
+
+// GRID VIEW COMPONENT
+interface ApplicationsGridProps {
+  applications: any[];
+  isLoading: boolean;
+  onView: (app: any) => void;
+  onDelete: (id: string) => void;
+  onStatusClick: (app: any) => void;
+  formatCurrency: (amount: number) => string;
+}
+
+const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, onStatusClick, formatCurrency }: ApplicationsGridProps) => {
+  if (isLoading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <CardSkeleton key={i} headerLines={2} bodyHeight={200} />
+        ))}
+      </div>
+    );
+  }
+
+  if (!applications || applications.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
+        <p className="text-gray-400 text-lg">No applications found</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {applications.map((application) => (
+        <ApplicationCard
+          key={application._id}
+          application={application}
+          onView={() => onView(application)}
+          onDelete={() => onDelete(application._id)}
+          onStatusClick={() => onStatusClick(application)}
+          formatCurrency={formatCurrency}
+        />
+      ))}
+    </div>
+  );
+};
+
 export function AggregatorApplications() {
   const { user } = useAuth('aggregator_admin')
   const { toast } = useToast()
 
+  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterLender, setFilterLender] = useState('')
@@ -80,6 +603,12 @@ export function AggregatorApplications() {
   const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+
+  // For status update popup
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+  const [statusComment, setStatusComment] = useState("");
+  const [oldStatus, setOldStatus] = useState("");
+  const [newStatus, setNewStatus] = useState("");
 
   const [form, setForm] = useState({
     customerName: '',
@@ -109,14 +638,17 @@ export function AggregatorApplications() {
 
   // Fetch products for the dropdown
   const { data: products } = useProducts({ page, limit: 100 });
+  const { data: lenderData } = useLenders({ page: 1, limit: 100 })
+  const allLenders = lenderData?.results || []
 
   const createApplicationMutation = useCreateApplication();
+  const updateApplicationMutation = useUpdateApplication();
   const deleteApplicationMutation = useDeleteApplication();
 
   // Calculate stats from real data
   const stats = useMemo(() => {
     const totalApps = applications?.results;
-    const underReview = totalApps?.filter(app => app.status === 'UNDER_REVIEW').length || 0
+    const underReview = totalApps?.filter(app => app.status === 'UNDER_CREDIT_REVIEW').length || 0
     const approved = totalApps?.filter(app => app.status === 'APPROVED').length || 0
     const disbursed = totalApps?.filter(app => app.status === 'DISBURSED').length || 0
 
@@ -129,7 +661,7 @@ export function AggregatorApplications() {
         color: 'text-blue-400'
       },
       {
-        title: 'Under Review',
+        title: 'Under Credit Review',
         value: underReview.toString(),
         change: '+5%',
         icon: Clock,
@@ -152,12 +684,11 @@ export function AggregatorApplications() {
     ]
   }, [applications, total])
 
-
   // Client-side filtering for search and lender
   const filteredApplications = useMemo(() => {
     return applications?.results?.filter(app => {
       const matchesSearch = app.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.id.toLowerCase().includes(searchTerm.toLowerCase())
+        app.applicationNumber.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesLender = !filterLender || filterLender === 'all' || app.lenderName === filterLender
       return matchesSearch && matchesLender
     })
@@ -180,21 +711,11 @@ export function AggregatorApplications() {
   }
 
   const lenders = useMemo(() => {
-    if (!products?.results) return [];
-
-    // Unique lenders
-    const map = new Map();
-    products.results.forEach(p => {
-      if (p.lender?.profile?._id) {
-        map.set(p.lender.profile._id, {
-          id: p.lender.profile._id,
-          name: p.lender.profile.lenderName,
-        });
-      }
-    });
-
-    return Array.from(map.values());
-  }, [products]);
+    return allLenders.map((l) => ({
+      id: l._id,
+      name: l.lenderName
+    }));
+  }, [allLenders]);
 
   const productsByLender = useMemo(() => {
     if (!selectedLenderId) return [];
@@ -203,7 +724,7 @@ export function AggregatorApplications() {
     ) || [];
   }, [products, selectedLenderId]);
 
-  console.log(form, 'this is form values', selectedApplication, 'this is appli')
+  console.log(selectedApplication, 'this is selected application', filteredApplications)
   const handleCreateApplication = async () => {
     try {
       if (!selectedProduct) return;
@@ -219,7 +740,7 @@ export function AggregatorApplications() {
       }
 
       const response = await createApplicationMutation.mutateAsync(payload)
-      console.log(response.createApplication.application, 'create application')
+      console.log(response.createApplication.application, 'create application response')
 
       if (response?.createApplication?.success) {
         toast({ title: 'Success', description: 'Application created successfully' })
@@ -266,27 +787,38 @@ export function AggregatorApplications() {
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'PENDING': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30'
-      case 'UNDER_REVIEW': return 'bg-blue-500/20 text-blue-400 border-blue-500/30'
-      case 'APPROVED': return 'bg-green-500/20 text-green-400 border-green-500/30'
-      case 'REJECTED': return 'bg-red-500/20 text-red-400 border-red-500/30'
-      case 'DISBURSED': return 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-      default: return 'bg-gray-500/20 text-gray-400 border-gray-500/30'
-    }
-  }
+  const handleStatusUpdate = async () => {
+    try {
+      if (!selectedApplication) return;
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'PENDING': return Clock
-      case 'UNDER_REVIEW': return AlertCircle
-      case 'APPROVED': return CheckCircle
-      case 'REJECTED': return XCircle
-      case 'DISBURSED': return DollarSign
-      default: return Clock
+      const payload = {
+        id: selectedApplication._id,
+        status: newStatus?.toUpperCase(),
+        action: `${user?.username} changed Application Status from ${pretty(oldStatus)} to ${pretty(newStatus)}`,
+        comment: statusComment
+      };
+
+      console.log("STATUS UPDATE PAYLOAD", payload);
+      await updateApplicationMutation.mutateAsync({
+        id: selectedApplication._id,
+        payload
+      });
+
+      toast({
+        title: "Status Updated",
+        description: "Application status updated successfully."
+      });
+
+      setIsStatusDialogOpen(false);
+      refetch();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update status",
+        variant: "destructive"
+      });
     }
-  }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -296,12 +828,15 @@ export function AggregatorApplications() {
     }).format(amount)
   }
 
-  function setApplyDialogOpen(arg0: boolean): void {
-    throw new Error('Function not implemented.')
-  }
+  const handleStatusClick = (application: any) => {
+    setSelectedApplication(application);
+    setOldStatus(application.status);
+    setNewStatus(application.status);
+    setStatusComment("");
+    setIsStatusDialogOpen(true);
+  };
 
   return (
-
     <div className="space-y-6">
       {/* Header */}
       <motion.div
@@ -390,10 +925,10 @@ export function AggregatorApplications() {
                         });
                       }}
                     >
-                      <SelectTrigger className="bg-gray-800 border-gray-700 text-white disabled:opacity-50">
+                      <SelectTrigger className="bg-gray-800 border border-gray-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition">
                         <SelectValue placeholder={selectedLenderId ? "Choose a product" : "Select a lender first"} />
                       </SelectTrigger>
-                      <SelectContent className="bg-gray-900 text-white border-gray-700">
+                      <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
                         {productsByLender.map((p) => (
                           <SelectItem key={p._id} value={p._id}>
                             {p.name}
@@ -431,7 +966,13 @@ export function AggregatorApplications() {
 
             {/* FOOTER */}
             <div className="flex justify-between items-center pt-0  border-gray-700 flex-shrink-0">
-
+              <Button
+                variant="outline"
+                className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                onClick={() => setIsCreateDialogOpen(false)}
+              >
+                Cancel
+              </Button>
               <Button
                 disabled={!form.customerName || !form.customerEmail || !form.productId || !form.loanAmount}
                 onClick={handleCreateApplication}
@@ -445,42 +986,40 @@ export function AggregatorApplications() {
       </motion.div >
 
       {/* Stats Cards */}
-      {
-        isTableLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <CardSkeleton headerLines={2} bodyHeight={20} />
-            <CardSkeleton headerLines={2} bodyHeight={20} />
-            <CardSkeleton headerLines={2} bodyHeight={20} />
-            <CardSkeleton headerLines={2} bodyHeight={20} />
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.title}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-              >
-                <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm font-medium text-gray-400">{stat.title}</p>
-                        <p className="text-2xl font-bold text-white mt-2">{stat.value}</p>
-                        <p className="text-green-400 text-sm mt-1">{stat.change} from last month</p>
-                      </div>
-                      <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-gray-900/50 ${stat.color}`}>
-                        <stat.icon className="w-6 h-6" />
-                      </div>
+      {isTableLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton headerLines={2} bodyHeight={20} />
+          <CardSkeleton headerLines={2} bodyHeight={20} />
+          <CardSkeleton headerLines={2} bodyHeight={20} />
+          <CardSkeleton headerLines={2} bodyHeight={20} />
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {stats.map((stat, index) => (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+            >
+              <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-400">{stat.title}</p>
+                      <p className="text-2xl font-bold text-white mt-2">{stat.value}</p>
+                      <p className="text-green-400 text-sm mt-1">{stat.change} from last month</p>
                     </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        )
-      }
+                    <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-gray-900/50 ${stat.color}`}>
+                      <stat.icon className="w-6 h-6" />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          ))}
+        </div>
+      )}
 
       {/* Filters */}
       <motion.div
@@ -524,7 +1063,7 @@ export function AggregatorApplications() {
         </Select>
       </motion.div>
 
-      {/* Applications Table */}
+      {/* Applications Table/Grid with View Toggle */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -532,113 +1071,105 @@ export function AggregatorApplications() {
       >
         <Card className="bg-gray-800/50 border-gray-700">
           <CardHeader>
-            <CardTitle className="text-white">Applications Overview</CardTitle>
-            <CardDescription className="text-gray-400">
-              Track and manage all loan applications
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Applications Overview</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Track and manage all loan applications
+                </CardDescription>
+              </div>
+              {/* VIEW TOGGLE BUTTONS */}
+              <div className="flex items-center gap-2 bg-gray-900/50 rounded-lg p-1">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === 'table' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('table')}
+                      className={`${viewMode === 'table'
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
+                        : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                      <List className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Table View</TooltipContent>
+                </Tooltip>
+
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                      size="sm"
+                      onClick={() => setViewMode('grid')}
+                      className={`${viewMode === 'grid'
+                        ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
+                        : 'text-gray-400 hover:text-white'
+                        }`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Grid View</TooltipContent>
+                </Tooltip>
+              </div>
+            </div>
           </CardHeader>
+
           <CardContent>
             <div ref={tableTopRef} />
-            <div className="overflow-x-auto">
-              {isTableLoading ? (
-                <TableSkeleton columns={6} rows={pageSize} />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Application Number</TableHead>
-                      <TableHead className="text-gray-300">Customer</TableHead>
-                      <TableHead className="text-gray-300">Product Details</TableHead>
-                      <TableHead className="text-gray-300">Lender</TableHead>
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Date</TableHead>
-                      <TableHead className="text-gray-300">Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredApplications?.map((application, index) => {
-                      const StatusIcon = getStatusIcon(application.status)
-                      return (
-                        <motion.tr
+            {/* CONDITIONAL RENDERING: TABLE OR GRID */}
+            {viewMode === 'table' ? (
+              <div className="overflow-x-auto">
+                {isTableLoading ? (
+                  <TableSkeleton columns={6} rows={pageSize} />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-gray-700">
+                        <TableHead className="text-gray-300">Application Number</TableHead>
+                        <TableHead className="text-gray-300">Customer</TableHead>
+                        <TableHead className="text-gray-300">Product Details</TableHead>
+                        <TableHead className="text-gray-300">Lender</TableHead>
+                        <TableHead className="text-gray-300">Status</TableHead>
+                        <TableHead className="text-gray-300">Last Updated</TableHead>
+                        <TableHead className="text-gray-300">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredApplications?.map((application, index) => (
+                        <ApplicationTableRow
                           key={application._id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className="border-gray-700 hover:bg-gray-800/50"
-                        >
-                          <TableCell>
-                            <div>
-                              <p className="text-white font-medium">{application.applicationNumber}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="flex items-center space-x-3">
-                              <Avatar className="w-8 h-8">
-                                <AvatarImage src={application.avatar || "/placeholder.svg"} />
-                                <AvatarFallback className="bg-gray-800 text-gray-300 text-xs">
-                                  {application.customerName.split(' ').map((n: string) => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div>
-                                <p className="text-white font-medium">{application.customerName}</p>
-                                <p className="text-gray-400 text-sm">{application.customerEmail}</p>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-white font-medium">{formatCurrency(application.loanAmount)}</p>
-                              <p className="text-gray-400 text-sm">{application.product.productType.replace('_', ' ')}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <p className="text-white font-medium">{application.lender.lenderName}</p>
-                              <p className="text-white font-medium">{application.lender.lenderType}</p>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={getStatusColor(application.status)}>
-                              <StatusIcon className="w-3 h-3 mr-1" />
-                              {application.status.replace('_', ' ')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="text-gray-400">
-                            {new Date(application.createdAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="text-gray-400">
-                                  <MoreHorizontal className="w-4 h-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent className="bg-gray-900 border-gray-800">
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setSelectedApplication(application)
-                                    setIsViewDialogOpen(true)
-                                  }}
-                                  className="text-gray-300"
-                                >
-                                  <Eye className="w-4 h-4 mr-2" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuItem className="text-red-400 cursor-pointer hover:text-white" onClick={() => handleDelete(application._id)}>
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </motion.tr>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-              )}
-            </div>
-
+                          application={application}
+                          index={index}
+                          onView={() => {
+                            setSelectedApplication(application)
+                            setIsViewDialogOpen(true)
+                          }}
+                          onDelete={() => handleDelete(application._id)}
+                          onStatusClick={() => handleStatusClick(application)}
+                          formatCurrency={formatCurrency}
+                        />
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </div>
+            ) : (
+              // GRID VIEW
+              <ApplicationsGrid
+                applications={filteredApplications || []}
+                isLoading={isTableLoading}
+                onView={(app) => {
+                  setSelectedApplication(app);
+                  setIsViewDialogOpen(true);
+                }}
+                onDelete={handleDelete}
+                onStatusClick={handleStatusClick}
+                formatCurrency={formatCurrency}
+              />
+            )}
             <TablePagination
               page={page}
               pageSize={pageSize}
@@ -666,10 +1197,9 @@ export function AggregatorApplications() {
                       Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{selectedApplication.lender.lenderName}</span>
                     </DialogDescription>
                   </div>
-
                 </div>
-
               </DialogHeader>
+
               <Button
                 variant="ghost"
                 size="icon"
@@ -678,10 +1208,9 @@ export function AggregatorApplications() {
               >
                 <X className="w-5 h-5" />
               </Button>
-              <Badge
-                className={`${getStatusColor(selectedApplication.status)} border px-3 py-1 bg-transparent text-green-600 text-xs font-bold flex-shrink-0 w-min`}
-              >
-                {selectedApplication.status.replace('_', ' ')}
+              <Badge className={`mt-1 flex items-center gap-1 ${STATUS_STYLE[pretty(selectedApplication.status)]}`}>
+                {getStatusIcon(selectedApplication.status)}
+                {pretty(selectedApplication.status)}
               </Badge>
 
               <div className="py-4 space-y-6">
@@ -696,7 +1225,7 @@ export function AggregatorApplications() {
                 {/* Loan & Commission */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
                   <div className="space-y-4">
-                    <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><DollarSign className="w-5 h-5" /> Details</h3>
+                    <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><DollarSign className="w-5 h-5" />Application Details</h3>
                     <InfoLine icon={FileText} color="text-yellow-400" label="Product Name" value={selectedApplication.product.name} />
                     <InfoLine icon={FileText} color="text-blue" label="Loan Type" value={selectedApplication.product.productType.replace('_', ' ')} />
                     <InfoLine icon={Percent} color="text-green-400" label="Commission" value={`${selectedApplication.product.commissionPercent}%`} />
@@ -727,6 +1256,85 @@ export function AggregatorApplications() {
           )}
         </DialogContent>
       </Dialog>
-    </div >
+
+      {/* Status Change Dialog */}
+      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+        <DialogContent className="bg-gray-900 border-gray-800 max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-white">Update Application Status</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Choose a new status and enter a comment.
+            </DialogDescription>
+          </DialogHeader>
+
+          {/* Status Select */}
+          <div className="space-y-4">
+            <div>
+              <Label className="text-gray-300">Select Status</Label>
+
+              <Select value={newStatus} onValueChange={setNewStatus}>
+                <SelectTrigger className="bg-gray-800 border border-gray-700 text-white">
+                  <SelectValue placeholder="Select status" />
+                </SelectTrigger>
+
+                <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                  {Object.values(ApplicationStatus).map((status) => {
+                    const key = pretty(status);
+                    return (
+                      <SelectItem key={status} value={status}>
+                        <div className="flex items-center gap-2">
+                          {/* Dot */}
+                          <span
+                            className="w-3 h-3 rounded-full inline-block"
+                            style={{
+                              backgroundColor: STATUS_STYLE[key]?.split(" ")[0]?.replace("bg-", "").replace("/20", "")
+                            }}
+                          />
+                          {/* Icon */}
+                          {STATUS_META[key]?.icon}
+                          {/* Label */}
+                          {key}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Comment */}
+            <div>
+              <Label className="text-gray-300">Comment (required*)</Label>
+              <Textarea
+                value={statusComment}
+                rows={4}
+                onChange={(e) => setStatusComment(e.target.value)}
+                className="bg-gray-800 border-gray-700 text-white mt-2"
+                placeholder="Why is the status being changed?"
+              />
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="flex justify-end gap-3 pt-4">
+            <Button
+              variant="outline"
+              onClick={() => setIsStatusDialogOpen(false)}
+              className="border-gray-600 text-gray-300 hover:bg-gray-800"
+            >
+              Cancel
+            </Button>
+
+            <Button
+              disabled={!statusComment}
+              onClick={handleStatusUpdate}
+              className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white disabled:opacity-40"
+            >
+              Save
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 }

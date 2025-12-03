@@ -40,6 +40,12 @@ export const applicationsApi = {
               rejectionReason
               createdAt
               updatedAt
+              workHistory {
+                action
+                comment
+                timestamp
+                updatedBy
+              }
               aggregator {
                 _id
                 companyName
@@ -122,6 +128,13 @@ export const applicationsApi = {
             loanAmount
             status
             updatedAt
+            updatedBy
+            workHistory {
+              action
+              comment
+              timestamp
+              updatedBy
+            }
           }
         }
       `,

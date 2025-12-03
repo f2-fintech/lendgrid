@@ -64,12 +64,18 @@ export enum Status {
 }
 
 export enum ApplicationStatus {
-  SUBMITTED = 'submitted',
-  UNDER_REVIEW = 'under_review',
+  UNDER_CREDIT_REVIEW = 'under_credit_review',
+  OPERATIONS = 'operations',
+  PENDENCY_IN_FILE = 'pendency_in_file',
+  FILE_SEND_TO_BANKER = 'file_send_to_banker',
+  TO_BE_APPROVED = 'to_be_approved',
   APPROVED = 'approved',
-  REJECTED = 'rejected',
+  TO_BE_DISBURSED = 'to_be_disbursed',
   DISBURSED = 'disbursed',
-  CANCELLED = 'cancelled'
+  REJECTED = 'rejected',
+  DROP = 'drop',
+  HOLD = 'hold',
+  SUBMITTED = 'submitted'
 }
 
 // USER & AUTH TYPES
@@ -209,6 +215,13 @@ export type LenderBranch = {
 }
 
 // APPLICATION TYPES
+export interface WorkHistoryEntry {
+  action: string;
+  comment: string;
+  timestamp: string;
+  updatedBy?: string | null;
+}
+
 export interface Application {
   _id: string
 
@@ -240,23 +253,19 @@ export interface Application {
   // Files
   documents: string[]
 
-  // Stored JSON snapshot
-  formData?: Record<string, any> | null
-
   // Disbursal Information
   approvedAmount?: number | null
+  approvedDate?: string | null
   disbursedAmount?: number | null
   disbursedDate?: string | null
 
-  // Commission Details
-  commissionPercent?: number
+  // Admin audit actions
   platformCommission?: number
-  rejectionReason?: string | null
-
-  // Admin actions
   rejectedBy?: string | null
-  cancellationReason?: string | null
-  cancelledBy?: string | null
+  rejectionReason?: string | null
+  workHistory?: WorkHistoryEntry[];
+  createdBy?: string | null;
+  updatedBy?: string | null;
   createdAt: string
   updatedAt: string
 }

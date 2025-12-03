@@ -1,9 +1,11 @@
 import type { Metadata } from 'next'
 import { GeistSans } from 'geist/font/sans'
 import { GeistMono } from 'geist/font/mono'
+
 import { Toaster } from "@/components/ui/toaster"
 import './globals.css'
 import { QueryProvider } from '@/components/providers/query-provider'
+import { TooltipProvider } from "@/components/ui/tooltip"
 
 export const metadata: Metadata = {
   title: 'LendGrid SaaS App',
@@ -30,10 +32,12 @@ html {
       </head>
 
       <body>
-        <QueryProvider>
-          {children}
-          <Toaster />
-        </QueryProvider>
+        <TooltipProvider delayDuration={200}>
+          <QueryProvider>
+            {children}
+            <Toaster />
+          </QueryProvider>
+        </TooltipProvider>
       </body>
     </html>
   )
