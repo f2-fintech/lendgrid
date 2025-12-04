@@ -88,6 +88,14 @@ export const aggregatorProfileApi = {
               pendingPayout
               createdAt
               createdBy
+              teamMemberUsers {
+                _id
+                username
+                email
+                contact
+                status
+                role
+                }
               user {
                 _id
                 username

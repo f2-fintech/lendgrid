@@ -141,6 +141,8 @@ export function SignupForm() {
 
         if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
           router.push(navigationPaths.aggregator.dashboard);
+        } else if (role === "aggregator_member" || role === "AGGREGATOR_MEMBER") {
+          router.push(navigationPaths.aggregatorMember.dashboard);
         } else if (role === "super_admin" || role === "SUPER_ADMIN") {
           router.push(navigationPaths.superAdmin.dashboard);
         } else {

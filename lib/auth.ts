@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { usersApi } from './users-api'
 import { decodeJwt } from './utils'
 
-export type AppRole = 'super_admin' | 'aggregator_admin' | 'lender_admin'
+export type AppRole = 'super_admin' | 'aggregator_admin' | 'aggregator_member' | 'lender_admin'
 
 export function useAuth(requiredRole?: AppRole | AppRole[]) {
 	const router = useRouter()
@@ -28,7 +28,6 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 			try {
 				const decoded: any = decodeJwt(token)
 				const decodedRole = decoded?.role?.toLowerCase?.()
-
 				if (decodedRole) setRole(decodedRole as AppRole)
 
 				const profileResp: any = await usersApi.profile()

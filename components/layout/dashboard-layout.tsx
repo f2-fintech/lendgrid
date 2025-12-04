@@ -46,7 +46,7 @@ import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  userRole?: 'super_admin' | 'aggregator' | 'lender'
+  userRole?: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender'
 }
 
 const navigationConfig = {
@@ -97,6 +97,16 @@ const navigationConfig = {
       ]
     }
   ],
+  aggregator_member: [
+    {
+      title: "Operations",
+      items: [
+        { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
+        { title: "Products", url: navigationPaths.aggregatorMember.products, icon: CreditCard },
+        { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: CreditCard },
+      ]
+    },
+  ],
   lender: [
     {
       title: "Overview",
@@ -122,7 +132,7 @@ function AppSidebar({
   user,
   isOmsEnabled
 }: {
-  userRole: 'super_admin' | 'aggregator' | 'lender',
+  userRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender',
   user?: any,
   isOmsEnabled?: boolean
 }) {
@@ -139,6 +149,7 @@ function AppSidebar({
     switch (role) {
       case 'super_admin': return 'Super Admin'
       case 'aggregator': return 'Aggregator Admin'
+      case 'aggregator_member': return 'Aggregator Member'
       case 'lender': return 'Lender Admin'
       default: return 'User'
     }
@@ -262,9 +273,9 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const panelRef = useRef<HTMLDivElement | null>(null)
   const router = useRouter()
 
-  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'lender_admin'] as AppRole[])
-  const normalizedRole: 'super_admin' | 'aggregator' | 'lender' =
-    role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : 'lender'
+  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'] as AppRole[])
+  const normalizedRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' =
+    role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : role === 'aggregator_member' ? 'aggregator_member' : 'lender'
   const token = getCookie("token");
   const decoded = decodeJwt(token);
   const isOmsEnabled = decoded?.isOmsEnabled ?? false;

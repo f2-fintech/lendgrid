@@ -20,7 +20,9 @@ import {
   MapPin,
   Activity,
   Calendar,
-  X
+  X,
+  Trash2,
+  UserCheck
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,9 +33,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
-import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
+
+import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
+import { AddTeamMemberDialog } from './dialogs/AddTeamMemberDialog'
 import { useAggregators } from '@/hooks/use-aggregators'
 import { useUpdateUser } from '@/hooks/use-users'
 import { AggregatorProfile } from '@/lib'
@@ -42,8 +46,15 @@ export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [selectedAggregator, setSelectedAggregator] = useState<AggregatorProfile | null>(null)
+
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isAddTeamMemberDialogOpen, setIsAddTeamMemberDialogOpen] = useState(false)
+  const [selectedAggregatorForTeam, setSelectedAggregatorForTeam] = useState<AggregatorProfile | null>(null)
+
+  const [isTeamMembersDialogOpen, setIsTeamMembersDialogOpen] = useState(false)
+  const [selectedTeamMembers, setSelectedTeamMembers] = useState<any[]>([])
+  const [selectedCompanyName, setSelectedCompanyName] = useState<string>("")
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -330,13 +341,14 @@ export function SuperAdminAggregators() {
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : (
                 <div className="min-w-full">
-                  <div className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
+                  <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
                     <div>Aggregator</div>
                     <div>Status</div>
                     <div>KYC Status</div>
                     <div>Applications</div>
                     <div>Total Commission</div>
                     <div>Join Date</div>
+                    <div>Team</div>
                     <div>Actions</div>
                   </div>
                   <div className="space-y-1">
@@ -346,7 +358,7 @@ export function SuperAdminAggregators() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
+                        className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
                       >
                         <div>
                           <p className="text-white font-medium">{aggregator.companyName}</p>
@@ -375,6 +387,27 @@ export function SuperAdminAggregators() {
                           {aggregator.createdAt ? new Date(aggregator.createdAt).toLocaleDateString() : '-'}
                         </div>
                         <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-white font-medium">
+                              {aggregator.teamMemberUsers?.length || 0}
+                            </span>
+                            {(aggregator.teamMemberUsers?.length || 0) > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedTeamMembers(aggregator.teamMemberUsers || [])
+                                  setSelectedCompanyName(aggregator.companyName)
+                                  setIsTeamMembersDialogOpen(true)
+                                }}
+                                className="text-cyan-400 hover:text-white hover:bg-gray-700 h-7 w-7 p-0"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                        <div>
                           <div className="flex items-center">
                             <Button
                               variant="ghost"
@@ -396,28 +429,26 @@ export function SuperAdminAggregators() {
                               <Link href={`/super-admin/aggregators/profile/${aggregator?._id}`}>
                                 <Edit className="w-4 h-4" />
                               </Link>
-
                             </Button>
-                            {aggregator.user?.status === 'ACTIVE' && (
-                              <>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-green-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleApprove(aggregator.user?._id)}
-                                >
-                                  <CheckCircle className="w-4 h-4" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-400 hover:text-white hover:bg-gray-700"
-                                  onClick={() => handleReject(aggregator.user?._id)}
-                                >
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-violet-400 hover:text-white hover:bg-gray-700"
+                              onClick={() => {
+                                setSelectedAggregatorForTeam(aggregator)
+                                setIsAddTeamMemberDialogOpen(true)
+                              }}
+                            >
+                              <UserCheck className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-red-300 hover:text-white hover:bg-red-600/20 rounded-lg"
+                              onClick={() => handleReject(aggregator.user?._id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
                           </div>
                         </div>
                       </motion.div>
@@ -681,6 +712,135 @@ export function SuperAdminAggregators() {
         onClose={() => setIsAddDialogOpen(false)}
         refetch={refetch}
       />
+
+      <AddTeamMemberDialog
+        isOpen={isAddTeamMemberDialogOpen}
+        onClose={() => {
+          setIsAddTeamMemberDialogOpen(false)
+          setSelectedAggregatorForTeam(null)
+        }}
+        aggregator={selectedAggregatorForTeam}
+        refetch={refetch}
+      />
+
+      {/* Team Members Dialog */}
+      <Dialog open={isTeamMembersDialogOpen} onOpenChange={setIsTeamMembersDialogOpen}>
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl max-h-[85vh]">
+          <DialogHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                  Team Members
+                </DialogTitle>
+                <DialogDescription className="text-gray-400 mt-1">
+                  <span className="font-semibold text-cyan-400">{selectedCompanyName}</span> - {selectedTeamMembers.length} member{selectedTeamMembers.length !== 1 ? 's' : ''}
+                </DialogDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsTeamMembersDialogOpen(false)}
+                className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-2">
+            {selectedTeamMembers.length === 0 ? (
+              <div className="text-center py-12">
+                <Users className="w-16 h-16 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 text-sm">No team members found</p>
+              </div>
+            ) : (
+              selectedTeamMembers.map((member, index) => (
+                <motion.div
+                  key={member._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                  className="bg-gray-800/50 rounded-lg p-5 border border-gray-700 hover:border-cyan-500/50 transition-all"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-start gap-4 flex-1">
+                      {/* Avatar */}
+                      <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full w-14 h-14 flex items-center justify-center border-2 border-cyan-500/30">
+                        <User className="w-7 h-7 text-cyan-400" />
+                      </div>
+
+                      {/* Member Info */}
+                      <div className="flex-1 space-y-3">
+                        {/* Name and Status */}
+                        <div className="flex items-center gap-3">
+                          <h3 className="text-lg font-semibold text-white">
+                            {member.username}
+                          </h3>
+                          <Badge className={getStatusColor(member.status)}>
+                            {member.status}
+                          </Badge>
+                        </div>
+
+                        {/* Contact Details */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div className="flex items-center gap-2">
+                            <div className="bg-purple-500/10 p-1.5 rounded">
+                              <Mail className="w-3.5 h-3.5 text-purple-400" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Email</p>
+                              <p className="text-sm text-white font-medium truncate">
+                                {member.email}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <div className="bg-green-500/10 p-1.5 rounded">
+                              <Phone className="w-3.5 h-3.5 text-green-400" />
+                            </div>
+                            <div>
+                              <p className="text-xs text-gray-400">Contact</p>
+                              <p className="text-sm text-white font-medium">
+                                {member.contact || 'N/A'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Role Badge */}
+                        <div>
+                          <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
+                            {member.role?.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+
+          {/* Custom Scrollbar Styles */}
+          <style jsx>{`
+      .overflow-y-auto::-webkit-scrollbar {
+        width: 6px;
+      }
+      .overflow-y-auto::-webkit-scrollbar-track {
+        background: rgba(31, 41, 55, 0.5);
+        border-radius: 3px;
+      }
+      .overflow-y-auto::-webkit-scrollbar-thumb {
+        background: rgba(75, 85, 99, 0.8);
+        border-radius: 3px;
+      }
+      .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+        background: rgba(107, 114, 128, 1);
+      }
+    `}</style>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
