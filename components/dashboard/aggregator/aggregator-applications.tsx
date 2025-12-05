@@ -16,7 +16,8 @@ import {
   Ban,
   LucideTrash,
   LayoutGrid,
-  List
+  List,
+  ArrowRight
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -32,12 +33,6 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
@@ -382,17 +377,22 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
       >
         <TableCell>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="h-6 w-6 p-0 text-gray-400 hover:text-cyan-400 transition-colors"
-              title={isExpanded ? "Hide History" : "Show History"}
-            >
-              <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                <ArrowRightCircle className="w-4 h-4" />
-              </motion.div>
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsExpanded(!isExpanded)}
+                  className="h-6 w-6 p-0 text-yellow-300 hover:text-cyan-400 transition-colors"
+
+                >
+                  <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                    {isExpanded ? <ArrowRightCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                  </motion.div>
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>History</TooltipContent>
+            </Tooltip>
             <p className="text-white font-medium">{application.applicationNumber}</p>
           </div>
         </TableCell>
@@ -423,37 +423,40 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
           </div>
         </TableCell>
         <TableCell>
-          <Badge
-            onClick={onStatusClick}
-            className={`cursor-pointer flex items-center gap-1 ${STATUS_STYLE[pretty(application.status)]} hover:scale-105 transition-transform`}
-            title="Click to update status"
-          >
-            {getStatusIcon(application.status)}
-            {pretty(application.status)}
-          </Badge>
+          <Tooltip>
+            <TooltipTrigger>
+              <Badge
+                onClick={onStatusClick}
+                className={`cursor-pointer flex items-center gap-1 ${STATUS_STYLE[pretty(application.status)]} hover:scale-105 transition-transform`}>
+                {getStatusIcon(application.status)}
+                {pretty(application.status)}
+              </Badge>
+            </TooltipTrigger>
+            <TooltipContent>Click to update status</TooltipContent>
+          </Tooltip>
         </TableCell>
         <TableCell className="text-gray-400">
           {new Date(application.updatedAt).toLocaleDateString()}
         </TableCell>
         <TableCell>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm" className="text-gray-400 hover:text-white">
-                <MoreHorizontal className="w-4 h-4" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={onView} className="text-blue cursor-pointer hover:text-white">
+                <Eye className="w-4 h-4 mr-2 " />
               </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="bg-gray-900 border-gray-800">
-              <DropdownMenuItem onClick={onView} className="text-gray-300 cursor-pointer hover:text-white">
-                <Eye className="w-4 h-4 mr-2" />
-                View Details
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={onDelete} className="text-red-400 cursor-pointer hover:text-white">
+            </TooltipTrigger>
+            <TooltipContent>View</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button onClick={onDelete} className="text-red-400 cursor-pointer hover:text-white">
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
         </TableCell>
+
       </motion.tr>
 
       {/* Expandable History Row */}
@@ -609,6 +612,11 @@ export function AggregatorApplications() {
   const [statusComment, setStatusComment] = useState("");
   const [oldStatus, setOldStatus] = useState("");
   const [newStatus, setNewStatus] = useState("");
+  const [approvedAmount, setApprovedAmount] = useState<number | undefined>();
+  const [disbursedAmount, setDisbursedAmount] = useState<number | undefined>();
+  const [approvedDate, setApprovedDate] = useState<string | undefined>();
+  const [disbursedDate, setDisbursedDate] = useState<string | undefined>();
+
 
   const [form, setForm] = useState({
     customerName: '',
@@ -791,12 +799,21 @@ export function AggregatorApplications() {
     try {
       if (!selectedApplication) return;
 
-      const payload = {
+      const payload: any = {
         id: selectedApplication._id,
         status: newStatus?.toUpperCase(),
         action: `${user?.username} changed Application Status from ${pretty(oldStatus)} to ${pretty(newStatus)}`,
         comment: statusComment
       };
+
+      if (newStatus === ApplicationStatus.APPROVED) {
+        payload.approvedAmount = approvedAmount;
+        payload.approvedDate = approvedDate ? new Date(approvedDate) : undefined;
+      }
+      if (newStatus === ApplicationStatus.DISBURSED) {
+        payload.disbursedAmount = disbursedAmount;
+        payload.disbursedDate = disbursedDate ? new Date(disbursedDate) : undefined;
+      }
 
       console.log("STATUS UPDATE PAYLOAD", payload);
       await updateApplicationMutation.mutateAsync({
@@ -833,6 +850,10 @@ export function AggregatorApplications() {
     setOldStatus(application.status);
     setNewStatus(application.status);
     setStatusComment("");
+    setApprovedAmount(application.approvedAmount);
+    setDisbursedAmount(application.disbursedAmount);
+    setApprovedDate(application.approvedDate ? new Date(application.approvedDate).toISOString().split('T')[0] : undefined);
+    setDisbursedDate(application.disbursedDate ? new Date(application.disbursedDate).toISOString().split('T')[0] : undefined);
     setIsStatusDialogOpen(true);
   };
 
@@ -1300,6 +1321,56 @@ export function AggregatorApplications() {
                   })}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Conditional Amount & Date Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {newStatus === ApplicationStatus.APPROVED && (
+                <>
+                  <div>
+                    <Label className="text-gray-300">Approved Amount</Label>
+                    <Input
+                      type="number"
+                      value={approvedAmount || ''}
+                      onChange={(e) => setApprovedAmount(Number(e.target.value))}
+                      className="bg-gray-800 border-gray-700 text-white mt-2"
+                      placeholder="Enter approved amount"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Approved Date</Label>
+                    <Input
+                      type="date"
+                      value={approvedDate || ''}
+                      onChange={(e) => setApprovedDate(e.target.value)}
+                      className="bg-gray-800 border-gray-700 text-white mt-2"
+                    />
+                  </div>
+                </>
+              )}
+              {newStatus === ApplicationStatus.DISBURSED && (
+                <>
+                  <div>
+                    <Label className="text-gray-300">Disbursed Amount</Label>
+                    <Input
+                      type="number"
+                      value={disbursedAmount || ''}
+                      onChange={(e) => setDisbursedAmount(Number(e.target.value))}
+                      className="bg-gray-800 border-gray-700 text-white mt-2"
+                      placeholder="Enter disbursed amount"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-gray-300">Disbursed Date</Label>
+                    <Input
+                      type="date"
+                      value={disbursedDate || ''}
+                      onChange={(e) => setDisbursedDate(e.target.value)}
+                      className="bg-gray-800 border-gray-700 text-white mt-2"
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Comment */}
