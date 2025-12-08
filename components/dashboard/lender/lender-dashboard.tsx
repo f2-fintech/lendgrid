@@ -23,7 +23,7 @@ const mockData = {
       id: 'PROD001',
       name: 'Personal Loan Premium',
       type: 'Personal Loan',
-      interestRate: 12.5,
+      interestRate: "",
       commissionPercent: 4,
       isActive: true,
       applications: 156
@@ -32,7 +32,7 @@ const mockData = {
       id: 'PROD002',
       name: 'Home Loan Flexi',
       type: 'Home Loan',
-      interestRate: 8.75,
+      interestRate: "",
       commissionPercent: 3.5,
       isActive: true,
       applications: 89
@@ -41,7 +41,7 @@ const mockData = {
       id: 'PROD003',
       name: 'Business Loan Express',
       type: 'Business Loan',
-      interestRate: 15.2,
+      interestRate: "",
       commissionPercent: 4.5,
       isActive: false,
       applications: 23

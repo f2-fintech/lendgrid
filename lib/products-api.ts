@@ -20,7 +20,7 @@ export const productsApi = {
               processingFeePercent
               maxAmount
               minAmount
-              tenureMonths
+              tenure
               ageRange
               minIncome
               minCreditScore
@@ -193,7 +193,7 @@ export const productAssignmentsApi = {
                 commissionPercent
                 minAmount
                 maxAmount
-                tenureMonths
+                tenure
                 ageRange
                 minIncome
                 minCreditScore

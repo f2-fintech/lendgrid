@@ -34,17 +34,17 @@ const productSchema = z.object({
     // amount & tenure
     minAmount: z.coerce.number().min(0, 'Min amount must be positive'),
     maxAmount: z.coerce.number().min(0, 'Max amount must be positive'),
-    tenureMonths: z.string().optional(),
+    tenure: z.coerce.number().min(0, 'Min tenure must be positive'),
 
     // interest & commission
-    interestRate: z.coerce.number().min(0, "Interest rate must be >= 0"),
+    interestRate: z.string().nonempty('Interest rate is required'),
     commissionPercent: z.coerce.number().min(0, "Commission must be >= 0"),
     processingFeePercent: z.coerce.number().min(0, "Processing fee must be >= 0").optional(),
 
     // eligibility
     ageRange: z.string().optional(),
     minIncome: z.coerce.number().optional(),
-    minCreditScore: z.coerce.number().optional(),
+    minCreditScore: z.string().optional(),
 
     requiredDocuments: z.string().optional(),      // comma separated
     isActive: z.boolean().optional()
@@ -121,13 +121,13 @@ export function SuperAdminLenderProducts(): JSX.Element {
             productType: "",
             minAmount: 0,
             maxAmount: 0,
-            tenureMonths: "",
-            interestRate: 0,
+            tenure: 1,
+            interestRate: "",
             commissionPercent: 0,
             processingFeePercent: 0,
             ageRange: "",
             minIncome: 0,
-            minCreditScore: 0,
+            minCreditScore: "",
             requiredDocuments: "",
             isActive: true,
         },
@@ -143,13 +143,13 @@ export function SuperAdminLenderProducts(): JSX.Element {
             productType: "",
             minAmount: 0,
             maxAmount: 0,
-            tenureMonths: "",
-            interestRate: 0,
+            tenure: 1,
+            interestRate: "",
             commissionPercent: 0,
             processingFeePercent: 0,
             ageRange: "",
             minIncome: 0,
-            minCreditScore: 0,
+            minCreditScore: "",
             requiredDocuments: "",
             isActive: true,
         })
@@ -168,13 +168,13 @@ export function SuperAdminLenderProducts(): JSX.Element {
             productType: product.productType?.toLowerCase() || "",
             minAmount: Number(product.minAmount) || 0,
             maxAmount: Number(product.maxAmount) || 0,
-            tenureMonths: product.tenureMonths || "",
-            interestRate: Number(product.interestRate) || 0,
+            tenure: product.tenure || 1,
+            interestRate: product.interestRate?.toString() || '',
             commissionPercent: Number(product.commissionPercent) || 0,
             processingFeePercent: Number(product.processingFeePercent) || 0,
             ageRange: product.ageRange || "",
             minIncome: Number(product.minIncome) || 0,
-            minCreditScore: Number(product.minCreditScore) || 0,
+            minCreditScore: product.minCreditScore?.toString() || '',
             requiredDocuments: Array.isArray(product.requiredDocuments)
                 ? product.requiredDocuments.join(", ")
                 : "",
@@ -209,15 +209,15 @@ export function SuperAdminLenderProducts(): JSX.Element {
 
                 minAmount: Number(formData.minAmount),
                 maxAmount: Number(formData.maxAmount),
-                tenureMonths: formData.tenureMonths,
+                tenure: formData.tenure,
 
-                interestRate: Number(formData.interestRate),
+                interestRate: formData.interestRate,
                 commissionPercent: Number(formData.commissionPercent),
                 processingFeePercent: Number(formData.processingFeePercent),
 
                 ageRange: formData.ageRange,
                 minIncome: Number(formData.minIncome),
-                minCreditScore: Number(formData.minCreditScore),
+                minCreditScore: formData.minCreditScore,
                 requiredDocuments:
                     formData.requiredDocuments?.trim().length
                         ? formData.requiredDocuments!.split(",").map((s) => s.trim()).filter(Boolean)
@@ -401,14 +401,14 @@ export function SuperAdminLenderProducts(): JSX.Element {
                             <TableSkeleton columns={8} rows={pageSize} />
                         ) : (
                             <div className="min-w-full">
-                                <div className="grid grid-cols-9 gap-3 py-3 px-4 bg-gray-900/60 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-700 text-xs font-semibold tracking-wide text-gray-300 uppercase">
+                                <div className="grid grid-cols-9 gap-3 py-3 px-3 bg-gray-900/60 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-700 text-xs font-semibold tracking-wide text-gray-300 uppercase">
                                     <div className="w-52">Product</div>
-                                    <div className="w-22">Lender</div>
-                                    <div className="w-32">Type</div>
-                                    <div className="w-44 text-center">Amount</div>
+                                    <div className="w-22 ">Lender</div>
+                                    <div className="w-32 ">Type</div>
+                                    <div className="w-36  ">Amount (Min-Max)</div>
                                     <div className="w-24 text-right">Interest</div>
                                     <div className="w-28 text-center">Commission</div>
-                                    <div className="w-28 text-right">Tenure</div>
+                                    <div className="w-28 text-right">Tenure (In years)</div>
                                     <div className="w-24 text-center">Status</div>
                                     <div className="w-28 text-center">Actions</div>
                                 </div>
@@ -424,7 +424,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ duration: 0.25, delay: index * 0.03 }}
-                                                className="grid grid-cols-8 gap-4 py-4 px-4 bg-gray-800/40 backdrop-blur-sm hover:bg-gray-800/60 border border-gray-700/40 rounded-xl shadow-sm transition-all duration-200"
+                                                className="grid grid-cols-9 gap-4 py-4 px-4 bg-gray-800/40 backdrop-blur-sm hover:bg-gray-800/60 border border-gray-700/40 rounded-xl shadow-sm transition-all duration-200"
                                             >
                                                 {/* NAME */}
                                                 <div className="w-52 overflow-hidden">
@@ -447,7 +447,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                                 </div>
 
                                                 {/* LOAN AMOUNT */}
-                                                <div className="w-44 text-right text-white text-sm whitespace-nowrap">
+                                                <div className="w-36 text-right text-white text-sm whitespace-nowrap">
                                                     {formatCurrency(product.minAmount)} – {formatCurrency(product.maxAmount)}
                                                 </div>
 
@@ -462,8 +462,8 @@ export function SuperAdminLenderProducts(): JSX.Element {
                                                 </div>
 
                                                 {/* TENURE */}
-                                                <div className="w-28 text-right text-gray-300 text-sm whitespace-nowrap">
-                                                    {product.tenureMonths}
+                                                <div className="w-20 text-right text-gray-300 text-sm whitespace-nowrap">
+                                                    {product.tenure}
                                                 </div>
 
                                                 {/* STATUS */}
@@ -612,7 +612,7 @@ export function SuperAdminLenderProducts(): JSX.Element {
                         <div className="grid grid-cols-3 gap-6">
                             <div className="space-y-2">
                                 <Label htmlFor="interestRate">Interest Rate (%)</Label>
-                                <Input id="interestRate" type="number" step="any" {...register('interestRate', { valueAsNumber: true })} className="glass-input text-black placeholder-gray-400 h-12" />
+                                <Input id="interestRate" type="string" {...register('interestRate')} className="glass-input text-black placeholder-gray-400 h-12" />
                                 {errors.interestRate && <p className="text-red-400 text-sm">{errors.interestRate.message}</p>}
                             </div>
 
@@ -631,8 +631,8 @@ export function SuperAdminLenderProducts(): JSX.Element {
 
                         <div className="grid grid-cols-3 gap-6">
                             <div className="space-y-2">
-                                <Label htmlFor="tenureMonths">Tenure in Years</Label>
-                                <Input id="tenureMonths" {...register('tenureMonths')} className="glass-input text-black placeholder-gray-400 h-12" />
+                                <Label htmlFor="tenure">Tenure (in years)</Label>
+                                <Input id="tenure" {...register('tenure')} className="glass-input text-black placeholder-gray-400 h-12" />
                             </div>
 
                             <div className="space-y-2">
@@ -653,13 +653,13 @@ export function SuperAdminLenderProducts(): JSX.Element {
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="minIncome">Min Income</Label>
+                                <Label htmlFor="minIncome">Income</Label>
                                 <Input id="minIncome" type="number" {...register('minIncome', { valueAsNumber: true })} className="glass-input text-black placeholder-gray-400 h-12" />
                             </div>
 
                             <div className="space-y-2">
-                                <Label htmlFor="minCreditScore">Min Credit Score</Label>
-                                <Input id="minCreditScore" type="number" {...register('minCreditScore', { valueAsNumber: true })} className="glass-input text-black placeholder-gray-400 h-12" />
+                                <Label htmlFor="minCreditScore">Credit Score</Label>
+                                <Input id="minCreditScore" type="string" {...register('minCreditScore')} className="glass-input text-black placeholder-gray-400 h-12" />
                             </div>
                         </div>
 

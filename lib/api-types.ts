@@ -247,7 +247,7 @@ export interface Application {
 
   // Loan Details
   loanAmount: number
-  tenureMonths?: number | null
+  tenure?: number | null
   status: string
 
   // Files
@@ -279,13 +279,13 @@ export type Product = {
   productType: string
   minAmount: number
   maxAmount: number
-  tenureMonths?: string
-  interestRate: number
+  tenure?: number
+  interestRate: string
   commissionPercent: number
   processingFeePercent?: number
   ageRange?: string
   minIncome?: number
-  minCreditScore?: number
+  minCreditScore?: string
   requiredDocuments?: string[]
   isActive: boolean
   lender?: User
@@ -301,13 +301,13 @@ export type ProductSummary = {
   productType: string
   minAmount: number
   maxAmount: number
-  tenureMonths?: string
-  interestRate: number
+  tenure?: number
+  interestRate: string
   commissionPercent: number
   processingFeePercent?: number
   ageRange?: string
   minIncome?: number
-  minCreditScore?: number
+  minCreditScore?: string
   requiredDocuments?: string[]
   isActive?: boolean
   createdAt?: string
@@ -337,13 +337,13 @@ export type CreateProductDto = {
   productType: string
   minAmount: number
   maxAmount: number
-  tenureMonths?: string
-  interestRate: number
+  tenure?: number
+  interestRate: string
   commissionPercent: number
   processingFeePercent?: number
   ageRange?: string,
   minIncome?: number,
-  minCreditScore?: number
+  minCreditScore?: string,
   requiredDocuments?: string[]
   isActive?: boolean
 }

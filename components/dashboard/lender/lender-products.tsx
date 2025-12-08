@@ -29,7 +29,7 @@ const productSchema = z.object({
   name: z.string().min(3, "Product name must be at least 3 characters"),
   description: z.string().min(10, "Description must be at least 10 characters").optional(),
   productType: z.string().nonempty("Product type is required"),
-  interestRate: z.coerce.number().min(0, "Interest rate must be positive"),
+  interestRate: z.string().nonempty("Interest rate is required"),
   commissionPercent: z.coerce.number().min(0, "Commission percent must be positive"),
   minAmount: z.coerce.number().min(0, "Min amount must be positive"),
   maxAmount: z.coerce.number().min(0, "Max amount must be positive"),
@@ -92,7 +92,7 @@ export function LenderProducts(): JSX.Element {
       name: "",
       description: "",
       productType: "",
-      interestRate: 0,
+      interestRate: "",
       commissionPercent: 0,
       minAmount: 0,
       maxAmount: 0,
@@ -111,7 +111,7 @@ export function LenderProducts(): JSX.Element {
       name: "",
       description: "",
       productType: "",
-      interestRate: 0,
+      interestRate: "",
       commissionPercent: 0,
       minAmount: 0,
       maxAmount: 0,
@@ -133,12 +133,12 @@ export function LenderProducts(): JSX.Element {
       name: product.name || "",
       description: product.description ?? "",
       productType: product.productType || "",
-      interestRate: Number(product.interestRate) || 0,
+      interestRate: String(product.interestRate) || "",
       commissionPercent: Number(product.commissionPercent) || 0,
       minAmount: Number(product.minAmount) || 0,
       maxAmount: Number(product.maxAmount) || 0,
       loanTerm: Number(product.loanTerm) || 12,
-      tenure: product.tenure || "",
+      tenure: Number(product.tenure) || 1,
       eligibilityCriteria: Array.isArray(product.eligibilityCriteria)
         ? product.eligibilityCriteria.join(", ")
         : "",
@@ -175,12 +175,12 @@ export function LenderProducts(): JSX.Element {
         name: formData.name,
         description: formData.description,
         productType: formData.productType,
-        interestRate: Number(formData.interestRate),
+        interestRate: z.string().parse(formData.interestRate),
         commissionPercent: Number(formData.commissionPercent),
         minAmount: Number(formData.minAmount),
         maxAmount: Number(formData.maxAmount),
         loanTerm: Number(formData.loanTerm),
-        tenure: formData.tenure ? formData.tenure : undefined,
+        tenure: formData.tenure ? Number(formData.tenure) : undefined,
         eligibilityCriteria:
           formData.eligibilityCriteria?.trim().length
             ? formData.eligibilityCriteria!.split(",").map((s) => s.trim()).filter(Boolean)
@@ -466,7 +466,7 @@ export function LenderProducts(): JSX.Element {
                 <Label htmlFor="interestRate">Interest Rate (%)</Label>
                 <Input
                   id="interestRate"
-                  type="number"
+                  type="string"
                   {...register('interestRate')}
                   className="glass-input text-black placeholder-gray-400 h-12"
                 />
