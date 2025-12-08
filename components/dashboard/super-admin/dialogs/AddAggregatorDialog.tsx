@@ -146,138 +146,137 @@ export function AddAggregatorDialog({
     };
 
     return (
-        <Dialog open={isOpen} onOpenChange={() => { }}>
-            <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-lg w-[95%] rounded-xl">
+        <Dialog open={isOpen} onOpenChange={onClose}>
+            <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
                 <DialogHeader>
-                    <DialogTitle className="text-xl font-bold">Add New Aggregator</DialogTitle>
+                    <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                        Add New Aggregator
+                    </DialogTitle>
                     <DialogDescription className="text-gray-400">
-                        Register A New Aggregator Admin
+                        Register a new Aggregator Admin and their company profile.
                     </DialogDescription>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                    {/* Company Name */}
-                    <div className="space-y-2">
-                        <Label>Company Name</Label>
-                        <Input
-                            {...register("companyName")}
-                            className="glass-input text-black h-12"
-                            placeholder="Your Company Ltd."
-                        />
-                        {errors.companyName && (
-                            <p className="text-red-400 text-sm">{errors.companyName.message}</p>
-                        )}
-                    </div>
-
-                    {/* Full Name */}
-                    <div className="space-y-2">
-                        <Label>Full Name</Label>
-                        <Input
-                            {...register("fullName")}
-                            className="glass-input text-black h-12"
-                            placeholder="ABC"
-                        />
-                        {errors.fullName && (
-                            <p className="text-red-400 text-sm">{errors.fullName.message}</p>
-                        )}
-                    </div>
-
-                    {/* Contact */}
-                    <div className="space-y-2">
-                        <Label htmlFor="contact" className="text-gray-300 font-medium">Phone Number</Label>
-                        <Input
-                            id="contact"
-                            {...register('contact')}
-                            className="glass-input text-black placeholder-gray-500 h-11"
-                            placeholder="9876543210"
-                        />
-                        {errors.contact && (<p className="text-red-400 text-sm mt-1">{errors.contact.message}</p>)}
-                    </div>
-
-                    {/* Email */}
-                    <div className="space-y-2">
-                        <Label>Email Address</Label>
-                        <Input
-                            type="email"
-                            {...register("email")}
-                            className="glass-input text-black h-12"
-                            placeholder="abc@company.com"
-                        />
-                        {errors.email && (
-                            <p className="text-red-400 text-sm">{errors.email.message}</p>
-                        )}
-                    </div>
-
-                    {/* Password */}
-                    <div className="space-y-2">
-                        <Label>Set Password</Label>
-                        <div className="relative">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                        {/* Company Name */}
+                        <div className="space-y-2">
+                            <Label htmlFor="companyName">Company Name</Label>
                             <Input
-                                type={showPassword ? "text" : "password"}
-                                {...register("password")}
-                                className="glass-input text-black h-12 pr-12"
-                                placeholder="Create a strong password"
+                                id="companyName"
+                                {...register("companyName")}
+                                className="bg-gray-800 border-gray-700 h-11"
+                                placeholder="e.g., Acme Corporation"
                             />
-
-                            <button
-                                type="button"
-                                className="absolute right-3 top-0 h-full flex items-center"
-                                onClick={() => setShowPassword(!showPassword)}
-                            >
-                                {showPassword ? (
-                                    <EyeOff className="w-5 h-5 text-gray-500" />
-                                ) : (
-                                    <Eye className="w-5 h-5 text-gray-500" />
-                                )}
-                            </button>
+                            {errors.companyName && (
+                                <p className="text-red-400 text-sm">{errors.companyName.message}</p>
+                            )}
                         </div>
 
-                        {errors.password && (
-                            <p className="text-red-400 text-sm">{errors.password.message}</p>
-                        )}
-                    </div>
-
-                    {/* Confirm Password */}
-                    <div className="space-y-2">
-                        <Label>Confirm Password</Label>
-                        <div className="relative">
+                        {/* Full Name */}
+                        <div className="space-y-2">
+                            <Label htmlFor="fullName">Full Name</Label>
                             <Input
-                                type={showConfirmPassword ? "text" : "password"}
-                                {...register("confirmPassword")}
-                                className="glass-input text-black h-12 pr-12"
-                                placeholder="Re-renter your password"
+                                id="fullName"
+                                {...register("fullName")}
+                                className="bg-gray-800 border-gray-700 h-11"
+                                placeholder="e.g., John Doe"
                             />
-
-                            <button
-                                type="button"
-                                className="absolute right-3 top-0 h-full flex items-center"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                            >
-                                {showConfirmPassword ? (
-                                    <EyeOff className="w-5 h-5 text-gray-500" />
-                                ) : (
-                                    <Eye className="w-5 h-5 text-gray-500" />
-                                )}
-                            </button>
+                            {errors.fullName && (
+                                <p className="text-red-400 text-sm">{errors.fullName.message}</p>
+                            )}
                         </div>
 
-                        {errors.confirmPassword && (
-                            <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
-                        )}
+                        {/* Contact */}
+                        <div className="space-y-2">
+                            <Label htmlFor="contact">Phone Number</Label>
+                            <Input
+                                id="contact"
+                                {...register('contact')}
+                                className="bg-gray-800 border-gray-700 h-11"
+                                placeholder="e.g., 9876543210"
+                            />
+                            {errors.contact && (<p className="text-red-400 text-sm mt-1">{errors.contact.message}</p>)}
+                        </div>
+
+                        {/* Email */}
+                        <div className="space-y-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <Input
+                                id="email"
+                                type="email"
+                                {...register("email")}
+                                className="bg-gray-800 border-gray-700 h-11"
+                                placeholder="e.g., john.doe@acme.com"
+                            />
+                            {errors.email && (
+                                <p className="text-red-400 text-sm">{errors.email.message}</p>
+                            )}
+                        </div>
+
+                        {/* Password */}
+                        <div className="space-y-2">
+                            <Label htmlFor="password">Set Password</Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    {...register("password")}
+                                    className="bg-gray-800 border-gray-700 h-11 pr-10"
+                                    placeholder="Create a strong password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                            {errors.password && (
+                                <p className="text-red-400 text-sm">{errors.password.message}</p>
+                            )}
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword">Confirm Password</Label>
+                            <div className="relative">
+                                <Input
+                                    id="confirmPassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    {...register("confirmPassword")}
+                                    className="bg-gray-800 border-gray-700 h-11 pr-10"
+                                    placeholder="Re-enter your password"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                                >
+                                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
+                            </div>
+                            {errors.confirmPassword && (
+                                <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
+                            )}
+                        </div>
                     </div>
 
                     {/* OMS Enabled */}
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-700/50">
                         <Controller name="isOmsEnabled" control={control} render={({ field }) => (
-                            <div className="flex items-center space-x-2">
+                            <>
                                 <Checkbox id="isOmsEnabled" checked={field.value} onCheckedChange={field.onChange} />
-                                <Label htmlFor="isOmsEnabled">Enable OMS Integration</Label>
-                            </div>
+                                <Label htmlFor="isOmsEnabled" className="cursor-pointer text-gray-300">
+                                    Enable OMS Integration for this Aggregator
+                                </Label>
+                            </>
                         )} />
                     </div>
 
                     {/* Buttons */}
-                    <div className="flex justify-end space-x-4">
+                    <div className="flex justify-end space-x-4 pt-5 border-t border-gray-700/50">
                         <Button
                             type="button"
                             variant="outline"
@@ -293,7 +292,7 @@ export function AddAggregatorDialog({
                         <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
+                            className="bg-gradient-to-r from-blue to-cyan-500 text-white shadow-lg disabled:opacity-50"
                         >
                             {isSubmitting ? (
                                 <>

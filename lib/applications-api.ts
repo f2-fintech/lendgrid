@@ -64,7 +64,7 @@ export const applicationsApi = {
                 processingFeePercent
                 minAmount
                 maxAmount
-                tenureMonths
+                tenure
                 requiredDocuments
               }
             }

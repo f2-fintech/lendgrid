@@ -423,7 +423,7 @@ export function AggregatorMemberProducts() {
                                 <InfoItem icon={Landmark} color="text-yellow-500" label="Lender" value={lender.lenderName} />
                                 <InfoItem icon={Percent} color="text-blue" label="Interest Rate" value={`${prod.interestRate}%`} />
                                 <InfoItem icon={Percent} color="text-green-400" label="Commission" value={`${prod.commissionPercent}%`} />
-                                <InfoItem icon={Clock} color="text-red-400" label="Tenure" value={prod.tenureMonths} />
+                                <InfoItem icon={Clock} color="text-red-400" label="Tenure" value={prod.tenure} />
                               </div>
 
                               {/* Loan & Eligibility */}

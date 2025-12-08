@@ -142,154 +142,140 @@ export function AddLenderDialog({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => { }}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-lg w-[95%] rounded-xl">
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
         <DialogHeader>
-          <DialogTitle className="text-xl font-bold">Add New Lender Admin</DialogTitle>
+          <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+            Add New Lender Admin
+          </DialogTitle>
           <DialogDescription className="text-gray-400">
-            Register a New Lender Administrator
+            Register a new Lender Administrator and their company profile.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-          {/* Company Name */}
-          <div className="space-y-2">
-            <Label>Company Name</Label>
-            <Input
-              {...register("companyName")}
-              className="glass-input text-black h-12"
-              placeholder="ABC Finance Pvt. Ltd."
-            />
-            {errors.companyName && (
-              <p className="text-red-400 text-sm">{errors.companyName.message}</p>
-            )}
-          </div>
-
-          {/* Lender Type */}
-          <div className="space-y-2">
-            <Label className="text-gray-300 font-medium">Lender Type</Label>
-            <Select
-              onValueChange={(value) => setValue("lenderType", value as LenderType, { shouldValidate: true })}
-              defaultValue="bank"
-            >
-              <SelectTrigger className="glass-input text-black h-11">
-                <SelectValue placeholder="Select Lender Type" />
-              </SelectTrigger>
-              <SelectContent className="glass-card border-white/10">
-                <SelectItem value="bank" className="text-black hover:bg-white/10 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <Building className="w-4 h-4" />
-                    <span>Bank</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="nbfc" className="text-black hover:bg-white/10 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <Landmark className="w-4 h-4" />
-                    <span>NBFC</span>
-                  </div>
-                </SelectItem>
-                <SelectItem value="fintech" className="text-black hover:bg-white/10 cursor-pointer">
-                  <div className="flex items-center gap-2">
-                    <Cpu className="w-4 h-4" />
-                    <span>Fintech</span>
-                  </div>
-                </SelectItem>
-              </SelectContent>
-            </Select>
-            {/* Hidden field to sync with react-hook-form */}
-            <input type="hidden" {...register("lenderType")} />
-            {errors.lenderType && (
-              <p className="text-red-400 text-sm">{errors.lenderType.message}</p>
-            )}
-          </div>
-
-          {/* Full Name */}
-          <div className="space-y-2">
-            <Label>Full Name</Label>
-            <Input
-              {...register("fullName")}
-              className="glass-input text-black h-12"
-              placeholder="John Doe"
-            />
-            {errors.fullName && (
-              <p className="text-red-400 text-sm">{errors.fullName.message}</p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div className="space-y-2">
-            <Label>Email</Label>
-            <Input
-              type="email"
-              {...register("email")}
-              className="glass-input text-black h-12"
-              placeholder="john@company.com"
-            />
-            {errors.email && (
-              <p className="text-red-400 text-sm">{errors.email.message}</p>
-            )}
-          </div>
-
-          {/* Password */}
-          <div className="space-y-2">
-            <Label>Password</Label>
-            <div className="relative">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+            {/* Company Name */}
+            <div className="space-y-2">
+              <Label htmlFor="companyName">Company Name</Label>
               <Input
-                type={showPassword ? "text" : "password"}
-                {...register("password")}
-                className="glass-input text-black h-12 pr-12"
-                placeholder="Create password"
+                id="companyName"
+                {...register("companyName")}
+                className="bg-gray-800 border-gray-700 h-11"
+                placeholder="e.g., ABC Finance Pvt. Ltd."
               />
-
-              <button
-                type="button"
-                className="absolute right-3 top-0 h-full flex items-center"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? (
-                  <EyeOff className="w-5 h-5 text-gray-500" />
-                ) : (
-                  <Eye className="w-5 h-5 text-gray-500" />
-                )}
-              </button>
+              {errors.companyName && (
+                <p className="text-red-400 text-sm">{errors.companyName.message}</p>
+              )}
             </div>
 
-            {errors.password && (
-              <p className="text-red-400 text-sm">{errors.password.message}</p>
-            )}
-          </div>
-
-          {/* Confirm Password */}
-          <div className="space-y-2">
-            <Label>Confirm Password</Label>
-            <div className="relative">
-              <Input
-                type={showConfirmPassword ? "text" : "password"}
-                {...register("confirmPassword")}
-                className="glass-input text-black h-12 pr-12"
-                placeholder="Confirm password"
-              />
-
-              <button
-                type="button"
-                className="absolute right-3 top-0 h-full flex items-center"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            {/* Lender Type */}
+            <div className="space-y-2">
+              <Label>Lender Type</Label>
+              <Select
+                onValueChange={(value) => setValue("lenderType", value as LenderType, { shouldValidate: true })}
+                defaultValue="bank"
               >
-                {showConfirmPassword ? (
-                  <EyeOff className="w-5 h-5 text-gray-500" />
-                ) : (
-                  <Eye className="w-5 h-5 text-gray-500" />
-                )}
-              </button>
+                <SelectTrigger className="bg-gray-800 border-gray-700 h-11">
+                  <SelectValue placeholder="Select Lender Type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="bank">
+                    <div className="flex items-center gap-2"><Building className="w-4 h-4" /><span>Bank</span></div>
+                  </SelectItem>
+                  <SelectItem value="nbfc">
+                    <div className="flex items-center gap-2"><Landmark className="w-4 h-4" /><span>NBFC</span></div>
+                  </SelectItem>
+                  <SelectItem value="fintech">
+                    <div className="flex items-center gap-2"><Cpu className="w-4 h-4" /><span>Fintech</span></div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.lenderType && (
+                <p className="text-red-400 text-sm">{errors.lenderType.message}</p>
+              )}
             </div>
 
-            {errors.confirmPassword && (
-              <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
-            )}
+            {/* Full Name */}
+            <div className="space-y-2">
+              <Label htmlFor="fullName">Full Name</Label>
+              <Input
+                id="fullName"
+                {...register("fullName")}
+                className="bg-gray-800 border-gray-700 h-11"
+                placeholder="e.g., John Doe"
+              />
+              {errors.fullName && (
+                <p className="text-red-400 text-sm">{errors.fullName.message}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email Address</Label>
+              <Input
+                id="email"
+                type="email"
+                {...register("email")}
+                className="bg-gray-800 border-gray-700 h-11"
+                placeholder="e.g., john.doe@company.com"
+              />
+              {errors.email && (
+                <p className="text-red-400 text-sm">{errors.email.message}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <Label htmlFor="password">Set Password</Label>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  {...register("password")}
+                  className="bg-gray-800 border-gray-700 h-11 pr-10"
+                  placeholder="Create a strong password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.password && (
+                <p className="text-red-400 text-sm">{errors.password.message}</p>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <div className="relative">
+                <Input
+                  id="confirmPassword"
+                  type={showConfirmPassword ? "text" : "password"}
+                  {...register("confirmPassword")}
+                  className="bg-gray-800 border-gray-700 h-11 pr-10"
+                  placeholder="Re-enter your password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                >
+                  {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              {errors.confirmPassword && (
+                <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
+              )}
+            </div>
           </div>
 
           {/* Buttons */}
-          <div className="flex justify-end space-x-4">
+          <div className="flex justify-end space-x-4 pt-5 border-t border-gray-700/50">
             <Button
               type="button"
               variant="outline"
@@ -305,11 +291,11 @@ export function AddLenderDialog({
             <Button
               type="submit"
               disabled={isSubmitting}
-              className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
+              className="bg-gradient-to-r from-blue to-cyan-500 text-white shadow-lg disabled:opacity-50"
             >
               {isSubmitting ? (
                 <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                   Creating...
                 </>
               ) : (
