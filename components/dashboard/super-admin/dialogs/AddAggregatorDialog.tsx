@@ -31,6 +31,8 @@ const schema = z
             .string()
             .min(2, "Name must be at least 2 characters")
             .max(50, "Name is too long")
+            .trim()
+            .toLowerCase()
             .regex(/^[a-zA-Z\s]+$/, "Name can only contain letters and spaces"),
 
         contact: z.string()
@@ -47,7 +49,9 @@ const schema = z
         companyName: z
             .string()
             .min(2, "Company name must be at least 2 characters")
-            .max(50, "Company name is too long"),
+            .max(50, "Company name is too long")
+            .trim()
+            .toLowerCase(),
 
         password: z
             .string()
@@ -56,7 +60,8 @@ const schema = z
             .regex(/[a-z]/, "Password Must Contain At Least 1 Lowercase Letter")
             .regex(/[0-9]/, "Password Must Contain At Least 1 Number")
             .regex(/[^\w]/, "Password Must Contain At Least 1 Special Character")
-            .max(30, "Password cannot be more than 30 characters"),
+            .max(30, "Password cannot be more than 30 characters")
+            .trim(),
 
         confirmPassword: z.string(),
     })

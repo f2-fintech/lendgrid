@@ -97,15 +97,23 @@ const navigationConfig = {
       ]
     }
   ],
-  aggregator_member: [
+  aggregator_member: (isOmsEnabled: boolean) => [
     {
       title: "Operations",
       items: [
         { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
         { title: "Products", url: navigationPaths.aggregatorMember.products, icon: CreditCard },
         { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: CreditCard },
+
+        ...(isOmsEnabled
+          ? [{
+            title: "OMS",
+            url: `https://admin-f2fintech.netlify.app/login`,
+            icon: Building2
+          }]
+          : [])
       ]
-    },
+    }
   ],
   lender: [
     {
@@ -138,10 +146,17 @@ function AppSidebar({
 }) {
   const router = useRouter()
   const logout = useLogout()
-  const navigation =
-    userRole === "aggregator"
-      ? navigationConfig.aggregator(isOmsEnabled!)
-      : navigationConfig[userRole]
+  let navigation;
+
+  if (userRole === "aggregator") {
+    navigation = navigationConfig.aggregator(isOmsEnabled!);
+  }
+  else if (userRole === "aggregator_member") {
+    navigation = navigationConfig.aggregator_member(isOmsEnabled!);
+  }
+  else {
+    navigation = navigationConfig[userRole];
+  }
 
   const handleLogout = () => logout()
 
