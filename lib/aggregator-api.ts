@@ -134,12 +134,15 @@ export const aggregatorProfileApi = {
           pincode
           gstNumber
           panNumber
+          aadhaarNumber
           tanNumber
           cinNumber
           websiteUrl
           pocName
           documents {
             panCard
+            aadhaarFront
+            aadhaarBack
             gstCertificate
             incorporationCertificate
             bankStatement
@@ -298,6 +301,7 @@ export const aggregatorProfileApi = {
     pincode?: string
     gstNumber?: string
     panNumber?: string
+    aadhaarNumber?: string
     websiteUrl?: string
     pocName?: string
     documents?: AggregatorDocuments

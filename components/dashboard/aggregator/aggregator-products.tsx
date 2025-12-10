@@ -213,10 +213,10 @@ export function AggregatorProducts() {
           </DialogTrigger>
 
           {/* Apply Form */}
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-h-screen rounded-xl shadow-xl">
-            <DialogHeader className="flex-shrink-0">
+          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-3">
               <div>
-                <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                <DialogTitle className="text-xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                   New Loan Application
                 </DialogTitle>
                 <DialogDescription className="text-gray-400">
@@ -233,9 +233,9 @@ export function AggregatorProducts() {
               <X className="w-5 h-5" />
             </Button>
 
-            <div className="space-y-2 py-2 flex-grow overflow-y-auto pr-2">
+            <div className="px-1 py-1 space-y-2">
               {/* Lender & Product Selection */}
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
+              <div className="p-1 bg-gray-800/50 rounded-lg border border-gray-700 space-y-3">
                 <h3 className="font-semibold text-lg text-cyan-300">1. Select Product</h3>
                 <div className="space-y-2">
                   <Label className="text-gray-300">Lender</Label>
@@ -262,7 +262,7 @@ export function AggregatorProducts() {
                 <div className="space-y-2">
                   <Label className="text-gray-300">Product</Label>
                   {selectedLenderId && productsByLender.length === 0 ? (
-                    <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border-gray-700 text-gray-400 text-sm italic">
+                    <div className="w-full px-1 py-1 rounded-lg bg-gray-800 border-gray-700 text-gray-400 text-sm italic">
                       No products available for this lender.
                     </div>
                   ) : (
@@ -314,7 +314,7 @@ export function AggregatorProducts() {
             </div>
 
             {/* FOOTER */}
-            <div className="flex justify-between items-center pt-0  border-gray-700 flex-shrink-0">
+            <div className="flex justify-between items-center px-1 py-1   border-gray-700 flex-shrink-0 bg-gradient-to-b from-transparent to-black/40">
 
               <Button
                 disabled={!selectedProduct || !form.customerName || !form.loanAmount}
@@ -426,7 +426,7 @@ export function AggregatorProducts() {
                             setViewDialogOpen(o)
                           }}
                         >
-                          <DialogTrigger asChild>
+                          <DialogTrigger>
                             <Tooltip>
                               <TooltipTrigger>
                                 <Button
@@ -474,20 +474,12 @@ export function AggregatorProducts() {
                             <div className="py-4 space-y-6">
                               {/* Key Details */}
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                                // inside the Key Details grid in your DialogContent
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                                  {/* Lender with logo */}
-                                  <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
-                                    <LenderLogo lenderName={lender.lenderName} size={48} className="mb-2" />
-                                    <p className="text-sm text-gray-400">Lender</p>
-                                    <p className="text-lg font-bold text-white text-center">{lender.lenderName}</p>
-                                  </div>
-
-                                  <InfoItem icon={Percent} color="text-blue" label="Interest Rate" value={`${prod.interestRate}%`} />
-                                  <InfoItem icon={Percent} color="text-green-400" label="Commission" value={`${prod.commissionPercent}%`} />
-                                  <InfoItem icon={Clock} color="text-red-400" label="Tenure" value={prod.tenure} />
+                                {/* Lender with logo */}
+                                <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
+                                  <LenderLogo lenderName={lender.lenderName} size={48} className="mb-2" />
+                                  <p className="text-sm text-gray-400">Lender</p>
+                                  <p className="text-lg font-bold text-white text-center">{lender.lenderName}</p>
                                 </div>
-
                                 <InfoItem icon={Percent} color="text-blue" label="Interest Rate" value={`${prod.interestRate}%`} />
                                 <InfoItem icon={Percent} color="text-green-400" label="Commission" value={`${prod.commissionPercent}%`} />
                                 <InfoItem icon={Clock} color="text-red-400" label="Tenure" value={prod.tenure} />

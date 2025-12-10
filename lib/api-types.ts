@@ -130,6 +130,7 @@ export type AggregatorProfile = {
   pincode?: string
   gstNumber?: string
   panNumber?: string
+  aadhaarNumber?: string
   tanNumber?: string
   cinNumber?: string
   websiteUrl?: string

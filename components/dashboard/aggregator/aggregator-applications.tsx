@@ -880,33 +880,37 @@ export function AggregatorApplications() {
               New Application
             </Button>
           </DialogTrigger>
+
           {/* Apply Form */}
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-h-screen rounded-xl shadow-xl">
-            <DialogHeader className="flex-shrink-0">
+          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col">
+            <DialogHeader className="flex-shrink-0 px-4 py-3">
               <div>
-                <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                <DialogTitle className="text-xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                   Create New Application
                 </DialogTitle>
-                <DialogDescription className="text-gray-400 pt-1">
+                <DialogDescription className="text-gray-400 pt-1 text-sm">
                   Submit a new loan application for your customer
                 </DialogDescription>
               </div>
             </DialogHeader>
+
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsCreateDialogOpen(false)}
-              className="absolute top-4 right-4 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+              className="absolute top-3 right-3 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full h-7 w-7 z-20"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4" />
             </Button>
 
-            <div className="space-y-2 py-2 flex-grow overflow-y-auto pr-2">
-              {/* Lender & Product Selection */}
-              <div className="p-4 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
-                <h3 className="font-semibold text-lg text-cyan-300">1. Select Product</h3>
+            {/* BODY — removed internal scroll; let page handle any overflow */}
+            <div className="px-4 py-2 space-y-2">
+              {/* SECTION 1 */}
+              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 space-y-3">
+                <h3 className="font-semibold text-md text-cyan-300">1. Select Product</h3>
+
                 <div className="space-y-2">
-                  <Label className="text-gray-300">Lender</Label>
+                  <Label className="text-gray-300 text-sm">Lender</Label>
                   <Select
                     value={selectedLenderId}
                     onValueChange={(id) => {
@@ -915,22 +919,23 @@ export function AggregatorApplications() {
                       setForm({ ...form, lenderId: id, productId: "" });
                     }}
                   >
-                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white">
+                    <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-9 text-sm">
                       <SelectValue placeholder="Choose a lender" />
                     </SelectTrigger>
                     <SelectContent className="bg-gray-900 text-white border-gray-700">
                       {lenders.map((l) => (
-                        <SelectItem key={l.id} value={l.id}>
+                        <SelectItem key={l.id} value={l.id} className="text-sm">
                           {l.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
+
                 <div className="space-y-2">
-                  <Label className="text-gray-300">Product</Label>
+                  <Label className="text-gray-300 text-sm">Product</Label>
                   {selectedLenderId && productsByLender.length === 0 ? (
-                    <div className="w-full px-3 py-3 rounded-lg bg-gray-800 border-gray-700 text-gray-400 text-sm italic">
+                    <div className="w-full px-3 py-2 rounded-lg bg-gray-800 border-gray-700 text-gray-400 text-xs italic">
                       No products available for this lender.
                     </div>
                   ) : (
@@ -947,12 +952,12 @@ export function AggregatorApplications() {
                         });
                       }}
                     >
-                      <SelectTrigger className="bg-gray-800 border border-gray-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:bg-gray-700 transition">
+                      <SelectTrigger className="bg-gray-800 border border-gray-700 text-white h-9 text-sm disabled:opacity-40 disabled:cursor-not-allowed">
                         <SelectValue placeholder={selectedLenderId ? "Choose a product" : "Select a lender first"} />
                       </SelectTrigger>
                       <SelectContent className="bg-[#0d1117] text-white border border-gray-700">
                         {productsByLender.map((p) => (
-                          <SelectItem key={p._id} value={p._id}>
+                          <SelectItem key={p._id} value={p._id} className="text-sm">
                             {p.name}
                           </SelectItem>
                         ))}
@@ -962,48 +967,70 @@ export function AggregatorApplications() {
                 </div>
               </div>
 
-              {/* Customer Details */}
-              <div className="p-2 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
-                <h3 className="font-semibold text-lg text-cyan-300">2. Customer Details</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="customerName" className="text-gray-300">Customer Name</Label>
-                    <Input id="customerName" value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+              {/* SECTION 2 */}
+              <div className="p-3 bg-gray-800/50 rounded-lg border border-gray-700 space-y-3">
+                <h3 className="font-semibold text-md text-cyan-300">2. Customer Details</h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <div className="md:col-span-2 space-y-1">
+                    <Label htmlFor="customerName" className="text-gray-300 text-sm">Customer Name</Label>
+                    <Input
+                      id="customerName"
+                      value={form.customerName}
+                      onChange={e => setForm({ ...form, customerName: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white h-9 text-sm"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customerEmail" className="text-gray-300">Email</Label>
-                    <Input id="customerEmail" type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+
+                  <div className="space-y-1">
+                    <Label htmlFor="customerEmail" className="text-gray-300 text-sm">Email</Label>
+                    <Input
+                      id="customerEmail"
+                      type="email"
+                      value={form.customerEmail}
+                      onChange={e => setForm({ ...form, customerEmail: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white h-9 text-sm"
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="customerPhone" className="text-gray-300">Phone</Label>
-                    <Input id="customerPhone" value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+
+                  <div className="space-y-1">
+                    <Label htmlFor="customerPhone" className="text-gray-300 text-sm">Phone</Label>
+                    <Input
+                      id="customerPhone"
+                      value={form.customerPhone}
+                      onChange={e => setForm({ ...form, customerPhone: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white h-9 text-sm"
+                    />
                   </div>
-                  <div className="md:col-span-2 space-y-2">
-                    <Label htmlFor="loanAmount" className="text-gray-300">Loan Amount</Label>
-                    <Input id="loanAmount" type="number" value={form.loanAmount} onChange={e => setForm({ ...form, loanAmount: e.target.value })} className="bg-gray-800 border-gray-700 text-white" />
+
+                  <div className="md:col-span-2 space-y-1">
+                    <Label htmlFor="loanAmount" className="text-gray-300 text-sm">Loan Amount</Label>
+                    <Input
+                      id="loanAmount"
+                      type="number"
+                      value={form.loanAmount}
+                      onChange={e => setForm({ ...form, loanAmount: e.target.value })}
+                      className="bg-gray-800 border-gray-700 text-white h-9 text-sm"
+                    />
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* FOOTER */}
-            <div className="flex justify-between items-center pt-0  border-gray-700 flex-shrink-0">
-              <Button
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-800"
-                onClick={() => setIsCreateDialogOpen(false)}
-              >
-                Cancel
-              </Button>
+            {/* FOOTER — stays visible */}
+            <div className="flex justify-between items-center px-4 py-3 border-t border-gray-700 flex-shrink-0 bg-gradient-to-b from-transparent to-black/40">
               <Button
                 disabled={!form.customerName || !form.customerEmail || !form.productId || !form.loanAmount}
                 onClick={handleCreateApplication}
-                className="bg-gradient-to-r from-blue to-cyan-500 text-white "
+                className="bg-gradient-to-r from-blue to-cyan-500 text-white h-8 px-3 text-sm"
               >
                 Submit Application
               </Button>
             </div>
           </DialogContent>
+
+
+
         </Dialog>
       </motion.div >
 
