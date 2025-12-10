@@ -46,6 +46,9 @@ import { useUpdateUser } from "@/hooks/use-users";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { LenderProfile } from "@/lib";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+// or from 'recharts'
+
 
 export function SuperAdminLenders() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -395,47 +398,66 @@ export function SuperAdminLenders() {
 
                       {/* ACTIONS */}
                       <div className="flex items-center">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedLender(lender);
-                            setIsViewDialogOpen(true);
-                          }}
-                          className="text-blue hover:text-white hover:bg-gray-700"
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                          className="text-gold hover:text-white hover:bg-gray-700"
-                        >
-                          <Link href={`/super-admin/lenders/profile/${lender?._id}`}>
-                            <Edit className="w-4 h-4" />
-                          </Link>
-                        </Button>
+                        <Tooltip>
+                          <TooltipTrigger >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedLender(lender);
+                                setIsViewDialogOpen(true);
+                              }}
+                              className="text-blue hover:text-white hover:bg-gray-700"
+                            >
+                              <Eye className="w-4 h-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>View Details</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger >
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              asChild
+                              className="text-gold hover:text-white hover:bg-gray-700"
+                            >
+                              <Link href={`/super-admin/lenders/profile/${lender?._id}`}>
+                                <Edit className="w-4 h-4" />
+                              </Link>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Edit Profile</TooltipContent>
+                        </Tooltip>
 
                         {lender.user?.status === "ACTIVE" && (
                           <>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-green-400 hover:text-white hover:bg-gray-700"
-                              onClick={() => handleApprove(lender.user?._id)}
-                            >
-                              <CheckCircle className="w-4 h-4" />
-                            </Button>
-
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-400 hover:text-white hover:bg-gray-700"
-                              onClick={() => handleReject(lender.user?._id)}
-                            >
-                              <XCircle className="w-4 h-4" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger >
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-green-400 hover:text-white hover:bg-gray-700"
+                                  onClick={() => handleApprove(lender.user?._id)}
+                                >
+                                  <CheckCircle className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Approve Lender</TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger >
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-400 hover:text-white hover:bg-gray-700"
+                                  onClick={() => handleReject(lender.user?._id)}
+                                >
+                                  <XCircle className="w-4 h-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Reject Lender</TooltipContent>
+                            </Tooltip>
                           </>
                         )}
                       </div>
@@ -680,6 +702,7 @@ export function SuperAdminLenders() {
                     <CheckCircle className="w-5 h-5 mr-2" />
                     Approve Lender
                   </Button>
+
                   <Button
                     className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white font-semibold py-3 shadow-lg shadow-red-500/20 transition-all duration-200"
                     onClick={() => {
@@ -690,6 +713,7 @@ export function SuperAdminLenders() {
                     <XCircle className="w-4 h-4 mr-2" />
                     Reject Lender
                   </Button>
+
                 </div>
               )}
             </div>

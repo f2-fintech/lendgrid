@@ -377,22 +377,7 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
       >
         <TableCell>
           <div className="flex items-center gap-2">
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsExpanded(!isExpanded)}
-                  className="h-6 w-6 p-0 text-yellow-300 hover:text-cyan-400 transition-colors"
 
-                >
-                  <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
-                    {isExpanded ? <ArrowRightCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
-                  </motion.div>
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>History</TooltipContent>
-            </Tooltip>
             <p className="text-white font-medium">{application.applicationNumber}</p>
           </div>
         </TableCell>
@@ -454,6 +439,22 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
               </Button>
             </TooltipTrigger>
             <TooltipContent>Delete</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="h-6 w-6 p-0 text-yellow-300 hover:text-cyan-400 transition-colors"
+
+              >
+                <motion.div animate={{ rotate: isExpanded ? 90 : 0 }} transition={{ duration: 0.2 }}>
+                  {isExpanded ? <ArrowRightCircle className="w-4 h-4" /> : <Clock className="w-4 h-4" />}
+                </motion.div>
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>History</TooltipContent>
           </Tooltip>
         </TableCell>
 
@@ -666,7 +667,7 @@ export function AggregatorApplications() {
         value: total.toString(),
         change: '+12%',
         icon: FileText,
-        color: 'text-blue-400'
+        color: 'text-blue'
       },
       {
         title: 'Under Credit Review',
@@ -1155,7 +1156,7 @@ export function AggregatorApplications() {
                         <TableHead className="text-gray-300">Lender</TableHead>
                         <TableHead className="text-gray-300">Status</TableHead>
                         <TableHead className="text-gray-300">Last Updated</TableHead>
-                        <TableHead className="text-gray-300">Actions</TableHead>
+                        <TableHead className="text-gray-300 text-center">Actions</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>

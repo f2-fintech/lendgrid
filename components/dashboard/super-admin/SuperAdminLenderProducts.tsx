@@ -24,6 +24,7 @@ import { CreateProductDto, ProductSummary, ProductType, productAssignmentsApi } 
 import { useCreateProduct, useDeleteProduct, useUpdateProduct, useProducts, useAssignProduct } from "@/hooks/use-products"
 import { useAggregators } from "@/hooks/use-aggregators"
 import { useLenders } from "@/hooks/use-lenders"
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 const productSchema = z.object({
     lenderProfileId: z.string().nonempty("Lender is required"),
@@ -34,7 +35,7 @@ const productSchema = z.object({
     // amount & tenure
     minAmount: z.coerce.number().min(0, 'Min amount must be positive'),
     maxAmount: z.coerce.number().min(0, 'Max amount must be positive'),
-    tenure: z.coerce.number().min(0, 'Min tenure must be positive'),
+    tenure: z.coerce.number().min(1, 'Min tenure must be positive'),
 
     // interest & commission
     interestRate: z.string().nonempty('Interest rate is required'),
@@ -396,12 +397,12 @@ export function SuperAdminLenderProducts(): JSX.Element {
                 </CardHeader>
                 <CardContent>
                     <div ref={tableTopRef} />
-                    <div className="overflow-x-auto">
+                    <div >
                         {isLoading ? (
                             <TableSkeleton columns={8} rows={pageSize} />
                         ) : (
                             <div className="min-w-full">
-                                <div className="grid grid-cols-9 gap-3 py-3 px-3 bg-gray-900/60 backdrop-blur-sm sticky top-0 z-20 border-b border-gray-700 text-xs font-semibold tracking-wide text-gray-300 uppercase">
+                                <div className="grid grid-cols-9 gap-3 py-3 px-3 bg-gray-900/60 backdrop-blur-sm sticky top-0 z-200 border-b border-gray-700 text-xs font-semibold tracking-wide text-gray-300 uppercase">
                                     <div className="w-52">Product</div>
                                     <div className="w-22 ">Lender</div>
                                     <div className="w-32 ">Type</div>
@@ -477,32 +478,52 @@ export function SuperAdminLenderProducts(): JSX.Element {
 
                                                 {/* ACTIONS */}
                                                 <div className="w-28 flex justify-center space-x-2">
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-violet-300 hover:text-white hover:bg-violet-600/20 rounded-lg"
-                                                        onClick={() => openAssignDialog(product)}
-                                                    >
-                                                        <UserCheck className="w-4 h-4" />
-                                                    </Button>
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-violet-300 hover:text-white hover:bg-violet-600/20 rounded-lg"
+                                                                onClick={() => openAssignDialog(product)}
+                                                            >
+                                                                <UserCheck className="w-4 h-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Assign to Aggregators
+                                                        </TooltipContent>
+                                                    </Tooltip>
 
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-yellow-300 hover:text-white hover:bg-yellow-600/20 rounded-lg"
-                                                        onClick={() => openEdit(product)}
-                                                    >
-                                                        <Edit className="w-4 h-4" />
-                                                    </Button>
-
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        className="text-red-300 hover:text-white hover:bg-red-600/20 rounded-lg"
-                                                        onClick={() => handleDelete(product._id)}
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </Button>
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-yellow-300 hover:text-white hover:bg-yellow-600/20 rounded-lg"
+                                                                onClick={() => openEdit(product)}
+                                                            >
+                                                                <Edit className="w-4 h-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Edit Product
+                                                        </TooltipContent>
+                                                    </Tooltip>
+                                                    <Tooltip>
+                                                        <TooltipTrigger>
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="text-red-300 hover:text-white hover:bg-red-600/20 rounded-lg"
+                                                                onClick={() => handleDelete(product._id)}
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </Button>
+                                                        </TooltipTrigger>
+                                                        <TooltipContent>
+                                                            Delete Product
+                                                        </TooltipContent>
+                                                    </Tooltip>
                                                 </div>
                                             </motion.div>
                                         ))

@@ -41,6 +41,7 @@ import { AddTeamMemberDialog } from './dialogs/AddTeamMemberDialog'
 import { useAggregators } from '@/hooks/use-aggregators'
 import { useUpdateUser } from '@/hooks/use-users'
 import { AggregatorProfile } from '@/lib'
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -409,6 +410,8 @@ export function SuperAdminAggregators() {
                         </div>
                         <div>
                           <div className="flex items-center">
+                            <Tooltip>
+                              <TooltipTrigger>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -420,6 +423,13 @@ export function SuperAdminAggregators() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>View Profile</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -430,6 +440,13 @@ export function SuperAdminAggregators() {
                                 <Edit className="w-4 h-4" />
                               </Link>
                             </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Edit Aggregator</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -441,6 +458,13 @@ export function SuperAdminAggregators() {
                             >
                               <UserCheck className="w-4 h-4" />
                             </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Add Team Member</p>
+                              </TooltipContent>
+                            </Tooltip>
+                            <Tooltip>
+                              <TooltipTrigger>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -449,6 +473,11 @@ export function SuperAdminAggregators() {
                             >
                               <Trash2 className="w-4 h-4" />
                             </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Delete Aggregator</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </div>
                         </div>
                       </motion.div>
