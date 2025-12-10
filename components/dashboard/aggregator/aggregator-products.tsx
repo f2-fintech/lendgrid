@@ -1,5 +1,5 @@
 "use client"
-
+import Image from "next/image"
 import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
 import { Search, Plus, Eye, Landmark, Percent, Clock, Wallet, Calendar, User, FileText, BadgeCheck, X } from "lucide-react"
@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast"
 import { useLenders } from "@/hooks/use-lenders"
 import { useCreateApplication } from "@/hooks/use-applications"
 import { Badge } from "@/components/ui/badge"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 
 const InfoItem = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
   <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
@@ -36,6 +37,52 @@ const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType
     </div>
   </div>
 );
+// Normalize lender name for matching
+function normalizeLenderName(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, " ").trim()
+}
+
+// Map of lender names -> logo paths in /public
+const LENDER_LOGOS: Record<string, string> = {
+  // make sure these filenames + extensions match exactly
+  [normalizeLenderName("Bajaj Finserv")]: "/bajajFinance.png",
+  [normalizeLenderName("Cholamandalam Finance")]: "/Chola.jpg",
+  [normalizeLenderName("Tata Capital")]: "/Tata.jpg",
+  [normalizeLenderName("HDFC Bank")]: "/HDFC.png",
+  [normalizeLenderName("ICICI Bank")]: "/ICICI.png",
+  [normalizeLenderName("IDFC FIRST Bank")]: "/IDFC.png",
+  [normalizeLenderName("Axis Bank")]: "/axis.png",
+
+}
+
+const PLACEHOLDER_LOGO = "/placeholder-logo.png" // or whatever you have
+
+function getLenderLogoSrc(name?: string | null): string | null {
+  if (!name) return null
+  const key = normalizeLenderName(name)
+  return LENDER_LOGOS[key] ?? null
+}
+type LenderLogoProps = {
+  lenderName?: string | null
+  size?: number // px dimension for square
+  className?: string
+}
+
+function LenderLogo({ lenderName, size = 48, className = "" }: LenderLogoProps) {
+  const src = getLenderLogoSrc(lenderName)
+
+  // When using next/image with dynamic src from /public, it's fine to pass string.
+  // Using `fill` requires parent to be position:relative and set width/height.
+  if (src) {
+    return (
+      <div className={`relative rounded-md overflow-hidden bg-white ${className}`} style={{ width: size, height: size }}>
+        <Image src={src} alt={lenderName ?? "lender logo"} fill sizes={`${size}px`} className="object-contain" />
+      </div>
+    )
+  }
+  return <Landmark className={`w-${Math.round(size / 4)} h-${Math.round(size / 4)} text-yellow-500 ${className}`} />
+}
+
 
 export function AggregatorProducts() {
   const { user } = useAuth('aggregator_admin')
@@ -166,7 +213,7 @@ export function AggregatorProducts() {
           </DialogTrigger>
 
           {/* Apply Form */}
-                    <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-h-screen rounded-xl shadow-xl">
+          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-h-screen rounded-xl shadow-xl">
             <DialogHeader className="flex-shrink-0">
               <div>
                 <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
@@ -380,14 +427,21 @@ export function AggregatorProducts() {
                           }}
                         >
                           <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => setViewProduct(p)}
-                              className="text-blue hover:text-white hover:bg-gray-700"
-                            >
-                              <Eye className="w-5 h-5" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => setViewProduct(p)}
+                                  className="text-blue hover:text-white hover:bg-gray-700"
+                                >
+                                  <Eye className="w-5 h-5" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>View Product Details</p>
+                              </TooltipContent>
+                            </Tooltip>
                           </DialogTrigger>
 
                           <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
@@ -407,7 +461,7 @@ export function AggregatorProducts() {
                                   </Badge>
                                 </div>
                               </div>
-                              
+
                             </DialogHeader>
                             <Button
                               variant="ghost"
@@ -420,7 +474,20 @@ export function AggregatorProducts() {
                             <div className="py-4 space-y-6">
                               {/* Key Details */}
                               <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-                                <InfoItem icon={Landmark} color="text-yellow-500" label="Lender" value={lender.lenderName} />
+                                // inside the Key Details grid in your DialogContent
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                                  {/* Lender with logo */}
+                                  <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
+                                    <LenderLogo lenderName={lender.lenderName} size={48} className="mb-2" />
+                                    <p className="text-sm text-gray-400">Lender</p>
+                                    <p className="text-lg font-bold text-white text-center">{lender.lenderName}</p>
+                                  </div>
+
+                                  <InfoItem icon={Percent} color="text-blue" label="Interest Rate" value={`${prod.interestRate}%`} />
+                                  <InfoItem icon={Percent} color="text-green-400" label="Commission" value={`${prod.commissionPercent}%`} />
+                                  <InfoItem icon={Clock} color="text-red-400" label="Tenure" value={prod.tenure} />
+                                </div>
+
                                 <InfoItem icon={Percent} color="text-blue" label="Interest Rate" value={`${prod.interestRate}%`} />
                                 <InfoItem icon={Percent} color="text-green-400" label="Commission" value={`${prod.commissionPercent}%`} />
                                 <InfoItem icon={Clock} color="text-red-400" label="Tenure" value={prod.tenure} />
