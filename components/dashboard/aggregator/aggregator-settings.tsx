@@ -125,6 +125,13 @@ const businessSchema = z.object({
       "Invalid PAN Number"
     ),
 
+  aadhaarNumber: z
+    .string()
+    .optional()
+    .refine(val => !val || /^[0-9]{12}$/.test(val),
+      "Aadhaar must be 12 digits"
+    ),
+
   tanNumber: z.string().optional(),
   cinNumber: z.string().optional(),
   pocName: z.string().optional(),
@@ -147,18 +154,6 @@ const bankSchema = z.object({
 })
 
 const documentsSchema = z.object({
-  aadhaarNumber: z
-    .string()
-    .optional()
-    .refine(val => !val || /^[0-9]{12}$/.test(val), "Aadhaar must be 12 digits"),
-
-  gstNumber: z
-    .string()
-    .optional()
-    .refine(
-      val => !val || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(val),
-      "Invalid GST Number"
-    ),
   panCard: z.string().optional(),
   gstCertificate: z.string().optional(),
   aadhaarFront: z.string().optional(),
@@ -575,15 +570,15 @@ function KycTab() {
         </div>
         <div className="space-y-2 md:col-span-2">
           <Label htmlFor="aadhaarNumber" className="text-gray-300">Aadhaar Number</Label>
-          <Input id="aadhaarNumber" {...register("documents.aadhaarNumber", {
+          <Input id="aadhaarNumber" {...register("business.aadhaarNumber", {
             onBlur: (e: any) => {
               const formatted = formatAadhaar(e.target.value)
               e.target.value = formatted
-              setValue("documents.aadhaarNumber", formatted, { shouldValidate: true })
-              trigger("documents.aadhaarNumber")
+              setValue("business.aadhaarNumber", formatted, { shouldValidate: true })
+              trigger("business.aadhaarNumber")
             }
           })} className="bg-gray-800 border-gray-700 text-white" placeholder="Enter 12-digit Aadhaar" />
-          {errors.documents?.aadhaarNumber && <p className="text-red-400 text-sm">{errors.documents.aadhaarNumber.message}</p>}
+          {errors.business?.aadhaarNumber && <p className="text-red-400 text-sm">{errors.business.aadhaarNumber.message}</p>}
         </div>
 
         <div className="space-y-2">
@@ -795,6 +790,7 @@ export function AggregatorSettings() {
             : undefined,
           gstNumber: agg.gstNumber || "",
           panNumber: agg.panNumber || "",
+          aadhaarNumber: agg.aadhaarNumber || "",
           cinNumber: agg.cinNumber || "",
           websiteUrl: agg.websiteUrl || "",
           registeredAddress: agg.registeredAddress || "",
@@ -810,8 +806,6 @@ export function AggregatorSettings() {
           bankName: agg.bankName || "",
         },
         documents: {
-          aadhaarNumber: "",
-          gstNumber: agg.gstNumber || "",
           incorporationCertificate: (agg as any).documents?.incorporationCertificate || "",
           bankStatement: (agg as any).documents?.bankStatement || "",
           cancelledCheque: (agg as any).documents?.cancelledCheque || "",
@@ -854,6 +848,7 @@ export function AggregatorSettings() {
       Boolean(aggData?.pincode),
       Boolean(aggData?.gstNumber),
       Boolean(aggData?.panNumber),
+      Boolean(aggData?.aadhaarNumber),
       Boolean(aggData?.cinNumber),
     ]
 
@@ -921,6 +916,7 @@ export function AggregatorSettings() {
         pocName: values.business.pocName,
         gstNumber: values.business.gstNumber,
         panNumber: values.business.panNumber,
+        aadhaarNumber: values.business.aadhaarNumber,
         cinNumber: values.business.cinNumber,
         bankName: values.bank.bankName,
         accountNumber: values.bank.accountNumber,
@@ -979,13 +975,13 @@ export function AggregatorSettings() {
   return (
     <FormProvider {...methods}>
       <div className="space-y-6">
-             {/* Profile completion banner */}
-              {profileCompletePct < 100 && (
-                <ProfileCompletionBanner
-                  percent={profileCompletePct}
-                  showAction={false}
-                />
-              )}
+        {/* Profile completion banner */}
+        {profileCompletePct < 100 && (
+          <ProfileCompletionBanner
+            percent={profileCompletePct}
+            showAction={false}
+          />
+        )}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
