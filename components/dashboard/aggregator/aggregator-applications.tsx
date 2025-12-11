@@ -75,7 +75,7 @@ export const STATUS_STYLE: Record<string, string> = {
   disbursed: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
   rejected: "bg-red-600/20 text-red-400 border-red-600/30",
   drop: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-  submitted: "bg-blue-500/20 text-blue-300 border-blue-500/30"
+  submitted: "bg-blue text-gray-300 border-blue-500/30"
 };
 
 export const STATUS_META: Record<string, { icon: JSX.Element }> = {
@@ -697,7 +697,8 @@ export function AggregatorApplications() {
   const filteredApplications = useMemo(() => {
     return applications?.results?.filter(app => {
       const matchesSearch = app.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.applicationNumber.toLowerCase().includes(searchTerm.toLowerCase())
+        app.applicationNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.lender.lenderName.toLowerCase().includes(searchTerm.toLocaleLowerCase())
       const matchesLender = !filterLender || filterLender === 'all' || app.lenderName === filterLender
       return matchesSearch && matchesLender
     })
@@ -882,7 +883,10 @@ export function AggregatorApplications() {
           </DialogTrigger>
 
           {/* Apply Form */}
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col">
+          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col"
+            onInteractOutside={(e) => {
+              e.preventDefault(); 
+            }}>
             <DialogHeader className="flex-shrink-0 px-4 py-3">
               <div>
                 <DialogTitle className="text-xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
@@ -1090,13 +1094,27 @@ export function AggregatorApplications() {
           <SelectTrigger className="w-40 bg-gray-900/50 border-gray-800 text-white">
             <SelectValue placeholder="All Status" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="PENDING">Pending</SelectItem>
-            <SelectItem value="UNDER_REVIEW">Under Review</SelectItem>
-            <SelectItem value="APPROVED">Approved</SelectItem>
-            <SelectItem value="REJECTED">Rejected</SelectItem>
-            <SelectItem value="DISBURSED">Disbursed</SelectItem>
+          <SelectContent className="bg-gray-900 border-gray-700 text-white">
+            {Object.values(ApplicationStatus).map((status) => {
+              const key = pretty(status);
+              return (
+                <SelectItem key={status} value={status}>
+                  <div className="flex items-center gap-2">
+                    {/* Dot */}
+                    <span
+                      className="w-3 h-3 rounded-full inline-block"
+                      style={{
+                        backgroundColor: STATUS_STYLE[key]?.split(" ")[0]?.replace("bg-", "").replace("/20", "")
+                      }}
+                    />
+                    {/* Icon */}
+                    {STATUS_META[key]?.icon}
+                    {/* Label */}
+                    {key}
+                  </div>
+                </SelectItem>
+              );
+            })}
           </SelectContent>
         </Select>
         <Select value={filterLender} onValueChange={setFilterLender}>

@@ -217,7 +217,10 @@ export function SuperAdminCommission() {
               Create New Rule
             </Button>
           </DialogTrigger>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl"
+            onInteractOutside={(e) => {
+              e.preventDefault();
+            }}>
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">Create Commission Rule</DialogTitle>
               <DialogDescription className="text-gray-400">
