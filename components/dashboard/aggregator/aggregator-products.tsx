@@ -19,6 +19,7 @@ import { useLenders } from "@/hooks/use-lenders"
 import { useCreateApplication } from "@/hooks/use-applications"
 import { Badge } from "@/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { lenderNames } from "@/components/ui/carousel-lenders"
 
 const InfoItem = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
   <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
@@ -137,19 +138,20 @@ export function AggregatorProducts() {
   const filtered = useMemo(() => {
     return products.filter((p) => {
       const prod = p.product;
+      const lender = p.lender;
 
       const matchesSearch =
-        prod.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prod.productType.toLowerCase().includes(searchTerm.toLowerCase());
+        prod?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        prod?.productType?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        lender?.lenderName?.toLowerCase().includes(searchTerm.toLowerCase());
 
       const matchesType =
-        typeFilter === "all" || prod.productType === typeFilter.toUpperCase();
+        typeFilter === "all" || prod?.productType === typeFilter.toUpperCase();
 
       return matchesSearch && matchesType;
     });
   }, [products, searchTerm, typeFilter]);
 
-  console.log(allLenders, selectedLenderId, selectedProduct, 'this is all lenders')
   // LENDERS DROPDOWN LIST
   const lenders = useMemo(() => {
     return allLenders.map((l) => ({
@@ -213,7 +215,10 @@ export function AggregatorProducts() {
           </DialogTrigger>
 
           {/* Apply Form */}
-          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col">
+          <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col"
+            onInteractOutside={(e) => {
+              e.preventDefault(); 
+            }}>
             <DialogHeader className="flex-shrink-0 px-4 py-3">
               <div>
                 <DialogTitle className="text-xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">

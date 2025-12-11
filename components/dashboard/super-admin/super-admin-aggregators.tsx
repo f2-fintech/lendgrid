@@ -412,17 +412,17 @@ export function SuperAdminAggregators() {
                           <div className="flex items-center">
                             <Tooltip>
                               <TooltipTrigger>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedAggregator(aggregator)
-                                setIsViewDialogOpen(true)
-                              }}
-                              className="text-blue hover:text-white hover:bg-gray-700"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => {
+                                    setSelectedAggregator(aggregator)
+                                    setIsViewDialogOpen(true)
+                                  }}
+                                  className="text-blue hover:text-white hover:bg-gray-700"
+                                >
+                                  <Eye className="w-4 h-4" />
+                                </Button>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>View Profile</p>
@@ -430,16 +430,16 @@ export function SuperAdminAggregators() {
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              asChild
-                              className="text-gold hover:text-white hover:bg-gray-700"
-                            >
-                              <Link href={`/super-admin/aggregators/profile/${aggregator?._id}`}>
-                                <Edit className="w-4 h-4" />
-                              </Link>
-                            </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  asChild
+                                  className="text-gold hover:text-white hover:bg-gray-700"
+                                >
+                                  <Link href={`/super-admin/aggregators/profile/${aggregator?._id}`}>
+                                    <Edit className="w-4 h-4" />
+                                  </Link>
+                                </Button>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Edit Aggregator</p>
@@ -447,17 +447,17 @@ export function SuperAdminAggregators() {
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-violet-400 hover:text-white hover:bg-gray-700"
-                              onClick={() => {
-                                setSelectedAggregatorForTeam(aggregator)
-                                setIsAddTeamMemberDialogOpen(true)
-                              }}
-                            >
-                              <UserCheck className="w-4 h-4" />
-                            </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-violet-400 hover:text-white hover:bg-gray-700"
+                                  onClick={() => {
+                                    setSelectedAggregatorForTeam(aggregator)
+                                    setIsAddTeamMemberDialogOpen(true)
+                                  }}
+                                >
+                                  <UserCheck className="w-4 h-4" />
+                                </Button>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Add Team Member</p>
@@ -465,14 +465,14 @@ export function SuperAdminAggregators() {
                             </Tooltip>
                             <Tooltip>
                               <TooltipTrigger>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-red-300 hover:text-white hover:bg-red-600/20 rounded-lg"
-                              onClick={() => handleReject(aggregator.user?._id)}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="text-red-300 hover:text-white hover:bg-red-600/20 rounded-lg"
+                                  onClick={() => handleReject(aggregator.user?._id)}
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </Button>
                               </TooltipTrigger>
                               <TooltipContent>
                                 <p>Delete Aggregator</p>
@@ -754,7 +754,10 @@ export function SuperAdminAggregators() {
 
       {/* Team Members Dialog */}
       <Dialog open={isTeamMembersDialogOpen} onOpenChange={setIsTeamMembersDialogOpen}>
-        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl max-h-[85vh]">
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl max-h-[85vh]"
+          onInteractOutside={(e) => {
+            e.preventDefault();
+          }}>
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>

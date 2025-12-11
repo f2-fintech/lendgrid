@@ -121,6 +121,7 @@ export function AggregatorDashboard() {
     checks.push(Boolean(userData?.email))
     checks.push(Boolean(userData?.contact))
     checks.push(Boolean(userData?.photoUrl))
+     checks.push(Boolean(userData?.status))
 
     // business fields
     checks.push(Boolean(aggData?.companyName))
@@ -131,6 +132,7 @@ export function AggregatorDashboard() {
     checks.push(Boolean(aggData?.pincode))
     checks.push(Boolean(aggData?.gstNumber))
     checks.push(Boolean(aggData?.panNumber))
+     checks.push(Boolean(aggData?.aadhaarNumber))
     checks.push(Boolean(aggData?.cinNumber))
 
     // banking

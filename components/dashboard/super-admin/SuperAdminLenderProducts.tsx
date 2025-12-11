@@ -187,7 +187,11 @@ export function SuperAdminLenderProducts(): JSX.Element {
         if (!products) return []
         const s = searchTerm.trim().toLowerCase()
         if (!s) return products
-        return products.filter((p) => p.name.toLowerCase().includes(s) || (p.productType ?? "").toLowerCase().includes(s))
+        return products.filter((p) =>
+            p.name.toLowerCase().includes(s) ||
+            (p.productType ?? "").toLowerCase().includes(s) ||
+            (p.lender?.profile?.lenderName ?? "").toLowerCase().includes(s)
+        )
     }, [products, searchTerm])
 
     const handlePageChange = (newPage: number) => {
@@ -545,7 +549,10 @@ export function SuperAdminLenderProducts(): JSX.Element {
 
             {/* Create/Edit Dialog */}
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-                <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl">
+                <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-4xl w-[95%] max-h-[95vh] overflow-y-auto rounded-xl"
+                    onInteractOutside={(e) => {
+                        e.preventDefault();
+                    }}>
                     <DialogHeader>
                         <DialogTitle className="text-xl font-bold">{isEditMode ? 'Edit Product' : 'Create New Product'}</DialogTitle>
                         <DialogDescription className="text-gray-400">{isEditMode ? 'Update the details of your existing product.' : 'Fill in the details to add a new product.'}</DialogDescription>

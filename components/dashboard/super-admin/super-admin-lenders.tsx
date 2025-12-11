@@ -132,20 +132,34 @@ export function SuperAdminLenders() {
   };
 
   const filteredLenders = useMemo(() => {
-    return lenders.filter((lender) => {
-      const matchesSearch =
-        lender.user?.username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lender.user?.email.toLowerCase().includes(searchTerm.toLowerCase());
+  if (!lenders) return [];
 
-      const matchesStatus =
-        !filterStatus || filterStatus === "all" || lender.user?.status === filterStatus;
+  const s = (searchTerm ?? "").trim().toLowerCase();
 
-      const matchesType =
-        !filterType || filterType === "all" || lender.lenderType === filterType;
+  return lenders.filter((lender) => {
 
-      return matchesSearch && matchesStatus && matchesType;
-    });
-  }, [lenders, searchTerm, filterStatus, filterType]);
+    const username = (lender.user?.username ?? "").toLowerCase();
+    const email = (lender.user?.email ?? "").toLowerCase();
+    const lenderType = (lender.lenderType ?? "").toLowerCase();
+    const status = (lender.user?.status ?? "").toLowerCase();
+
+    const matchesSearch =
+      !s || username.includes(s) || email.includes(s) || lenderType.includes(s);
+
+    const matchesStatus =
+      !filterStatus ||
+      filterStatus === "all" ||
+      status === (filterStatus ?? "").toLowerCase();
+
+    const matchesType =
+      !filterType ||
+      filterType === "all" ||
+      lenderType === (filterType ?? "").toLowerCase();
+
+    return matchesSearch && matchesStatus && matchesType;
+  });
+}, [lenders, searchTerm, filterStatus, filterType]);
+
 
   const paginated = useMemo(() => {
     const start = (page - 1) * pageSize;
