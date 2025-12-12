@@ -342,14 +342,13 @@ export function SuperAdminAggregators() {
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : (
                 <div className="min-w-full">
-                  <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
+                  <div className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
                     <div>Aggregator</div>
                     <div>Status</div>
                     <div>KYC Status</div>
                     <div>Applications</div>
                     <div>Total Commission</div>
                     <div>Join Date</div>
-                    <div>Team</div>
                     <div>Actions</div>
                   </div>
                   <div className="space-y-1">
@@ -359,7 +358,7 @@ export function SuperAdminAggregators() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="grid grid-cols-8 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
+                        className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
                       >
                         <div>
                           <p className="text-white font-medium">{aggregator.companyName}</p>
@@ -388,7 +387,7 @@ export function SuperAdminAggregators() {
                           {aggregator.createdAt ? new Date(aggregator.createdAt).toLocaleDateString() : '-'}
                         </div>
                         <div>
-                          <div className="flex items-center gap-2">
+                          {/* <div className="flex items-center gap-2">
                             <span className="text-white font-medium">
                               {aggregator.teamMemberUsers?.length || 0}
                             </span>
@@ -406,7 +405,7 @@ export function SuperAdminAggregators() {
                                 <Eye className="w-4 h-4" />
                               </Button>
                             )}
-                          </div>
+                          </div> */}
                         </div>
                         <div>
                           <div className="flex items-center">
@@ -445,7 +444,7 @@ export function SuperAdminAggregators() {
                                 <p>Edit Aggregator</p>
                               </TooltipContent>
                             </Tooltip>
-                            <Tooltip>
+                            {/* <Tooltip>
                               <TooltipTrigger>
                                 <Button
                                   variant="ghost"
@@ -462,7 +461,7 @@ export function SuperAdminAggregators() {
                               <TooltipContent>
                                 <p>Add Team Member</p>
                               </TooltipContent>
-                            </Tooltip>
+                            </Tooltip> */}
                             <Tooltip>
                               <TooltipTrigger>
                                 <Button
@@ -742,7 +741,7 @@ export function SuperAdminAggregators() {
         refetch={refetch}
       />
 
-      <AddTeamMemberDialog
+      {/* <AddTeamMemberDialog
         isOpen={isAddTeamMemberDialogOpen}
         onClose={() => {
           setIsAddTeamMemberDialogOpen(false)
@@ -750,14 +749,11 @@ export function SuperAdminAggregators() {
         }}
         aggregator={selectedAggregatorForTeam}
         refetch={refetch}
-      />
+      /> */}
 
       {/* Team Members Dialog */}
-      <Dialog open={isTeamMembersDialogOpen} onOpenChange={setIsTeamMembersDialogOpen}>
-        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl max-h-[85vh]"
-          onInteractOutside={(e) => {
-            e.preventDefault();
-          }}>
+      {/* <Dialog open={isTeamMembersDialogOpen} onOpenChange={setIsTeamMembersDialogOpen}>
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl max-h-[85vh]">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
@@ -796,14 +792,11 @@ export function SuperAdminAggregators() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
-                      {/* Avatar */}
                       <div className="bg-gradient-to-br from-blue-500/20 to-cyan-500/20 rounded-full w-14 h-14 flex items-center justify-center border-2 border-cyan-500/30">
                         <User className="w-7 h-7 text-cyan-400" />
                       </div>
 
-                      {/* Member Info */}
                       <div className="flex-1 space-y-3">
-                        {/* Name and Status */}
                         <div className="flex items-center gap-3">
                           <h3 className="text-lg font-semibold text-white">
                             {member.username}
@@ -813,7 +806,6 @@ export function SuperAdminAggregators() {
                           </Badge>
                         </div>
 
-                        {/* Contact Details */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           <div className="flex items-center gap-2">
                             <div className="bg-purple-500/10 p-1.5 rounded">
@@ -840,7 +832,6 @@ export function SuperAdminAggregators() {
                           </div>
                         </div>
 
-                        {/* Role Badge */}
                         <div>
                           <Badge className="bg-cyan-500/20 text-cyan-300 border-cyan-500/30">
                             {member.role?.replace(/_/g, ' ')}
@@ -854,7 +845,6 @@ export function SuperAdminAggregators() {
             )}
           </div>
 
-          {/* Custom Scrollbar Styles */}
           <style jsx>{`
       .overflow-y-auto::-webkit-scrollbar {
         width: 6px;
@@ -872,7 +862,7 @@ export function SuperAdminAggregators() {
       }
     `}</style>
         </DialogContent>
-      </Dialog>
+      </Dialog> */}
     </div>
   )
 }

@@ -13,7 +13,6 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 
-import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -25,8 +24,6 @@ import { useRegister } from "@/hooks/use-users";
 // Validation SCHEMA
 const schema = z
     .object({
-        isOmsEnabled: z.boolean().optional(),
-
         fullName: z
             .string()
             .min(2, "Name must be at least 2 characters")
@@ -101,8 +98,7 @@ export function AddAggregatorDialog({
             email: "",
             companyName: "",
             password: "",
-            confirmPassword: "",
-            isOmsEnabled: false
+            confirmPassword: ""
         },
     });
 
@@ -120,7 +116,7 @@ export function AddAggregatorDialog({
                 role: "AGGREGATOR_ADMIN",
                 // Aggregator Profile Fields
                 companyName: data.companyName,
-                isOmsEnabled: data.isOmsEnabled,
+                // isOmsEnabled: data.isOmsEnabled,
             };
 
             const res: any = await registerMutation.mutateAsync(payload);
@@ -264,7 +260,7 @@ export function AddAggregatorDialog({
                     </div>
 
                     {/* OMS Enabled */}
-                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-700/50">
+                    {/* <div className="flex items-center space-x-3 pt-4 border-t border-gray-700/50">
                         <Controller name="isOmsEnabled" control={control} render={({ field }) => (
                             <>
                                 <Checkbox id="isOmsEnabled" checked={field.value} onCheckedChange={field.onChange} />
@@ -273,7 +269,7 @@ export function AddAggregatorDialog({
                                 </Label>
                             </>
                         )} />
-                    </div>
+                    </div> */}
 
                     {/* Buttons */}
                     <div className="flex justify-end space-x-4 pt-5 border-t border-gray-700/50">

@@ -91,27 +91,19 @@ const navigationConfig = {
       items: [
         { title: "Applications", url: navigationPaths.aggregator.applications, icon: CreditCard },
         { title: "Settings", url: navigationPaths.aggregator.settings, icon: Settings },
-        ...(isOmsEnabled
-          ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
-          : [])
+        // ...(isOmsEnabled
+        //   ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
+        //   : [])
       ]
     }
   ],
-  aggregator_member: (isOmsEnabled: boolean) => [
+  aggregator_member: [
     {
       title: "Operations",
       items: [
         { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
         { title: "Products", url: navigationPaths.aggregatorMember.products, icon: CreditCard },
         { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: CreditCard },
-
-        ...(isOmsEnabled
-          ? [{
-            title: "OMS",
-            url: `https://admin-f2fintech.netlify.app/login`,
-            icon: Building2
-          }]
-          : [])
       ]
     }
   ],
@@ -150,9 +142,6 @@ function AppSidebar({
 
   if (userRole === "aggregator") {
     navigation = navigationConfig.aggregator(isOmsEnabled!);
-  }
-  else if (userRole === "aggregator_member") {
-    navigation = navigationConfig.aggregator_member(isOmsEnabled!);
   }
   else {
     navigation = navigationConfig[userRole];
