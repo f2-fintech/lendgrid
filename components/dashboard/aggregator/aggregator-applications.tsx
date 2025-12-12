@@ -134,7 +134,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
       transition={{ duration: 0.3 }}
       className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10"
     >
-      <div className="p-6">
+      <div className="p-6"> 
         {/* Card Header - Application Number Only */}
         <div className="flex items-start justify-between mb-4">
           <div>
@@ -213,7 +213,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
             <div className="space-y-3 pt-4 border-t border-gray-700">
               {/* Status Badge - Clickable with hover effect */}
               <div
-                onClick={onStatusClick}
+                //onClick={onStatusClick}
                 className={`w-full cursor-pointer rounded-lg transition-all duration-200 hover:scale-[1.02] ${STATUS_STYLE[pretty(application.status)]} p-3 flex items-center justify-center gap-2`}
                 title="Click to update status"
               >
@@ -222,7 +222,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
               </div>
 
               {/* Action Buttons - View, Delete & History */}
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2 ">
                 <Button
                   onClick={onView}
                   variant="outline"
@@ -233,7 +233,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                   View
                 </Button>
 
-                <Button
+                {/* <Button
                   onClick={onDelete}
                   variant="outline"
                   size="sm"
@@ -241,7 +241,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
                   Delete
-                </Button>
+                </Button> */}
 
                 <Button
                   onClick={() => setShowHistory(true)}
@@ -408,17 +408,17 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
           </div>
         </TableCell>
         <TableCell>
-          <Tooltip>
-            <TooltipTrigger>
-              <Badge
-                onClick={onStatusClick}
-                className={`cursor-pointer flex items-center gap-1 ${STATUS_STYLE[pretty(application.status)]} hover:scale-105 transition-transform`}>
-                {getStatusIcon(application.status)}
-                {pretty(application.status)}
-              </Badge>
-            </TooltipTrigger>
+          {/* <Tooltip>
+            <TooltipTrigger> */}
+          <Badge
+            // onClick={onStatusClick}
+            className={`cursor-pointer flex items-center gap-1 ${STATUS_STYLE[pretty(application.status)]} hover:scale-105 transition-transform`}>
+            {getStatusIcon(application.status)}
+            {pretty(application.status)}
+          </Badge>
+          {/* </TooltipTrigger>
             <TooltipContent>Click to update status</TooltipContent>
-          </Tooltip>
+          </Tooltip> */}
         </TableCell>
         <TableCell className="text-gray-400">
           {new Date(application.updatedAt).toLocaleDateString()}
@@ -432,14 +432,16 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
             </TooltipTrigger>
             <TooltipContent>View</TooltipContent>
           </Tooltip>
-          <Tooltip>
+          {/* <Tooltip>
             <TooltipTrigger asChild>
-              <Button onClick={onDelete} className="text-red-400 cursor-pointer hover:text-white">
+              <Button 
+              onClick={onDelete} 
+              className="text-red-400 cursor-pointer hover:text-white">
                 <Trash2 className="w-4 h-4 mr-2" />
               </Button>
             </TooltipTrigger>
             <TooltipContent>Delete</TooltipContent>
-          </Tooltip>
+          </Tooltip> */}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
@@ -785,51 +787,51 @@ export function AggregatorApplications() {
 
   const handleDelete = async (id: string) => {
     if (!confirm('Are you sure you want to delete')) return
-    try {
-      await deleteApplicationMutation.mutateAsync(id);
-      toast({ title: 'Success', description: 'Application deleted successfully.' })
-    } catch (err) {
-      toast({
-        title: 'Error',
-        description: 'Failed to delete Application.',
-        variant: 'destructive',
-      })
-    }
+    // try {
+    //   await deleteApplicationMutation.mutateAsync(id);
+    //   toast({ title: 'Success', description: 'Application deleted successfully.' })
+    // } catch (err) {
+    //   toast({
+    //     title: 'Error',
+    //     description: 'Failed to delete Application.',
+    //     variant: 'destructive',
+    //   })
+    // }
   }
 
   const handleStatusUpdate = async () => {
     try {
       if (!selectedApplication) return;
 
-      const payload: any = {
-        id: selectedApplication._id,
-        status: newStatus?.toUpperCase(),
-        action: `${user?.username} changed Application Status from ${pretty(oldStatus)} to ${pretty(newStatus)}`,
-        comment: statusComment
-      };
+      // const payload: any = {
+      //   id: selectedApplication._id,
+      //   status: newStatus?.toUpperCase(),
+      //   action: `${user?.username} changed Application Status from ${pretty(oldStatus)} to ${pretty(newStatus)}`,
+      //   comment: statusComment
+      // };
 
-      if (newStatus === ApplicationStatus.APPROVED) {
-        payload.approvedAmount = approvedAmount;
-        payload.approvedDate = approvedDate ? new Date(approvedDate) : undefined;
-      }
-      if (newStatus === ApplicationStatus.DISBURSED) {
-        payload.disbursedAmount = disbursedAmount;
-        payload.disbursedDate = disbursedDate ? new Date(disbursedDate) : undefined;
-      }
+      // if (newStatus === ApplicationStatus.APPROVED) {
+      //   payload.approvedAmount = approvedAmount;
+      //   payload.approvedDate = approvedDate ? new Date(approvedDate) : undefined;
+      // }
+      // if (newStatus === ApplicationStatus.DISBURSED) {
+      //   payload.disbursedAmount = disbursedAmount;
+      //   payload.disbursedDate = disbursedDate ? new Date(disbursedDate) : undefined;
+      // }
 
-      console.log("STATUS UPDATE PAYLOAD", payload);
-      await updateApplicationMutation.mutateAsync({
-        id: selectedApplication._id,
-        payload
-      });
+      // console.log("STATUS UPDATE PAYLOAD", payload);
+      // await updateApplicationMutation.mutateAsync({
+      //   id: selectedApplication._id,
+      //   payload
+      // });
 
-      toast({
-        title: "Status Updated",
-        description: "Application status updated successfully."
-      });
+      // toast({
+      //   title: "Status Updated",
+      //   description: "Application status updated successfully."
+      // });
 
-      setIsStatusDialogOpen(false);
-      refetch();
+      // setIsStatusDialogOpen(false);
+      // refetch();
     } catch (error: any) {
       toast({
         title: "Error",
@@ -885,7 +887,7 @@ export function AggregatorApplications() {
           {/* Apply Form */}
           <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col"
             onInteractOutside={(e) => {
-              e.preventDefault(); 
+              e.preventDefault();
             }}>
             <DialogHeader className="flex-shrink-0 px-4 py-3">
               <div>
