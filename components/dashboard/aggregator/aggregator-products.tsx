@@ -206,15 +206,14 @@ export function AggregatorProducts() {
           <p className="text-gray-400 mt-1">Pick a product and submit an application</p>
         </div>
 
-        {/* Apply Button */}
-        <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
+        {/* Apply Button with form */}
+        {/* <Dialog open={applyDialogOpen} onOpenChange={setApplyDialogOpen}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue/80 text-white mt-4 sm:mt-0">
               <Plus className="w-4 h-4 mr-2" /> Apply
             </Button>
           </DialogTrigger>
 
-          {/* Apply Form */}
           <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white rounded-xl shadow-xl w-full max-w-2xl max-h-[98vh] overflow-visible scale-[0.90] flex flex-col"
             onInteractOutside={(e) => {
               e.preventDefault(); 
@@ -239,7 +238,7 @@ export function AggregatorProducts() {
             </Button>
 
             <div className="px-1 py-1 space-y-2">
-              {/* Lender & Product Selection */}
+
               <div className="p-1 bg-gray-800/50 rounded-lg border border-gray-700 space-y-3">
                 <h3 className="font-semibold text-lg text-cyan-300">1. Select Product</h3>
                 <div className="space-y-2">
@@ -294,7 +293,6 @@ export function AggregatorProducts() {
                 </div>
               </div>
 
-              {/* Customer Details */}
               <div className="p-2 bg-gray-800/50 rounded-lg border border-gray-700 space-y-4">
                 <h3 className="font-semibold text-lg text-cyan-300">2. Customer Details</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -318,7 +316,6 @@ export function AggregatorProducts() {
               </div>
             </div>
 
-            {/* FOOTER */}
             <div className="flex justify-between items-center px-1 py-1   border-gray-700 flex-shrink-0 bg-gradient-to-b from-transparent to-black/40">
 
               <Button
@@ -330,7 +327,7 @@ export function AggregatorProducts() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
+        </Dialog> */}
       </motion.div>
 
       <motion.div
