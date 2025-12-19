@@ -386,8 +386,7 @@ export function SuperAdminAggregators() {
                         <div className="text-gray-300">
                           {aggregator.createdAt ? new Date(aggregator.createdAt).toLocaleDateString() : '-'}
                         </div>
-                        <div>
-                          {/* <div className="flex items-center gap-2">
+                        {/* <div className="flex items-center gap-2">
                             <span className="text-white font-medium">
                               {aggregator.teamMemberUsers?.length || 0}
                             </span>
@@ -406,7 +405,6 @@ export function SuperAdminAggregators() {
                               </Button>
                             )}
                           </div> */}
-                        </div>
                         <div>
                           <div className="flex items-center">
                             <Tooltip>

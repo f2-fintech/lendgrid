@@ -8,6 +8,7 @@ export function useLogout() {
 		if (typeof document !== 'undefined') {
 			document.cookie = 'token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax'
 		}
+		localStorage.clear();
 		router.replace('/login')
 	}
 }

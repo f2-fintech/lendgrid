@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { z } from "zod";
+import { number, z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -20,6 +20,7 @@ import { Loader2, Eye, EyeOff } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { useRegister } from "@/hooks/use-users";
+import { buildHeaders } from "@/lib/http-client";
 
 // Validation SCHEMA
 const schema = z
@@ -107,6 +108,7 @@ export function AddAggregatorDialog({
     }, [isOpen, reset]);
 
     const onSubmit = async (data: FormValues) => {
+        const DEFAULT_BASE_URL_REST = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001/api/v1'
         try {
             const payload = {
                 username: data.fullName,
@@ -119,19 +121,59 @@ export function AddAggregatorDialog({
                 // isOmsEnabled: data.isOmsEnabled,
             };
 
-            const res: any = await registerMutation.mutateAsync(payload);
+            const res = await registerMutation.mutateAsync(payload);
 
-            if (res?.createUser?.success) {
-                toast({
-                    title: "Success",
-                    description: "Aggregator created successfully!",
-                });
-                onClose?.();
-                refetch?.();
-                return;
+            if (!res?.createUser?.success) {
+                throw new Error(res?.createUser?.message || "User creation failed");
             }
 
-            throw new Error(res?.createUser?.message || "Failed to create aggregator");
+            const { companyId } = res.createUser;
+
+            if (!companyId) {
+                throw new Error("Aggregator profile not created");
+            }
+
+            // Create Company (REST)
+            const companyRes = await fetch(`${DEFAULT_BASE_URL_REST}/companies`, {
+                method: "POST",
+                headers: buildHeaders(),
+                body: JSON.stringify({
+                    name: data.companyName,
+                    email: data.email,
+                    contactNumber: data.contact,
+                    companyId,
+                }),
+            });
+            if (!companyRes.ok) {
+                throw new Error("Company creation failed");
+            }
+
+            // Create OMS user (REST)
+            const omsRes = await fetch(`${DEFAULT_BASE_URL_REST}/create-user`, {
+                method: "POST",
+                headers: buildHeaders(),
+                credentials: "include",
+                body: JSON.stringify({
+                    username: data.fullName,
+                    email: data.email,
+                    password: data.password,
+                    number: data.contact,
+                    companyId,
+                    role: "admin",
+                    status: "active",
+                }),
+            });
+            if (!omsRes.ok) {
+                throw new Error("OMS user creation failed");
+            }
+
+            toast({
+                title: "Success",
+                description: "Aggregator created successfully!",
+            });
+
+            onClose?.();
+            refetch?.();
         } catch (err: any) {
             toast({
                 title: "Error",

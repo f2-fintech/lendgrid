@@ -1,13 +1,32 @@
-/* HTTP Client utilities for REST and GraphQL requests */
+import { decodeJwt } from "./utils";
 
 type HttpMethod = 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
 
 const DEFAULT_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000'
+const DEFAULT_BASE_URL_REST = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001/api/v1'
+
+export function getCompanyId(): string | null {
+    if (typeof window === 'undefined') return null;
+
+    const token =
+        document.cookie
+            .split('; ')
+            .find(row => row.startsWith('token='))
+            ?.split('=')[1] || null;
+
+    const decoded = decodeJwt(token);
+    if (decoded?.companyId) {
+        return String(decoded.companyId);
+    }
+
+    // Fallback to localStorage
+    return localStorage.getItem('companyId');
+}
 
 /**
  * Get authentication token from cookie
  */
-function getAuthToken(): string | null {
+export function getAuthToken(): string | null {
     if (typeof document === 'undefined') return null
     const value = `; ${document.cookie}`
     const parts = value.split(`; token=`)
@@ -18,7 +37,7 @@ function getAuthToken(): string | null {
 /**
  * Build headers with auth token
  */
-function buildHeaders(extra?: HeadersInit): HeadersInit {
+export function buildHeaders(extra?: HeadersInit): HeadersInit {
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...extra,
@@ -26,6 +45,10 @@ function buildHeaders(extra?: HeadersInit): HeadersInit {
     const token = getAuthToken()
     if (token) {
         (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
+    }
+    const companyId = getCompanyId();
+    if (companyId) {
+        (headers as Record<string, string>)['companyid'] = companyId;
     }
     return headers
 }
@@ -42,7 +65,7 @@ export async function apiFetch<T>(
         baseUrl?: string
     } = {}
 ): Promise<T> {
-    const { method = 'GET', body, headers, baseUrl = DEFAULT_BASE_URL } = options
+    const { method = 'GET', body, headers, baseUrl = DEFAULT_BASE_URL_REST } = options
     const url = `${baseUrl}${path}`
 
     const resp = await fetch(url, {

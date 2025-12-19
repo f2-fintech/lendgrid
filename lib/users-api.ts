@@ -26,6 +26,8 @@ export const usersApi = {
       createUser: {
         success: boolean;
         message: string;
+        companyId?: string;
+        companyName?: string;
         user?: {
           _id: string;
           username: string;
@@ -39,6 +41,8 @@ export const usersApi = {
           createUser(createUserInput: $createUserInput) {
             success
             message
+            companyId
+            companyName
             user {
               _id
               username

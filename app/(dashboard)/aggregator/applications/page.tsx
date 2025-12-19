@@ -1,5 +1,5 @@
-import { AggregatorApplications } from '@/components/dashboard/aggregator/aggregator-applications'
+import MainAggregatorApplications from '@/components/dashboard/aggregator/aggregator-applications'
 
 export default function AggregatorApplicationsPage() {
-  return <AggregatorApplications />
+  return <MainAggregatorApplications />
 }
