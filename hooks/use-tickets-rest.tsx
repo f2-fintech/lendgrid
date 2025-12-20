@@ -77,7 +77,11 @@ export const useGetTickets = (
         };
     }>(
         fullPath,
-        (url) => apiFetch(url)
+        (url) => apiFetch(url),
+        {
+            revalidateOnFocus: false,
+            refreshInterval: 0,
+        }
     );
 
     return {
