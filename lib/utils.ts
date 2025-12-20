@@ -17,12 +17,12 @@ export function getCookie(name: string): string | null {
 export function setCookie(name: string, value: string, days = 1): void {
   if (typeof document === 'undefined') return
   const expires = new Date(Date.now() + days * 864e5).toUTCString()
-  document.cookie = `${name}=${encodeURIComponent(value)}; Expires=${expires}; Path=/; secure; SameSite=Lax`
+  document.cookie = `${name}=${encodeURIComponent(value)}; Expires=${expires}; Path=/; secure; SameSite=None`
 }
 
 export function deleteCookie(name: string): void {
   if (typeof document === 'undefined') return
-  document.cookie = `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax`
+  document.cookie = `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=None`
 }
 
 // Lightweight JWT decoder (no verification; for claims extraction only)
