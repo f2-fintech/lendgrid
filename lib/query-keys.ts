@@ -1,3 +1,5 @@
+import { ApplicableFor, CommissionStatus, RuleStatus } from "./api-types"
+
 // Query key factory for type-safe query keys
 export const queryKeys = {
     // Users
@@ -80,11 +82,31 @@ export const queryKeys = {
             [...queryKeys.products.all, 'assigned-aggregators', productId] as const,
     },
 
-    // Commissions
+    // Commission Rules
     commissions: {
         all: ['commissions'] as const,
-        list: (page?: number, limit?: number, aggregatorId?: string) =>
-            [...queryKeys.commissions.all, 'list', { page, limit, aggregatorId }] as const,
+        rules: {
+            all: ['commissions', 'rules'] as const,
+            list: (filters?: {
+                page?: number
+                limit?: number
+                productType?: string
+                status?: RuleStatus
+                applicableFor?: ApplicableFor
+            }) => [...queryKeys.commissions.rules.all, 'list', filters] as const,
+            detail: (id: string) => [...queryKeys.commissions.rules.all, 'detail', id] as const,
+        },
+        transactions: {
+            all: ['commissions', 'transactions'] as const,
+            list: (filters?: {
+                page?: number
+                limit?: number
+                aggregatorId?: string
+                status?: CommissionStatus
+                productType?: string
+            }) => [...queryKeys.commissions.transactions.all, 'list', filters] as const,
+            detail: (id: string) => [...queryKeys.commissions.transactions.all, 'detail', id] as const,
+        },
     },
 
     // KYC

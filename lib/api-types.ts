@@ -78,6 +78,35 @@ export enum ApplicationStatus {
   SUBMITTED = 'submitted'
 }
 
+export enum CommissionType {
+  PERCENTAGE = 'PERCENTAGE',
+  FLAT = 'FLAT',
+}
+
+export enum RuleStatus {
+  ACTIVE = 'ACTIVE',
+  INACTIVE = 'INACTIVE',
+  ARCHIVED = 'ARCHIVED',
+}
+
+export enum CommissionStatus {
+  PENDING = 'PENDING',
+  CALCULATED = 'CALCULATED',
+  APPROVED = 'APPROVED',
+  PAID = 'PAID',
+  REJECTED = 'REJECTED',
+  CANCELLED = 'CANCELLED',
+  DISPUTED = 'DISPUTED',
+}
+
+export enum ApplicableFor {
+  ALL_AGGREGATORS = 'ALL_AGGREGATORS',
+  BRONZE_AGGREGATORS = 'BRONZE_AGGREGATORS',
+  SILVER_AGGREGATORS = 'SILVER_AGGREGATORS',
+  GOLD_AGGREGATORS = 'GOLD_AGGREGATORS',
+  PLATINUM_AGGREGATORS = 'PLATINUM_AGGREGATORS',
+}
+
 // USER & AUTH TYPES
 export type AppRole = 'super_admin' | 'aggregator_admin' | 'lender_admin'
 
@@ -350,17 +379,6 @@ export type CreateProductDto = {
 }
 
 // COMMISSION & PAYOUT TYPES
-export interface Commission {
-  id: string
-  applicationId: string
-  amount: number
-  percentage: number
-  status: 'Pending' | 'Paid' | 'Disputed'
-  paidDate?: string
-  aggregatorId: string
-  lenderId: string
-}
-
 export interface Payout {
   id: string
   amount: number
@@ -371,4 +389,150 @@ export interface Payout {
   comments?: string
   aggregatorId: string
   lenderId: string
+}
+
+export interface CommissionRule {
+  id: string;
+  ruleName: string;
+  productType: string;
+  commissionType: CommissionType;
+  commissionRate: number;
+  minAmount: number;
+  maxAmount: number;
+  applicableFor: ApplicableFor;
+  status: RuleStatus;
+  priority: number;
+  description?: string;
+  effectiveFrom?: string;
+  effectiveTo?: string;
+  createdAt: string;
+  updatedAt: string;
+  createdBy?: {
+    id: string;
+    username: string;
+    email: string;
+  };
+  updatedBy?: {
+    id: string;
+    username: string;
+    email: string;
+  };
+}
+
+export interface CommissionTransaction {
+  id: string;
+  ticketId: string;
+  aggregatorId: string;
+  ruleId: string;
+  loanAmount: number;
+  commissionAmount: number;
+  commissionType: CommissionType;
+  commissionRate: number;
+  status: CommissionStatus;
+  aggregatorTier?: string;
+  productType: string;
+  calculatedAt?: string;
+  approvedAt?: string;
+  paidAt?: string;
+  paymentReference?: string;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+  aggregator?: {
+    id: string;
+    username: string;
+    email: string;
+  };
+  rule?: {
+    id: string;
+    ruleName: string;
+    commissionType: CommissionType;
+  };
+  approvedBy?: {
+    id: string;
+    username: string;
+  };
+  paidBy?: {
+    id: string;
+    username: string;
+  };
+}
+
+export interface CreateCommissionRuleInput {
+  ruleName: string;
+  productType: string;
+  commissionType: CommissionType;
+  commissionRate: number;
+  minAmount: number;
+  maxAmount: number;
+  applicableFor: ApplicableFor;
+  priority?: number;
+  description?: string;
+  effectiveFrom?: Date;
+  effectiveTo?: Date;
+}
+
+export interface UpdateCommissionRuleInput {
+  ruleName?: string;
+  commissionRate?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  status?: RuleStatus;
+  description?: string;
+  priority?: number;
+}
+
+export interface CalculateCommissionInput {
+  ticketId: string;
+  disbursedAmount: number;
+}
+
+export interface UpdateCommissionStatusInput {
+  status: CommissionStatus;
+  paymentReference?: string;
+  remarks?: string;
+}
+
+export interface CommissionRuleFilterInput {
+  productType?: string;
+  status?: RuleStatus;
+  applicableFor?: ApplicableFor;
+}
+
+export interface CommissionTransactionFilterInput {
+  aggregatorId?: string;
+  status?: CommissionStatus;
+  productType?: string;
+}
+
+export interface PaginatedCommissionRules {
+  success: boolean;
+  message: string;
+  data: CommissionRule[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface PaginatedCommissionTransactions {
+  success: boolean;
+  message: string;
+  data: CommissionTransaction[];
+  total: number;
+  page: number;
+  limit: number;
+  pages: number;
+}
+
+export interface CommissionRuleResponse {
+  success: boolean;
+  message: string;
+  data?: CommissionRule;
+}
+
+export interface CommissionTransactionResponse {
+  success: boolean;
+  message: string;
+  data?: CommissionTransaction;
 }

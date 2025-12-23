@@ -502,7 +502,6 @@ export function AggregatorApplications() {
 
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
     const [searchTerm, setSearchTerm] = useState('')
-    const [filterStatus, setFilterStatus] = useState('')
     const [filterLender, setFilterLender] = useState('')
 
     const [selectedApplication, setSelectedApplication] = useState<any>(null)
@@ -544,7 +543,6 @@ export function AggregatorApplications() {
         page,
         limit: pageSize,
         aggregatorId: user?._id || user?.id,
-        status: filterStatus && filterStatus !== 'all' ? filterStatus : undefined,
         search: searchTerm
     })
     const total = applications?.count || 0
@@ -566,7 +564,7 @@ export function AggregatorApplications() {
     // Reset page when filters change
     useEffect(() => {
         setPage(1)
-    }, [searchTerm, filterStatus, filterLender])
+    }, [searchTerm, filterLender])
 
     const handlePageChange = async (newPage: number) => {
         setPage(newPage)
@@ -722,33 +720,6 @@ export function AggregatorApplications() {
                         className="pl-10 bg-gray-900/50 border-gray-800 text-white"
                     />
                 </div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-40 bg-gray-900/50 border-gray-800 text-white">
-                        <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700 text-white">
-                        {Object.values(ApplicationStatus).map((status) => {
-                            const key = pretty(status);
-                            return (
-                                <SelectItem key={status} value={status}>
-                                    <div className="flex items-center gap-2">
-                                        {/* Dot */}
-                                        <span
-                                            className="w-3 h-3 rounded-full inline-block"
-                                            style={{
-                                                backgroundColor: STATUS_STYLE[key]?.split(" ")[0]?.replace("bg-", "").replace("/20", "")
-                                            }}
-                                        />
-                                        {/* Icon */}
-                                        {STATUS_META[key]?.icon}
-                                        {/* Label */}
-                                        {key}
-                                    </div>
-                                </SelectItem>
-                            );
-                        })}
-                    </SelectContent>
-                </Select>
                 <Select value={filterLender} onValueChange={setFilterLender}>
                     <SelectTrigger className="w-40 bg-gray-900/50 border-gray-800 text-white">
                         <SelectValue placeholder="All Lenders" />
