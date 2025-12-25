@@ -1,30 +1,30 @@
 import { gqlFetch } from './http-client'
 import {
-    PaginatedCommissionRules,
-    PaginatedCommissionTransactions,
-    CommissionRuleResponse,
-    CommissionTransactionResponse,
-    CreateCommissionRuleInput,
-    UpdateCommissionRuleInput,
-    CalculateCommissionInput,
-    UpdateCommissionStatusInput,
-    CommissionRuleFilterInput,
-    CommissionTransactionFilterInput,
+  PaginatedCommissionRules,
+  PaginatedCommissionTransactions,
+  CommissionRuleResponse,
+  CommissionTransactionResponse,
+  CreateCommissionRuleInput,
+  UpdateCommissionRuleInput,
+  CalculateCommissionInput,
+  UpdateCommissionStatusInput,
+  CommissionRuleFilterInput,
+  CommissionTransactionFilterInput,
 } from './api-types'
 
 export const commissionsApi = {
-    // ========== Commission Rules ==========
+  // ========== Commission Rules ==========
 
-    /**
-     * Get paginated list of commission rules
-     */
-    getRules: (params?: {
-        page?: number
-        limit?: number
-        filters?: CommissionRuleFilterInput
-    }) =>
-        gqlFetch<{ getCommissionRules: PaginatedCommissionRules }>({
-            query: `
+  /**
+   * Get paginated list of commission rules
+   */
+  getRules: (params?: {
+    page?: number
+    limit?: number
+    filters?: CommissionRuleFilterInput
+  }) =>
+    gqlFetch<{ getCommissionRules: PaginatedCommissionRules }>({
+      query: `
         query GetCommissionRules($page: Int, $limit: Int, $filters: CommissionRuleFilterInput) {
           getCommissionRules(page: $page, limit: $limit, filters: $filters) {
             success
@@ -55,19 +55,19 @@ export const commissionsApi = {
           }
         }
       `,
-            variables: {
-                page: params?.page,
-                limit: params?.limit,
-                filters: params?.filters,
-            },
-        }).then(res => res.getCommissionRules),
+      variables: {
+        page: params?.page,
+        limit: params?.limit,
+        filters: params?.filters,
+      },
+    }).then(res => res.getCommissionRules),
 
-    /**
-     * Get single commission rule by ID
-     */
-    getRule: (id: string) =>
-        gqlFetch<{ getCommissionRule: CommissionRuleResponse }>({
-            query: `
+  /**
+   * Get single commission rule by ID
+   */
+  getRule: (id: string) =>
+    gqlFetch<{ getCommissionRule: CommissionRuleResponse }>({
+      query: `
         query GetCommissionRule($id: ID!) {
           getCommissionRule(id: $id) {
             success
@@ -94,15 +94,15 @@ export const commissionsApi = {
           }
         }
       `,
-            variables: { id },
-        }).then(res => res.getCommissionRule),
+      variables: { id },
+    }).then(res => res.getCommissionRule),
 
-    /**
-     * Create new commission rule
-     */
-    createRule: (input: CreateCommissionRuleInput) =>
-        gqlFetch<{ createCommissionRule: CommissionRuleResponse }>({
-            query: `
+  /**
+   * Create new commission rule
+   */
+  createRule: (input: CreateCommissionRuleInput) =>
+    gqlFetch<{ createCommissionRule: CommissionRuleResponse }>({
+      query: `
         mutation CreateCommissionRule($input: CreateCommissionRuleInput!) {
           createCommissionRule(input: $input) {
             success
@@ -125,15 +125,15 @@ export const commissionsApi = {
           }
         }
       `,
-            variables: { input },
-        }).then(res => res.createCommissionRule),
+      variables: { input },
+    }).then(res => res.createCommissionRule),
 
-    /**
-     * Update commission rule
-     */
-    updateRule: (id: string, input: UpdateCommissionRuleInput) =>
-        gqlFetch<{ updateCommissionRule: CommissionRuleResponse }>({
-            query: `
+  /**
+   * Update commission rule
+   */
+  updateRule: (id: string, input: UpdateCommissionRuleInput) =>
+    gqlFetch<{ updateCommissionRule: CommissionRuleResponse }>({
+      query: `
         mutation UpdateCommissionRule($id: ID!, $input: UpdateCommissionRuleInput!) {
           updateCommissionRule(id: $id, input: $input) {
             success
@@ -155,15 +155,15 @@ export const commissionsApi = {
           }
         }
       `,
-            variables: { id, input },
-        }).then(res => res.updateCommissionRule),
+      variables: { id, input },
+    }).then(res => res.updateCommissionRule),
 
-    /**
-     * Archive commission rule
-     */
-    deleteRule: (id: string) =>
-        gqlFetch<{ deleteCommissionRule: CommissionRuleResponse }>({
-            query: `
+  /**
+   * Archive commission rule
+   */
+  deleteRule: (id: string) =>
+    gqlFetch<{ deleteCommissionRule: CommissionRuleResponse }>({
+      query: `
         mutation DeleteCommissionRule($id: ID!) {
           deleteCommissionRule(id: $id) {
             success
@@ -175,21 +175,21 @@ export const commissionsApi = {
           }
         }
       `,
-            variables: { id },
-        }).then(res => res.deleteCommissionRule),
+      variables: { id },
+    }).then(res => res.deleteCommissionRule),
 
-    // ========== Commission Transactions ==========
+  // ========== Commission Transactions ==========
 
-    /**
-     * Get paginated list of commission transactions
-     */
-    getTransactions: (params?: {
-        page?: number
-        limit?: number
-        filters?: CommissionTransactionFilterInput
-    }) =>
-        gqlFetch<{ getCommissionTransactions: PaginatedCommissionTransactions }>({
-            query: `
+  /**
+   * Get paginated list of commission transactions
+   */
+  getTransactions: (params?: {
+    page?: number
+    limit?: number
+    filters?: CommissionTransactionFilterInput
+  }) =>
+    gqlFetch<{ getCommissionTransactions: PaginatedCommissionTransactions }>({
+      query: `
         query GetCommissionTransactions($page: Int, $limit: Int, $filters: CommissionTransactionFilterInput) {
           getCommissionTransactions(page: $page, limit: $limit, filters: $filters) {
             success
@@ -199,13 +199,14 @@ export const commissionsApi = {
               ticketId
               aggregatorId
               ruleId
-              loanAmount
+              disbursedAmount
               commissionAmount
               commissionType
               commissionRate
               status
-              aggregatorTier
+              aggregatorRank
               productType
+              provider
               calculatedAt
               approvedAt
               paidAt
@@ -213,24 +214,8 @@ export const commissionsApi = {
               remarks
               createdAt
               updatedAt
-              aggregator {
-                id
-                username
-                email
-              }
-              rule {
-                id
-                ruleName
-                commissionType
-              }
-              approvedBy {
-                id
-                username
-              }
-              paidBy {
-                id
-                username
-              }
+              approvedBy
+              paidBy
             }
             total
             page
@@ -239,19 +224,19 @@ export const commissionsApi = {
           }
         }
       `,
-            variables: {
-                page: params?.page,
-                limit: params?.limit,
-                filters: params?.filters,
-            },
-        }).then(res => res.getCommissionTransactions),
+      variables: {
+        page: params?.page,
+        limit: params?.limit,
+        filters: params?.filters,
+      },
+    }).then(res => res.getCommissionTransactions),
 
-    /**
-     * Calculate commission for an application
-     */
-    calculateCommission: (input: CalculateCommissionInput) =>
-        gqlFetch<{ calculateCommission: CommissionTransactionResponse }>({
-            query: `
+  /**
+   * Calculate commission for an application
+   */
+  calculateCommission: (input: CalculateCommissionInput) =>
+    gqlFetch<{ calculateCommission: CommissionTransactionResponse }>({
+      query: `
         mutation CalculateCommission($input: CalculateCommissionInput!) {
           calculateCommission(input: $input) {
             success
@@ -260,28 +245,28 @@ export const commissionsApi = {
               id
               ticketId
               aggregatorId
-              loanAmount
+              disbursedAmount
               commissionAmount
               commissionType
               commissionRate
               status
               productType
-              aggregatorTier
+              aggregatorRank
               calculatedAt
               createdAt
             }
           }
         }
       `,
-            variables: { input },
-        }).then(res => res.calculateCommission),
+      variables: { input },
+    }).then(res => res.calculateCommission),
 
-    /**
-     * Update commission transaction status
-     */
-    updateTransactionStatus: (id: string, input: UpdateCommissionStatusInput) =>
-        gqlFetch<{ updateCommissionStatus: CommissionTransactionResponse }>({
-            query: `
+  /**
+   * Update commission transaction status
+   */
+  updateTransactionStatus: (id: string, input: UpdateCommissionStatusInput) =>
+    gqlFetch<{ updateCommissionStatus: CommissionTransactionResponse }>({
+      query: `
         mutation UpdateCommissionStatus($id: ID!, $input: UpdateCommissionStatusInput!) {
           updateCommissionStatus(id: $id, input: $input) {
             success
@@ -298,6 +283,6 @@ export const commissionsApi = {
           }
         }
       `,
-            variables: { id, input },
-        }).then(res => res.updateCommissionStatus),
+      variables: { id, input },
+    }).then(res => res.updateCommissionStatus),
 }

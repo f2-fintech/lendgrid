@@ -421,17 +421,19 @@ export interface CommissionRule {
 
 export interface CommissionTransaction {
   id: string;
-  ticketId: string;
+  ticketId: number;
   aggregatorId: string;
   ruleId: string;
-  loanAmount: number;
+  disbursedAmount: number;
+  disbursedDate: string;
   commissionAmount: number;
   commissionType: CommissionType;
   commissionRate: number;
   status: CommissionStatus;
-  aggregatorTier?: string;
+  aggregatorRank?: ApplicableFor;
+  provider: string;
   productType: string;
-  calculatedAt?: string;
+  calculatedAt: string;
   approvedAt?: string;
   paidAt?: string;
   paymentReference?: string;
@@ -483,7 +485,7 @@ export interface UpdateCommissionRuleInput {
 }
 
 export interface CalculateCommissionInput {
-  ticketId: string;
+  ticketId: number;
   disbursedAmount: number;
 }
 
