@@ -50,6 +50,7 @@ export const aggregatorProfileApi = {
               _id
               userId
               companyName
+              rank
               businessType
               city
               state
@@ -77,7 +78,9 @@ export const aggregatorProfileApi = {
               _id
               userId
               companyName
+              rank
               businessType
+              yearOfEstablishment,
               city
               state
               pincode
@@ -85,6 +88,7 @@ export const aggregatorProfileApi = {
               totalApplicationsSubmitted
               totalApplicationsDisbursed
               totalCommissionEarned
+              totalDisbursedAmount
               pendingPayout
               createdAt
               createdBy
@@ -127,7 +131,9 @@ export const aggregatorProfileApi = {
           _id
           userId
           companyName
+          rank
           businessType
+          yearOfEstablishment
           registeredAddress
           city
           state
@@ -138,7 +144,6 @@ export const aggregatorProfileApi = {
           tanNumber
           cinNumber
           websiteUrl
-          pocName
           documents {
             panCard
             aadhaarFront
@@ -148,7 +153,6 @@ export const aggregatorProfileApi = {
             bankStatement
             cancelledCheque
             addressProof
-            authorizedSignatory
           }
           kycStatus
           kycRejectionReason
@@ -157,9 +161,9 @@ export const aggregatorProfileApi = {
           accountNumber
           ifscCode
           accountHolderName
-          isBankVerified
           totalApplicationsSubmitted
           totalApplicationsDisbursed
+          totalDisbursedAmount
           totalCommissionEarned
           totalPaidOut
           pendingPayout
@@ -205,6 +209,7 @@ export const aggregatorProfileApi = {
             _id
             userId
             companyName
+            rank
             businessType
             city
             state
@@ -240,6 +245,7 @@ export const aggregatorProfileApi = {
             success
             results {
               _id
+              rank
               companyName
               city
               state

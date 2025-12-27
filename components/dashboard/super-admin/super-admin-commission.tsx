@@ -308,7 +308,7 @@ export function SuperAdminCommission() {
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
+            <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700">
               <Plus className="w-4 h-4 mr-2" />
               Create New Rule
             </Button>

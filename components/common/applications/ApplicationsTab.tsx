@@ -755,7 +755,7 @@ export function AggregatorApplications() {
                             <div className="flex items-center gap-3 bg-gray-900/50 rounded-lg p-1">
                                 <Button
                                     onClick={() => router.push('/aggregator/applications/new')}
-                                    className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700"
+                                    className="bg-gradient-to-r from-blue to-cyan-500 hover:from-blue-600 hover:to-cyan-700"
                                 >
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create New Application

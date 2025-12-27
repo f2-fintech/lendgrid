@@ -246,7 +246,7 @@ export function SuperAdminAggregators() {
           <p className="text-gray-400 mt-1">Manage and monitor all registered aggregators</p>
         </div>
         <Button
-          className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
+          className="bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700"
           onClick={() => setIsAddDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />

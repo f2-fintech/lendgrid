@@ -642,7 +642,7 @@ export function AggregatorCommission() {
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Status</SelectItem>
+                        <SelectItem value="all">All Status</SelectItem>
                         <SelectItem value={CommissionStatus.PAID}>Paid</SelectItem>
                         <SelectItem value={CommissionStatus.PENDING}>Pending</SelectItem>
                         <SelectItem value={CommissionStatus.CALCULATED}>Calculated</SelectItem>

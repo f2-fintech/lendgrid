@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, DollarSign, CreditCard, Building2, Download, Search, Calendar, Icon, ArrowRight } from 'lucide-react'
+import { TrendingUp, DollarSign, CreditCard, Building2, Download, Search, Calendar, Icon, ArrowRight, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -21,6 +21,7 @@ import { TablePagination } from '@/components/ui/pagination'
 import { ExportButton } from '@/components/ui/button-to-export'
 import { exportRevenueReport } from '@/lib/exporter'
 import { useToast } from '@/hooks/use-toast'
+import { CommissionStatus } from '@/lib'
 
 const mockData = {
   metrics: {
@@ -39,37 +40,37 @@ const mockData = {
   ],
   applications: [
     {
-      id: 'APP001',
-      lenderName: 'HDFC Bank',
-      loanType: 'Personal Loan',
+      ticketId: 'APP001',
+      provider: 'HDFC Bank',
+      productType: 'Personal Loan',
       disbursedAmount: 500000,
       disbursedDate: '2025-01-15',
-      commissionPercent: 4,
-      calculatedCommission: 20000,
-      payoutStatus: 'Paid',
-      payoutDate: '2025-01-20'
+      commissionRate: 4,
+      commissionAmount: 20000,
+      status: CommissionStatus.PAID,
+      paidAt: '2025-01-20'
     },
     {
-      id: 'APP002',
-      lenderName: 'ICICI Bank',
-      loanType: 'Home Loan',
+      ticketId: 'APP002',
+      provider: 'ICICI Bank',
+      productType: 'Home Loan',
       disbursedAmount: 2500000,
       disbursedDate: '2025-01-18',
-      commissionPercent: 3.5,
-      calculatedCommission: 87500,
-      payoutStatus: 'Pending',
-      payoutDate: null
+      commissionRate: 3.5,
+      commissionAmount: 87500,
+      status: CommissionStatus.PENDING,
+      paidAt: null
     },
     {
-      id: 'APP003',
-      lenderName: 'Bajaj Finance',
-      loanType: 'Business Loan',
+      ticketId: 'APP003',
+      provider: 'Bajaj Finance',
+      productType: 'Business Loan',
       disbursedAmount: 1000000,
       disbursedDate: '2025-01-20',
-      commissionPercent: 4.5,
-      calculatedCommission: 45000,
-      payoutStatus: 'Paid',
-      payoutDate: '2025-01-25'
+      commissionRate: 4.5,
+      commissionAmount: 45000,
+      status: CommissionStatus.PAID,
+      paidAt: '2025-01-25'
     }
   ]
 }
@@ -121,19 +122,23 @@ export function AggregatorDashboard() {
     checks.push(Boolean(userData?.email))
     checks.push(Boolean(userData?.contact))
     checks.push(Boolean(userData?.photoUrl))
-     checks.push(Boolean(userData?.status))
+    checks.push(Boolean(userData?.status))
 
     // business fields
     checks.push(Boolean(aggData?.companyName))
-    checks.push(Boolean(aggData?.pocName))
+    checks.push(Boolean(aggData?.rank))
+    checks.push(Boolean(aggData?.businessType))
+    checks.push(Boolean(aggData?.yearOfEstablishment))
     checks.push(Boolean(aggData?.registeredAddress))
     checks.push(Boolean(aggData?.city))
     checks.push(Boolean(aggData?.state))
     checks.push(Boolean(aggData?.pincode))
+    checks.push(Boolean(aggData?.websiteUrl))
     checks.push(Boolean(aggData?.gstNumber))
     checks.push(Boolean(aggData?.panNumber))
-     checks.push(Boolean(aggData?.aadhaarNumber))
+    checks.push(Boolean(aggData?.aadhaarNumber))
     checks.push(Boolean(aggData?.cinNumber))
+    checks.push(Boolean(aggData?.tanNumber))
 
     // banking
     checks.push(Boolean(aggData?.bankName))
@@ -150,6 +155,8 @@ export function AggregatorDashboard() {
       Boolean(docs?.gstCertificate),
       Boolean(docs?.bankStatement),
       Boolean(docs?.incorporationCertificate),
+      Boolean(docs?.bankStatement),
+      Boolean(docs?.cancelledCheque),
     ]
 
     // include document checks so completeness matches settings page
@@ -165,7 +172,7 @@ export function AggregatorDashboard() {
       setIsTableLoading(false)
       setCardsLoading(false)
       setChartLoading(false)
-    }, 2000)
+    }, 1000)
     return () => clearTimeout(t)
   }, [])
 
@@ -176,8 +183,8 @@ export function AggregatorDashboard() {
   const filteredRules = useMemo(() => {
     return mockData.applications.filter((rule) => {
       const matchesSearch =
-        rule.lenderName.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = !filterStatus || filterStatus === "all" || rule.payoutStatus === filterStatus
+        rule.provider.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchesStatus = !filterStatus || filterStatus === "all" || rule.status === filterStatus
       return matchesSearch && matchesStatus
     })
   }, [searchTerm, filterStatus])
@@ -234,6 +241,54 @@ export function AggregatorDashboard() {
     }).format(amount)
   }
 
+  const formatDate = (dateString: string | null | undefined) => {
+    if (!dateString) return '-'
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const getStatusColor = (status: CommissionStatus) => {
+    switch (status) {
+      case CommissionStatus.PAID: return 'bg-green-500/20 text-green-400'
+      case CommissionStatus.CALCULATED:
+      case CommissionStatus.PENDING: return 'bg-orange-500/20 text-orange-400'
+      case CommissionStatus.APPROVED: return 'bg-blue/20 text-blue'
+      case CommissionStatus.DISPUTED: return 'bg-red-500/20 text-red-400'
+      case CommissionStatus.REJECTED:
+      case CommissionStatus.CANCELLED: return 'bg-gray-500/20 text-gray-400'
+      default: return 'bg-gray-500/20 text-gray-400'
+    }
+  }
+
+  const getStatusIcon = (status: CommissionStatus) => {
+    switch (status) {
+      case CommissionStatus.PAID: return CheckCircle
+      case CommissionStatus.CALCULATED:
+      case CommissionStatus.PENDING: return Clock
+      case CommissionStatus.APPROVED: return CheckCircle
+      case CommissionStatus.DISPUTED: return AlertCircle
+      case CommissionStatus.REJECTED:
+      case CommissionStatus.CANCELLED: return XCircle
+      default: return Clock
+    }
+  }
+
+  const getStatusLabel = (status: CommissionStatus) => {
+    switch (status) {
+      case CommissionStatus.CALCULATED: return 'Calculated'
+      case CommissionStatus.PENDING: return 'Pending'
+      case CommissionStatus.APPROVED: return 'Approved'
+      case CommissionStatus.PAID: return 'Paid'
+      case CommissionStatus.REJECTED: return 'Rejected'
+      case CommissionStatus.CANCELLED: return 'Cancelled'
+      case CommissionStatus.DISPUTED: return 'Disputed'
+      default: return status
+    }
+  }
+
   const MetricCard = ({ index, title, value, icon: Icon, trend, color }: any) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -265,10 +320,11 @@ export function AggregatorDashboard() {
   return (
     <div className="space-y-8">
       {/* Profile completion banner */}
-      {profileCompletePct < 100 && (
+      {profileCompletePct <= 100 && (
         <ProfileCompletionBanner
           percent={profileCompletePct}
           onAction={() => router.push('/aggregator/settings')}
+          showAction={profileCompletePct < 100}
         />
       )}
       {/* Header */}
@@ -378,105 +434,116 @@ export function AggregatorDashboard() {
       </Card>
 
       {/* Applications Table */}
-      <Card className="bg-gray-800/50 border-gray-700">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="text-white">Disbursed Applications</CardTitle>
-              <CardDescription className="text-gray-400">
-                Track all your loan applications and commission status
-              </CardDescription>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                <Input
-                  placeholder="Search applications..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 bg-gray-900 border-gray-600 text-white w-64"
-                />
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.6 }}
+      >
+        <Card className="bg-gray-800/50 border-gray-700">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-white">Commission History</CardTitle>
+                <CardDescription className="text-gray-400">
+                  Detailed record of all commission transactions
+                </CardDescription>
               </div>
-              <Select value={filterLender} onValueChange={setFilterLender}>
-                <SelectTrigger className="w-40 bg-gray-900 border-gray-600 text-white">
-                  <SelectValue placeholder="All Lenders" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Lenders</SelectItem>
-                  <SelectItem value="hdfc">HDFC Bank</SelectItem>
-                  <SelectItem value="icici">ICICI Bank</SelectItem>
-                  <SelectItem value="bajaj">Bajaj Finance</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="paid">Paid</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Input
+                    placeholder="Search transactions..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-gray-900 border-gray-600 text-white w-64"
+                  />
+                </div>
+                <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val as CommissionStatus | '')}>
+                  <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Status</SelectItem>
+                    <SelectItem value={CommissionStatus.PAID}>Paid</SelectItem>
+                    <SelectItem value={CommissionStatus.PENDING}>Pending</SelectItem>
+                    <SelectItem value={CommissionStatus.CALCULATED}>Calculated</SelectItem>
+                    <SelectItem value={CommissionStatus.APPROVED}>Approved</SelectItem>
+                    <SelectItem value={CommissionStatus.DISPUTED}>Disputed</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div ref={tableTopRef} />
-          <div className="overflow-x-auto">
+          </CardHeader>
+          <CardContent>
+            <div ref={tableTopRef} />
             {isTableLoading ? (
               <TableSkeleton columns={6} rows={pageSize} />
+            ) : paginated.length === 0 ? (
+              <div className="text-center py-12">
+                <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                <p className="text-gray-400">No commission transactions found</p>
+              </div>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow className="border-gray-700">
-                    <TableHead className="text-gray-300">App ID</TableHead>
-                    <TableHead className="text-gray-300">Lender</TableHead>
-                    <TableHead className="text-gray-300">Loan Type</TableHead>
-                    <TableHead className="text-gray-300">Disbursed Amount</TableHead>
-                    <TableHead className="text-gray-300">Commission %</TableHead>
-                    <TableHead className="text-gray-300">Commission Amount</TableHead>
-                    <TableHead className="text-gray-300">Status</TableHead>
-                    <TableHead className="text-gray-300">Payout Date</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paginated.map((app) => (
-                    <TableRow key={app.id} className="border-gray-700 hover:bg-gray-800/50">
-                      <TableCell className="text-white font-medium">{app.id}</TableCell>
-                      <TableCell className="text-white">{app.lenderName}</TableCell>
-                      <TableCell className="text-gray-300">{app.loanType}</TableCell>
-                      <TableCell className="text-white">{formatCurrency(app.disbursedAmount)}</TableCell>
-                      <TableCell className="text-gold">{app.commissionPercent}%</TableCell>
-                      <TableCell className="text-green-400">{formatCurrency(app.calculatedCommission)}</TableCell>
-                      <TableCell>
-                        <Badge
-                          variant={app.payoutStatus === 'Paid' ? 'default' : 'secondary'}
-                          className={app.payoutStatus === 'Paid' ? 'bg-green-500/20 text-green-400' : 'bg-orange-500/20 text-orange-400'}
-                        >
-                          {app.payoutStatus}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-gray-300">
-                        {app.payoutDate || 'Pending'}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+              <>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-gray-700">
+                        <TableHead className="text-gray-300">Ticket ID</TableHead>
+                        <TableHead className="text-gray-300">Lender</TableHead>
+                        <TableHead className="text-gray-300">Loan Type</TableHead>
+                        <TableHead className="text-gray-300">Loan Amount</TableHead>
+                        <TableHead className="text-gray-300">Commission Rate</TableHead>
+                        <TableHead className="text-gray-300">Commission Amount</TableHead>
+                        <TableHead className="text-gray-300">Status</TableHead>
+                        <TableHead className="text-gray-300">Calculated Date</TableHead>
+                        <TableHead className="text-gray-300">Paid Date</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginated.map((commission, index) => {
+                        const StatusIcon = getStatusIcon(commission.status)
+                        return (
+                          <motion.tr
+                            key={commission.id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.05 }}
+                            className="border-gray-700 hover:bg-gray-800/50"
+                          >
+                            <TableCell className="text-white font-medium">#{commission.ticketId}</TableCell>
+                            <TableCell className="text-white">{commission.provider || 'N/A'}</TableCell>
+                            <TableCell className="text-gray-300">{commission.productType || 'N/A'}</TableCell>
+                            <TableCell className="text-white">{formatCurrency(commission.disbursedAmount)}</TableCell>
+                            <TableCell className="text-gold">{commission.commissionRate}%</TableCell>
+                            <TableCell className="text-green-400 font-semibold">{formatCurrency(commission.commissionAmount)}</TableCell>
+                            <TableCell>
+                              <Badge className={getStatusColor(commission.status)}>
+                                <StatusIcon className="w-3 h-3 mr-1" />
+                                {getStatusLabel(commission.status)}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-gray-300">{formatDate(commission.calculatedAt)}</TableCell>
+                            <TableCell className="text-gray-300">{formatDate(commission.paidAt)}</TableCell>
+                          </motion.tr>
+                        )
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                <TablePagination
+                  page={page}
+                  pageSize={pageSize}
+                  total={total || 0}
+                  onPageChange={handlePageChange}
+                  onPageSizeChange={handlePageSizeChange}
+                  className="mt-4"
+                />
+              </>
             )}
-          </div>
-
-          <TablePagination
-            page={page}
-            pageSize={pageSize}
-            total={total}
-            onPageChange={handlePageChange}
-            onPageSizeChange={handlePageSizeChange}
-            className="mt-4"
-          />
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </motion.div>
     </div>
   )
 }

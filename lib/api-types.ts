@@ -133,7 +133,6 @@ export type AggregatorDocuments = {
   bankStatement?: string
   cancelledCheque?: string
   addressProof?: string
-  authorizedSignatory?: string
 }
 
 export type LenderDocuments = {
@@ -147,23 +146,22 @@ export type LenderDocuments = {
 
 // PROFILE TYPES
 export type AggregatorProfile = {
-  approvedApplications: number
-  conversionRate: number
   _id: string
   userId: string
   companyName: string
+  rank?: ApplicableFor
   businessType?: BusinessType
+  yearOfEstablishment?: string
   registeredAddress?: string
   city?: string
   state?: string
   pincode?: string
+  websiteUrl?: string
   gstNumber?: string
   panNumber?: string
   aadhaarNumber?: string
   tanNumber?: string
   cinNumber?: string
-  websiteUrl?: string
-  pocName?: string
   documents?: AggregatorDocuments
   kycStatus?: KYCStatus
   kycRejectionReason?: string
@@ -173,9 +171,11 @@ export type AggregatorProfile = {
   accountNumber?: string
   ifscCode?: string
   accountHolderName?: string
-  isBankVerified?: boolean
   teamMembers?: string[]
   totalApplicationsSubmitted?: number
+  totalApplicationsApproved?: number
+  totalApplicationsDisbursed?: number
+  totalDisbursedAmount?: number
   totalCommissionEarned?: number
   totalPaidOut?: number
   pendingPayout?: number
