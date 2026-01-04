@@ -13,13 +13,19 @@ import {
   Bell,
   LogOut,
   User,
-  ChevronUp
+  ChevronUp,
+  X,
+  Check,
+  Trash2,
+  Clock
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { formatDistanceToNow } from 'date-fns'
 
 import { useAuth, AppRole } from '@/lib/auth'
 import { useLogout } from '@/lib/logout'
+import { useNotifications } from '@/hooks/use-notifications'
 import {
   Sidebar,
   SidebarContent,
@@ -41,8 +47,10 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Badge } from '@/components/ui/badge'
 import { navigationPaths } from '@/lib/navigation'
-import { getCookie, decodeJwt } from "@/lib/utils";
+import { getCookie, decodeJwt } from "@/lib/utils"
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { Separator } from "@/components/ui/separator"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -62,16 +70,16 @@ const navigationConfig = {
     {
       title: "Management",
       items: [
-        { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
         { title: "Product Manager", url: navigationPaths.superAdmin.products, icon: CreditCard },
+        // { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
         { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: Users },
-        { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard }
+        { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
+        { title: "Global Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
       ]
     },
     {
       title: "System",
       items: [
-        { title: "Global Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
         { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
       ]
     }
@@ -280,9 +288,23 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'] as AppRole[])
   const normalizedRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' =
     role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : role === 'aggregator_member' ? 'aggregator_member' : 'lender'
-  const token = getCookie("token");
-  const decoded = decodeJwt(token);
-  const isOmsEnabled = decoded?.isOmsEnabled ?? false;
+  const token = getCookie("token")
+  const decoded = decodeJwt(token)
+  const isOmsEnabled = decoded?.isOmsEnabled ?? false
+
+  // Use notifications hook with polling
+  const {
+    notifications,
+    unreadCount,
+    loading: notificationsLoading,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications({
+    page: 1,
+    limit: 10,
+    pollingInterval: 30000, // Poll every 30 seconds
+  })
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -295,6 +317,48 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     }
     return () => document.removeEventListener("mousedown", handleClickOutside)
   }, [showNotifications])
+
+  const handleNotificationClick = (notification: any) => {
+    // Mark as read
+    if (notification.status === 'UNREAD') {
+      markAsRead(notification._id)
+    }
+
+    // Navigate to action URL if exists
+    if (notification.actionUrl) {
+      router.push(notification.actionUrl)
+      setShowNotifications(false)
+    }
+  }
+
+  const handleDeleteNotification = (e: React.MouseEvent, notificationId: string) => {
+    e.stopPropagation()
+    deleteNotification(notificationId)
+  }
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'URGENT':
+        return 'text-red-500'
+      case 'HIGH':
+        return 'text-orange-500'
+      case 'MEDIUM':
+        return 'text-yellow-500'
+      default:
+        return 'text-blue-500'
+    }
+  }
+
+  const getNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'COMMISSION_STATUS_CHANGE':
+        return <CreditCard className="h-4 w-4" />
+      case 'TICKET_STATUS_CHANGE':
+        return <FileText className="h-4 w-4" />
+      default:
+        return <Bell className="h-4 w-4" />
+    }
+  }
 
   if (loading) {
     return <div className="p-8 text-white">Loading...</div>
@@ -313,25 +377,174 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
           <SidebarTrigger className="-ml-1 text-white hover:bg-gray-800" />
 
           <div className="ml-auto flex items-center space-x-2 relative">
-            <Button variant="ghost" size="icon" className="text-gray-400 hover:text-white hover:bg-gray-800 relative" onClick={() => setShowNotifications((p) => !p)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-gray-400 hover:text-white hover:bg-gray-800 relative"
+              onClick={() => setShowNotifications((p) => !p)}
+            >
               <Bell className="w-5 h-5" />
-              <Badge className="absolute -top-1 -right-1 w-2 h-2 p-0 bg-red-500" />
+              {unreadCount > 0 && (
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 hover:bg-red-600">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </Badge>
+              )}
             </Button>
 
             {showNotifications && (
-              <div ref={panelRef} className="absolute right-0 top-12 w-80 z-50">
-                <Card className="bg-gray-900 border border-gray-700 shadow-lg rounded-xl">
-                  <CardHeader><CardTitle className="text-lg text-white">Notifications</CardTitle></CardHeader>
-                  <CardContent className="flex flex-col gap-2 max-h-64 text-white overflow-y-auto">
-                    <div className="p-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm">New aggregator registered 🚀</div>
-                    <div className="p-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm">Payment received successfully 💰</div>
-                    <div className="p-2 rounded-md bg-gray-800 hover:bg-gray-700 text-sm">System maintenance scheduled ⚠️</div>
-                  </CardContent>
-                  <Button className="mb-2 mx-32 text-gold text-sm py-1" onClick={() => {
-                    if (normalizedRole === "super_admin") router.push("/super-admin/notification")
-                    else if (normalizedRole === "aggregator") router.push("/aggregator/notification")
-                    else router.push("/lender/notification")
-                  }}>See more . . . .</Button>
+              <div ref={panelRef} className="absolute right-0 top-14 w-[420px] z-50">
+                <Card className="bg-gray-800/95 backdrop-blur-xl border border-gray-700/50 shadow-2xl rounded-2xl overflow-hidden">
+                  <CardHeader className="bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700/50 py-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg text-white flex items-center gap-2">
+                        <div className="p-2 bg-blue-500/20 rounded-lg">
+                          <Bell className="h-5 w-5 text-blue-400" />
+                        </div>
+                        <span>Notifications</span>
+                        {unreadCount > 0 && (
+                          <Badge className="bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 text-xs">
+                            {unreadCount} new
+                          </Badge>
+                        )}
+                      </CardTitle>
+                      <div className="flex items-center gap-1">
+                        {unreadCount > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={markAllAsRead}
+                            className="text-xs text-sky-400 hover:text-cyan-300 hover:bg-gray-700/50 h-8 px-3"
+                          >
+                            <Check className="h-3 w-3 mr-1" />
+                            Mark all
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setShowNotifications(false)}
+                          className="h-8 w-8 text-gray-400 hover:text-white hover:bg-red-700/50 rounded-lg"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <ScrollArea className="h-[450px]">
+                    {notificationsLoading ? (
+                      <div className="flex items-center justify-center h-[450px]">
+                        <div className="flex flex-col items-center gap-3">
+                          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-500 border-t-transparent" />
+                          <p className="text-sm text-gray-400">Loading notifications...</p>
+                        </div>
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-[450px] px-6">
+                        <div className="p-4 bg-gray-700/20 rounded-full mb-4">
+                          <Bell className="h-12 w-12 text-gray-500" />
+                        </div>
+                        <p className="text-base font-medium text-gray-300 mb-1">No notifications yet</p>
+                        <p className="text-sm text-gray-500 text-center">
+                          We'll notify you when something important happens
+                        </p>
+                      </div>
+                    ) : (
+                      <CardContent className="p-0">
+                        {notifications.map((notification, index) => {
+                          const isUnread = notification.status === 'UNREAD'
+                          const isHighPriority = notification.priority === 'HIGH' || notification.priority === 'URGENT'
+                          const priorityColor = notification.priority === 'URGENT' ? 'text-red-400' :
+                            notification.priority === 'HIGH' ? 'text-yellow-400' : 'text-blue-400'
+
+                          return (
+                            <div key={notification._id}>
+                              <div
+                                className={`relative p-4 hover:bg-gray-700/30 cursor-pointer transition-all group ${isUnread ? 'bg-blue-500/5 border-l-4 border-blue-500' : ''
+                                  }`}
+                                onClick={() => handleNotificationClick(notification)}
+                              >
+                                {/* High Priority Badge */}
+                                {isHighPriority && (
+                                  <div className="absolute top-2 right-2 px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded-full">
+                                    <span className="text-[10px] font-semibold text-orange-400 uppercase">
+                                      {notification.priority}
+                                    </span>
+                                  </div>
+                                )}
+
+                                <div className="flex items-start gap-3">
+                                  {/* Icon */}
+                                  <div className={`mt-1 p-2 rounded-lg ${isUnread ? 'bg-blue-500/20' : 'bg-gray-700/50'
+                                    }`}>
+                                    <div className={priorityColor}>
+                                      {getNotificationIcon(notification.type)}
+                                    </div>
+                                  </div>
+
+                                  {/* Content */}
+                                  <div className="flex-1 space-y-1.5 min-w-0 pr-8">
+                                    <div className="flex items-start justify-between gap-2">
+                                      <p className={`text-sm font-semibold ${isUnread ? 'text-white' : 'text-gray-300'
+                                        }`}>
+                                        {notification.title}
+                                      </p>
+                                      {isUnread && (
+                                        <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5 animate-pulse" />
+                                      )}
+                                    </div>
+
+                                    <p className={`text-xs leading-relaxed ${isUnread ? 'text-gray-300' : 'text-gray-400'
+                                      }`}>
+                                      {notification.message}
+                                    </p>
+
+                                    <div className="flex items-center justify-between pt-1">
+                                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                                        <Clock className="h-3 w-3" />
+                                        {formatDistanceToNow(new Date(notification.createdAt), {
+                                          addSuffix: true,
+                                        })}
+                                      </p>
+                                      <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                                        onClick={(e) => handleDeleteNotification(e, notification._id)}
+                                      >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              {index < notifications.length - 1 && (
+                                <Separator className="bg-gray-700/30" />
+                              )}
+                            </div>
+                          )
+                        })}
+                      </CardContent>
+                    )}
+                  </ScrollArea>
+
+                  {notifications.length > 0 && (
+                    <div className="border-t border-gray-700/50 p-3 bg-gradient-to-r from-gray-900 to-gray-800">
+                      <Button
+                        variant="ghost"
+                        className="w-full text-white hover:text-cyan-300 hover:bg-gray-700/50 text-sm font-medium rounded-lg h-9"
+                        onClick={() => {
+                          setShowNotifications(false)
+                          if (normalizedRole === "super_admin") router.push(navigationPaths.superAdmin.payouts)
+                          else if (normalizedRole === "aggregator") router.push(navigationPaths.aggregator.commission)
+                          else router.push("/lender/notification")
+                        }}
+                      >
+                        View all notifications
+                        <span className="ml-2">→</span>
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               </div>
             )}

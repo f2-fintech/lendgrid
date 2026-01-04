@@ -190,40 +190,44 @@ export const commissionsApi = {
   }) =>
     gqlFetch<{ getCommissionTransactions: PaginatedCommissionTransactions }>({
       query: `
-        query GetCommissionTransactions($page: Int, $limit: Int, $filters: CommissionTransactionFilterInput) {
-          getCommissionTransactions(page: $page, limit: $limit, filters: $filters) {
-            success
-            message
-            data {
-              id
-              ticketId
-              aggregatorId
-              ruleId
-              disbursedAmount
-              commissionAmount
-              commissionType
-              commissionRate
-              status
-              aggregatorRank
-              productType
-              provider
-              calculatedAt
-              approvedAt
-              paidAt
-              paymentReference
-              remarks
-              createdAt
-              updatedAt
-              approvedBy
-              paidBy
-            }
-            total
-            page
-            limit
-            pages
+      query GetCommissionTransactions($page: Int, $limit: Int, $filters: CommissionTransactionFilterInput) {
+        getCommissionTransactions(page: $page, limit: $limit, filters: $filters) {
+          success
+          message
+          data {
+            id
+            ticketId
+            aggregatorId
+            ruleId
+            disbursedAmount
+            disbursedDate
+            commissionAmount
+            commissionType
+            commissionRate
+            status
+            aggregatorRank
+            productType
+            provider
+            calculatedAt
+            approvedAt
+            paidAt
+            paymentReference
+            utrNumber
+            paymentProofUrl
+            adminNotes
+            remarks
+            createdAt
+            updatedAt
+            approvedBy
+            paidBy
           }
+          total
+          page
+          limit
+          pages
         }
-      `,
+      }
+    `,
       variables: {
         page: params?.page,
         limit: params?.limit,
@@ -267,22 +271,28 @@ export const commissionsApi = {
   updateTransactionStatus: (id: string, input: UpdateCommissionStatusInput) =>
     gqlFetch<{ updateCommissionStatus: CommissionTransactionResponse }>({
       query: `
-        mutation UpdateCommissionStatus($id: ID!, $input: UpdateCommissionStatusInput!) {
-          updateCommissionStatus(id: $id, input: $input) {
-            success
-            message
-            data {
-              id
-              status
-              paymentReference
-              remarks
-              approvedAt
-              paidAt
-              updatedAt
-            }
+      mutation UpdateCommissionStatus($id: ID!, $input: UpdateCommissionStatusInput!) {
+        updateCommissionStatus(id: $id, input: $input) {
+          success
+          message
+          data {
+            id
+            ticketId
+            status
+            paymentReference
+            utrNumber
+            paymentProofUrl
+            adminNotes
+            remarks
+            commissionAmount
+            disbursedAmount
+            approvedAt
+            paidAt
+            updatedAt
           }
         }
-      `,
+      }
+    `,
       variables: { id, input },
     }).then(res => res.updateCommissionStatus),
 }

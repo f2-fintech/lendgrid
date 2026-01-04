@@ -108,7 +108,7 @@ export function AddAggregatorDialog({
     }, [isOpen, reset]);
 
     const onSubmit = async (data: FormValues) => {
-        const DEFAULT_BASE_URL_REST = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3001/api/v1'
+        const DEFAULT_BASE_URL_REST = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3010/api/v1'
         try {
             const payload = {
                 username: data.fullName,
@@ -149,23 +149,23 @@ export function AddAggregatorDialog({
             }
 
             // Create OMS user (REST)
-            const omsRes = await fetch(`${DEFAULT_BASE_URL_REST}/create-user`, {
-                method: "POST",
-                headers: buildHeaders(),
-                credentials: "include",
-                body: JSON.stringify({
-                    username: data.fullName,
-                    email: data.email,
-                    password: data.password,
-                    number: data.contact,
-                    companyId,
-                    role: "admin",
-                    status: "active",
-                }),
-            });
-            if (!omsRes.ok) {
-                throw new Error("OMS user creation failed");
-            }
+            // const omsRes = await fetch(`${DEFAULT_BASE_URL_REST}/create-user`, {
+            //     method: "POST",
+            //     headers: buildHeaders(),
+            //     credentials: "include",
+            //     body: JSON.stringify({
+            //         username: data.fullName,
+            //         email: data.email,
+            //         password: data.password,
+            //         number: data.contact,
+            //         companyId,
+            //         role: "admin",
+            //         status: "active",
+            //     }),
+            // });
+            // if (!omsRes.ok) {
+            //     throw new Error("OMS user creation failed");
+            // }
 
             toast({
                 title: "Success",

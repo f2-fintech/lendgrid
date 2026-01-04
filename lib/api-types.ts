@@ -490,9 +490,12 @@ export interface CalculateCommissionInput {
 }
 
 export interface UpdateCommissionStatusInput {
-  status: CommissionStatus;
-  paymentReference?: string;
-  remarks?: string;
+  status: CommissionStatus
+  remarks?: string
+  paymentReference?: string
+  utrNumber?: string
+  paymentProofUrl?: string
+  adminNotes?: string
 }
 
 export interface CommissionRuleFilterInput {

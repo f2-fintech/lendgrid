@@ -2,6 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
+import {
+  FileText, Search, Eye, Clock, Upload, AlertCircle, DollarSign, FileCheck, ChevronDown, CheckCircle, XCircle, Ban,
+  AlertTriangle, Loader2, X, ImageIcon
+} from 'lucide-react'
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,107 +16,48 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { FileText, Plus, Search, Eye, CheckCircle, XCircle, Clock, TrendingUp, CreditCard, AlertCircle, DollarSign } from 'lucide-react'
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import { TablePagination } from '@/components/ui/pagination'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
-const mockData = {
-  metrics: {
-    totalPayouts: 156,
-    pendingPayouts: 12,
-    completedPayouts: 132,
-    totalAmount: 8500000
-  },
-  payouts: [
-    {
-      id: 'PO001',
-      recipientType: 'Aggregator',
-      recipientName: 'FinTech Solutions Pvt Ltd',
-      amount: 125000,
-      commissionPeriod: 'Dec 2023',
-      status: 'Completed',
-      requestDate: '2025-01-01',
-      processedDate: '2025-01-03',
-      utrNumber: 'UTR123456789',
-      paymentMethod: 'NEFT',
-      description: 'Commission payout for December 2023'
-    },
-    {
-      id: 'PO002',
-      recipientType: 'Lender',
-      recipientName: 'HDFC Bank',
-      amount: 85000,
-      commissionPeriod: 'Dec 2023',
-      status: 'Pending',
-      requestDate: '2025-01-02',
-      processedDate: null,
-      utrNumber: null,
-      paymentMethod: 'RTGS',
-      description: 'Commission settlement for December 2023'
-    },
-    {
-      id: 'PO003',
-      recipientType: 'Aggregator',
-      recipientName: 'Loan Connect India',
-      amount: 98000,
-      commissionPeriod: 'Dec 2023',
-      status: 'Processing',
-      requestDate: '2025-01-01',
-      processedDate: null,
-      utrNumber: null,
-      paymentMethod: 'IMPS',
-      description: 'Monthly commission payout'
-    },
-    {
-      id: 'PO004',
-      recipientType: 'Lender',
-      recipientName: 'ICICI Bank',
-      amount: 67000,
-      commissionPeriod: 'Dec 2023',
-      status: 'Completed',
-      requestDate: '2023-12-31',
-      processedDate: '2025-01-02',
-      utrNumber: 'UTR987654321',
-      paymentMethod: 'NEFT',
-      description: 'Year-end commission settlement'
-    },
-    {
-      id: 'PO005',
-      recipientType: 'Aggregator',
-      recipientName: 'Credit Bridge Solutions',
-      amount: 45000,
-      commissionPeriod: 'Dec 2023',
-      status: 'Failed',
-      requestDate: '2025-01-01',
-      processedDate: null,
-      utrNumber: null,
-      paymentMethod: 'RTGS',
-      description: 'Commission payout - retry required'
-    }
-  ]
-}
+import { useCommissionTransactions, useUpdateCommissionStatus } from '@/hooks/use-commissions'
+import { useToast } from '@/hooks/use-toast'
+
+const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
 
 export function SuperAdminPayouts() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
-  const [filterRecipientType, setFilterRecipientType] = useState('')
   const [selectedPayout, setSelectedPayout] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
+
+  // Status update form state
+  const [newStatus, setNewStatus] = useState('')
+  const [utrNumber, setUtrNumber] = useState('')
+  const [paymentReference, setPaymentReference] = useState('')
+  const [adminNotes, setAdminNotes] = useState('')
+  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null)
+  const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
+  const [isUploading, setIsUploading] = useState(false)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [isTableLoading, setIsTableLoading] = useState(true)
-  const [cardsLoading, setCardsLoading] = useState(true)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
+  const { toast } = useToast()
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      setIsTableLoading(false)
-      setCardsLoading(false)
-    }, 2000)
-    return () => clearTimeout(t)
-  }, [])
+  // Fetch commission transactions
+  const { data: transactionsData, isLoading } = useCommissionTransactions({
+    page,
+    limit: pageSize,
+    filters: {
+      status: filterStatus && filterStatus !== 'all' ? filterStatus : undefined,
+      productType: searchTerm || undefined,
+    },
+  })
+
+  // Update commission status mutation
+  const updateStatusMutation = useUpdateCommissionStatus()
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -121,47 +67,217 @@ export function SuperAdminPayouts() {
     }).format(amount)
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed': return 'bg-green-500/20 text-green-400'
-      case 'Pending': return 'bg-orange-500/20 text-orange-400'
-      case 'Processing': return 'bg-blue-500/20 text-blue-400'
-      case 'Failed': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+  const getStatusConfig = (status: string) => {
+    const configs: Record<string, { color: string; icon: any; bgColor: string }> = {
+      'PAID': {
+        color: 'text-green-400',
+        icon: CheckCircle,
+        bgColor: 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30'
+      },
+      'APPROVED': {
+        color: 'text-gray-300',
+        icon: CheckCircle,
+        bgColor: 'bg-blue border-blue-500/30'
+      },
+      'CALCULATED': {
+        color: 'text-cyan-400',
+        icon: FileCheck,
+        bgColor: 'bg-cyan-500/20 hover:bg-cyan-500/30 border-cyan-500/30'
+      },
+      'REJECTED': {
+        color: 'text-red-400',
+        icon: XCircle,
+        bgColor: 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30'
+      },
+      'CANCELLED': {
+        color: 'text-gray-400',
+        icon: Ban,
+        bgColor: 'bg-gray-500/20 hover:bg-gray-500/30 border-gray-500/30'
+      },
+      'DISPUTED': {
+        color: 'text-yellow-400',
+        icon: AlertTriangle,
+        bgColor: 'bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/30'
+      },
+    }
+    return configs[status] || { color: 'text-gray-400', icon: FileText, bgColor: 'bg-gray-500/20' }
+  }
+
+  const getAvailableStatuses = (currentStatus: string, allowAllForAdmin: boolean = true) => {
+    // For admins, show all statuses except current one
+    if (allowAllForAdmin) {
+      const allStatuses = ['CALCULATED', 'APPROVED', 'PAID', 'REJECTED', 'CANCELLED', 'DISPUTED']
+      return allStatuses.filter(status => status !== currentStatus)
+    }
+
+    // Standard workflow transitions
+    const transitions: Record<string, string[]> = {
+      'CALCULATED': ['APPROVED', 'REJECTED', 'CANCELLED', 'DISPUTED'],
+      'APPROVED': ['PAID', 'CANCELLED', 'DISPUTED'],
+      'PAID': ['DISPUTED'],
+      'REJECTED': ['CALCULATED'],
+      'CANCELLED': [],
+      'DISPUTED': ['APPROVED', 'REJECTED'],
+    }
+    return transitions[currentStatus] || []
+  }
+
+  const handleStatusClick = (payout: any) => {
+    setSelectedPayout(payout)
+    setNewStatus('')
+    setUtrNumber(payout.utrNumber || '')
+    setPaymentReference(payout.paymentReference || '')
+    setAdminNotes('')
+    setPaymentProofFile(null)
+    setPaymentProofPreview(payout.paymentProofUrl || null)
+    setIsStatusDialogOpen(true)
+  }
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (file) {
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size exceeds 10MB limit')
+        return
+      }
+      setPaymentProofFile(file)
+
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setPaymentProofPreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleRemoveFile = () => {
+    setPaymentProofFile(null)
+    setPaymentProofPreview(selectedPayout?.paymentProofUrl || null)
+  }
+
+  const uploadToS3 = async (file: File, folder: string) => {
+
+    // const formData = new FormData()
+    // formData.append('document', file)
+    // formData.append('folder', `document/${folder}`)
+
+    // const response = await fetch(`${apiBaseUrl}/upload-to-s3`, {
+    //   method: 'POST',
+    //   body: formData,
+    // })
+
+    // const result = await response.json()
+    // return result.data
+    return `https://in.pinterest.com/pin/my-saves-in-2025--9781324186200199/`;
+  }
+
+  const handleUpdateStatus = async () => {
+    if (!selectedPayout || !newStatus) {
+      toast({
+        title: 'Error',
+        description: 'Please select a status',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    // Validate PAID status requirements
+    if (newStatus === 'PAID') {
+      if (!utrNumber) {
+        toast({
+          title: 'Error',
+          description: 'UTR number is required for PAID status',
+          variant: 'destructive',
+        })
+        return
+      }
+      if (!paymentProofFile && !selectedPayout.paymentProofUrl) {
+        toast({
+          title: 'Error',
+          description: 'Payment proof is required for PAID status',
+          variant: 'destructive',
+        })
+        return
+      }
+    }
+
+    try {
+      setIsUploading(true)
+      let paymentProofUrl = selectedPayout.paymentProofUrl
+
+      // Upload payment proof if new file is selected
+      if (paymentProofFile) {
+        paymentProofUrl = await uploadToS3(paymentProofFile, 'commission-payments')
+      }
+
+      // Update commission status
+      await updateStatusMutation.mutateAsync({
+        id: selectedPayout.id,
+        input: {
+          status: newStatus,
+          utrNumber: utrNumber || undefined,
+          paymentReference: paymentReference || undefined,
+          paymentProofUrl: paymentProofUrl || undefined,
+          adminNotes: adminNotes || undefined,
+        },
+      })
+
+      setIsStatusDialogOpen(false)
+      setSelectedPayout(null)
+    } catch (error) {
+      console.error('Error updating status:', error)
+    } finally {
+      setIsUploading(false)
     }
   }
 
   const filteredPayouts = useMemo(() => {
-    return mockData.payouts.filter((payout) => {
-      const matchesSearch = payout.recipientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    if (!transactionsData?.data) return []
+
+    return transactionsData.data.filter((payout) => {
+      const matchesSearch =
+        payout.ticketId?.toString().includes(searchTerm) ||
         payout.id.toLowerCase().includes(searchTerm.toLowerCase())
       const matchesStatus = !filterStatus || filterStatus === 'all' || payout.status === filterStatus
-      const matchesRecipientType = !filterRecipientType || filterRecipientType === 'all' || payout.recipientType === filterRecipientType
-      return matchesSearch && matchesStatus && matchesRecipientType
-    })
-  }, [searchTerm, filterStatus, filterRecipientType])
 
-  const total = filteredPayouts.length
-  const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filteredPayouts.slice(start, start + pageSize)
-  }, [filteredPayouts, page, pageSize])
+      return matchesSearch && matchesStatus
+    })
+  }, [transactionsData, searchTerm, filterStatus])
+
+  const total = transactionsData?.total || 0
+  const paginated = filteredPayouts
 
   const handlePageChange = async (newPage: number) => {
-    setIsTableLoading(true)
-    await new Promise((r) => setTimeout(r, 350))
     setPage(newPage)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
+
   const handlePageSizeChange = async (size: number) => {
-    setIsTableLoading(true)
-    await new Promise((r) => setTimeout(r, 350))
     setPageSize(size)
     setPage(1)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
+
+  // Calculate metrics
+  const metrics = useMemo(() => {
+    if (!transactionsData?.data) {
+      return {
+        totalPayouts: 0,
+        pendingPayouts: 0,
+        completedPayouts: 0,
+        totalAmount: 0
+      }
+    }
+
+    return {
+      totalPayouts: transactionsData.total,
+      pendingPayouts: transactionsData.data.filter(t =>
+        ['PENDING', 'CALCULATED', 'APPROVED'].includes(t.status)
+      ).length,
+      completedPayouts: transactionsData.data.filter(t => t.status === 'PAID').length,
+      totalAmount: transactionsData.data.reduce((sum, t) => sum + t.commissionAmount, 0)
+    }
+  }, [transactionsData])
 
   const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
     <motion.div
@@ -198,99 +314,13 @@ export function SuperAdminPayouts() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold text-white">Global Payouts</h1>
-          <p className="text-gray-400 mt-1">Manage commission payouts to aggregators and lenders</p>
+          <h1 className="text-3xl font-bold text-white">Commission Payouts</h1>
+          <p className="text-gray-400 mt-1">Manage commission payouts to aggregators</p>
         </div>
-        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Payout
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-bold">Create New Payout</DialogTitle>
-              <DialogDescription className="text-gray-400">
-                Process a new commission payout
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-300">Recipient Type</Label>
-                  <Select>
-                    <SelectTrigger className="bg-gray-900 border-gray-600 text-white">
-                      <SelectValue placeholder="Select recipient type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="aggregator">Aggregator</SelectItem>
-                      <SelectItem value="lender">Lender</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-gray-300">Recipient</Label>
-                  <Select>
-                    <SelectTrigger className="bg-gray-900 border-gray-600 text-white">
-                      <SelectValue placeholder="Select recipient" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fintech">FinTech Solutions Pvt Ltd</SelectItem>
-                      <SelectItem value="loanconnect">Loan Connect India</SelectItem>
-                      <SelectItem value="hdfc">HDFC Bank</SelectItem>
-                      <SelectItem value="icici">ICICI Bank</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-gray-300">Amount (₹)</Label>
-                  <Input className="bg-gray-900 border-gray-600 text-white" placeholder="125000" />
-                </div>
-                <div>
-                  <Label className="text-gray-300">Commission Period</Label>
-                  <Input className="bg-gray-900 border-gray-600 text-white" placeholder="Jan 2025" />
-                </div>
-              </div>
-              <div>
-                <Label className="text-gray-300">Payment Method</Label>
-                <Select>
-                  <SelectTrigger className="bg-gray-900 border-gray-600 text-white">
-                    <SelectValue placeholder="Select payment method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="neft">NEFT</SelectItem>
-                    <SelectItem value="rtgs">RTGS</SelectItem>
-                    <SelectItem value="imps">IMPS</SelectItem>
-                    <SelectItem value="upi">UPI</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-gray-300">Description</Label>
-                <Textarea
-                  className="bg-gray-900 border-gray-600 text-white"
-                  placeholder="Enter payout description"
-                  rows={3}
-                />
-              </div>
-              <div className="flex justify-end space-x-4 pt-4">
-                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark">
-                  Create Payout
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
       </motion.div>
 
       {/* Metrics Cards */}
-      {cardsLoading ? (
+      {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
@@ -301,31 +331,31 @@ export function SuperAdminPayouts() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             title="Total Payouts"
-            value={mockData.metrics.totalPayouts}
+            value={metrics.totalPayouts}
             icon={FileText}
             color="bg-blue/20 text-blue"
             subtitle="All time"
           />
           <MetricCard
             title="Pending Payouts"
-            value={mockData.metrics.pendingPayouts}
+            value={metrics.pendingPayouts}
             icon={Clock}
             color="bg-orange-500/20 text-orange-400"
             subtitle="Awaiting processing"
           />
           <MetricCard
             title="Completed Payouts"
-            value={mockData.metrics.completedPayouts}
-            icon={CheckCircle}
+            value={metrics.completedPayouts}
+            icon={FileCheck}
             color="bg-green-500/20 text-green-400"
             subtitle="Successfully processed"
           />
           <MetricCard
             title="Total Amount"
-            value={formatCurrency(mockData.metrics.totalAmount)}
+            value={formatCurrency(metrics.totalAmount)}
             icon={DollarSign}
             color="bg-gold/20 text-gold"
-            subtitle="Total disbursed"
+            subtitle="Total commission"
           />
         </div>
       )}
@@ -340,41 +370,33 @@ export function SuperAdminPayouts() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white">All Payouts</CardTitle>
+                <CardTitle className="text-white">All Commission Transactions</CardTitle>
                 <CardDescription className="text-gray-400">
-                  Track and manage all commission payouts
+                  Track and manage commission transactions
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                   <Input
-                    placeholder="Search payouts..."
+                    placeholder="Search by ticket ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="pl-10 bg-gray-900 border-gray-600 text-white w-64"
                   />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
+                  <SelectTrigger className="w-40 bg-gray-900 border-gray-600 text-white">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="Completed">Completed</SelectItem>
-                    <SelectItem value="Pending">Pending</SelectItem>
-                    <SelectItem value="Processing">Processing</SelectItem>
-                    <SelectItem value="Failed">Failed</SelectItem>
-                  </SelectContent>
-                </Select>
-                <Select value={filterRecipientType} onValueChange={setFilterRecipientType}>
-                  <SelectTrigger className="w-36 bg-gray-900 border-gray-600 text-white">
-                    <SelectValue placeholder="Recipient" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Recipients</SelectItem>
-                    <SelectItem value="Aggregator">Aggregator</SelectItem>
-                    <SelectItem value="Lender">Lender</SelectItem>
+                    <SelectItem value="PAID">Paid</SelectItem>
+                    <SelectItem value="APPROVED">Approved</SelectItem>
+                    <SelectItem value="CALCULATED">Calculated</SelectItem>
+                    <SelectItem value="REJECTED">Rejected</SelectItem>
+                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="DISPUTED">Disputed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -383,53 +405,67 @@ export function SuperAdminPayouts() {
           <CardContent>
             <div ref={tableTopRef} />
             <div className="overflow-x-auto">
-              {isTableLoading ? (
-                <TableSkeleton columns={8} rows={pageSize} />
+              {isLoading ? (
+                <TableSkeleton columns={7} rows={pageSize} />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Payout ID</TableHead>
-                      <TableHead className="text-gray-300">Recipient</TableHead>
+                      <TableHead className="text-gray-300">Ticket ID</TableHead>
+                      <TableHead className="text-gray-300">Product Type</TableHead>
                       <TableHead className="text-gray-300">Amount</TableHead>
-                      <TableHead className="text-gray-300">Period</TableHead>
+                      <TableHead className="text-gray-300">Commission</TableHead>
                       <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Request Date</TableHead>
-                      <TableHead className="text-gray-300">Payment Method</TableHead>
+                      <TableHead className="text-gray-300">Date</TableHead>
                       <TableHead className="text-gray-300">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {paginated.map((payout, index) => (
-                      <motion.tr
-                        key={payout.id}
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border-gray-700 hover:bg-gray-800/50"
-                      >
-                        <TableCell>
-                          <p className="text-white font-medium">{payout.id}</p>
-                        </TableCell>
-                        <TableCell>
-                          <div>
-                            <p className="text-white font-medium">{payout.recipientName}</p>
-                            <p className="text-sm text-gray-400">{payout.recipientType}</p>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-white font-semibold">
-                          {formatCurrency(payout.amount)}
-                        </TableCell>
-                        <TableCell className="text-gray-300">{payout.commissionPeriod}</TableCell>
-                        <TableCell>
-                          <Badge className={getStatusColor(payout.status)}>
-                            {payout.status}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-gray-300">{payout.requestDate}</TableCell>
-                        <TableCell className="text-gray-300">{payout.paymentMethod}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center space-x-2">
+                    {paginated.map((payout, index) => {
+                      const statusConfig = getStatusConfig(payout.status)
+                      const StatusIcon = statusConfig.icon
+
+                      return (
+                        <motion.tr
+                          key={payout.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.3, delay: index * 0.05 }}
+                          className="border-gray-700 hover:bg-gray-800/50"
+                        >
+                          <TableCell>
+                            <p className="text-white font-medium">#{payout.ticketId}</p>
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-gray-300">{payout.productType}</p>
+                          </TableCell>
+                          <TableCell className="text-white">
+                            {formatCurrency(payout.disbursedAmount)}
+                          </TableCell>
+                          <TableCell className="text-white font-semibold">
+                            {formatCurrency(payout.commissionAmount)}
+                          </TableCell>
+                          <TableCell>
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <button
+                                  onClick={() => handleStatusClick(payout)}
+                                  className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-all border ${statusConfig.bgColor} ${statusConfig.color} cursor-pointer`}
+                                >
+                                  <StatusIcon className="w-4 h-4" />
+                                  {payout.status}
+                                  <ChevronDown className="w-3 h-3" />
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>Click To Change Status</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TableCell>
+                          <TableCell className="text-gray-300">
+                            {new Date(payout.createdAt).toLocaleDateString()}
+                          </TableCell>
+                          <TableCell>
                             <Button
                               variant="ghost"
                               size="sm"
@@ -441,20 +477,10 @@ export function SuperAdminPayouts() {
                             >
                               <Eye className="w-4 h-4" />
                             </Button>
-                            {payout.status === 'Pending' && (
-                              <>
-                                <Button variant="ghost" size="sm" className="text-green-400 hover:text-white hover:bg-gray-700">
-                                  <CheckCircle className="w-4 h-4" />
-                                </Button>
-                                <Button variant="ghost" size="sm" className="text-red-400 hover:text-white hover:bg-gray-700">
-                                  <XCircle className="w-4 h-4" />
-                                </Button>
-                              </>
-                            )}
-                          </div>
-                        </TableCell>
-                      </motion.tr>
-                    ))}
+                          </TableCell>
+                        </motion.tr>
+                      )
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -476,83 +502,314 @@ export function SuperAdminPayouts() {
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Payout Details</DialogTitle>
+            <DialogTitle className="text-xl font-bold">Commission Details</DialogTitle>
             <DialogDescription className="text-gray-400">
-              Complete information about the selected payout
+              Complete information about the commission transaction
             </DialogDescription>
           </DialogHeader>
           {selectedPayout && (
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-gray-300">Payout ID</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.id}</p>
+                  <Label className="text-gray-300">Ticket ID</Label>
+                  <p className="text-white font-semibold mt-1">#{selectedPayout.ticketId}</p>
                 </div>
                 <div>
                   <Label className="text-gray-300">Status</Label>
-                  <Badge className={`${getStatusColor(selectedPayout.status)} mt-1`}>
+                  <Badge className={`${getStatusConfig(selectedPayout.status).bgColor} ${getStatusConfig(selectedPayout.status).color} mt-1`}>
                     {selectedPayout.status}
                   </Badge>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Recipient Name</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.recipientName}</p>
+                  <Label className="text-gray-300">Product Type</Label>
+                  <p className="text-white font-semibold mt-1">{selectedPayout.productType}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Recipient Type</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.recipientType}</p>
+                  <Label className="text-gray-300">Aggregator Rank</Label>
+                  <p className="text-white font-semibold mt-1">{selectedPayout.aggregatorRank || 'N/A'}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-gray-300">Amount</Label>
-                  <p className="text-white font-semibold mt-1">{formatCurrency(selectedPayout.amount)}</p>
+                  <Label className="text-gray-300">Disbursed Amount</Label>
+                  <p className="text-white font-semibold mt-1">{formatCurrency(selectedPayout.disbursedAmount)}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Commission Period</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.commissionPeriod}</p>
+                  <Label className="text-gray-300">Commission Amount</Label>
+                  <p className="text-white font-semibold mt-1">{formatCurrency(selectedPayout.commissionAmount)}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Payment Method</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.paymentMethod}</p>
+                  <Label className="text-gray-300">Commission Type</Label>
+                  <p className="text-white font-semibold mt-1">{selectedPayout.commissionType}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Request Date</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.requestDate}</p>
+                  <Label className="text-gray-300">Commission Rate</Label>
+                  <p className="text-white font-semibold mt-1">
+                    {selectedPayout.commissionType === 'PERCENTAGE'
+                      ? `${selectedPayout.commissionRate}%`
+                      : formatCurrency(selectedPayout.commissionRate)}
+                  </p>
                 </div>
               </div>
 
-              {selectedPayout.processedDate && (
+              {selectedPayout.utrNumber && (
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-gray-300">Processed Date</Label>
-                    <p className="text-white font-semibold mt-1">{selectedPayout.processedDate}</p>
+                    <Label className="text-gray-300">UTR Number</Label>
+                    <p className="text-white font-semibold mt-1">{selectedPayout.utrNumber}</p>
                   </div>
                   <div>
-                    <Label className="text-gray-300">UTR Number</Label>
-                    <p className="text-white font-semibold mt-1">{selectedPayout.utrNumber || 'N/A'}</p>
+                    <Label className="text-gray-300">Payment Reference</Label>
+                    <p className="text-white font-semibold mt-1">{selectedPayout.paymentReference || 'N/A'}</p>
                   </div>
                 </div>
               )}
 
-              <div>
-                <Label className="text-gray-300">Description</Label>
-                <p className="text-white font-semibold mt-1">{selectedPayout.description}</p>
-              </div>
-
-              {selectedPayout.status === 'Pending' && (
-                <div className="flex items-center space-x-4 pt-4 border-t border-gray-700">
-                  <Button className="bg-green-500 hover:bg-green-600 text-white">
-                    <CheckCircle className="w-4 h-4 mr-2" />
-                    Approve Payout
-                  </Button>
-                  <Button variant="outline" className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white">
-                    <XCircle className="w-4 h-4 mr-2" />
-                    Reject Payout
-                  </Button>
+              {selectedPayout.paymentProofUrl && (
+                <div>
+                  <Label className="text-gray-300">Payment Proof</Label>
+                  <a
+                    href={selectedPayout.paymentProofUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue hover:underline mt-1 block"
+                  >
+                    View Document
+                  </a>
                 </div>
               )}
+
+              {selectedPayout.remarks && (
+                <div>
+                  <Label className="text-gray-300">Remarks</Label>
+                  <p className="text-white font-semibold mt-1">{selectedPayout.remarks}</p>
+                </div>
+              )}
+
+              {selectedPayout.adminNotes && (
+                <div>
+                  <Label className="text-gray-300">Admin Notes</Label>
+                  <p className="text-white font-semibold mt-1">{selectedPayout.adminNotes}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Update Status Dialog */}
+      <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold">Update Commission Status</DialogTitle>
+            <DialogDescription className="text-gray-400">
+              Change the status and add payment details
+            </DialogDescription>
+          </DialogHeader>
+          {selectedPayout && (
+            <div className="space-y-3">
+              <div className="bg-gray-900 p-3 rounded-lg">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <p className="text-xs text-gray-400">Ticket ID</p>
+                    <p className="text-white font-semibold text-sm">#{selectedPayout.ticketId}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Current Status</p>
+                    <Badge className={`${getStatusConfig(selectedPayout.status).bgColor} ${getStatusConfig(selectedPayout.status).color} text-xs`}>
+                      {selectedPayout.status}
+                    </Badge>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400">Commission</p>
+                    <p className="text-white font-semibold text-sm">{formatCurrency(selectedPayout.commissionAmount)}</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300 text-sm">New Status *</Label>
+                <Select value={newStatus} onValueChange={setNewStatus}>
+                  <SelectTrigger className="bg-gray-900 border-gray-600 text-white mt-1 h-9">
+                    <SelectValue placeholder="Select new status" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-gray-800 border-gray-700">
+                    {getAvailableStatuses(selectedPayout.status).map((status) => {
+                      const config = getStatusConfig(status)
+                      const Icon = config.icon
+                      return (
+                        <SelectItem
+                          key={status}
+                          value={status}
+                          className="hover:bg-gray-700 cursor-pointer"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Icon className={`w-4 h-4 ${config.color}`} />
+                            <span>{status}</span>
+                          </div>
+                        </SelectItem>
+                      )
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* UTR Number and Payment Reference Side by Side */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-gray-300 text-sm">
+                    UTR Number {newStatus === 'PAID' && <span className="text-red-400">*</span>}
+                  </Label>
+                  <Input
+                    value={utrNumber}
+                    onChange={(e) => setUtrNumber(e.target.value)}
+                    placeholder="Enter UTR number"
+                    className="bg-gray-900 border-gray-600 text-white mt-1 h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label className="text-gray-300 text-sm">Payment Reference</Label>
+                  <Input
+                    value={paymentReference}
+                    onChange={(e) => setPaymentReference(e.target.value)}
+                    placeholder="Enter reference (optional)"
+                    className="bg-gray-900 border-gray-600 text-white mt-1 h-9 text-sm"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300 text-sm">
+                  Payment Proof {newStatus === 'PAID' && !selectedPayout.paymentProofUrl && <span className="text-red-400">*</span>}
+                </Label>
+                <div className="mt-1">
+                  {!paymentProofPreview ? (
+                    <label className="block">
+                      <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-orange-400 hover:bg-gray-900/50 transition-all cursor-pointer">
+                        <Upload className="w-6 h-6 mx-auto mb-1 text-gray-400" />
+                        <p className="text-gray-300 text-xs">Click to upload payment proof</p>
+                        <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 10MB)</p>
+                      </div>
+                      <input
+                        type="file"
+                        accept="image/*,.pdf"
+                        onChange={handleFileChange}
+                        className="hidden"
+                      />
+                    </label>
+                  ) : (
+                    <div className="relative border-2 border-gray-600 rounded-lg p-2 bg-gray-900/50">
+                      {paymentProofPreview.startsWith('data:image') ? (
+                        <img
+                          src={paymentProofPreview}
+                          alt="Payment proof preview"
+                          className="w-full h-24 object-contain rounded"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-24">
+                          <div className="text-center">
+                            <FileText className="w-10 h-10 mx-auto mb-1 text-blue-400" />
+                            <p className="text-xs text-gray-300">
+                              {paymentProofFile ? paymentProofFile.name : 'Existing payment proof'}
+                            </p>
+                            {!paymentProofFile && (
+                              <a
+                                href={paymentProofPreview}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-blue-400 hover:underline text-xs"
+                              >
+                                View Document
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      <button
+                        onClick={handleRemoveFile}
+                        className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded-full text-white"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <label className="block mt-1">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full h-7 text-xs"
+                          onClick={(e) => {
+                            e.preventDefault()
+                            document.getElementById('file-upload-change')?.click()
+                          }}
+                        >
+                          <Upload className="w-3 h-3 mr-1" />
+                          Change File
+                        </Button>
+                        <input
+                          id="file-upload-change"
+                          type="file"
+                          accept="image/*,.pdf"
+                          onChange={handleFileChange}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <Label className="text-gray-300 text-sm">Admin Notes</Label>
+                <Textarea
+                  value={adminNotes}
+                  onChange={(e) => setAdminNotes(e.target.value)}
+                  placeholder="Add notes about this status change..."
+                  className="bg-gray-900 border-gray-600 text-white mt-1 text-sm"
+                  rows={2}
+                />
+              </div>
+
+              {newStatus === 'PAID' && (
+                <div className="bg-blue-500/10 border border-blue-500 p-2 rounded-lg flex items-start space-x-2">
+                  <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-semibold text-white">Payment Status Requirements</p>
+                    <p className="text-xs text-gray-400">
+                      UTR number and payment proof are mandatory when marking as PAID
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex justify-end space-x-3 pt-3 border-t border-gray-700">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsStatusDialogOpen(false)}
+                  disabled={isUploading}
+                  className="border-gray-600 text-gray-300 hover:bg-gray-700 h-8"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white h-8"
+                  onClick={handleUpdateStatus}
+                  disabled={!newStatus || isUploading}
+                >
+                  {isUploading ? (
+                    <>
+                      <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      Updating...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Update Status
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           )}
         </DialogContent>

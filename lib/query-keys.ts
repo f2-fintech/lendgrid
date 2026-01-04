@@ -109,6 +109,20 @@ export const queryKeys = {
         },
     },
 
+    // Notifications
+    notifications: {
+        all: ['notifications'] as const,
+        list: (filters?: {
+            page?: number
+            limit?: number
+            type?: string
+            status?: string
+            unreadOnly?: boolean
+        }) => [...queryKeys.notifications.all, 'list', filters] as const,
+        detail: (id: string) => [...queryKeys.notifications.all, 'detail', id] as const,
+        stats: () => [...queryKeys.notifications.all, 'stats'] as const,
+    },
+
     // KYC
     kyc: {
         all: ['kyc'] as const,

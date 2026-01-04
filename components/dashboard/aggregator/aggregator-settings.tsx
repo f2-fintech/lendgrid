@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
 import confetti from 'canvas-confetti';
 import {
@@ -31,6 +31,8 @@ import {
   XCircle,
   Clock,
   AlertCircle,
+  X,
+  FileText,
 } from "lucide-react"
 import { CardSkeleton } from "@/components/ui/loading-skeleton"
 import { useForm, FormProvider, useFormContext } from "react-hook-form"
@@ -289,6 +291,7 @@ function ProfileAndContactTab() {
 function BusinessDetailsTab() {
   const { register, setValue, trigger, watch, formState: { errors } } = useFormContext<RootForm>()
   const businessType = watch("business.businessType")
+  const rank = watch("business.rank")
 
   return (
     <div className="space-y-6">
@@ -314,6 +317,48 @@ function BusinessDetailsTab() {
                 placeholder="Registered company name"
               />
               {errors.business?.companyName && <p className="text-red-400 text-sm">{errors.business.companyName.message}</p>}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-gray-300 font-medium">Company Rank *</Label>
+              <Select
+                value={rank || ""}
+                onValueChange={(value) =>
+                  setValue("business.rank", value as ApplicableFor, { shouldValidate: true })
+                }
+              >
+                <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-11">
+                  <SelectValue placeholder="Select Business Type" />
+                </SelectTrigger>
+                <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectItem value={ApplicableFor.BRONZE_AGGREGATORS} className="text-white">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4" />
+                      <span>{ApplicableFor.BRONZE_AGGREGATORS}</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value={ApplicableFor.SILVER_AGGREGATORS} className="text-white">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="w-4 h-4" />
+                      <span>{ApplicableFor.SILVER_AGGREGATORS}</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-white">
+                    <div className="flex items-center gap-2">
+                      <Building className="w-4 h-4" />
+                      <span>{ApplicableFor.GOLD_AGGREGATORS}</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-white">
+                    <div className="flex items-center gap-2">
+                      <Landmark className="w-4 h-4" />
+                      <span>{ApplicableFor.PLATINUM_AGGREGATORS}</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <input type="hidden" {...register("business.rank")} />
+              {errors.business?.rank && <p className="text-red-400 text-sm">{errors.business.rank.message}</p>}
             </div>
 
             <div className="space-y-2">
@@ -529,6 +574,145 @@ function BusinessDetailsTab() {
   )
 }
 
+// Document Upload Field Component
+interface DocumentUploadFieldProps {
+  label: string;
+  fieldName: string;
+  currentValue: string | File | null | undefined;
+  onFileSelect: (file: File) => void;
+  onRemove: () => void;
+  acceptTypes?: string;
+}
+
+function DocumentUploadField({
+  label,
+  fieldName,
+  currentValue,
+  onFileSelect,
+  onRemove,
+  acceptTypes = "image/*"
+}: DocumentUploadFieldProps) {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const isFile = currentValue instanceof File;
+  const isUrl = typeof currentValue === "string" && currentValue.trim() !== "";
+  const hasValue = isFile || isUrl;
+
+  const displayUrl = isFile
+    ? URL.createObjectURL(currentValue)
+    : isUrl
+      ? currentValue
+      : "";
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File Too Large",
+        description: `${file.name} exceeds 5MB limit`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    onFileSelect(file);
+  };
+
+  const handleRemove = () => {
+    if (isFile && displayUrl) {
+      URL.revokeObjectURL(displayUrl);
+    }
+    onRemove();
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label className="text-gray-300">{label}</Label>
+
+      {!hasValue ? (
+        <div
+          className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer"
+          onClick={() => fileInputRef.current?.click()}
+        >
+          <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+          <p className="text-sm text-gray-400">Click to upload</p>
+          <p className="text-xs text-gray-500 mt-1">Max 5MB</p>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={acceptTypes}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
+      ) : (
+        <div className="relative bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3 flex-1 min-w-0">
+              <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-white text-sm truncate">
+                  {isFile ? currentValue.name : "Uploaded Document"}
+                </p>
+                <p className="text-gray-400 text-xs">
+                  {isFile
+                    ? `${(currentValue.size / 1024 / 1024).toFixed(2)} MB`
+                    : "View Document"}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+              {isUrl && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.open(displayUrl, "_blank")}
+                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                >
+                  View
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                className="text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+              >
+                Replace
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={handleRemove}
+                className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept={acceptTypes}
+            onChange={handleFileChange}
+            className="hidden"
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 // TAB 3: BANKING, KYC & DOCUMENTS
 function BankingKycDocumentsTab() {
   const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
@@ -701,74 +885,79 @@ function BankingKycDocumentsTab() {
           <div>
             <h4 className="text-white font-semibold mb-4 pb-2 border-b border-gray-700">Identity Documents</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-gray-300">Aadhaar Card - Front</Label>
-                <input type="file" accept="image/*" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.aadhaarFront", createPublicFilePath(file))
-                }} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-300">Aadhaar Card - Back</Label>
-                <input type="file" accept="image/*" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.aadhaarBack", createPublicFilePath(file))
-                }} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-300">PAN Card</Label>
-                <input type="file" accept="image/*" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.panCard", createPublicFilePath(file))
-                }} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-300">Address Proof</Label>
-                <input type="file" accept="image/*,application/pdf" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.addressProof", createPublicFilePath(file))
-                }} />
-              </div>
+              <DocumentUploadField
+                label="Aadhaar Card - Front"
+                fieldName="documents.aadhaarFront"
+                currentValue={watch("documents.aadhaarFront")}
+                onFileSelect={(file) => setValue("documents.aadhaarFront", file)}
+                onRemove={() => setValue("documents.aadhaarFront", "")}
+              />
+              <DocumentUploadField
+                label="Aadhaar Card - Back"
+                fieldName="documents.aadhaarBack"
+                currentValue={watch("documents.aadhaarBack")}
+                onFileSelect={(file) => setValue("documents.aadhaarBack", file)}
+                onRemove={() => setValue("documents.aadhaarBack", "")}
+              />
+              <DocumentUploadField
+                label="PAN Card"
+                fieldName="documents.panCard"
+                currentValue={watch("documents.panCard")}
+                onFileSelect={(file) => setValue("documents.panCard", file)}
+                onRemove={() => setValue("documents.panCard", "")}
+              />
+              <DocumentUploadField
+                label="Address Proof"
+                fieldName="documents.addressProof"
+                currentValue={watch("documents.addressProof")}
+                onFileSelect={(file) => setValue("documents.addressProof", file)}
+                onRemove={() => setValue("documents.addressProof", "")}
+                acceptTypes="image/*,application/pdf"
+              />
             </div>
           </div>
 
           <div>
             <h4 className="text-white font-semibold mb-4 pb-2 border-b border-gray-700">Business Documents</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-gray-300">GST Certificate</Label>
-                <input type="file" accept="image/*,application/pdf" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.gstCertificate", createPublicFilePath(file))
-                }} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-300">Certificate of Incorporation</Label>
-                <input type="file" accept="image/*,application/pdf" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.incorporationCertificate", createPublicFilePath(file))
-                }} />
-              </div>
+              <DocumentUploadField
+                label="GST Certificate"
+                fieldName="documents.gstCertificate"
+                currentValue={watch("documents.gstCertificate")}
+                onFileSelect={(file) => setValue("documents.gstCertificate", file)}
+                onRemove={() => setValue("documents.gstCertificate", "")}
+                acceptTypes="image/*,application/pdf"
+              />
+              <DocumentUploadField
+                label="Certificate of Incorporation"
+                fieldName="documents.incorporationCertificate"
+                currentValue={watch("documents.incorporationCertificate")}
+                onFileSelect={(file) => setValue("documents.incorporationCertificate", file)}
+                onRemove={() => setValue("documents.incorporationCertificate", "")}
+                acceptTypes="image/*,application/pdf"
+              />
             </div>
           </div>
 
           <div>
             <h4 className="text-white font-semibold mb-4 pb-2 border-b border-gray-700">Banking Documents</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label className="text-gray-300">Bank Statement (Last 6 months)</Label>
-                <input type="file" accept="image/*,application/pdf" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.bankStatement", createPublicFilePath(file))
-                }} />
-              </div>
-              <div className="space-y-2">
-                <Label className="text-gray-300">Cancelled Cheque</Label>
-                <input type="file" accept="image/*,application/pdf" className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300 hover:file:bg-gray-700" onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) setValue("documents.cancelledCheque", createPublicFilePath(file))
-                }} />
-              </div>
+              <DocumentUploadField
+                label="Bank Statement (Last 6 months)"
+                fieldName="documents.bankStatement"
+                currentValue={watch("documents.bankStatement")}
+                onFileSelect={(file) => setValue("documents.bankStatement", file)}
+                onRemove={() => setValue("documents.bankStatement", "")}
+                acceptTypes="image/*,application/pdf"
+              />
+              <DocumentUploadField
+                label="Cancelled Cheque"
+                fieldName="documents.cancelledCheque"
+                currentValue={watch("documents.cancelledCheque")}
+                onFileSelect={(file) => setValue("documents.cancelledCheque", file)}
+                onRemove={() => setValue("documents.cancelledCheque", "")}
+                acceptTypes="image/*,application/pdf"
+              />
             </div>
           </div>
         </CardContent>
@@ -937,8 +1126,8 @@ export function AggregatorSettings() {
         email: values.profile.email,
         contact: values.profile.contact,
         photoUrl: values.profile.photoUrl || 'https://testingprofilebar.com',
-        status: values.profile.status
-      }
+        status: values.profile.status,
+      };
 
       console.log(userPayload, 'userpayload')
       await updateUserHook.mutateAsync(userPayload)
