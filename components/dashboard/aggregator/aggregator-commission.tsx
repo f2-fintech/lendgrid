@@ -205,7 +205,6 @@ export function AggregatorCommission() {
       'Calculated Date': formatDate(transaction.calculatedAt),
       'Approved Date': formatDate(transaction.approvedAt),
       'Paid Date': formatDate(transaction.paidAt),
-      'Payment Reference': transaction.paymentReference || '-',
       'Remarks': transaction.remarks || '-',
       'Created At': formatDate(transaction.createdAt),
       'Updated At': formatDate(transaction.updatedAt),
@@ -231,7 +230,6 @@ export function AggregatorCommission() {
       { wch: 15 },  // Calculated Date
       { wch: 15 },  // Approved Date
       { wch: 15 },  // Paid Date
-      { wch: 20 },  // Payment Reference
       { wch: 30 },  // Remarks
       { wch: 15 },  // Created At
       { wch: 15 },  // Updated At

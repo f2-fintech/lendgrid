@@ -35,7 +35,6 @@ export function SuperAdminPayouts() {
   // Status update form state
   const [newStatus, setNewStatus] = useState('')
   const [utrNumber, setUtrNumber] = useState('')
-  const [paymentReference, setPaymentReference] = useState('')
   const [adminNotes, setAdminNotes] = useState('')
   const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null)
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
@@ -126,7 +125,6 @@ export function SuperAdminPayouts() {
     setSelectedPayout(payout)
     setNewStatus('')
     setUtrNumber(payout.utrNumber || '')
-    setPaymentReference(payout.paymentReference || '')
     setAdminNotes('')
     setPaymentProofFile(null)
     setPaymentProofPreview(payout.paymentProofUrl || null)
@@ -216,7 +214,6 @@ export function SuperAdminPayouts() {
         input: {
           status: newStatus,
           utrNumber: utrNumber || undefined,
-          paymentReference: paymentReference || undefined,
           paymentProofUrl: paymentProofUrl || undefined,
           adminNotes: adminNotes || undefined,
         },
@@ -416,7 +413,7 @@ export function SuperAdminPayouts() {
                       <TableHead className="text-gray-300">Amount</TableHead>
                       <TableHead className="text-gray-300">Commission</TableHead>
                       <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Date</TableHead>
+                      <TableHead className="text-gray-300">UTR / Date</TableHead>
                       <TableHead className="text-gray-300">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -462,21 +459,45 @@ export function SuperAdminPayouts() {
                               </TooltipContent>
                             </Tooltip>
                           </TableCell>
-                          <TableCell className="text-gray-300">
-                            {new Date(payout.createdAt).toLocaleDateString()}
+                          <TableCell>
+                            {payout.status === 'PAID' && payout.utrNumber ? (
+                              <div className="flex flex-col">
+                                <p className="text-white font-mono text-sm">{payout.utrNumber.toUpperCase()}</p>
+                                <p className="text-xs text-gray-400">
+                                  {new Date(payout.paidAt || payout.createdAt).toLocaleDateString()}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="text-gray-400 text-sm">
+                                {new Date(payout.createdAt).toLocaleDateString()}
+                              </p>
+                            )}
                           </TableCell>
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedPayout(payout)
-                                setIsViewDialogOpen(true)
-                              }}
-                              className="text-blue hover:text-white hover:bg-gray-700"
-                            >
-                              <Eye className="w-4 h-4" />
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedPayout(payout)
+                                  setIsViewDialogOpen(true)
+                                }}
+                                className="text-blue hover:text-white hover:bg-gray-700"
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              {payout.status === 'PAID' && payout.paymentProofUrl && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => window.open(payout.paymentProofUrl, '_blank')}
+                                  className="text-green-400 hover:text-white hover:bg-gray-700"
+                                  title="View Payment Proof"
+                                >
+                                  <FileCheck className="w-4 h-4" />
+                                </Button>
+                              )}
+                            </div>
                           </TableCell>
                         </motion.tr>
                       )
@@ -559,10 +580,6 @@ export function SuperAdminPayouts() {
                     <Label className="text-gray-300">UTR Number</Label>
                     <p className="text-white font-semibold mt-1">{selectedPayout.utrNumber}</p>
                   </div>
-                  <div>
-                    <Label className="text-gray-300">Payment Reference</Label>
-                    <p className="text-white font-semibold mt-1">{selectedPayout.paymentReference || 'N/A'}</p>
-                  </div>
                 </div>
               )}
 
@@ -577,13 +594,6 @@ export function SuperAdminPayouts() {
                   >
                     View Document
                   </a>
-                </div>
-              )}
-
-              {selectedPayout.remarks && (
-                <div>
-                  <Label className="text-gray-300">Remarks</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.remarks}</p>
                 </div>
               )}
 
@@ -655,28 +665,17 @@ export function SuperAdminPayouts() {
                 </Select>
               </div>
 
-              {/* UTR Number and Payment Reference Side by Side */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-gray-300 text-sm">
-                    UTR Number {newStatus === 'PAID' && <span className="text-red-400">*</span>}
-                  </Label>
-                  <Input
-                    value={utrNumber}
-                    onChange={(e) => setUtrNumber(e.target.value)}
-                    placeholder="Enter UTR number"
-                    className="bg-gray-900 border-gray-600 text-white mt-1 h-9 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label className="text-gray-300 text-sm">Payment Reference</Label>
-                  <Input
-                    value={paymentReference}
-                    onChange={(e) => setPaymentReference(e.target.value)}
-                    placeholder="Enter reference (optional)"
-                    className="bg-gray-900 border-gray-600 text-white mt-1 h-9 text-sm"
-                  />
-                </div>
+              {/* UTR Number */}
+              <div>
+                <Label className="text-gray-300 text-sm">
+                  UTR Number {newStatus === 'PAID' && <span className="text-red-400">*</span>}
+                </Label>
+                <Input
+                  value={utrNumber}
+                  onChange={(e) => setUtrNumber(e.target.value)}
+                  placeholder="Enter UTR number"
+                  className="bg-gray-900 border-gray-600 text-white mt-1 h-9 text-sm"
+                />
               </div>
 
               <div>
@@ -793,7 +792,7 @@ export function SuperAdminPayouts() {
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white h-8"
+                  className="bg-gradient-to-r from-blue to-cyan-500 hover:from-blue-600 hover:to-cyan-700 text-white h-8"
                   onClick={handleUpdateStatus}
                   disabled={!newStatus || isUploading}
                 >

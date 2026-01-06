@@ -59,45 +59,45 @@ interface DashboardLayoutProps {
 
 const navigationConfig = {
   super_admin: [
-    {
-      title: "Overview",
-      items: [
-        { title: "Dashboard", url: navigationPaths.superAdmin.dashboard, icon: LayoutDashboard },
-        { title: "Platform Revenue", url: navigationPaths.superAdmin.revenue, icon: TrendingUp },
-        { title: "Analytics", url: navigationPaths.superAdmin.analytics, icon: BarChart3 }
-      ]
-    },
+    // {
+    //   title: "Overview",
+    //   items: [
+    //     { title: "Analytics", url: navigationPaths.superAdmin.analytics, icon: BarChart3 },
+    //     { title: "Platform Revenue", url: navigationPaths.superAdmin.revenue, icon: TrendingUp },
+    //     { title: "Product Manager", url: navigationPaths.superAdmin.products, icon: CreditCard },
+    //   ]
+    // },
     {
       title: "Management",
       items: [
-        { title: "Product Manager", url: navigationPaths.superAdmin.products, icon: CreditCard },
-        // { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
+        { title: "Dashboard", url: navigationPaths.superAdmin.dashboard, icon: LayoutDashboard },
         { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: Users },
         { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
         { title: "Global Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
+        { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
+        // { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
       ]
     },
-    {
-      title: "System",
-      items: [
-        { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
-      ]
-    }
+    // {
+    //   title: "System",
+    //   items: [
+    //   ]
+    // }
   ],
   aggregator: (isOmsEnabled: boolean) => [
-    {
-      title: "Overview",
-      items: [
-        { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
-        { title: "Products", url: navigationPaths.aggregator.products, icon: CreditCard },
-        { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
-        { title: "Reports", url: navigationPaths.aggregator.reports, icon: FileText }
-      ]
-    },
+    // {
+    //   title: "Overview",
+    //   items: [
+    //     { title: "Products", url: navigationPaths.aggregator.products, icon: CreditCard },
+    //     { title: "Reports", url: navigationPaths.aggregator.reports, icon: FileText }
+    //   ]
+    // },
     {
       title: "Management",
       items: [
+        { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
         { title: "Applications", url: navigationPaths.aggregator.applications, icon: CreditCard },
+        { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
         { title: "Settings", url: navigationPaths.aggregator.settings, icon: Settings },
         // ...(isOmsEnabled
         //   ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
@@ -297,14 +297,19 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     notifications,
     unreadCount,
     loading: notificationsLoading,
+    refetch,
     markAsRead,
     markAllAsRead,
     deleteNotification,
   } = useNotifications({
     page: 1,
     limit: 10,
-    pollingInterval: 30000, // Poll every 30 seconds
+    pollingInterval: 30000,   // Poll every 30 seconds
   })
+
+  useEffect(() => {
+    refetch()
+  }, [])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -455,52 +460,44 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                           const isUnread = notification.status === 'UNREAD'
                           const isHighPriority = notification.priority === 'HIGH' || notification.priority === 'URGENT'
                           const priorityColor = notification.priority === 'URGENT' ? 'text-red-400' :
-                            notification.priority === 'HIGH' ? 'text-yellow-400' : 'text-blue-400'
+                            notification.priority === 'HIGH' ? 'text-orange-400' : 'text-blue-400'
 
                           return (
                             <div key={notification._id}>
                               <div
-                                className={`relative p-4 hover:bg-gray-700/30 cursor-pointer transition-all group ${isUnread ? 'bg-blue-500/5 border-l-4 border-blue-500' : ''
+                                className={`relative p-4 hover:bg-gray-700/30 cursor-pointer transition-all group ${isUnread ? 'bg-blue-500/10 border-l-4 border-blue-400' : 'bg-gray-800/30 border-l-4 border-transparent'
                                   }`}
                                 onClick={() => handleNotificationClick(notification)}
                               >
-                                {/* High Priority Badge */}
-                                {isHighPriority && (
-                                  <div className="absolute top-2 right-2 px-2 py-0.5 bg-orange-500/20 border border-orange-500/30 rounded-full">
-                                    <span className="text-[10px] font-semibold text-orange-400 uppercase">
-                                      {notification.priority}
-                                    </span>
+                                {/* High Priority Indicator */}
+                                {isUnread && isHighPriority && (
+                                  <div className="absolute top-2 right-2">
+                                    <div className={`w-2 h-2 rounded-full ${notification.priority === 'URGENT' ? 'bg-red-500 animate-pulse' : 'bg-orange-500'
+                                      }`} title={notification.priority} />
                                   </div>
                                 )}
 
                                 <div className="flex items-start gap-3">
-                                  {/* Icon */}
-                                  <div className={`mt-1 p-2 rounded-lg ${isUnread ? 'bg-blue-500/20' : 'bg-gray-700/50'
-                                    }`}>
-                                    <div className={priorityColor}>
-                                      {getNotificationIcon(notification.type)}
-                                    </div>
-                                  </div>
-
                                   {/* Content */}
-                                  <div className="flex-1 space-y-1.5 min-w-0 pr-8">
+                                  <div className="flex-1 space-y-1.5 min-w-0 pr-6">
                                     <div className="flex items-start justify-between gap-2">
-                                      <p className={`text-sm font-semibold ${isUnread ? 'text-white' : 'text-gray-300'
+                                      <p className={`text-sm font-semibold ${isUnread ? 'text-white' : 'text-gray-400'
                                         }`}>
                                         {notification.title}
                                       </p>
                                       {isUnread && (
-                                        <div className="h-2 w-2 rounded-full bg-blue-500 flex-shrink-0 mt-1.5 animate-pulse" />
+                                        <div className="h-2 w-2 rounded-full bg-blue-400 flex-shrink-0 mt-1.5 shadow-lg shadow-blue-500/50" />
                                       )}
                                     </div>
 
-                                    <p className={`text-xs leading-relaxed ${isUnread ? 'text-gray-300' : 'text-gray-400'
+                                    <p className={`text-xs leading-relaxed ${isUnread ? 'text-gray-300' : 'text-gray-500'
                                       }`}>
                                       {notification.message}
                                     </p>
 
                                     <div className="flex items-center justify-between pt-1">
-                                      <p className="text-xs text-gray-500 flex items-center gap-1">
+                                      <p className={`text-xs flex items-center gap-1 ${isUnread ? 'text-gray-400' : 'text-gray-600'
+                                        }`}>
                                         <Clock className="h-3 w-3" />
                                         {formatDistanceToNow(new Date(notification.createdAt), {
                                           addSuffix: true,
@@ -528,7 +525,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                     )}
                   </ScrollArea>
 
-                  {notifications.length > 0 && (
+                  {/* {notifications.length > 0 && (
                     <div className="border-t border-gray-700/50 p-3 bg-gradient-to-r from-gray-900 to-gray-800">
                       <Button
                         variant="ghost"
@@ -544,7 +541,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                         <span className="ml-2">→</span>
                       </Button>
                     </div>
-                  )}
+                  )} */}
                 </Card>
               </div>
             )}

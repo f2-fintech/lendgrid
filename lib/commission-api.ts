@@ -211,7 +211,6 @@ export const commissionsApi = {
             calculatedAt
             approvedAt
             paidAt
-            paymentReference
             utrNumber
             paymentProofUrl
             adminNotes
@@ -279,7 +278,6 @@ export const commissionsApi = {
             id
             ticketId
             status
-            paymentReference
             utrNumber
             paymentProofUrl
             adminNotes

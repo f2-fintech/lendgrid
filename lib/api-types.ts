@@ -436,7 +436,8 @@ export interface CommissionTransaction {
   calculatedAt: string;
   approvedAt?: string;
   paidAt?: string;
-  paymentReference?: string;
+  utrNumber?: string
+  paymentProofUrl?: string
   remarks?: string;
   createdAt: string;
   updatedAt: string;
@@ -492,7 +493,6 @@ export interface CalculateCommissionInput {
 export interface UpdateCommissionStatusInput {
   status: CommissionStatus
   remarks?: string
-  paymentReference?: string
   utrNumber?: string
   paymentProofUrl?: string
   adminNotes?: string

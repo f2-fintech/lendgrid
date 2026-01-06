@@ -638,7 +638,7 @@ function DocumentUploadField({
 
       {!hasValue ? (
         <div
-          className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-blue-500 transition-colors cursor-pointer"
+          className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
           <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
