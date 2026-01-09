@@ -20,7 +20,7 @@ export function useNotifications({
   limit = 20,
   filters,
   enabled = true,
-  pollingInterval = 30000, // Poll every 30 seconds by default
+  pollingInterval = 10000, // Poll every 10 seconds by default
 }: UseNotificationsProps = {}) {
   const queryClient = useQueryClient()
   const previousUnreadCount = useRef<number>(0)

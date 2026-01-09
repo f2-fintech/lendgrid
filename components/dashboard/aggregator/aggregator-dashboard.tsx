@@ -25,54 +25,19 @@ import { CommissionStatus } from '@/lib'
 
 const mockData = {
   metrics: {
-    totalDisbursed: 12500000,
-    totalCommission: 500000,
-    pendingPayouts: 125000,
-    activeLenders: 8
+    totalDisbursed: 0,
+    totalCommission: 0,
+    pendingPayouts: 0
   },
   chartData: [
-    { month: 'Jan', amount: 1200000 },
-    { month: 'Feb', amount: 1800000 },
-    { month: 'Mar', amount: 2200000 },
-    { month: 'Apr', amount: 1900000 },
-    { month: 'May', amount: 2500000 },
-    { month: 'Jun', amount: 2800000 }
+    { month: 'Jan', amount: 0 },
+    { month: 'Feb', amount: 0 },
+    { month: 'Mar', amount: 0 },
+    { month: 'Apr', amount: 0 },
+    { month: 'May', amount: 0 },
+    { month: 'Jun', amount: 0 }
   ],
-  applications: [
-    {
-      ticketId: 'APP001',
-      provider: 'HDFC Bank',
-      productType: 'Personal Loan',
-      disbursedAmount: 500000,
-      disbursedDate: '2025-01-15',
-      commissionRate: 4,
-      commissionAmount: 20000,
-      status: CommissionStatus.PAID,
-      paidAt: '2025-01-20'
-    },
-    {
-      ticketId: 'APP002',
-      provider: 'ICICI Bank',
-      productType: 'Home Loan',
-      disbursedAmount: 2500000,
-      disbursedDate: '2025-01-18',
-      commissionRate: 3.5,
-      commissionAmount: 87500,
-      status: CommissionStatus.PENDING,
-      paidAt: null
-    },
-    {
-      ticketId: 'APP003',
-      provider: 'Bajaj Finance',
-      productType: 'Business Loan',
-      disbursedAmount: 1000000,
-      disbursedDate: '2025-01-20',
-      commissionRate: 4.5,
-      commissionAmount: 45000,
-      status: CommissionStatus.PAID,
-      paidAt: '2025-01-25'
-    }
-  ]
+  applications: []
 }
 
 export function AggregatorDashboard() {
@@ -348,7 +313,6 @@ export function AggregatorDashboard() {
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -375,14 +339,6 @@ export function AggregatorDashboard() {
             icon={CreditCard}
             trend="2 payouts pending"
             color="bg-orange-500/20 text-orange-400"
-          />
-          <MetricCard
-            index={3}
-            title="Active Lender Products"
-            value={mockData.metrics.activeLenders}
-            icon={Building2}
-            trend="+2 new this month"
-            color="bg-blue/20 text-blue"
           />
         </div>
       )}

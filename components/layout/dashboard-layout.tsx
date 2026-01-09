@@ -74,7 +74,7 @@ const navigationConfig = {
         { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: Users },
         { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
         { title: "Global Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
-        { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
+        // { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
         // { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
       ]
     },
@@ -98,7 +98,7 @@ const navigationConfig = {
         { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
         { title: "Applications", url: navigationPaths.aggregator.applications, icon: CreditCard },
         { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
-        { title: "Settings", url: navigationPaths.aggregator.settings, icon: Settings },
+        { title: "Profile", url: navigationPaths.aggregator.settings, icon: Settings },
         // ...(isOmsEnabled
         //   ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
         //   : [])
@@ -304,7 +304,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   } = useNotifications({
     page: 1,
     limit: 10,
-    pollingInterval: 30000,   // Poll every 30 seconds
+    pollingInterval: 10000,   // Poll every 10 seconds
   })
 
   useEffect(() => {
@@ -465,7 +465,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                           return (
                             <div key={notification._id}>
                               <div
-                                className={`relative p-4 hover:bg-gray-700/30 cursor-pointer transition-all group ${isUnread ? 'bg-blue-500/10 border-l-4 border-blue-400' : 'bg-gray-800/30 border-l-4 border-transparent'
+                                className={`relative p-4 hover:bg-gray-700/30 cursor-pointer transition-all group ${isUnread ? 'bg-blue-500/10 border-l-4 border-blue' : 'bg-gray-800/30 border-l-4 border-transparent'
                                   }`}
                                 onClick={() => handleNotificationClick(notification)}
                               >
