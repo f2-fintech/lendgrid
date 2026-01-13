@@ -12,6 +12,7 @@ interface FormContextType {
         tenure: string;
         loanType: string;
         loanCategory: string;
+        leadType: string;
         providers: string[];
         providerAmounts: { provider: string; amount: string }[];
     };
@@ -41,6 +42,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         tenure: '',
         loanType: '',
         loanCategory: '',
+        leadType: 'null',
         providers: [] as string[],
         providerAmounts: [] as { provider: string; amount: string }[],
     });
@@ -62,6 +64,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
             tenure: '',
             loanType: '',
             loanCategory: '',
+            leadType: 'null',
             providers: [],
             providerAmounts: [],
         });

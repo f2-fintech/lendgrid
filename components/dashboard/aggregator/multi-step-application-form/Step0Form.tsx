@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
 import {
     IndianRupee,
     Clock,
@@ -59,6 +57,17 @@ const tenureOptions = {
     unsecured: ['1 Year', '2 Years', '3 Years', '4 Years', '5 Years', '6 Years', '7 Years', '8 Years'],
 };
 
+const leadTypeOptions = [
+    'null',
+    'notion',
+    'dialler',
+    'field visit',
+    'sourcer',
+    'channel partner',
+    'ref from customer',
+    'left employee follow up',
+];
+
 export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => {
     const { formData, setFormData, nextStep } = useFormContext();
     const { toast } = useToast();
@@ -67,6 +76,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
     const [loanType, setLoanType] = useState(formData.loanType || '');
     const [loanCategory, setLoanCategory] = useState(formData.loanCategory || '');
     const [tenure, setTenure] = useState(formData.tenure || '');
+    const [leadType, setLeadType] = useState(formData.leadType || 'null');
     const [selectedProviders, setSelectedProviders] = useState<string[]>(
         formData.providers || []
     );
@@ -332,6 +342,31 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                     {errors.tenure && (
                         <p className="text-red-400 text-sm mt-1">{errors.tenure}</p>
                     )}
+                </div>
+
+                {/* Lead Type (Optional) */}
+                <div>
+                    <Label className="text-gray-300">Lead Type (Optional)</Label>
+                    <Select
+                        value={leadType}
+                        onValueChange={(value) => setLeadType(value)}
+                    >
+                        <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-2">
+                            <SelectValue />
+                        </SelectTrigger>
+
+                        <SelectContent className="bg-gray-900 border-gray-700">
+                            {leadTypeOptions.map((type) => (
+                                <SelectItem
+                                    key={type}
+                                    value={type}
+                                    className="text-gray-200 focus:bg-gray-700 focus:text-white hover:bg-gray-700 cursor-pointer"
+                                >
+                                    {type}
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
                 </div>
 
                 {/* Providers */}

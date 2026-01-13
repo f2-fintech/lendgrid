@@ -9,7 +9,10 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 
 export const metadata: Metadata = {
   title: 'LendGrid SaaS App',
-  description: 'For the financial services industry. The platform connects loan aggregators (DSAs) with lenders (banks/NBFCs) and allows them to manage commissions, payouts, and disbursals.',
+  description: 'For the financial services industry. A Lending Aggregator Platform',
+  icons: {
+    icon: "/logo2.png",
+  },
 }
 
 export default function RootLayout({
