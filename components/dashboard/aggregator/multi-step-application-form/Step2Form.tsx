@@ -100,31 +100,31 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
         >
             {/* Header */}
             <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold text-white">
-                    Statement <span className="text-gold">Upload</span>
+                <h2 className="text-3xl font-bold  text-foreground">
+                    Statement <span className="text-accent">Upload</span>
                 </h2>
-                <p className="text-gray-400">Step 2/4</p>
-                <p className="text-sm text-gray-400">
+                <p className=" text-muted-foreground">Step 2/4</p>
+                <p className="text-sm  text-muted-foreground">
                     Upload your recent 6 months Bank Statement
                     <br />
-                    Maximum File Upload Limit is <span className="text-gold">10</span>
+                    Maximum File Upload Limit is <span className="text-accent">10</span>
                 </p>
             </div>
 
             {/* Upload Area */}
-            <Card className="bg-gray-800/50 border-gray-700 p-8">
+            <Card className="bg-card/50 border-border p-8">
                 <div className="space-y-6">
                     {/* Drop Zone */}
                     {selectedFiles.length < 10 && (
                         <div
-                            className="border-2 border-dashed border-gray-600 rounded-lg p-12 text-center hover:border-gold transition-colors cursor-pointer"
+                            className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-gold transition-colors cursor-pointer"
                             onClick={() => inputRef.current?.click()}
                         >
-                            <Upload className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                            <p className="text-gray-300 mb-2">
+                            <Upload className="w-12 h-12 mx-auto mb-4  text-muted-foreground" />
+                            <p className=" text-foreground mb-2">
                                 Click to upload or drag and drop
                             </p>
-                            <p className="text-sm text-gray-400">
+                            <p className="text-sm  text-muted-foreground">
                                 PDF, DOC, DOCX, JPG, PNG (Max 10MB per file)
                             </p>
                             <input
@@ -141,7 +141,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     {/* Selected Files List */}
                     {selectedFiles.length > 0 && (
                         <div className="space-y-2">
-                            <p className="text-sm text-gray-400">
+                            <p className="text-sm  text-muted-foreground">
                                 Selected Files ({selectedFiles.length}/10)
                             </p>
                             {selectedFiles.map((file, index) => (
@@ -149,13 +149,13 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                                     key={index}
                                     initial={{ opacity: 0, x: -20 }}
                                     animate={{ opacity: 1, x: 0 }}
-                                    className="flex items-center justify-evenly bg-gray-900/50 p-3 rounded-lg"
+                                    className="flex items-center justify-evenly bg-background/50 p-3 rounded-lg"
                                 >
                                     <div className="flex items-center space-x-3">
                                         <FileText className="w-5 h-5 text-blue-400" />
                                         <div>
-                                            <p className="text-white text-sm">{file.name}</p>
-                                            <p className="text-gray-400 text-xs">
+                                            <p className=" text-foreground text-sm">{file.name}</p>
+                                            <p className=" text-muted-foreground text-xs">
                                                 {(file.size / 1024 / 1024).toFixed(2)} MB
                                             </p>
                                         </div>
@@ -179,7 +179,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                             variant="ghost"
                             onClick={handleSkip}
                             disabled={selectedFiles.length > 0}
-                            className="text-gray-400 hover:text-white"
+                            className=" text-muted-foreground hover: text-foreground"
                         >
                             Skip
                         </Button>
@@ -187,7 +187,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                         <Button
                             onClick={handleUpload}
                             disabled={selectedFiles.length === 0 || isLoading}
-                            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600 text-white"
+                            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600  text-foreground"
                         >
                             {isLoading ? (
                                 <>

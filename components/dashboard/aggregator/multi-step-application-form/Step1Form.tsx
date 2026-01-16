@@ -76,30 +76,30 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
     >
       {/* Header */}
       <div className="text-center">
-        <h2 className="text-3xl font-bold text-white">
-          Basic <span className="text-gold">Details</span>
+        <h2 className="text-3xl font-bold  text-foreground">
+          Basic <span className="text-accent">Details</span>
         </h2>
-        <p className="text-gray-400">Step 1/4</p>
+        <p className=" text-muted-foreground">Step 1/4</p>
       </div>
 
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-4">
         {/* Title and Name */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           <div className="md:col-span-1">
-            <Label htmlFor="title" className="text-gray-300">Title*</Label>
+            <Label htmlFor="title" className=" text-foreground">Title*</Label>
             <Select
               value={title}
               onValueChange={(value) => setValue('title', value as any, { shouldValidate: true })}
             >
-              <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-2">
+              <SelectTrigger className="bg-card border-border  text-foreground mt-2">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
-              <SelectContent className="glass-card bg-gray-900 border-gray-700 text-white">
-                <SelectItem value="Mr" className="text-white focus:bg-gray-700 focus:text-white" >Mr</SelectItem>
-                <SelectItem value="Mrs" className="text-white focus:bg-gray-700 focus:text-white">Mrs</SelectItem>
-                <SelectItem value="Miss" className="text-white focus:bg-gray-700 focus:text-white">Miss</SelectItem>
-                <SelectItem value="Dr" className="text-white focus:bg-gray-700 focus:text-white">Dr</SelectItem>
-                <SelectItem value="Ca" className="text-white focus:bg-gray-700 focus:text-white">Ca</SelectItem>
+              <SelectContent className="glass-card bg-background border-border  text-foreground">
+                <SelectItem value="Mr" className=" text-foreground focus:bg-muted focus: text-foreground" >Mr</SelectItem>
+                <SelectItem value="Mrs" className=" text-foreground focus:bg-muted focus: text-foreground">Mrs</SelectItem>
+                <SelectItem value="Miss" className=" text-foreground focus:bg-muted focus: text-foreground">Miss</SelectItem>
+                <SelectItem value="Dr" className=" text-foreground focus:bg-muted focus: text-foreground">Dr</SelectItem>
+                <SelectItem value="Ca" className=" text-foreground focus:bg-muted focus: text-foreground">Ca</SelectItem>
               </SelectContent>
             </Select>
             {errors.title && (
@@ -108,10 +108,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           </div>
 
           <div className="md:col-span-3">
-            <Label htmlFor="name" className="text-gray-300">Full Name*</Label>
+            <Label htmlFor="name" className=" text-foreground">Full Name*</Label>
             <Input
               {...register('name')}
-              className="bg-gray-800 border-gray-700 text-white mt-2"
+              className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter full name"
             />
             {errors.name && (
@@ -123,10 +123,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         {/* Contact and Email */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="contact" className="text-gray-300">Contact Number*</Label>
+            <Label htmlFor="contact" className=" text-foreground">Contact Number*</Label>
             <Input
               {...register('contact')}
-              className="bg-gray-800 border-gray-700 text-white mt-2"
+              className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter contact number"
               type="tel"
             />
@@ -136,10 +136,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           </div>
 
           <div>
-            <Label htmlFor="email" className="text-gray-300">Email*</Label>
+            <Label htmlFor="email" className=" text-foreground">Email*</Label>
             <Input
               {...register('email')}
-              className="bg-gray-800 border-gray-700 text-white mt-2"
+              className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter email address"
               type="email"
             />
@@ -151,10 +151,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
         {/* PAN */}
         <div>
-          <Label htmlFor="pan" className="text-gray-300">PAN Card*</Label>
+          <Label htmlFor="pan" className=" text-foreground">PAN Card*</Label>
           <Input
             {...register('pan')}
-            className="bg-gray-800 border-gray-700 text-white mt-2 uppercase"
+            className="bg-card border-border  text-foreground mt-2 uppercase"
             placeholder="Enter PAN card number"
             maxLength={10}
             onChange={(e) => {
@@ -170,10 +170,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         {/* Father's and Mother's Name */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="father_name" className="text-gray-300">Father's Name*</Label>
+            <Label htmlFor="father_name" className=" text-foreground">Father's Name*</Label>
             <Input
               {...register('father_name')}
-              className="bg-gray-800 border-gray-700 text-white mt-2"
+              className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter father's name"
             />
             {errors.father_name && (
@@ -182,10 +182,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           </div>
 
           <div>
-            <Label htmlFor="mother_name" className="text-gray-300">Mother's Name*</Label>
+            <Label htmlFor="mother_name" className=" text-foreground">Mother's Name*</Label>
             <Input
               {...register('mother_name')}
-              className="bg-gray-800 border-gray-700 text-white mt-2"
+              className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter mother's name"
             />
             {errors.mother_name && (
@@ -196,10 +196,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
         {/* Addresses */}
         <div>
-          <Label htmlFor="working_address" className="text-gray-300">Working Address*</Label>
+          <Label htmlFor="working_address" className=" text-foreground">Working Address*</Label>
           <Input
             {...register('working_address')}
-            className="bg-gray-800 border-gray-700 text-white mt-2"
+            className="bg-card border-border  text-foreground mt-2"
             placeholder="Enter working address"
           />
           {errors.working_address && (
@@ -208,10 +208,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         </div>
 
         <div>
-          <Label htmlFor="permanent_address" className="text-gray-300">Permanent Address*</Label>
+          <Label htmlFor="permanent_address" className=" text-foreground">Permanent Address*</Label>
           <Input
             {...register('permanent_address')}
-            className="bg-gray-800 border-gray-700 text-white mt-2"
+            className="bg-card border-border  text-foreground mt-2"
             placeholder="Enter permanent address"
           />
           {errors.permanent_address && (
@@ -220,10 +220,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         </div>
 
         <div>
-          <Label htmlFor="current_address" className="text-gray-300">Current Address*</Label>
+          <Label htmlFor="current_address" className=" text-foreground">Current Address*</Label>
           <Input
             {...register('current_address')}
-            className="bg-gray-800 border-gray-700 text-white mt-2"
+            className="bg-card border-border  text-foreground mt-2"
             placeholder="Enter current address"
           />
           {errors.current_address && (
@@ -234,10 +234,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         {/* City and State */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="city" className="text-gray-300">City*</Label>
+            <Label htmlFor="city" className=" text-foreground">City*</Label>
             <Input
               {...register('city')}
-              className="bg-gray-800 border-gray-700 text-white mt-2"
+              className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter city"
             />
             {errors.city && (
@@ -246,10 +246,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           </div>
 
           <div>
-            <Label htmlFor="state" className="text-gray-300">State*</Label>
+            <Label htmlFor="state" className=" text-foreground">State*</Label>
             <Input
               {...register('state')}
-              className="bg-gray-800 border-gray-700 text-white mt-2"
+              className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter state"
             />
             {errors.state && (
@@ -260,30 +260,30 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
         {/* Employment Type */}
         <div>
-          <Label htmlFor="employment_type" className="text-gray-300">Employment Type*</Label>
+          <Label htmlFor="employment_type" className=" text-foreground">Employment Type*</Label>
           <Select
             value={employmentType}
             onValueChange={(value) => setValue('employment_type', value as any, { shouldValidate: true })}
           >
-            <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-2">
+            <SelectTrigger className="bg-card border-border  text-foreground mt-2">
               <SelectValue placeholder="Select employment type" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-900 border-gray-700 text-white">
+            <SelectContent className="bg-background border-border  text-foreground">
               <SelectItem
                 value="salaried"
-                className="text-white focus:bg-gray-700 focus:text-white"
+                className=" text-foreground focus:bg-muted focus: text-foreground"
               >
                 Salaried
               </SelectItem>
               <SelectItem
                 value="business"
-                className="text-white focus:bg-gray-700 focus:text-white"
+                className=" text-foreground focus:bg-muted focus: text-foreground"
               >
                 Business
               </SelectItem>
               <SelectItem
                 value="professional"
-                className="text-white focus:bg-gray-700 focus:text-white"
+                className=" text-foreground focus:bg-muted focus: text-foreground"
               >
                 Professional
               </SelectItem>
@@ -297,13 +297,13 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         {/* Date of Birth */}
         <div>
           <div>
-            <Label className="text-gray-300">Date of Birth*</Label>
+            <Label className=" text-foreground">Date of Birth*</Label>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
               {/* Manual Input */}
               <Input
                 type="date"
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border  text-foreground"
                 max={format(new Date(), 'yyyy-MM-dd')}
                 onChange={(e) => {
                   const value = e.target.value;
@@ -320,14 +320,14 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="bg-gray-800 border-gray-700 text-white justify-start"
+                    className="bg-card border-border  text-foreground justify-start"
                   >
                     <Calendar className="mr-2 h-4 w-4" />
                     {date ? format(date, 'PPP') : 'Pick from calendar'}
                   </Button>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-auto p-0 bg-gray-900 border-gray-700">
+                <PopoverContent className="w-auto p-0 bg-background border-border">
                   <CalendarComponent
                     mode="single"
                     selected={date}
@@ -344,7 +344,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                       date > new Date() || date < new Date('1950-01-01')
                     }
                     initialFocus
-                    className="bg-gray-900 text-white"
+                    className="bg-background  text-foreground"
                   />
                 </PopoverContent>
               </Popover>
@@ -354,21 +354,21 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
               <p className="text-red-400 text-sm mt-1">{errors.dob.message}</p>
             )}
 
-            <p className="text-gray-400 text-xs mt-1">
+            <p className=" text-muted-foreground text-xs mt-1">
               You must be at least 20 years old
             </p>
           </div>
           {errors.dob && (
             <p className="text-red-400 text-sm mt-1">{errors.dob.message}</p>
           )}
-          <p className="text-gray-400 text-xs mt-1">Minimum age 20 required</p>
+          <p className=" text-muted-foreground text-xs mt-1">Minimum age 20 required</p>
         </div>
 
         {/* Terms and Conditions */}
         <div className="space-y-4 pt-4">
           <div className="flex items-start space-x-2">
             <Checkbox defaultChecked className="mt-1" />
-            <Label className="text-gray-300 text-sm leading-relaxed">
+            <Label className=" text-foreground text-sm leading-relaxed">
               I agree to opt for the product and service of F2fintech. By opting for F2fintech,
               I agree to have read, understood and explicitly consent to the T&C, Privacy Policy
               and F2fintech Credit Terms.
@@ -377,7 +377,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
           <div className="flex items-start space-x-2">
             <Checkbox defaultChecked className="mt-1" />
-            <Label className="text-gray-300 text-sm leading-relaxed">
+            <Label className=" text-foreground text-sm leading-relaxed">
               I further consent to receive the loan and product updates of F2fintech on WhatsApp
               and allow F2fintech and/or their authorized third party service providers to contact
               me for marketing purposes via SMS, Call, WhatsApp, and Email.
@@ -390,14 +390,14 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           <Button
             variant="outline"
             onClick={() => onBack()}
-            className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            className="border-border  text-foreground hover:bg-muted"
           >
             Back
           </Button>
           <Button
             type="submit"
             disabled={!isDirty || isLoading}
-            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-200 text-white"
+            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-200  text-foreground"
           >
             {isLoading ? (
               <>

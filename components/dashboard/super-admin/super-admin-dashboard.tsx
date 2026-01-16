@@ -56,12 +56,12 @@ export function SuperAdminDashboard() {
   }
 
   const MetricCard = ({ title, value, icon: Icon, trend, color }: any) => (
-    <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-colors">
+    <Card className="bg-card/50 border-border hover:border-gold/50 transition-colors">
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-gray-400">{title}</p>
-            <p className="text-2xl font-bold text-white mt-2">{value}</p>
+            <p className="text-sm font-medium text-muted-foreground">{title}</p>
+            <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
             {trend && (
               <p className="text-sm text-green-400 mt-1 flex items-center">
                 <TrendingUp className="w-4 h-4 mr-1" />
@@ -82,20 +82,20 @@ export function SuperAdminDashboard() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white flex items-center">
-            <Crown className="w-8 h-8 text-gold mr-3" />
+          <h1 className="text-3xl font-bold text-foreground flex items-center">
+            <Crown className="w-8 h-8 text-accent mr-3" />
             Super Admin Dashboard
           </h1>
-          <p className="text-gray-400 mt-1">Platform overview and management controls</p>
+          <p className="text-muted-foreground mt-1">Platform overview and management controls</p>
         </div>
-        <div className="flex items-center space-x-4">
+        {/* <div className="flex items-center space-x-4">
           <Link href={navigationPaths.superAdmin.settings}>
-            <Button variant="outline" className="border-gray-600 text-black bg-gradient-to-r from-blue to-cyan-500">
+            <Button variant="outline" className="border-border text-black bg-gradient-to-r from-blue to-cyan-500">
               <Settings className="w-4 h-4 mr-2" />
               Platform Settings
             </Button>
           </Link>
-        </div>
+        </div> */}
       </div>
 
       {/* Metrics Cards */}
@@ -112,7 +112,7 @@ export function SuperAdminDashboard() {
             value={formatCurrency(mockData.metrics.platformRevenue)}
             icon={DollarSign}
             trend="+15.3% from last month"
-            color="bg-gold/20 text-gold"
+            color="bg-accent/20 text-accent"
           />
           <MetricCard
             title="Total Aggregators"
@@ -134,10 +134,10 @@ export function SuperAdminDashboard() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Revenue Trend */}
         <div className="lg:col-span-2">
-          <Card className="bg-gray-800/50 border-gray-700">
+          <Card className="bg-card/50 border-border">
             <CardHeader>
-              <CardTitle className="text-white">Platform Revenue & Volume Trends</CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardTitle className="text-foreground">Platform Revenue & Volume Trends</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Monthly platform revenue (1% commission) and total loan volume
               </CardDescription>
             </CardHeader>
@@ -188,10 +188,10 @@ export function SuperAdminDashboard() {
         </div>
 
         {/* Lender Distribution */}
-        {/* <Card className="bg-gray-800/50 border-gray-700">
+        {/* <Card className="bg-card/50 border-border">
           <CardHeader>
-            <CardTitle className="text-white">Lender Distribution</CardTitle>
-            <CardDescription className="text-gray-400">
+            <CardTitle className="text-foreground">Lender Distribution</CardTitle>
+            <CardDescription className="text-muted-foreground">
               Breakdown by Institution Type
             </CardDescription>
           </CardHeader>
@@ -234,9 +234,9 @@ export function SuperAdminDashboard() {
                           className="w-3 h-3 rounded-full"
                           style={{ backgroundColor: item.color }}
                         />
-                        <span className="text-gray-300">{item.name}</span>
+                        <span className="text-foreground">{item.name}</span>
                       </div>
-                      <span className="text-white font-semibold">{item.value}</span>
+                      <span className="text-foreground font-semibold">{item.value}</span>
                     </div>
                   ))}
                 </div>
@@ -252,25 +252,25 @@ export function SuperAdminDashboard() {
         {cardsLoading ? (
           <CardSkeleton headerLines={2} bodyHeight={206} />
         ) : (
-          <Card className="bg-gray-800/50 border-gray-700">
+          <Card className="bg-card/50 border-border">
             <CardHeader>
-              <CardTitle className="text-white">Pending Approvals</CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardTitle className="text-foreground">Pending Approvals</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Lender and aggregator onboarding requests
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {mockData.pendingApprovals.map((request) => (
-                  <div key={request.id} className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg">
+                  <div key={request.id} className="flex items-center justify-between p-4 bg-background/50 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${request.type === 'Lender' ? 'bg-blue/20 text-blue' : 'bg-green-500/20 text-green-400'
                         }`}>
                         {request.type === 'Lender' ? <Building2 className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                       </div>
                       <div>
-                        <p className="font-semibold text-white">{request.name}</p>
-                        <p className="text-sm text-gray-400">{request.type} • {request.requestDate}</p>
+                        <p className="font-semibold text-foreground">{request.name}</p>
+                        <p className="text-sm text-muted-foreground">{request.type} • {request.requestDate}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-3">
@@ -284,10 +284,10 @@ export function SuperAdminDashboard() {
                         {request.priority}
                       </Badge>
                       <div className="flex space-x-2">
-                        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-white">
+                        <Button size="sm" className="bg-green-500 hover:bg-green-600 text-foreground">
                           <CheckCircle className="w-4 h-4" />
                         </Button>
-                        <Button size="sm" variant="outline" className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white">
+                        <Button size="sm" variant="outline" className="border-red-500 text-red-400 hover:bg-red-500 hover:text-foreground">
                           <XCircle className="w-4 h-4" />
                         </Button>
                       </div>
@@ -303,29 +303,29 @@ export function SuperAdminDashboard() {
         {cardsLoading ? (
           <CardSkeleton headerLines={2} bodyHeight={286} />
         ) : (
-          <Card className="bg-gray-800/50 border-gray-700">
+          <Card className="bg-card/50 border-border">
             <CardHeader>
-              <CardTitle className="text-white">Top Performers</CardTitle>
-              <CardDescription className="text-gray-400">
+              <CardTitle className="text-foreground">Top Performers</CardTitle>
+              <CardDescription className="text-muted-foreground">
                 Highest volume lenders and aggregators
               </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
                 {mockData.topPerformers.map((performer, index) => (
-                  <div key={performer.name} className="flex items-center justify-between p-4 bg-gray-900/50 rounded-lg">
+                  <div key={performer.name} className="flex items-center justify-between p-4 bg-background/50 rounded-lg">
                     <div className="flex items-center space-x-4">
                       <div className="w-10 h-10 bg-gradient-to-r from-gold to-yellow-500 rounded-lg flex items-center justify-center text-dark font-bold">
                         {index + 1}
                       </div>
                       <div>
-                        <p className="font-semibold text-white">{performer.name}</p>
-                        <p className="text-sm text-gray-400">{performer.type}</p>
+                        <p className="font-semibold text-foreground">{performer.name}</p>
+                        <p className="text-sm text-muted-foreground">{performer.type}</p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-white font-semibold">{formatCurrency(performer.volume)}</p>
-                      <p className="text-sm text-gold">{formatCurrency(performer.commission)} commission</p>
+                      <p className="text-foreground font-semibold">{formatCurrency(performer.volume)}</p>
+                      <p className="text-sm text-accent">{formatCurrency(performer.commission)} commission</p>
                     </div>
                   </div>
                 ))}

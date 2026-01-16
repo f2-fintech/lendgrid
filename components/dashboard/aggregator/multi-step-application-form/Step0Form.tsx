@@ -232,7 +232,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
         >
             {/* Header */}
             <div className="text-center">
-                <h2 className="text-3xl font-bold text-white">
+                <h2 className="text-3xl font-bold text-foreground">
                     Enter the details to get started
                 </h2>
             </div>
@@ -240,9 +240,9 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
             <div className="space-y-4">
                 {/* Loan Amount */}
                 <div>
-                    <Label className="text-gray-300">Loan Amount*</Label>
+                    <Label className="text-foreground">Loan Amount*</Label>
                     <div className="relative mt-2">
-                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
                             type="number"
                             value={amount}
@@ -251,7 +251,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 validateAmount(e.target.value);
                             }}
                             onBlur={() => validateAmount(amount)}
-                            className="bg-gray-800 border-gray-700 text-white pl-10"
+                            className="bg-card border-border text-foreground pl-10"
                             placeholder="Base loan amount (can customize per provider)"
                         />
                     </div>
@@ -262,15 +262,15 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
                 {/* Loan Type */}
                 <div>
-                    <Label className="text-gray-300">Loan Type*</Label>
+                    <Label className="text-foreground">Loan Type*</Label>
                     <Select value={loanType} onValueChange={handleLoanTypeChange}>
-                        <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-2">
+                        <SelectTrigger className="bg-card border-border text-foreground mt-2">
                             <div className="flex items-center">
                                 <Building2 className="w-4 h-4 mr-2" />
                                 <SelectValue placeholder="Choose loan type" />
                             </div>
                         </SelectTrigger>
-                        <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectContent className="bg-background border-border">
                             <div className="px-2 py-1 text-xs font-semibold text-cyan-400 select-none">
                                 Secured Loans
                             </div>
@@ -278,7 +278,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 <SelectItem
                                     key={loan.value}
                                     value={loan.value}
-                                    className="text-gray-200 focus:bg-gray-700 focus:text-white hover:bg-gray-700 cursor-pointer"
+                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
                                 >
                                     {loan.label}
                                 </SelectItem>
@@ -290,7 +290,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 <SelectItem
                                     key={loan.value}
                                     value={loan.value}
-                                    className="text-gray-200 focus:bg-gray-700 focus:text-white hover:bg-gray-700 cursor-pointer"
+                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
                                 >
                                     {loan.label}
                                 </SelectItem>
@@ -304,7 +304,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
                 {/* Tenure */}
                 <div>
-                    <Label className="text-gray-300">
+                    <Label className="text-foreground">
                         {loanCategory
                             ? `Tenure (${loanCategory === 'secured' ? 'Long Term' : 'Short Term'})*`
                             : 'Select Tenure*'}
@@ -317,7 +317,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         }}
                         disabled={!loanCategory}
                     >
-                        <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-2">
+                        <SelectTrigger className="bg-card border-border text-foreground mt-2">
                             <div className="flex items-center">
                                 <Clock className="w-4 h-4 mr-2" />
                                 <SelectValue
@@ -327,12 +327,12 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 />
                             </div>
                         </SelectTrigger>
-                        <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectContent className="bg-background border-border">
                             {(loanCategory ? tenureOptions[loanCategory] : []).map((option) => (
                                 <SelectItem
                                     key={option}
                                     value={option}
-                                    className="text-gray-200 focus:bg-gray-700 focus:text-white hover:bg-gray-700 cursor-pointer"
+                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
                                 >
                                     {option}
                                 </SelectItem>
@@ -346,21 +346,21 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
                 {/* Lead Type (Optional) */}
                 <div>
-                    <Label className="text-gray-300">Lead Type (Optional)</Label>
+                    <Label className="text-foreground">Lead Type (Optional)</Label>
                     <Select
                         value={leadType}
                         onValueChange={(value) => setLeadType(value)}
                     >
-                        <SelectTrigger className="bg-gray-800 border-gray-700 text-white mt-2">
+                        <SelectTrigger className="bg-card border-border text-foreground mt-2">
                             <SelectValue />
                         </SelectTrigger>
 
-                        <SelectContent className="bg-gray-900 border-gray-700">
+                        <SelectContent className="bg-background border-border">
                             {leadTypeOptions.map((type) => (
                                 <SelectItem
                                     key={type}
                                     value={type}
-                                    className="text-gray-200 focus:bg-gray-700 focus:text-white hover:bg-gray-700 cursor-pointer"
+                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
                                 >
                                     {type}
                                 </SelectItem>
@@ -371,15 +371,15 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
                 {/* Providers */}
                 <div>
-                    <Label className="text-gray-300">Select Providers* (Multiple)</Label>
-                    <div className="mt-2 bg-gray-800 border border-gray-700 rounded-lg p-4 space-y-2">
+                    <Label className="text-foreground">Select Providers* (Multiple)</Label>
+                    <div className="mt-2 bg-card border border-border rounded-lg p-4 space-y-2">
                         {providers.map((provider) => (
                             <div key={provider} className="flex items-center space-x-2">
                                 <Checkbox
                                     checked={selectedProviders.includes(provider)}
                                     onCheckedChange={() => handleProviderToggle(provider)}
                                 />
-                                <Label className="text-gray-300 flex-1">{provider}</Label>
+                                <Label className="text-foreground flex-1">{provider}</Label>
                             </div>
                         ))}
                     </div>
@@ -390,8 +390,8 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
                 {/* Provider Amounts */}
                 {selectedProviders.length > 0 && (
-                    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4">
-                        <Label className="text-gray-300 mb-3 block">
+                    <div className="bg-card/50 border border-border rounded-lg p-4">
+                        <Label className="text-foreground mb-3 block">
                             Customize Amounts per Provider
                         </Label>
                         <div className="space-y-2">
@@ -402,9 +402,9 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 return (
                                     <div
                                         key={provider}
-                                        className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg"
+                                        className="flex items-center justify-between bg-background/50 p-3 rounded-lg"
                                     >
-                                        <span className="text-white text-sm">{provider}</span>
+                                        <span className="text-foreground text-sm">{provider}</span>
                                         <div className="flex items-center gap-2">
                                             <Badge variant="outline" className="text-cyan-400">
                                                 ₹{providerAmount || 'Not set'}
@@ -437,7 +437,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         selectedProviders.length === 0 ||
                         !validateAllProviderAmounts()
                     }
-                    className="w-full bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600 disabled:opacity-100 disabled:bg-gray-700 disabled:text-gray-400 disabled:cursor-not-allowed"
+                    className="w-full bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600 disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
                 >
                     Let's Get Started
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -446,15 +446,15 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
             {/* Amount Edit Dialog */}
             <Dialog open={amountDialogOpen} onOpenChange={setAmountDialogOpen}>
-                <DialogContent className="bg-gray-900 border-gray-700">
+                <DialogContent className="bg-background border-border">
                     <DialogHeader>
-                        <DialogTitle className="text-white">
+                        <DialogTitle className="text-foreground">
                             Set Amount for {editingProvider}
                         </DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="relative">
-                            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <Input
                                 type="number"
                                 value={
@@ -466,11 +466,11 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                         updateProviderAmount(editingProvider, e.target.value);
                                     }
                                 }}
-                                className="bg-gray-800 border-gray-700 text-white pl-10"
+                                className="bg-card border-border text-foreground pl-10"
                                 placeholder="Enter amount"
                             />
                         </div>
-                        <p className="text-gray-400 text-sm">
+                        <p className="text-muted-foreground text-sm">
                             Amount must be between 50,000 and 10,00,00,000 and divisible by 5
                         </p>
                         <Button

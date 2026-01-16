@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster"
 import './globals.css'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ThemeProvider } from '@/components/theme-provider'
 
 export const metadata: Metadata = {
   title: 'LendGrid SaaS App',
@@ -21,7 +22,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <style>
           {`
@@ -35,12 +36,19 @@ html {
       </head>
 
       <body>
-        <TooltipProvider delayDuration={200}>
-          <QueryProvider>
-            {children}
-            <Toaster />
-          </QueryProvider>
-        </TooltipProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TooltipProvider delayDuration={200}>
+            <QueryProvider>
+              {children}
+              <Toaster />
+            </QueryProvider>
+          </TooltipProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

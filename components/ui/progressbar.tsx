@@ -20,7 +20,7 @@ export function ProgressBar({
 	value,
 	className = '',
 	heightClass = 'h-2',
-	trackClass = 'bg-gray-700',
+	trackClass = 'bg-muted',
 	fillClass = 'bg-yellow-400',
 	showLabel = false,
 	ariaLabel = 'Progress',
@@ -39,7 +39,7 @@ export function ProgressBar({
 				/>
 			</div>
 			{showLabel && (
-				<div className="mt-1 text-sm text-gray-300">{pct}%</div>
+				<div className="mt-1 text-sm text-foreground">{pct}%</div>
 			)}
 		</div>
 	)
@@ -92,7 +92,7 @@ export function ProfileCompletionBanner({
 	const borderColor = isComplete ? 'border-green-600' : 'border-yellow-700'
 	const bgColor = isComplete ? 'bg-green-900/10' : 'bg-yellow-900/10'
 	const textColor = isComplete ? 'text-green-300' : 'text-yellow-300'
-	const textColorSecondary = isComplete ? 'text-green-100' : 'text-gray-300'
+	const textColorSecondary = isComplete ? 'text-green-100' : 'text-foreground'
 	const buttonBorder = isComplete ? 'border-green-600' : 'border-yellow-600'
 	const buttonText = isComplete ? 'text-green-400' : 'text-yellow-400'
 	const glowColor = isComplete ? 'rgba(34,197,94,0.10)' : 'rgba(250,204,21,0.10)'
@@ -182,7 +182,7 @@ export function ProfileCompletionBanner({
 					<div className="mt-3">
 						<ProgressBar value={percent} showLabel={false} />
 						<div className="flex items-center justify-between mt-2">
-							<span className="text-sm text-gray-400">{percent}% Complete</span>
+							<span className="text-sm text-muted-foreground">{percent}% Complete</span>
 							{isComplete && (
 								<motion.span
 									className="text-sm text-green-400 font-semibold"
@@ -211,7 +211,7 @@ export function ProfileCompletionBanner({
 						transition={{ delay: 0.2 }}
 					>
 						<Button
-							className="bg-gradient-to-r from-green-500 to-emerald-500 text-white hover:from-green-600 hover:to-emerald-600 mt-3"
+							className="bg-gradient-to-r from-green-500 to-emerald-500 text-foreground hover:from-green-600 hover:to-emerald-600 mt-3"
 							onClick={onAction}
 						>
 							View Dashboard

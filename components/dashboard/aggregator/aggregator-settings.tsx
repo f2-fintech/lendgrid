@@ -140,13 +140,13 @@ function formatPhone(val?: string) {
 }
 
 const getStatusColor = (status?: string) => {
-  if (!status) return 'bg-gray-500/20 text-gray-400'
+  if (!status) return 'bg-gray-500/20 text-muted-foreground'
   switch (status.toUpperCase()) {
     case 'ACTIVE': return 'bg-green-500/20 text-green-400'
     case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
     case 'SUSPENDED':
     case 'INACTIVE': return 'bg-red-500/20 text-red-400'
-    default: return 'bg-gray-500/20 text-gray-400'
+    default: return 'bg-gray-500/20 text-muted-foreground'
   }
 }
 
@@ -155,8 +155,8 @@ const getKycStatusColor = (status?: string) => {
     case 'APPROVED': return 'bg-green-500/20 text-green-400 border-green-500/50'
     case 'REJECTED': return 'bg-red-500/20 text-red-400 border-red-500/50'
     case 'UNDER_REVIEW': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
-    case 'PENDING': return 'bg-gray-500/20 text-gray-400 border-gray-500/50'
-    default: return 'bg-gray-500/20 text-gray-400 border-gray-500/50'
+    case 'PENDING': return 'bg-gray-500/20 text-muted-foreground border-gray-500/50'
+    default: return 'bg-gray-500/20 text-muted-foreground border-gray-500/50'
   }
 }
 
@@ -165,8 +165,8 @@ const getKycStatusIcon = (status?: string) => {
     case 'APPROVED': return <CheckCircle2 className="w-5 h-5 text-green-400" />
     case 'REJECTED': return <XCircle className="w-5 h-5 text-red-400" />
     case 'UNDER_REVIEW': return <Clock className="w-5 h-5 text-yellow-400" />
-    case 'PENDING': return <AlertCircle className="w-5 h-5 text-gray-400" />
-    default: return <AlertCircle className="w-5 h-5 text-gray-400" />
+    case 'PENDING': return <AlertCircle className="w-5 h-5 text-muted-foreground" />
+    default: return <AlertCircle className="w-5 h-5 text-muted-foreground" />
   }
 }
 
@@ -177,28 +177,28 @@ function ProfileAndContactTab() {
   const profileStatus = watch("profile.status")
 
   return (
-    <Card className="bg-gray-900/50 border-gray-800">
+    <Card className="bg-background/50 border-border">
       <CardHeader>
-        <CardTitle className="text-white flex items-center gap-2">
+        <CardTitle className="text-foreground flex items-center gap-2">
           <User className="w-5 h-5" />
           Profile & Contact Information
         </CardTitle>
-        <CardDescription className="text-gray-400">
+        <CardDescription className="text-muted-foreground">
           Personal details and primary contact information
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Profile Photo Section */}
-        <div className="flex items-center space-x-6 pb-6 border-b border-gray-800">
+        <div className="flex items-center space-x-6 pb-6 border-b border-border">
           <Avatar className="w-24 h-24">
             <AvatarImage src={photo || "/placeholder.svg"} alt="Profile" />
-            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xl font-bold">
+            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-cyan-500 text-foreground text-xl font-bold">
               {watch("profile.firstName")?.[0]}{watch("profile.lastName")?.[0]}
             </AvatarFallback>
           </Avatar>
           <div>
             <label className="inline-block">
-              <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+              <Button variant="outline" className="border-border text-foreground hover:bg-card">
                 <Input
                   type="file"
                   accept="image/*"
@@ -219,7 +219,7 @@ function ProfileAndContactTab() {
                 Upload Photo
               </Button>
             </label>
-            <p className="text-gray-400 text-sm mt-2">JPG, PNG or GIF. Max size 2MB.</p>
+            <p className="text-muted-foreground text-sm mt-2">JPG, PNG or GIF. Max size 2MB.</p>
           </div>
           <div className="ml-auto">
             <Badge className={`${getStatusColor(profileStatus)} border px-4 py-1.5 text-sm font-semibold`}>
@@ -231,41 +231,41 @@ function ProfileAndContactTab() {
         {/* Name & Email */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <Label htmlFor="firstName" className="text-white">First Name *</Label>
+            <Label htmlFor="firstName" className="text-foreground">First Name *</Label>
             <Input
               id="firstName"
               {...register("profile.firstName", { onBlur: () => trigger("profile.firstName") })}
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-card border-border text-foreground"
               placeholder="Enter first name"
             />
             {errors.profile?.firstName && <p className="text-red-400 text-sm">{errors.profile.firstName.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="lastName" className="text-white">Last Name</Label>
+            <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
             <Input
               id="lastName"
               {...register("profile.lastName", { onBlur: () => trigger("profile.lastName") })}
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-card border-border text-foreground"
               placeholder="Enter last name"
             />
             {errors.profile?.lastName && <p className="text-red-400 text-sm">{errors.profile.lastName.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-white">Email Address *</Label>
+            <Label htmlFor="email" className="text-foreground">Email Address *</Label>
             <Input
               id="email"
               type="email"
               {...register("profile.email", { onBlur: () => trigger("profile.email") })}
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-card border-border text-foreground"
               placeholder="email@example.com"
             />
             {errors.profile?.email && <p className="text-red-400 text-sm">{errors.profile.email.message}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone" className="text-white">Phone Number *</Label>
+            <Label htmlFor="phone" className="text-foreground">Phone Number *</Label>
             <Input
               id="phone"
               {...register("profile.contact", {
@@ -276,7 +276,7 @@ function ProfileAndContactTab() {
                   trigger("profile.contact")
                 }
               })}
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-card border-border text-foreground"
               placeholder="10-digit mobile number"
             />
             {errors.profile?.contact && <p className="text-red-400 text-sm">{errors.profile.contact.message}</p>}
@@ -296,60 +296,60 @@ function BusinessDetailsTab() {
   return (
     <div className="space-y-6">
       {/* Company Information */}
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-background/50 border-border">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-foreground flex items-center gap-2">
             <Building2 className="w-5 h-5" />
             Company Information
           </CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardDescription className="text-muted-foreground">
             Organization details and business structure
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-white">Company Name *</Label>
+              <Label htmlFor="companyName" className="text-foreground">Company Name *</Label>
               <Input
                 id="companyName"
                 {...register("business.companyName", { onBlur: () => trigger("business.companyName") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="Registered company name"
               />
               {errors.business?.companyName && <p className="text-red-400 text-sm">{errors.business.companyName.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300 font-medium">Company Rank *</Label>
+              <Label className="text-foreground font-medium">Company Rank *</Label>
               <Select
                 value={rank || ""}
                 onValueChange={(value) =>
                   setValue("business.rank", value as ApplicableFor, { shouldValidate: true })
                 }
               >
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-11">
+                <SelectTrigger className="bg-card border-border text-foreground h-11">
                   <SelectValue placeholder="Select Business Type" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value={ApplicableFor.BRONZE_AGGREGATORS} className="text-white">
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value={ApplicableFor.BRONZE_AGGREGATORS} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
                       <span>{ApplicableFor.BRONZE_AGGREGATORS}</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value={ApplicableFor.SILVER_AGGREGATORS} className="text-white">
+                  <SelectItem value={ApplicableFor.SILVER_AGGREGATORS} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
                       <span>{ApplicableFor.SILVER_AGGREGATORS}</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-white">
+                  <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Building className="w-4 h-4" />
                       <span>{ApplicableFor.GOLD_AGGREGATORS}</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-white">
+                  <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Landmark className="w-4 h-4" />
                       <span>{ApplicableFor.PLATINUM_AGGREGATORS}</span>
@@ -362,42 +362,42 @@ function BusinessDetailsTab() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-gray-300 font-medium">Business Type *</Label>
+              <Label className="text-foreground font-medium">Business Type *</Label>
               <Select
                 value={businessType || ""}
                 onValueChange={(value) =>
                   setValue("business.businessType", value as BusinessType, { shouldValidate: true })
                 }
               >
-                <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-11">
+                <SelectTrigger className="bg-card border-border text-foreground h-11">
                   <SelectValue placeholder="Select Business Type" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
-                  <SelectItem value={BusinessType.PROPRIETORSHIP} className="text-white">
+                <SelectContent className="bg-card border-border">
+                  <SelectItem value={BusinessType.PROPRIETORSHIP} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
                       <span>Proprietorship</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value={BusinessType.PARTNERSHIP} className="text-white">
+                  <SelectItem value={BusinessType.PARTNERSHIP} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
                       <span>Partnership</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-white">
+                  <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Building className="w-4 h-4" />
                       <span>Private Limited</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value={BusinessType.PUBLIC_LIMITED} className="text-white">
+                  <SelectItem value={BusinessType.PUBLIC_LIMITED} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Landmark className="w-4 h-4" />
                       <span>Public Limited</span>
                     </div>
                   </SelectItem>
-                  <SelectItem value={BusinessType.LLP} className="text-white">
+                  <SelectItem value={BusinessType.LLP} className="text-foreground">
                     <div className="flex items-center gap-2">
                       <Briefcase className="w-4 h-4" />
                       <span>LLP</span>
@@ -410,22 +410,22 @@ function BusinessDetailsTab() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="yearOfEstablishment" className="text-white">Year of Establishment</Label>
+              <Label htmlFor="yearOfEstablishment" className="text-foreground">Year of Establishment</Label>
               <Input
                 id="yearOfEstablishment"
                 {...register("business.yearOfEstablishment", { onBlur: () => trigger("business.yearOfEstablishment") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="YYYY (e.g., 2020)"
               />
               {errors.business?.yearOfEstablishment && <p className="text-red-400 text-sm">{errors.business.yearOfEstablishment.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="websiteUrl" className="text-white">Website URL</Label>
+              <Label htmlFor="websiteUrl" className="text-foreground">Website URL</Label>
               <Input
                 id="websiteUrl"
                 {...register("business.websiteUrl", { onBlur: () => trigger("business.websiteUrl") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="https://example.com"
               />
               {errors.business?.websiteUrl && <p className="text-red-400 text-sm">{errors.business.websiteUrl.message}</p>}
@@ -434,11 +434,11 @@ function BusinessDetailsTab() {
 
           {/* Address */}
           <div className="space-y-2">
-            <Label htmlFor="registeredAddress" className="text-white">Registered Address *</Label>
+            <Label htmlFor="registeredAddress" className="text-foreground">Registered Address *</Label>
             <Textarea
               id="registeredAddress"
               {...register("business.registeredAddress", { onBlur: () => trigger("business.registeredAddress") })}
-              className="bg-gray-800 border-gray-700 text-white"
+              className="bg-card border-border text-foreground"
               rows={3}
               placeholder="Complete registered office address"
             />
@@ -447,33 +447,33 @@ function BusinessDetailsTab() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="city" className="text-white">City *</Label>
+              <Label htmlFor="city" className="text-foreground">City *</Label>
               <Input
                 id="city"
                 {...register("business.city", { onBlur: () => trigger("business.city") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="City name"
               />
               {errors.business?.city && <p className="text-red-400 text-sm">{errors.business.city.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="state" className="text-white">State *</Label>
+              <Label htmlFor="state" className="text-foreground">State *</Label>
               <Input
                 id="state"
                 {...register("business.state", { onBlur: () => trigger("business.state") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="State name"
               />
               {errors.business?.state && <p className="text-red-400 text-sm">{errors.business.state.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="pincode" className="text-white">Pincode *</Label>
+              <Label htmlFor="pincode" className="text-foreground">Pincode *</Label>
               <Input
                 id="pincode"
                 {...register("business.pincode", { onBlur: () => trigger("business.pincode") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="6-digit pincode"
               />
               {errors.business?.pincode && <p className="text-red-400 text-sm">{errors.business.pincode.message}</p>}
@@ -483,17 +483,17 @@ function BusinessDetailsTab() {
       </Card>
 
       {/* Statutory Details */}
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-background/50 border-border">
         <CardHeader>
-          <CardTitle className="text-white">Statutory Details</CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardTitle className="text-foreground">Statutory Details</CardTitle>
+          <CardDescription className="text-muted-foreground">
             Tax registration and identification numbers
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="panNumber" className="text-white">PAN Number *</Label>
+              <Label htmlFor="panNumber" className="text-foreground">PAN Number *</Label>
               <Input
                 id="panNumber"
                 {...register("business.panNumber", {
@@ -504,14 +504,14 @@ function BusinessDetailsTab() {
                     trigger("business.panNumber")
                   }
                 })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="ABCDE1234F"
               />
               {errors.business?.panNumber && <p className="text-red-400 text-sm">{errors.business.panNumber.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="gstNumber" className="text-white">GST Number</Label>
+              <Label htmlFor="gstNumber" className="text-foreground">GST Number</Label>
               <Input
                 id="gstNumber"
                 {...register("business.gstNumber", {
@@ -522,14 +522,14 @@ function BusinessDetailsTab() {
                     trigger("business.gstNumber")
                   }
                 })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="15-character GST"
               />
               {errors.business?.gstNumber && <p className="text-red-400 text-sm">{errors.business.gstNumber.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="aadhaarNumber" className="text-white">Aadhaar Number (Proprietor)</Label>
+              <Label htmlFor="aadhaarNumber" className="text-foreground">Aadhaar Number (Proprietor)</Label>
               <Input
                 id="aadhaarNumber"
                 {...register("business.aadhaarNumber", {
@@ -540,29 +540,29 @@ function BusinessDetailsTab() {
                     trigger("business.aadhaarNumber")
                   }
                 })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="12-digit Aadhaar"
               />
               {errors.business?.aadhaarNumber && <p className="text-red-400 text-sm">{errors.business.aadhaarNumber.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="cinNumber" className="text-white">CIN / Registration Number</Label>
+              <Label htmlFor="cinNumber" className="text-foreground">CIN / Registration Number</Label>
               <Input
                 id="cinNumber"
                 {...register("business.cinNumber", { onBlur: () => trigger("business.cinNumber") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="Company/LLP registration number"
               />
               {errors.business?.cinNumber && <p className="text-red-400 text-sm">{errors.business.cinNumber.message}</p>}
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tanNumber" className="text-white">TAN Number</Label>
+              <Label htmlFor="tanNumber" className="text-foreground">TAN Number</Label>
               <Input
                 id="tanNumber"
                 {...register("business.tanNumber", { onBlur: () => trigger("business.tanNumber") })}
-                className="bg-gray-800 border-gray-700 text-white"
+                className="bg-card border-border text-foreground"
                 placeholder="Tax Deduction Account Number"
               />
               {errors.business?.tanNumber && <p className="text-red-400 text-sm">{errors.business.tanNumber.message}</p>}
@@ -634,15 +634,15 @@ function DocumentUploadField({
 
   return (
     <div className="space-y-2">
-      <Label className="text-gray-300">{label}</Label>
+      <Label className="text-foreground">{label}</Label>
 
       {!hasValue ? (
         <div
-          className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
+          className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
           onClick={() => fileInputRef.current?.click()}
         >
-          <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-sm text-gray-400">Click to upload</p>
+          <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Click to upload</p>
           <p className="text-xs text-gray-500 mt-1">Max 5MB</p>
           <input
             ref={fileInputRef}
@@ -653,15 +653,15 @@ function DocumentUploadField({
           />
         </div>
       ) : (
-        <div className="relative bg-gray-800/50 border border-gray-700 rounded-lg p-4">
+        <div className="relative bg-card/50 border border-border rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3 flex-1 min-w-0">
               <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
               <div className="min-w-0 flex-1">
-                <p className="text-white text-sm truncate">
+                <p className="text-foreground text-sm truncate">
                   {isFile ? currentValue.name : "Uploaded Document"}
                 </p>
-                <p className="text-gray-400 text-xs">
+                <p className="text-muted-foreground text-xs">
                   {isFile
                     ? `${(currentValue.size / 1024 / 1024).toFixed(2)} MB`
                     : "View Document"}
@@ -685,7 +685,7 @@ function DocumentUploadField({
                 variant="ghost"
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
-                className="text-gray-400 hover:text-gray-300 hover:bg-gray-700"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted"
               >
                 Replace
               </Button>
@@ -728,60 +728,60 @@ function BankingKycDocumentsTab() {
   return (
     <div className="space-y-6">
       {/* Banking Details */}
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-background/50 border-border">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2"><Landmark className="w-5 h-5" />Banking Details</CardTitle>
-          <CardDescription className="text-gray-400">Bank account for commission payouts</CardDescription>
+          <CardTitle className="text-foreground flex items-center gap-2"><Landmark className="w-5 h-5" />Banking Details</CardTitle>
+          <CardDescription className="text-muted-foreground">Bank account for commission payouts</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="accountHolderName" className="text-white">Account Holder Name</Label>
-              <Input id="accountHolderName" {...register("bankAndKyc.accountHolderName")} className="bg-gray-800 border-gray-700 text-white" placeholder="As per bank" />
+              <Label htmlFor="accountHolderName" className="text-foreground">Account Holder Name</Label>
+              <Input id="accountHolderName" {...register("bankAndKyc.accountHolderName")} className="bg-card border-border text-foreground" placeholder="As per bank" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="accountNumber" className="text-white">Account Number</Label>
-              <Input id="accountNumber" {...register("bankAndKyc.accountNumber")} className="bg-gray-800 border-gray-700 text-white" placeholder="9-18 digits" />
+              <Label htmlFor="accountNumber" className="text-foreground">Account Number</Label>
+              <Input id="accountNumber" {...register("bankAndKyc.accountNumber")} className="bg-card border-border text-foreground" placeholder="9-18 digits" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="ifscCode" className="text-white">IFSC Code</Label>
+              <Label htmlFor="ifscCode" className="text-foreground">IFSC Code</Label>
               <Input id="ifscCode" {...register("bankAndKyc.ifscCode", {
                 onBlur: (e: any) => {
                   const formatted = formatIfsc(e.target.value)
                   e.target.value = formatted
                   setValue("bankAndKyc.ifscCode", formatted, { shouldValidate: true })
                 }
-              })} className="bg-gray-800 border-gray-700 text-white" placeholder="SBIN0001234" />
+              })} className="bg-card border-border text-foreground" placeholder="SBIN0001234" />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="bankName" className="text-white">Bank Name</Label>
-              <Input id="bankName" {...register("bankAndKyc.bankName")} className="bg-gray-800 border-gray-700 text-white" placeholder="Bank name" />
+              <Label htmlFor="bankName" className="text-foreground">Bank Name</Label>
+              <Input id="bankName" {...register("bankAndKyc.bankName")} className="bg-card border-border text-foreground" placeholder="Bank name" />
             </div>
           </div>
         </CardContent>
       </Card>
 
       {/* KYC STATUS */}
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-background/50 border-border">
         <CardHeader>
-          <CardTitle className="text-white flex items-center gap-2">
+          <CardTitle className="text-foreground flex items-center gap-2">
             <FileCheck className="w-5 h-5" />
             KYC Verification Status
           </CardTitle>
-          <CardDescription className="text-gray-400">
+          <CardDescription className="text-muted-foreground">
             {isSuperAdmin
               ? "Set or review KYC status after document verification"
               : "Your KYC verification status"}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="p-4 bg-gray-800/30 rounded-lg border border-gray-700">
+          <div className="p-4 bg-card/30 rounded-lg border border-border">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 {getKycStatusIcon(kycStatus)}
                 <div>
-                  <h4 className="text-white font-semibold">Current Status</h4>
-                  <p className="text-gray-400 text-sm">
+                  <h4 className="text-foreground font-semibold">Current Status</h4>
+                  <p className="text-muted-foreground text-sm">
                     {isSuperAdmin
                       ? "Update after document review"
                       : "Your documents are being reviewed"}
@@ -795,14 +795,14 @@ function BankingKycDocumentsTab() {
                   value={kycStatus?.toUpperCase()}
                   onValueChange={(v) => setValue("bankAndKyc.kycStatus", v)}
                 >
-                  <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-10 w-48">
+                  <SelectTrigger className="bg-card border-border text-foreground h-10 w-48">
                     <SelectValue placeholder="Select status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
-                    <SelectItem value={KYCStatus.PENDING} className="text-white">PENDING</SelectItem>
-                    <SelectItem value={KYCStatus.UNDER_REVIEW} className="text-white">UNDER REVIEW</SelectItem>
-                    <SelectItem value={KYCStatus.APPROVED} className="text-white">APPROVED</SelectItem>
-                    <SelectItem value={KYCStatus.REJECTED} className="text-white">REJECTED</SelectItem>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value={KYCStatus.PENDING} className="text-foreground">PENDING</SelectItem>
+                    <SelectItem value={KYCStatus.UNDER_REVIEW} className="text-foreground">UNDER REVIEW</SelectItem>
+                    <SelectItem value={KYCStatus.APPROVED} className="text-foreground">APPROVED</SelectItem>
+                    <SelectItem value={KYCStatus.REJECTED} className="text-foreground">REJECTED</SelectItem>
                   </SelectContent>
                 </Select>
               ) : (
@@ -817,16 +817,16 @@ function BankingKycDocumentsTab() {
             {(isSuperAdmin || kycRejectionReason) && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-gray-300">Rejection Reason</Label>
+                  <Label className="text-foreground">Rejection Reason</Label>
                   {isSuperAdmin ? (
                     <Textarea
                       {...register("bankAndKyc.kycRejectionReason")}
-                      className="bg-gray-800 border-gray-700 text-white mt-2"
+                      className="bg-card border-border text-foreground mt-2"
                       rows={2}
                       placeholder="Specify reason if rejected"
                     />
                   ) : kycRejectionReason ? (
-                    <div className="bg-gray-800/50 border border-gray-700 text-red-400 px-3 py-2 rounded mt-2">
+                    <div className="bg-card/50 border border-border text-red-400 px-3 py-2 rounded mt-2">
                       {kycRejectionReason}
                     </div>
                   ) : null}
@@ -834,15 +834,15 @@ function BankingKycDocumentsTab() {
 
                 {(isSuperAdmin || kycApprovedAt) && (
                   <div>
-                    <Label className="text-gray-300">Approved At</Label>
+                    <Label className="text-foreground">Approved At</Label>
                     {isSuperAdmin ? (
                       <Input
                         type="datetime-local"
                         {...register("bankAndKyc.kycApprovedAt")}
-                        className="bg-gray-800 border-gray-700 text-white mt-2"
+                        className="bg-card border-border text-foreground mt-2"
                       />
                     ) : kycApprovedAt ? (
-                      <div className="bg-gray-800/50 border border-gray-700 text-green-400 px-3 py-2 rounded mt-2">
+                      <div className="bg-card/50 border border-border text-green-400 px-3 py-2 rounded mt-2">
                         {new Date(kycApprovedAt).toLocaleString('en-IN', {
                           dateStyle: 'medium',
                           timeStyle: 'short'
@@ -857,12 +857,12 @@ function BankingKycDocumentsTab() {
             {/* Approved By - Only show if data exists OR if Super Admin */}
             {(isSuperAdmin || approvedBy) && (
               <div className="mt-4">
-                <Label className="text-gray-300">
+                <Label className="text-foreground">
                   {isSuperAdmin ? "Approved By (Admin ID)" : "Approved By"}
                 </Label>
-                <div className="bg-gray-800/50 border border-gray-700 text-white px-3 py-2 rounded mt-2">
+                <div className="bg-card/50 border border-border text-foreground px-3 py-2 rounded mt-2">
                   {approvedBy ? (
-                    <span className="text-gray-300">{approvedBy}</span>
+                    <span className="text-foreground">{approvedBy}</span>
                   ) : isSuperAdmin ? (
                     <span className="text-gray-500">Auto-populated on approval</span>
                   ) : (
@@ -876,14 +876,14 @@ function BankingKycDocumentsTab() {
       </Card>
 
       {/* DOCUMENT UPLOADS */}
-      <Card className="bg-gray-900/50 border-gray-800">
+      <Card className="bg-background/50 border-border">
         <CardHeader>
-          <CardTitle className="text-white">KYC Documents</CardTitle>
-          <CardDescription className="text-gray-400">Upload all required verification documents</CardDescription>
+          <CardTitle className="text-foreground">KYC Documents</CardTitle>
+          <CardDescription className="text-muted-foreground">Upload all required verification documents</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div>
-            <h4 className="text-white font-semibold mb-4 pb-2 border-b border-gray-700">Identity Documents</h4>
+            <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Identity Documents</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <DocumentUploadField
                 label="Aadhaar Card - Front"
@@ -918,7 +918,7 @@ function BankingKycDocumentsTab() {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4 pb-2 border-b border-gray-700">Business Documents</h4>
+            <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Business Documents</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <DocumentUploadField
                 label="GST Certificate"
@@ -940,7 +940,7 @@ function BankingKycDocumentsTab() {
           </div>
 
           <div>
-            <h4 className="text-white font-semibold mb-4 pb-2 border-b border-gray-700">Banking Documents</h4>
+            <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Banking Documents</h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <DocumentUploadField
                 label="Bank Statement (Last 6 months)"
@@ -1238,7 +1238,7 @@ export function AggregatorSettings() {
 
   return (
     <FormProvider {...methods}>
-      <div className="min-h-screen bg-gradient-to-br from-gray-950 via-gray-900 to-black p-6 space-y-6">
+      <div className="min-h-screen bg-background p-6 space-y-6">
         {/* Profile completion banner */}
         {profileCompletePct <= 100 && (
           <ProfileCompletionBanner
@@ -1248,8 +1248,8 @@ export function AggregatorSettings() {
         )}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-white">Aggregator Settings</h1>
-            <p className="text-gray-400 mt-1">Manage your profile, business details, and documents</p>
+            <h1 className="text-3xl font-bold text-foreground">Aggregator Settings</h1>
+            <p className="text-muted-foreground mt-1">Manage your profile, business details, and documents</p>
           </div>
 
           <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700" onClick={async () => {
@@ -1265,7 +1265,7 @@ export function AggregatorSettings() {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-6">
-          <TabsList className="bg-gray-900/50 border-gray-800 grid w-full grid-cols-3">
+          <TabsList className="bg-card border-border grid w-full grid-cols-3">
             <TabsTrigger value="profile" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               <User className="w-5 h-5 mr-2" />Profile & Contact
             </TabsTrigger>

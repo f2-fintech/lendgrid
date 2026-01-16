@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState, useMemo } from 'react'
+import { useTheme } from 'next-themes'
 import { motion } from 'framer-motion'
 import { DollarSign, TrendingUp, Calendar, Download, Search, Filter, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
@@ -35,6 +36,7 @@ export function AggregatorCommission() {
 
   const chartRef = useRef<HTMLDivElement | null>(null)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
+  const { theme } = useTheme()
   const { toast } = useToast()
 
   // Fetch commission transactions
@@ -141,14 +143,14 @@ export function AggregatorCommission() {
 
   const getStatusColor = (status: CommissionStatus) => {
     switch (status) {
-      case CommissionStatus.PAID: return 'bg-green-500/20 text-green-400'
+      case CommissionStatus.PAID: return 'badge-success'
       case CommissionStatus.CALCULATED:
-      case CommissionStatus.PENDING: return 'bg-orange-500/20 text-orange-400'
-      case CommissionStatus.APPROVED: return 'bg-blue/20 text-blue'
-      case CommissionStatus.DISPUTED: return 'bg-red-500/20 text-red-400'
+      case CommissionStatus.PENDING: return 'badge-warning'
+      case CommissionStatus.APPROVED: return 'badge-primary'
+      case CommissionStatus.DISPUTED: return 'badge-error'
       case CommissionStatus.REJECTED:
-      case CommissionStatus.CANCELLED: return 'bg-gray-500/20 text-gray-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+      case CommissionStatus.CANCELLED: return 'badge-muted'
+      default: return 'badge-muted'
     }
   }
 
@@ -435,23 +437,23 @@ export function AggregatorCommission() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
-      <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
+      <Card className="professional-card hover-lift hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-400">{title}</p>
-              <p className="text-2xl font-bold text-white mt-2">{value}</p>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
               {subtitle && (
-                <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+                <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
               )}
               {trend && (
-                <p className="text-sm text-green-400 mt-1 flex items-center">
+                <p className="text-sm text-success mt-1 flex items-center">
                   <TrendingUp className="w-3 h-3 mr-1" />
                   {trend}
                 </p>
               )}
             </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-opacity-20 ${color}`}>
               <Icon className="w-6 h-6" />
             </div>
           </div>
@@ -465,8 +467,8 @@ export function AggregatorCommission() {
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
           <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <p className="text-white text-lg">Failed to load commission data</p>
-          <p className="text-gray-400 mt-2">{error?.message || 'Something went wrong'}</p>
+          <p className=" text-foreground text-lg">Failed to load commission data</p>
+          <p className=" text-muted-foreground mt-2">{error?.message || 'Something went wrong'}</p>
           <Button onClick={() => refetch()} className="mt-4">
             Retry
           </Button>
@@ -485,12 +487,12 @@ export function AggregatorCommission() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold text-white">Commission Tracking</h1>
-          <p className="text-gray-400 mt-1">Monitor your earnings and payout status</p>
+          <h1 className="text-3xl font-bold text-foreground">Commission Tracking</h1>
+          <p className=" text-muted-foreground mt-1">Monitor your earnings and payout status</p>
         </div>
         <div className="flex items-center space-x-4">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-32 bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="w-32 bg-card border-border text-foreground">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -519,15 +521,15 @@ export function AggregatorCommission() {
             title="Total Commission Earned"
             value={formatCurrency(metrics.totalEarned)}
             icon={DollarSign}
-            color="bg-gold/20 text-gold"
-            trend="+12.5% from last month"
+            color="metric-card-accent"
+          // trend="+12.5% from last month"
           />
           <MetricCard
             index={1}
             title="Pending Payouts"
             value={formatCurrency(metrics.pendingAmount)}
             icon={Clock}
-            color="bg-orange-500/20 text-orange-400"
+            color="metric-card-warning"
             subtitle="Awaiting payment"
           />
           <MetricCard
@@ -535,7 +537,7 @@ export function AggregatorCommission() {
             title="Paid Amount"
             value={formatCurrency(metrics.paidAmount)}
             icon={CheckCircle}
-            color="bg-green-500/20 text-green-400"
+            color="metric-card-success"
             subtitle="Successfully received"
           />
           <MetricCard
@@ -543,7 +545,7 @@ export function AggregatorCommission() {
             title="Avg Commission Rate"
             value={`${metrics.avgCommissionRate.toFixed(2)}%`}
             icon={TrendingUp}
-            color="bg-blue/20 text-blue"
+            color="metric-card-primary"
             subtitle="Across all lenders"
           />
         </div>
@@ -551,7 +553,7 @@ export function AggregatorCommission() {
 
       {/* Commission Analytics */}
       <Tabs defaultValue="trends" className="space-y-6">
-        <TabsList className="bg-gray-800 border-gray-700 space-x-3">
+        <TabsList className="bg-card border-border space-x-3">
           <TabsTrigger value="trends" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
             Commission Trends
           </TabsTrigger>
@@ -566,10 +568,10 @@ export function AggregatorCommission() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="bg-gray-800/50 border-gray-700">
+            <Card className="professional-card">
               <CardHeader>
-                <CardTitle className="text-white">Commission Trends</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle className="text-foreground">Commission Trends</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Monthly commission earnings and payout status
                 </CardDescription>
               </CardHeader>
@@ -577,7 +579,7 @@ export function AggregatorCommission() {
                 {isLoading ? (
                   <ChartSkeleton height={354} />
                 ) : commissionTrends.length === 0 ? (
-                  <div className="h-96 flex items-center justify-center text-gray-400">
+                  <div className="h-96 flex items-center justify-center text-muted-foreground">
                     <div className="text-center">
                       <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
                       <p>No commission data available yet</p>
@@ -587,13 +589,13 @@ export function AggregatorCommission() {
                   <div className="h-96 w-full" ref={chartRef}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={commissionTrends}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="month" stroke="#9CA3AF" />
-                        <YAxis stroke="#9CA3AF" />
+                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
+                        <XAxis dataKey="month" stroke={theme === 'dark' ? '#9CA3AF' : '#6b7280'} />
+                        <YAxis stroke={theme === 'dark' ? '#9CA3AF' : '#6b7280'} />
                         <Tooltip
                           contentStyle={{
-                            backgroundColor: '#1F2937',
-                            border: '1px solid #374151',
+                            backgroundColor: theme === 'dark' ? '#1F2937' : '#ffffff',
+                            border: `1px solid ${theme === 'dark' ? '#374151' : '#e5e7eb'}`,
                             borderRadius: '8px'
                           }}
                           formatter={(value) => [formatCurrency(value as number), '']}
@@ -616,27 +618,27 @@ export function AggregatorCommission() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.6 }}
           >
-            <Card className="bg-gray-800/50 border-gray-700">
+            <Card className="professional-card">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-white">Commission History</CardTitle>
-                    <CardDescription className="text-gray-400">
+                    <CardTitle className="text-foreground">Commission History</CardTitle>
+                    <CardDescription className="text-muted-foreground">
                       Detailed record of all commission transactions
                     </CardDescription>
                   </div>
                   <div className="flex items-center space-x-4">
                     <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
                         placeholder="Search transactions..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-gray-900 border-gray-600 text-white w-64"
+                        className="pl-10 professional-input w-64"
                       />
                     </div>
                     <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val as CommissionStatus | '')}>
-                      <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
+                      <SelectTrigger className="w-32 professional-input">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -652,7 +654,7 @@ export function AggregatorCommission() {
                       placeholder="Product type..."
                       value={filterProductType}
                       onChange={(e) => setFilterProductType(e.target.value)}
-                      className="bg-gray-900 border-gray-600 text-white w-40"
+                      className="professional-input w-40"
                     />
                   </div>
                 </div>
@@ -667,24 +669,24 @@ export function AggregatorCommission() {
                   </div>
                 ) : filteredCommissions.length === 0 ? (
                   <div className="text-center py-12">
-                    <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                    <p className="text-gray-400">No commission transactions found</p>
+                    <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="text-muted-foreground">No commission transactions found</p>
                   </div>
                 ) : (
                   <>
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto professional-table">
                       <Table>
                         <TableHeader>
-                          <TableRow className="border-gray-700">
-                            <TableHead className="text-gray-300">Ticket ID</TableHead>
-                            <TableHead className="text-gray-300">Lender</TableHead>
-                            <TableHead className="text-gray-300">Loan Type</TableHead>
-                            <TableHead className="text-gray-300">Loan Amount</TableHead>
-                            <TableHead className="text-gray-300">Commission Rate</TableHead>
-                            <TableHead className="text-gray-300">Commission Amount</TableHead>
-                            <TableHead className="text-gray-300">Status</TableHead>
-                            <TableHead className="text-gray-300">Calculated Date</TableHead>
-                            <TableHead className="text-gray-300">Paid Date</TableHead>
+                          <TableRow>
+                            <TableHead>Ticket ID</TableHead>
+                            <TableHead>Lender</TableHead>
+                            <TableHead>Loan Type</TableHead>
+                            <TableHead>Loan Amount</TableHead>
+                            <TableHead>Commission Rate</TableHead>
+                            <TableHead>Commission Amount</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Calculated Date</TableHead>
+                            <TableHead>Paid Date</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -696,22 +698,22 @@ export function AggregatorCommission() {
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                                className="border-gray-700 hover:bg-gray-800/50"
+                                className="border-border hover:bg-card/50"
                               >
-                                <TableCell className="text-white font-medium">#{commission.ticketId}</TableCell>
-                                <TableCell className="text-white">{commission.provider || 'N/A'}</TableCell>
-                                <TableCell className="text-gray-300">{commission.productType || 'N/A'}</TableCell>
-                                <TableCell className="text-white">{formatCurrency(commission.disbursedAmount)}</TableCell>
-                                <TableCell className="text-gold">{commission.commissionRate}%</TableCell>
-                                <TableCell className="text-green-400 font-semibold">{formatCurrency(commission.commissionAmount)}</TableCell>
+                                <TableCell className="font-medium">#{commission.ticketId}</TableCell>
+                                <TableCell>{commission.provider || 'N/A'}</TableCell>
+                                <TableCell>{commission.productType || 'N/A'}</TableCell>
+                                <TableCell>{formatCurrency(commission.disbursedAmount)}</TableCell>
+                                <TableCell className="text-accent">{commission.commissionRate}%</TableCell>
+                                <TableCell className="text-success font-semibold">{formatCurrency(commission.commissionAmount)}</TableCell>
                                 <TableCell>
                                   <Badge className={getStatusColor(commission.status)}>
                                     <StatusIcon className="w-3 h-3 mr-1" />
                                     {getStatusLabel(commission.status)}
                                   </Badge>
                                 </TableCell>
-                                <TableCell className="text-gray-300">{formatDate(commission.calculatedAt)}</TableCell>
-                                <TableCell className="text-gray-300">{formatDate(commission.paidAt)}</TableCell>
+                                <TableCell>{formatDate(commission.calculatedAt)}</TableCell>
+                                <TableCell>{formatDate(commission.paidAt)}</TableCell>
                               </motion.tr>
                             )
                           })}

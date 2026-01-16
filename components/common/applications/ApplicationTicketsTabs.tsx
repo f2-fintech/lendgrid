@@ -15,7 +15,7 @@ export function ApplicationTicketsTabs({ activeTab, onChange }: Props) {
             onValueChange={(v) => onChange(v as 'applications' | 'tickets')}
             className="w-full"
         >
-            <TabsList className="grid w-full grid-cols-2 bg-gray-900/50 border-b border-gray-800">
+            <TabsList className="grid w-full grid-cols-2 bg-background/50 border-border">
                 <TabsTrigger
                     value="applications"
                     className="text-base font-medium data-[state=active]:bg-gradient-to-r from-blue to-cyan-500"

@@ -132,18 +132,18 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
     required?: boolean;
   }) => (
     <div className="space-y-2">
-      <Label className="text-gray-300">
+      <Label className=" text-foreground">
         {label}
         {required && <span className="text-red-400">*</span>}
       </Label>
 
       {!files[field].preview ? (
         <div
-          className="border-2 border-dashed border-gray-600 rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
+          className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
           onClick={() => document.getElementById(field)?.click()}
         >
-          <Upload className="w-8 h-8 mx-auto mb-2 text-gray-400" />
-          <p className="text-sm text-gray-400">Click to upload</p>
+          <Upload className="w-8 h-8 mx-auto mb-2  text-muted-foreground" />
+          <p className="text-sm  text-muted-foreground">Click to upload</p>
           <input
             id={field}
             type="file"
@@ -156,7 +156,7 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative bg-gray-900/50 rounded-lg p-4"
+          className="relative bg-background/50 rounded-lg p-4"
         >
           {files[field].file?.type.startsWith('image/') ? (
             <img
@@ -166,10 +166,10 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
             />
           ) : (
             <div className="flex items-center justify-center h-40">
-              <ImageIcon className="w-12 h-12 text-gray-400" />
+              <ImageIcon className="w-12 h-12  text-muted-foreground" />
             </div>
           )}
-          <p className="text-sm text-gray-400 mt-2 truncate">
+          <p className="text-sm  text-muted-foreground mt-2 truncate">
             {files[field].file?.name}
           </p>
           <Button
@@ -194,14 +194,14 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-white">
-          Profile Details and <span className="text-gold">Proof</span>
+        <h2 className="text-3xl font-bold  text-foreground">
+          Profile Details and <span className="text-accent">Proof</span>
         </h2>
-        <p className="text-gray-400">Step 3/4</p>
+        <p className=" text-muted-foreground">Step 3/4</p>
       </div>
 
       {/* Upload Forms */}
-      <Card className="bg-gray-800/50 border-gray-700 p-6 space-y-6">
+      <Card className="bg-card/50 border-border p-6 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <FileUploadBox
             label="Aadhaar Card (Front)"
@@ -230,7 +230,7 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
           <Button
             variant="outline"
             onClick={prevStep}
-            className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            className="border-border  text-foreground hover:bg-muted"
           >
             Back
           </Button>
@@ -239,7 +239,7 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
             <Button
               variant="ghost"
               onClick={handleSkip}
-              className="text-gray-400 hover:text-white"
+              className=" text-muted-foreground hover: text-foreground"
             >
               Skip
             </Button>
@@ -247,7 +247,7 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
             <Button
               onClick={handleUpload}
               disabled={isLoading}
-              className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600 text-white"
+              className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600  text-foreground"
             >
               {isLoading ? (
                 <>

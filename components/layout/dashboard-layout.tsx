@@ -7,7 +7,6 @@ import {
   FileText,
   Settings,
   CreditCard,
-  Building2,
   Users,
   BarChart3,
   Bell,
@@ -45,12 +44,13 @@ import {
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Badge } from '@/components/ui/badge'
-import { navigationPaths } from '@/lib/navigation'
-import { getCookie, decodeJwt } from "@/lib/utils"
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { ThemeToggle } from '@/components/theme-toggle'
+import { Badge } from '@/components/ui/badge'
+import { navigationPaths } from '@/lib/navigation'
+import { getCookie, decodeJwt } from "@/lib/utils"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -73,7 +73,7 @@ const navigationConfig = {
         { title: "Dashboard", url: navigationPaths.superAdmin.dashboard, icon: LayoutDashboard },
         { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: Users },
         { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
-        { title: "Global Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
+        { title: "Commission Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
         // { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
         // { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
       ]
@@ -176,30 +176,29 @@ function AppSidebar({
 
   if (!navigation || !Array.isArray(navigation)) {
     return (
-      <Sidebar variant="inset" className="bg-gray-900 border-gray-800">
+      <Sidebar variant="inset" className="professional-sidebar">
         <SidebarHeader>
-          <div className="p-4 text-white">Loading...</div>
+          <div className="p-4 text-sidebar-foreground">Loading...</div>
         </SidebarHeader>
       </Sidebar>
     )
   }
 
   return (
-    <Sidebar variant="inset" className="bg-gray-900 border-gray-800">
+    <Sidebar variant="inset" className="professional-sidebar">
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href={navigationPaths.home}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-gradient text-sidebar-primary-foreground">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
                   <img
                     src="/logo.png"
                     alt="LendGrid Logo"
-                    className="w-12 h-10 rounded-xl "
+                    className="w-12 h-10 rounded-xl"
                   />
                 </div>
-                <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
-
+                <span className="text-2xl font-bold text-accent">LendGrid</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -209,13 +208,13 @@ function AppSidebar({
       <SidebarContent>
         {navigation.map((group) => (
           <SidebarGroup key={group.title}>
-            <SidebarGroupLabel className="text-gray-400">{group.title}</SidebarGroupLabel>
+            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
                 {group.items.map((item: { url: string; icon: React.ElementType; title: string }) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <Link href={item.url} className="text-gray-300 hover:text-white hover:bg-gray-800">
+                      <Link href={item.url}>
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
                       </Link>
@@ -233,40 +232,34 @@ function AppSidebar({
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <SidebarMenuButton
-                  size="lg"
-                  className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
+                <SidebarMenuButton size="lg">
                   <Avatar className="h-8 w-8 rounded-lg">
                     <AvatarImage src={user?.profilePicture || ''} alt={displayName} />
-                    <AvatarFallback className="rounded-lg bg-gold text-dark">{initials}</AvatarFallback>
+                    <AvatarFallback className="rounded-lg bg-accent text-accent-foreground">{initials}</AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold text-white">{displayName}</span>
-                    <span className="truncate text-xs text-gray-400">{getRoleDisplayName(userRole)}</span>
+                    <span className="truncate font-semibold">{displayName}</span>
+                    <span className="truncate text-xs text-muted-foreground">{getRoleDisplayName(userRole)}</span>
                   </div>
-                  <ChevronUp className="ml-auto size-4 text-gray-400" />
+                  <ChevronUp className="ml-auto size-4" />
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
               <DropdownMenuContent
-                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg bg-gray-800 border-gray-700"
+                className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
                 side="bottom"
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-700">
+                <DropdownMenuItem>
                   <User className="w-4 h-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
-                <DropdownMenuItem className="text-gray-300 hover:text-white hover:bg-gray-700">
+                <DropdownMenuItem>
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-400 hover:text-red-300 hover:bg-gray-700"
-                >
+                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </DropdownMenuItem>
@@ -366,7 +359,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   }
 
   if (loading) {
-    return <div className="p-8 text-white">Loading...</div>
+    return <div className="p-8 text-foreground">Loading...</div>
   }
 
   return (
@@ -377,20 +370,24 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
         isOmsEnabled={isOmsEnabled}
       />
 
-      <SidebarInset className="w-full h-full bg-gray-900 !p-0 !m-0">
-        <header className="flex h-16 items-center gap-2 px-4 bg-gray-900 border-b border-gray-800 sticky top-0 z-50">
-          <SidebarTrigger className="-ml-1 text-white hover:bg-gray-800" />
+      <SidebarInset className="w-full h-full bg-background !p-0 !m-0">
+        <header className="professional-header flex h-16 items-center gap-2 px-4 sticky top-0 z-50">
+          <SidebarTrigger className="-ml-1" />
 
           <div className="ml-auto flex items-center space-x-2 relative">
+            {/* Theme Toggle Button */}
+            <ThemeToggle />
+
+            {/* Notification Button */}
             <Button
               variant="ghost"
               size="icon"
-              className="text-gray-400 hover:text-white hover:bg-gray-800 relative"
+              className="relative"
               onClick={() => setShowNotifications((p) => !p)}
             >
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
-                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-red-500 hover:bg-red-600">
+                <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive hover:bg-destructive notification-pulse">
                   {unreadCount > 9 ? '9+' : unreadCount}
                 </Badge>
               )}
@@ -398,16 +395,16 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
 
             {showNotifications && (
               <div ref={panelRef} className="absolute right-0 top-14 w-[420px] z-50">
-                <Card className="bg-gray-800/95 backdrop-blur-xl border border-gray-700/50 shadow-2xl rounded-2xl overflow-hidden">
-                  <CardHeader className="bg-gradient-to-r from-gray-900 to-gray-800 border-b border-gray-700/50 py-4">
+                <Card className="glass-effect shadow-2xl rounded-2xl overflow-hidden">
+                  <CardHeader className="border-b border-border py-4">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg text-white flex items-center gap-2">
-                        <div className="p-2 bg-blue-500/20 rounded-lg">
-                          <Bell className="h-5 w-5 text-blue-400" />
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        <div className="p-2 bg-primary/20 rounded-lg">
+                          <Bell className="h-5 w-5 text-primary" />
                         </div>
                         <span>Notifications</span>
                         {unreadCount > 0 && (
-                          <Badge className="bg-red-500 hover:bg-red-600 text-white px-2 py-0.5 text-xs">
+                          <Badge className="bg-destructive hover:bg-destructive px-2 py-0.5 text-xs">
                             {unreadCount} new
                           </Badge>
                         )}
@@ -418,7 +415,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                             variant="ghost"
                             size="sm"
                             onClick={markAllAsRead}
-                            className="text-xs text-sky-400 hover:text-cyan-300 hover:bg-gray-700/50 h-8 px-3"
+                            className="text-xs h-8 px-3"
                           >
                             <Check className="h-3 w-3 mr-1" />
                             Mark all
@@ -428,7 +425,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                           variant="ghost"
                           size="icon"
                           onClick={() => setShowNotifications(false)}
-                          className="h-8 w-8 text-gray-400 hover:text-white hover:bg-red-700/50 rounded-lg"
+                          className="h-8 w-8"
                         >
                           <X className="h-4 w-4" />
                         </Button>
@@ -440,17 +437,17 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                     {notificationsLoading ? (
                       <div className="flex items-center justify-center h-[450px]">
                         <div className="flex flex-col items-center gap-3">
-                          <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-500 border-t-transparent" />
-                          <p className="text-sm text-gray-400">Loading notifications...</p>
+                          <div className="professional-spinner h-10 w-10" />
+                          <p className="text-sm text-muted-foreground">Loading notifications...</p>
                         </div>
                       </div>
                     ) : notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-[450px] px-6">
-                        <div className="p-4 bg-gray-700/20 rounded-full mb-4">
-                          <Bell className="h-12 w-12 text-gray-500" />
+                        <div className="p-4 bg-muted rounded-full mb-4">
+                          <Bell className="h-12 w-12 text-muted-foreground" />
                         </div>
-                        <p className="text-base font-medium text-gray-300 mb-1">No notifications yet</p>
-                        <p className="text-sm text-gray-500 text-center">
+                        <p className="text-base font-medium mb-1">No notifications yet</p>
+                        <p className="text-sm text-muted-foreground text-center">
                           We'll notify you when something important happens
                         </p>
                       </div>
@@ -464,16 +461,11 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
 
                           return (
                             <div key={notification._id}>
-                              <div
-                                className={`relative p-4 hover:bg-gray-700/30 cursor-pointer transition-all group ${isUnread ? 'bg-blue-500/10 border-l-4 border-blue' : 'bg-gray-800/30 border-l-4 border-transparent'
-                                  }`}
-                                onClick={() => handleNotificationClick(notification)}
-                              >
-                                {/* High Priority Indicator */}
+                              <div className={`relative p-4 hover:bg-muted/50 cursor-pointer transition-all group ${isUnread ? 'bg-primary/10 border-l-4 border-primary' : 'bg-transparent border-l-4 border-transparent'}`}
+                                onClick={() => handleNotificationClick(notification)}>
                                 {isUnread && isHighPriority && (
                                   <div className="absolute top-2 right-2">
-                                    <div className={`w-2 h-2 rounded-full ${notification.priority === 'URGENT' ? 'bg-red-500 animate-pulse' : 'bg-orange-500'
-                                      }`} title={notification.priority} />
+                                    <div className={`w-2 h-2 rounded-full ${notification.priority === 'URGENT' ? 'bg-destructive animate-pulse' : 'bg-orange-500'}`} title={notification.priority} />
                                   </div>
                                 )}
 
@@ -481,23 +473,17 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                                   {/* Content */}
                                   <div className="flex-1 space-y-1.5 min-w-0 pr-6">
                                     <div className="flex items-start justify-between gap-2">
-                                      <p className={`text-sm font-semibold ${isUnread ? 'text-white' : 'text-gray-400'
-                                        }`}>
+                                      <p className={`text-sm font-semibold ${isUnread ? 'text-foreground' : 'text-muted-foreground'}`}>
                                         {notification.title}
                                       </p>
-                                      {isUnread && (
-                                        <div className="h-2 w-2 rounded-full bg-blue-400 flex-shrink-0 mt-1.5 shadow-lg shadow-blue-500/50" />
-                                      )}
+                                      {isUnread &&
+                                        <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1.5 shadow-lg shadow-primary/50" />}
                                     </div>
-
-                                    <p className={`text-xs leading-relaxed ${isUnread ? 'text-gray-300' : 'text-gray-500'
-                                      }`}>
+                                    <p className={`text-xs leading-relaxed ${isUnread ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}>
                                       {notification.message}
                                     </p>
-
                                     <div className="flex items-center justify-between pt-1">
-                                      <p className={`text-xs flex items-center gap-1 ${isUnread ? 'text-gray-400' : 'text-gray-600'
-                                        }`}>
+                                      <p className="text-xs flex items-center gap-1 text-muted-foreground">
                                         <Clock className="h-3 w-3" />
                                         {formatDistanceToNow(new Date(notification.createdAt), {
                                           addSuffix: true,
@@ -506,7 +492,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                                       <Button
                                         variant="ghost"
                                         size="icon"
-                                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-400 hover:bg-red-500/10"
+                                        className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
                                         onClick={(e) => handleDeleteNotification(e, notification._id)}
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
@@ -516,7 +502,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                                 </div>
                               </div>
                               {index < notifications.length - 1 && (
-                                <Separator className="bg-gray-700/30" />
+                                <Separator />
                               )}
                             </div>
                           )
@@ -529,7 +515,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                     <div className="border-t border-gray-700/50 p-3 bg-gradient-to-r from-gray-900 to-gray-800">
                       <Button
                         variant="ghost"
-                        className="w-full text-white hover:text-cyan-300 hover:bg-gray-700/50 text-sm font-medium rounded-lg h-9"
+                        className="w-full text-foreground hover:text-cyan-300 hover:bg-gray-700/50 text-sm font-medium rounded-lg h-9"
                         onClick={() => {
                           setShowNotifications(false)
                           if (normalizedRole === "super_admin") router.push(navigationPaths.superAdmin.payouts)
@@ -548,7 +534,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
           </div>
         </header>
 
-        <main className="flex-1 w-full min-h-screen bg-gray-900 !p-4">
+        <main className="flex-1 w-full min-h-screen bg-background !p-4">
           {children}
         </main>
       </SidebarInset>

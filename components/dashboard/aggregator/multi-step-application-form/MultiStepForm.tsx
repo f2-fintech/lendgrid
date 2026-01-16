@@ -454,7 +454,7 @@ export const MultiStepFormContent: React.FC<{
             </div>
 
             {/* Right Side - Vertical Progress Stepper */}
-            <div className="w-80 flex-shrink-0 pl-6 border-l border-gray-700">
+            <div className="w-80 flex-shrink-0 pl-6 border-l border-border">
                 <div className="sticky top-16 space-y-6">
                     {allSteps.map((step, idx) => {
                         const isActive = showStep0 ? idx === 0 : idx === activeStep + 1;
@@ -467,13 +467,13 @@ export const MultiStepFormContent: React.FC<{
                             <div key={step.id} className="relative">
                                 {/* Vertical Line */}
                                 {idx < allSteps.length - 1 && (
-                                    <div className="absolute left-7 top-14 w-0.5 h-24 bg-gray-700">
+                                    <div className="absolute left-7 top-14 w-0.5 h-24 bg-muted">
                                         <div
                                             className={`h-full transition-all duration-500 ${isCompleted || isActive
                                                 ? 'bg-gradient-to-b from-green-500 to-blue-500'
                                                 : isSkipped
                                                     ? 'bg-gradient-to-b from-yellow-500 to-orange-500'
-                                                    : 'bg-gray-700'
+                                                    : 'bg-muted'
                                                 }`}
                                             style={{
                                                 height: isCompleted ? '100%' : isActive ? '50%' : isSkipped ? '100%' : '0%',
@@ -491,14 +491,14 @@ export const MultiStepFormContent: React.FC<{
                                                 ? 'bg-gradient-to-br from-green-600 to-green-500 border-2 border-green-400'
                                                 : isSkipped
                                                     ? 'bg-gradient-to-br from-yellow-600 to-orange-500 border-2 border-yellow-400'
-                                                    : 'bg-gray-800 border-2 border-gray-700'
+                                                    : 'bg-card border-2 border-border'
                                             }`}
                                     >
                                         {isCompleted ? (
-                                            <Check className="w-7 h-7 text-white" />
+                                            <Check className="w-7 h-7  text-foreground" />
                                         ) : isSkipped ? (
-                                            <Ban className="w-6 h-6 text-white" />
-                                            // <span className="text-white text-2xl font-bold">⊘</span>
+                                            <Ban className="w-6 h-6  text-foreground" />
+                                            // <span className=" text-foreground text-2xl font-bold">⊘</span>
                                         ) : (
                                             <span className={`text-2xl ${isActive ? 'animate-pulse' : ''}`}>
                                                 {step.icon}
@@ -520,7 +520,7 @@ export const MultiStepFormContent: React.FC<{
                                             {step.name}
                                         </p>
                                         {isActive && (
-                                            <p className="text-sm text-gray-400 mt-1">In Progress</p>
+                                            <p className="text-sm  text-muted-foreground mt-1">In Progress</p>
                                         )}
                                         {isCompleted && (
                                             <p className="text-sm text-green-500 mt-1">Completed</p>
@@ -548,9 +548,9 @@ export const MultiStepFormDialog: React.FC<MultiStepFormDialogProps> = ({
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 to-black border-gray-700 p-6">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 to-black border-border p-6">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-white sr-only">
+                    <DialogTitle className="text-2xl font-bold  text-foreground sr-only">
                         Loan Application Form
                     </DialogTitle>
                 </DialogHeader>

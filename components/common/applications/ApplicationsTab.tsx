@@ -76,7 +76,7 @@ export const STATUS_STYLE: Record<string, string> = {
     disbursed: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
     rejected: "bg-red-600/20 text-red-400 border-red-600/30",
     drop: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-    submitted: "bg-blue text-gray-300 border-blue-500/30"
+    submitted: "bg-blue text-foreground border-blue-500/30"
 };
 
 export const STATUS_META: Record<string, { icon: JSX.Element }> = {
@@ -98,10 +98,10 @@ export const getStatusIcon = (status: string) =>
     STATUS_META[pretty(status)]?.icon || <Clock size={16} />;
 
 const InfoItem = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
-    <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
+    <div className="flex flex-col items-center justify-center p-4 bg-card/50 rounded-lg">
         <Icon className={`w-8 h-8 ${color} mb-2`} />
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className="text-lg font-bold text-white">{value}</p>
+        <p className="text-sm  text-muted-foreground">{label}</p>
+        <p className="text-lg font-bold  text-foreground">{value}</p>
     </div>
 );
 
@@ -109,8 +109,8 @@ const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType
     <div className="flex items-start gap-3">
         <Icon className={`w-5 h-5 ${color} mt-1`} />
         <div>
-            <p className="text-sm text-gray-400">{label}</p>
-            <p className="font-semibold text-white">{value}</p>
+            <p className="text-sm text-muted-foreground">{label}</p>
+            <p className="font-semibold text-foreground">{value}</p>
         </div>
     </div>
 );
@@ -133,28 +133,28 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
-            className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10"
+            className="bg-card/50 border border-border rounded-lg overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10"
         >
             <div className="p-6">
                 {/* Card Header - Application Number Only */}
                 <div className="flex items-start justify-between mb-4">
                     <div>
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Application</p>
-                        <p className="text-white font-bold text-lg">{application.applicationNumber}</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Application</p>
+                        <p className="text-foreground font-bold text-lg">{application.applicationNumber}</p>
                     </div>
                 </div>
 
                 {/* Customer Info */}
-                <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-700">
+                <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-border">
                     <Avatar className="w-12 h-12">
                         <AvatarImage src={application.avatar || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-gray-800 text-gray-300">
+                        <AvatarFallback className="bg-card text-foreground">
                             {application.customerName.split(' ').map((n: string) => n[0]).join('')}
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                        <p className="text-white font-semibold truncate">{application.customerName}</p>
-                        <p className="text-gray-400 text-sm truncate">{application.customerEmail}</p>
+                        <p className="text-foreground font-semibold truncate">{application.customerName}</p>
+                        <p className="text-muted-foreground text-sm truncate">{application.customerEmail}</p>
                     </div>
                 </div>
 
@@ -176,49 +176,49 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                         className="space-y-3 mb-4"
                     >
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
                                 <DollarSign className="w-4 h-4" />
                                 <span>Loan Amount</span>
                             </div>
-                            <p className="text-white font-bold">{formatCurrency(application.applicationAmount)}</p>
+                            <p className="text-foreground font-bold">{formatCurrency(application.applicationAmount)}</p>
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
                                 <FileText className="w-4 h-4" />
                                 <span>Product Type</span>
                             </div>
-                            <p className="text-white text-sm">{application.loanType.replace('_', ' ')}</p>
+                            <p className="text-foreground text-sm">{application.loanType.replace('_', ' ')}</p>
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
                                 <Building2 className="w-4 h-4" />
                                 <span>Lender</span>
                             </div>
                             <div className="text-right">
-                                <p className="text-white text-sm font-medium">{application.applicationProvider}</p>
-                                {/* <p className="text-gray-400 text-xs">{application.lender.lenderType}</p> */}
+                                <p className="text-foreground text-sm font-medium">{application.applicationProvider}</p>
+                                {/* <p className="text-muted-foreground text-xs">{application.lender.lenderType}</p> */}
                             </div>
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2  text-muted-foreground text-sm">
                                 <Calendar className="w-4 h-4" />
                                 <span>Created</span>
                             </div>
-                            <p className="text-gray-300 text-sm">{application.applicationDate}</p>
+                            <p className=" text-foreground text-sm">{application.applicationDate}</p>
                         </div>
 
                         {/* CARD ACTIONS SECTION - Status Badge & Action Buttons */}
-                        <div className="space-y-3 pt-4 border-t border-gray-700">
+                        <div className="space-y-3 pt-4 border-t border-border">
                             {/* Status Badge - Clickable with hover effect */}
                             <div
                                 //onClick={onStatusClick}
                                 className={`w-full cursor-pointer rounded-lg transition-all duration-200 hover:scale-[1.02] ${STATUS_STYLE[pretty(application.loanStatus)]} p-3 flex items-center justify-center gap-2`}
                             >
                                 {getStatusIcon(application.loanStatus)}
-                                <span className="font-medium">{pretty(application.loanStatus)}</span>
+                                <span className="capitalize font-medium">{pretty(application.loanStatus)}</span>
                             </div>
 
                             {/* Action Buttons - View, Delete & History */}
@@ -227,7 +227,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                     onClick={onView}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-gray-900/50 border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 hover:border-blue-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border  text-foreground hover: text-foreground hover:bg-muted hover:border-blue-500/50 transition-all"
                                 >
                                     <Eye className="w-4 h-4 mr-1" />
                                     View
@@ -237,7 +237,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                   onClick={onDelete}
                   variant="outline"
                   size="sm"
-                  className="w-full bg-gray-900/50 border-gray-600 text-red-400 hover:text-white hover:bg-red-600/20 hover:border-red-500/50 transition-all"
+                  className="w-full bg-background/50 border-border text-red-400 hover: text-foreground hover:bg-red-600/20 hover:border-red-500/50 transition-all"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
                   Delete
@@ -247,7 +247,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                     onClick={() => setShowHistory(true)}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-gray-900/50 border-gray-600 text-cyan-400 hover:text-white hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-cyan-400 hover: text-foreground hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
                                 >
                                     <Clock className="w-4 h-4 mr-1" />
                                     History
@@ -272,8 +272,8 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                         }}
                         className="space-y-3"
                     >
-                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-700">
-                            <h3 className="text-white font-semibold flex items-center gap-2">
+                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+                            <h3 className=" text-foreground font-semibold flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-cyan-400" />
                                 Work History
                             </h3>
@@ -285,17 +285,17 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                 application.workHistory.map((history: any, index: number) => (
                                     <div
                                         key={index}
-                                        className="bg-gray-900/50 rounded-lg p-3 border border-gray-700 space-y-2"
+                                        className="bg-background/50 rounded-lg p-3 border border-border space-y-2"
                                     >
-                                        <p className="text-white text-sm font-medium leading-relaxed">
+                                        <p className=" text-foreground text-sm font-medium leading-relaxed">
                                             {history.action}
                                         </p>
                                         {history.comment && (
-                                            <p className="text-gray-400 text-xs italic">
+                                            <p className=" text-muted-foreground text-xs italic">
                                                 💬 {history.comment}
                                             </p>
                                         )}
-                                        <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-700/50">
+                                        <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-border/50">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
                                                 {new Date(history.timestamp).toLocaleString('en-IN', {
@@ -322,7 +322,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                             onClick={() => setShowHistory(false)}
                             variant="outline"
                             size="sm"
-                            className="w-full mt-3 bg-gray-900/50 border-gray-600 text-cyan-400 hover:text-white hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
+                            className="w-full mt-3 bg-background/50 border-border text-cyan-400 hover: text-foreground hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
                         >
                             <X className="w-4 h-4 mr-1.5" />
                             Close History
@@ -373,37 +373,37 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className={`border-gray-700 hover:bg-gray-800/50 transition-colors ${isExpanded ? 'bg-gray-800/30' : ''}`}
+                className={`border-border hover:bg-card/50 transition-colors ${isExpanded ? 'bg-card/30' : ''}`}
             >
                 <TableCell>
                     <div className="flex items-center gap-2">
-                        <p className="text-white font-medium">{application.applicationNumber}</p>
+                        <p className="font-medium">{application.applicationNumber}</p>
                     </div>
                 </TableCell>
                 <TableCell>
                     <div className="flex items-center space-x-3">
                         <Avatar className="w-8 h-8">
                             <AvatarImage src={application.avatar || "/placeholder.svg"} />
-                            <AvatarFallback className="bg-gray-800 text-gray-300 text-xs">
+                            <AvatarFallback className="bg-card  text-foreground text-xs">
                                 {application.customerName.split(' ').map((n: string) => n[0]).join('')}
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <p className="text-white font-medium">{application.customerName}</p>
-                            <p className="text-gray-400 text-sm">{application.customerEmail}</p>
+                            <p className="font-medium">{application.customerName}</p>
+                            <p className=" text-muted-foreground text-sm">{application.customerEmail}</p>
                         </div>
                     </div>
                 </TableCell>
                 <TableCell>
                     <div>
-                        <p className="text-white font-medium">{formatCurrency(application.applicationAmount)}</p>
-                        {/* <p className="text-gray-400 text-sm">{application.}</p> */}
+                        <p className=" text-foreground font-medium">{formatCurrency(application.applicationAmount)}</p>
+                        {/* <p className=" text-muted-foreground text-sm">{application.}</p> */}
                     </div>
                 </TableCell>
                 <TableCell>
                     <div>
-                        <p className="text-white font-medium">{application.applicationProvider}</p>
-                        {/* <p className="text-white font-medium">{application.lender.lenderType}</p> */}
+                        <p className=" text-foreground font-medium">{application.applicationProvider}</p>
+                        {/* <p className=" text-foreground font-medium">{application.lender.lenderType}</p> */}
                     </div>
                 </TableCell>
                 <TableCell>
@@ -420,14 +420,14 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                         <span className="capitalize">{pretty(application.loanStatus)}</span>
                     </Badge>
                 </TableCell>
-                <TableCell className="text-gray-400">
+                <TableCell className=" text-muted-foreground">
                     {application.applicationDate}
                 </TableCell>
                 <TableCell className="text-center">
-                    <div className="inline-flex items-center gap-1.5 bg-gray-900/60 border-gray-700 rounded-lg px-2 py-1">
+                    <div className="inline-flex items-center gap-1.5 bg-background/60 border-border rounded-lg px-2 py-1">
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button onClick={onView} className="text-blue cursor-pointer hover:text-white">
+                                <Button onClick={onView} className="text-blue cursor-pointer hover: text-foreground">
                                     <Eye className="w-4 h-4 mr-2 " />
                                 </Button>
                             </TooltipTrigger>
@@ -437,7 +437,7 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
             <TooltipTrigger asChild>
               <Button 
               onClick={onDelete} 
-              className="text-red-400 cursor-pointer hover:text-white">
+              className="text-red-400 cursor-pointer hover: text-foreground">
                 <Trash2 className="w-4 h-4 mr-2" />
               </Button>
             </TooltipTrigger>
@@ -475,7 +475,7 @@ const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, onStatusC
         return (
             <div className="text-center py-12">
                 <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No applications found</p>
+                <p className=" text-muted-foreground text-lg">No applications found</p>
             </div>
         );
     }
@@ -712,16 +712,16 @@ export function AggregatorApplications() {
                 className="flex flex-col sm:flex-row gap-4"
             >
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2  text-muted-foreground w-4 h-4" />
                     <Input
                         placeholder="Search applications..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-gray-900/50 border-gray-800 text-white"
+                        className="pl-10 bg-background/50 border-border text-foreground"
                     />
                 </div>
                 <Select value={filterLender} onValueChange={setFilterLender}>
-                    <SelectTrigger className="w-40 bg-gray-900/50 border-gray-800 text-white">
+                    <SelectTrigger className="w-40 bg-background/50 border-border text-foreground">
                         <SelectValue placeholder="All Lenders" />
                     </SelectTrigger>
                     <SelectContent>
@@ -739,20 +739,20 @@ export function AggregatorApplications() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
             >
-                <Card className="bg-gray-800/50 border-gray-700">
+                <Card className="professional-card">
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <div className={`h-12 rounded-lg flex items-center justify-center bg-gray-900/50 text-blue`}>
+                            <div className={`h-12 rounded-lg flex items-center justify-center bg-background/50 text-blue`}>
                                 <FileText className="w-6 h-6 mr-3" />
                                 <div>
-                                    <CardTitle className="text-white mb-1">Fresh Applications</CardTitle>
-                                    <CardDescription className="text-gray-400">
+                                    <CardTitle className="text-foreground mb-1">Fresh Applications</CardTitle>
+                                    <CardDescription className="text-muted-foreground">
                                         Track and manage loan applications
                                     </CardDescription>
                                 </div>
                             </div>
                             {/* VIEW TOGGLE BUTTONS */}
-                            <div className="flex items-center gap-3 bg-gray-900/50 rounded-lg p-1">
+                            <div className="flex items-center gap-3 bg-background/50 rounded-lg p-1">
                                 <Button
                                     onClick={() => router.push('/aggregator/applications/new')}
                                     className="bg-gradient-to-r from-blue to-cyan-500 hover:from-blue-600 hover:to-cyan-700"
@@ -768,8 +768,8 @@ export function AggregatorApplications() {
                                             size="sm"
                                             onClick={() => setViewMode('table')}
                                             className={`${viewMode === 'table'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
-                                                : 'text-gray-400 hover:text-white'
+                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
+                                                : ' text-muted-foreground hover: text-foreground'
                                                 }`}
                                         >
                                             <List className="w-4 h-4" />
@@ -785,8 +785,8 @@ export function AggregatorApplications() {
                                             size="sm"
                                             onClick={() => setViewMode('grid')}
                                             className={`${viewMode === 'grid'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
-                                                : 'text-gray-400 hover:text-white'
+                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
+                                                : ' text-muted-foreground hover: text-foreground'
                                                 }`}
                                         >
                                             <LayoutGrid className="w-4 h-4" />
@@ -802,20 +802,20 @@ export function AggregatorApplications() {
                         <div ref={tableTopRef} />
                         {/* CONDITIONAL RENDERING: TABLE OR GRID */}
                         {viewMode === 'table' ? (
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto professional-table">
                                 {isTableLoading ? (
                                     <TableSkeleton columns={6} rows={pageSize} />
                                 ) : (
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="border-gray-700">
-                                                <TableHead className="text-gray-300">Application Number</TableHead>
-                                                <TableHead className="text-gray-300">Customer</TableHead>
-                                                <TableHead className="text-gray-300">Loan Amount</TableHead>
-                                                <TableHead className="text-gray-300">Lender</TableHead>
-                                                <TableHead className="text-gray-300">Status</TableHead>
-                                                <TableHead className="text-gray-300">Created</TableHead>
-                                                <TableHead className="text-gray-300 text-center">Actions</TableHead>
+                                            <TableRow>
+                                                <TableHead>Application Number</TableHead>
+                                                <TableHead>Customer</TableHead>
+                                                <TableHead>Loan Amount</TableHead>
+                                                <TableHead>Lender</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead>Created</TableHead>
+                                                <TableHead className="text-center">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -865,16 +865,16 @@ export function AggregatorApplications() {
 
             {/* View Application Dialog */}
             <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
+                <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-border  text-foreground max-w-3xl rounded-xl shadow-2xl">
                     {selectedApplication && (
                         <>
                             <DialogHeader>
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        {/* <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                                        {/* <DialogTitle className="text-2xl font-bold  text-foreground bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                       {selectedApplication.product.name}
                     </DialogTitle> */}
-                                        <DialogDescription className="text-gray-400 pt-1">
+                                        <DialogDescription className=" text-muted-foreground pt-1">
                                             Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{selectedApplication.applicationProvider}</span>
                                         </DialogDescription>
                                     </div>
@@ -885,7 +885,7 @@ export function AggregatorApplications() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setIsViewDialogOpen(false)}
-                                className="absolute top-4 right-4 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+                                className="absolute top-4 right-4  text-muted-foreground hover: text-foreground hover:bg-muted rounded-full"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
@@ -904,7 +904,7 @@ export function AggregatorApplications() {
                                 </div>
 
                                 {/* Loan & Commission */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
                                     <div className="space-y-4">
                                         <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><DollarSign className="w-5 h-5" />Application Details</h3>
                                         {/* <InfoLine icon={FileText} color="text-yellow-400" label="Product Name" value={selectedApplication.product.name} /> */}
@@ -923,7 +923,7 @@ export function AggregatorApplications() {
                                             {(selectedApplication.documents || []).length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
                                                     {selectedApplication.documents.map((doc: string, index: number) => (
-                                                        <Badge key={index} variant="outline" className="border-gray-600 text-gray-300">{doc}</Badge>
+                                                        <Badge key={index} variant="outline" className="border-border  text-foreground">{doc}</Badge>
                                                     ))}
                                                 </div>
                                             ) : (
@@ -940,10 +940,10 @@ export function AggregatorApplications() {
 
             {/* Status Change Dialog, not using now */}
             <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-                <DialogContent className="bg-gray-900 border-gray-800 max-w-md">
+                <DialogContent className="bg-background border-border max-w-md">
                     <DialogHeader>
-                        <DialogTitle className="text-white">Update Application Status</DialogTitle>
-                        <DialogDescription className="text-gray-400">
+                        <DialogTitle className=" text-foreground">Update Application Status</DialogTitle>
+                        <DialogDescription className=" text-muted-foreground">
                             Choose a new status and enter a comment.
                         </DialogDescription>
                     </DialogHeader>
@@ -951,14 +951,14 @@ export function AggregatorApplications() {
                     {/* Status Select */}
                     <div className="space-y-4">
                         <div>
-                            <Label className="text-gray-300">Select Status</Label>
+                            <Label className=" text-foreground">Select Status</Label>
 
                             <Select value={newStatus} onValueChange={setNewStatus}>
-                                <SelectTrigger className="bg-gray-800 border border-gray-700 text-white">
+                                <SelectTrigger className="bg-card border border-border  text-foreground">
                                     <SelectValue placeholder="Select status" />
                                 </SelectTrigger>
 
-                                <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                                <SelectContent className="bg-background border-border  text-foreground">
                                     {Object.values(ApplicationStatus).map((status) => {
                                         const key = pretty(status);
                                         return (
@@ -988,22 +988,22 @@ export function AggregatorApplications() {
                             {newStatus === ApplicationStatus.APPROVED && (
                                 <>
                                     <div>
-                                        <Label className="text-gray-300">Approved Amount</Label>
+                                        <Label className=" text-foreground">Approved Amount</Label>
                                         <Input
                                             type="number"
                                             value={approvedAmount || ''}
                                             onChange={(e) => setApprovedAmount(Number(e.target.value))}
-                                            className="bg-gray-800 border-gray-700 text-white mt-2"
+                                            className="bg-card border-border  text-foreground mt-2"
                                             placeholder="Enter approved amount"
                                         />
                                     </div>
                                     <div>
-                                        <Label className="text-gray-300">Approved Date</Label>
+                                        <Label className=" text-foreground">Approved Date</Label>
                                         <Input
                                             type="date"
                                             value={approvedDate || ''}
                                             onChange={(e) => setApprovedDate(e.target.value)}
-                                            className="bg-gray-800 border-gray-700 text-white mt-2"
+                                            className="bg-card border-border  text-foreground mt-2"
                                         />
                                     </div>
                                 </>
@@ -1011,22 +1011,22 @@ export function AggregatorApplications() {
                             {newStatus === ApplicationStatus.DISBURSED && (
                                 <>
                                     <div>
-                                        <Label className="text-gray-300">Disbursed Amount</Label>
+                                        <Label className=" text-foreground">Disbursed Amount</Label>
                                         <Input
                                             type="number"
                                             value={disbursedAmount || ''}
                                             onChange={(e) => setDisbursedAmount(Number(e.target.value))}
-                                            className="bg-gray-800 border-gray-700 text-white mt-2"
+                                            className="bg-card border-border  text-foreground mt-2"
                                             placeholder="Enter disbursed amount"
                                         />
                                     </div>
                                     <div>
-                                        <Label className="text-gray-300">Disbursed Date</Label>
+                                        <Label className=" text-foreground">Disbursed Date</Label>
                                         <Input
                                             type="date"
                                             value={disbursedDate || ''}
                                             onChange={(e) => setDisbursedDate(e.target.value)}
-                                            className="bg-gray-800 border-gray-700 text-white mt-2"
+                                            className="bg-card border-border  text-foreground mt-2"
                                         />
                                     </div>
                                 </>
@@ -1035,12 +1035,12 @@ export function AggregatorApplications() {
 
                         {/* Comment */}
                         <div>
-                            <Label className="text-gray-300">Comment (required*)</Label>
+                            <Label className=" text-foreground">Comment (required*)</Label>
                             <Textarea
                                 value={statusComment}
                                 rows={4}
                                 onChange={(e) => setStatusComment(e.target.value)}
-                                className="bg-gray-800 border-gray-700 text-white mt-2"
+                                className="bg-card border-border  text-foreground mt-2"
                                 placeholder="Why is the status being changed?"
                             />
                         </div>
@@ -1051,7 +1051,7 @@ export function AggregatorApplications() {
                         <Button
                             variant="outline"
                             onClick={() => setIsStatusDialogOpen(false)}
-                            className="border-gray-600 text-gray-300 hover:bg-gray-800"
+                            className="border-border  text-foreground hover:bg-card"
                         >
                             Cancel
                         </Button>
@@ -1059,7 +1059,7 @@ export function AggregatorApplications() {
                         <Button
                             disabled={!statusComment}
                             onClick={handleStatusUpdate}
-                            className="bg-gradient-to-r from-blue-600 to-cyan-500 text-white disabled:opacity-40"
+                            className="bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground disabled:opacity-40"
                         >
                             Save
                         </Button>

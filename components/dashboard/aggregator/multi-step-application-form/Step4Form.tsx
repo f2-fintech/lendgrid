@@ -110,25 +110,25 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold text-white">
-          Additional <span className="text-gold">Details</span>
+        <h2 className="text-3xl font-bold  text-foreground">
+          Additional <span className="text-accent">Details</span>
         </h2>
-        <p className="text-gray-400">Step 4/4</p>
+        <p className=" text-muted-foreground">Step 4/4</p>
       </div>
 
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
-        <Card className="bg-gray-800/50 border-gray-700 p-6 space-y-4">
+        <Card className="bg-card/50 border-border p-6 space-y-4">
           {/* Salary/Turnover */}
           <div>
-            <Label htmlFor="salary" className="text-gray-300">
+            <Label htmlFor="salary" className=" text-foreground">
               Salary/Turnover (p.a)*
             </Label>
             <div className="relative mt-2">
-              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4  text-muted-foreground" />
               <Input
                 {...register('salary')}
                 type="number"
-                className="bg-gray-800 border-gray-700 text-white pl-10"
+                className="bg-card border-border  text-foreground pl-10"
                 placeholder="Enter annual salary or turnover"
               />
             </div>
@@ -139,15 +139,15 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
 
           {/* Existing EMI */}
           <div>
-            <Label htmlFor="existing_emi" className="text-gray-300">
+            <Label htmlFor="existing_emi" className=" text-foreground">
               Existing EMI Amount (Optional)
             </Label>
             <div className="relative mt-2">
-              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4  text-muted-foreground" />
               <Input
                 {...register('existing_emi')}
                 type="number"
-                className="bg-gray-800 border-gray-700 text-white pl-10"
+                className="bg-card border-border  text-foreground pl-10"
                 placeholder="Enter existing EMI amount"
               />
             </div>
@@ -160,15 +160,15 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
 
           {/* Existing Liability */}
           <div>
-            <Label htmlFor="existing_liability" className="text-gray-300">
+            <Label htmlFor="existing_liability" className=" text-foreground">
               Existing Credit Card Liability (Optional)
             </Label>
             <div className="relative mt-2">
-              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4  text-muted-foreground" />
               <Input
                 {...register('existing_liability')}
                 type="number"
-                className="bg-gray-800 border-gray-700 text-white pl-10"
+                className="bg-card border-border  text-foreground pl-10"
                 placeholder="Enter credit card liability"
               />
             </div>
@@ -181,20 +181,20 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
         </Card>
 
         {/* Certificate Upload */}
-        <Card className="bg-gray-800/50 border-gray-700 p-6">
-          <Label className="text-gray-300 mb-4 block">
+        <Card className="bg-card/50 border-border p-6">
+          <Label className=" text-foreground mb-4 block">
             Degree and Registration Certificate (Optional)
           </Label>
 
           {/* Upload Button */}
           {certificates.length < 4 && (
             <div
-              className="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center hover:border-gold transition-colors cursor-pointer mb-4"
+              className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-gold transition-colors cursor-pointer mb-4"
               onClick={() => inputRef.current?.click()}
             >
-              <Upload className="w-10 h-10 mx-auto mb-3 text-gray-400" />
-              <p className="text-gray-300 mb-1">Click to upload certificates</p>
-              <p className="text-sm text-gray-400">
+              <Upload className="w-10 h-10 mx-auto mb-3  text-muted-foreground" />
+              <p className=" text-foreground mb-1">Click to upload certificates</p>
+              <p className="text-sm  text-muted-foreground">
                 PDF, DOC, DOCX, JPG, PNG (Max 5MB per file, up to 4 files)
               </p>
               <input
@@ -211,7 +211,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
           {/* Selected Files List */}
           {certificates.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm text-gray-400 mb-2">
+              <p className="text-sm  text-muted-foreground mb-2">
                 Selected Files ({certificates.length}/4)
               </p>
               {certificates.map((file, index) => (
@@ -219,13 +219,13 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
                   key={index}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between bg-gray-900/50 p-3 rounded-lg"
+                  className="flex items-center justify-between bg-background/50 p-3 rounded-lg"
                 >
                   <div className="flex items-center space-x-3">
                     <FileText className="w-5 h-5 text-blue-400" />
                     <div>
-                      <p className="text-white text-sm">{file.name}</p>
-                      <p className="text-gray-400 text-xs">
+                      <p className=" text-foreground text-sm">{file.name}</p>
+                      <p className=" text-muted-foreground text-xs">
                         {(file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
@@ -251,7 +251,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
             type="button"
             variant="outline"
             onClick={prevStep}
-            className="border-gray-600 text-gray-300 hover:bg-gray-700"
+            className="border-border  text-foreground hover:bg-muted"
           >
             Back
           </Button>
@@ -259,7 +259,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
           <Button
             type="submit"
             disabled={!isDirty || isLoading}
-            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600 text-white"
+            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600  text-foreground"
           >
             {isLoading ? (
               <>

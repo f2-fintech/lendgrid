@@ -72,7 +72,7 @@ export const STATUS_STYLE: Record<string, string> = {
     disbursed: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
     rejected: "bg-red-600/15 text-red-400 border-red-600/25",
     drop: "bg-orange-500/15 text-orange-300 border-orange-500/25",
-    submitted: "bg-blue text-gray-300 border-blue-500/25"
+    submitted: "bg-blue  text-foreground border-blue-500/25"
 };
 
 export const STATUS_META: Record<string, { icon: JSX.Element }> = {
@@ -94,10 +94,10 @@ export const getStatusIcon = (status: string) =>
     STATUS_META[pretty(status)]?.icon || <Clock size={16} />;
 
 const InfoItem = ({ icon: Icon, label, value, color }: { icon: React.ElementType, label: string, value: string | number, color: string }) => (
-    <div className="flex flex-col items-center justify-center p-4 bg-gray-800/50 rounded-lg">
+    <div className="flex flex-col items-center justify-center p-4 bg-card/50 rounded-lg">
         <Icon className={`w-8 h-8 ${color} mb-2`} />
-        <p className="text-sm text-gray-400">{label}</p>
-        <p className="text-lg font-bold text-white">{value}</p>
+        <p className="text-sm  text-muted-foreground">{label}</p>
+        <p className="text-lg font-bold  text-foreground">{value}</p>
     </div>
 );
 
@@ -105,8 +105,8 @@ const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType
     <div className="flex items-start gap-3">
         <Icon className={`w-5 h-5 ${color} mt-1`} />
         <div>
-            <p className="text-sm text-gray-400">{label}</p>
-            <p className="font-semibold text-white">{value}</p>
+            <p className="text-sm  text-muted-foreground">{label}</p>
+            <p className="font-semibold  text-foreground">{value}</p>
         </div>
     </div>
 );
@@ -147,28 +147,28 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.3 }}
-            className="bg-gray-800/50 border border-gray-700 rounded-lg overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10"
+            className="bg-card/50 border border-border rounded-lg overflow-hidden hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10"
         >
             <div className="p-6">
                 {/* Card Header - Application Number Only */}
                 <div className="flex items-start justify-between mb-4">
                     <div>
-                        <p className="text-xs text-gray-400 uppercase tracking-wider">Ticket ID</p>
-                        <p className="text-white font-bold text-lg">F2FIN-{application.ticketId}</p>
+                        <p className="text-xs text-muted-foreground uppercase tracking-wider">Ticket ID</p>
+                        <p className=" text-foreground font-bold text-lg">F2FIN-{application.ticketId}</p>
                     </div>
                 </div>
 
                 {/* Customer Info */}
-                <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-gray-700">
+                <div className="flex items-center space-x-3 mb-4 pb-4 border-b border-border">
                     <Avatar className="w-12 h-12">
                         <AvatarImage src={application.avatar || "/placeholder.svg"} />
-                        <AvatarFallback className="bg-gray-800 text-gray-300">
+                        <AvatarFallback className="bg-card  text-foreground">
                             {application.customerName.split(' ').map((n: string) => n[0]).join('')}
                         </AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                        <p className="text-white font-semibold truncate">{application.customerName}</p>
-                        <p className="text-gray-400 text-sm truncate">{application.customerEmail}</p>
+                        <p className=" text-foreground font-semibold truncate">{application.customerName}</p>
+                        <p className=" text-muted-foreground text-sm truncate">{application.customerEmail}</p>
                     </div>
                 </div>
 
@@ -190,40 +190,40 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                         className="space-y-3 mb-4"
                     >
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2  text-muted-foreground text-sm">
                                 <DollarSign className="w-4 h-4" />
                                 <span>Loan Amount</span>
                             </div>
-                            <p className="text-white font-bold">{formatCurrency(application.applicationAmount)}</p>
+                            <p className=" text-foreground font-bold">{formatCurrency(application.applicationAmount)}</p>
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2  text-muted-foreground text-sm">
                                 <ClipboardList className="w-4 h-4" />
                                 <span>Product Type</span>
                             </div>
-                            <p className="text-white text-sm">{application.loanCategory || 'N/A'}</p>
+                            <p className=" text-foreground text-sm">{application.loanCategory || 'N/A'}</p>
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-gray-400 text-sm">
+                            <div className="flex items-center gap-2  text-muted-foreground text-sm">
                                 <Building2 className="w-4 h-4" />
                                 <span>Lender</span>
                             </div>
                             <div className="text-right">
-                                <p className="text-white text-sm font-medium">{application.applicationProvider}</p>
+                                <p className=" text-foreground text-sm font-medium">{application.applicationProvider}</p>
                             </div>
                         </div>
 
                         {/* CARD ACTIONS SECTION - Status Badge & Action Buttons */}
-                        <div className="space-y-3 pt-4 border-t border-gray-700">
+                        <div className="space-y-3 pt-4 border-t border-border">
                             {/* Status Badge - Clickable with hover effect */}
                             <div
                                 //onClick={onStatusClick}
                                 className={`w-full cursor-pointer rounded-lg transition-all duration-200 hover:scale-[1.02] ${STATUS_STYLE[pretty(application.ticketStatus)]} p-3 flex items-center justify-center gap-2`}
                             >
                                 {getStatusIcon(application.ticketStatus)}
-                                <span className="font-medium">{pretty(application.ticketStatus)}</span>
+                                <span className="capitalize font-medium">{pretty(application.ticketStatus)}</span>
                             </div>
 
                             {/* Action Buttons - View, Delete & History */}
@@ -232,7 +232,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                     onClick={onView}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-gray-900/50 border-gray-600 text-gray-300 hover:text-white hover:bg-gray-700 hover:border-blue-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border  text-foreground hover: text-foreground hover:bg-muted hover:border-blue-500/50 transition-all"
                                 >
                                     <Eye className="w-4 h-4 mr-1" />
                                     View
@@ -242,7 +242,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                   onClick={onDelete}
                   variant="outline"
                   size="sm"
-                  className="w-full bg-gray-900/50 border-gray-600 text-red-400 hover:text-white hover:bg-red-600/20 hover:border-red-500/50 transition-all"
+                  className="w-full bg-background/50 border-border text-red-400 hover: text-foreground hover:bg-red-600/20 hover:border-red-500/50 transition-all"
                 >
                   <Trash2 className="w-4 h-4 mr-1" />
                   Delete
@@ -252,7 +252,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                     onClick={() => setShowHistory(true)}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-gray-900/50 border-gray-600 text-cyan-400 hover:text-white hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-cyan-400 hover: text-foreground hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
                                 >
                                     <Clock className="w-4 h-4 mr-1" />
                                     History
@@ -277,8 +277,8 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                         }}
                         className="space-y-3"
                     >
-                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-700">
-                            <h3 className="text-white font-semibold flex items-center gap-2">
+                        <div className="flex items-center justify-between mb-3 pb-3 border-b border-border">
+                            <h3 className=" text-foreground font-semibold flex items-center gap-2">
                                 <Clock className="w-5 h-5 text-cyan-400" />
                                 Work History
                             </h3>
@@ -300,12 +300,12 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                 ticketHistory.map((history: TicketHistoryData) => (
                                     <div
                                         key={history.id}
-                                        className="bg-gray-900/50 rounded-lg p-3 border border-gray-700 space-y-2"
+                                        className="bg-background/50 rounded-lg p-3 border border-border space-y-2"
                                     >
-                                        <p className="text-white text-sm font-medium leading-relaxed">
+                                        <p className=" text-foreground text-sm font-medium leading-relaxed">
                                             {capitalizeFirstLetter(history.action || '')}
                                         </p>
-                                        <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-gray-700/50">
+                                        <div className="flex items-center justify-between text-xs text-gray-500 pt-1 border-t border-border/50">
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="w-3 h-3" />
                                                 {formatDateIndian(history.created_at)}
@@ -326,7 +326,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                             onClick={() => setShowHistory(false)}
                             variant="outline"
                             size="sm"
-                            className="w-full mt-3 bg-gray-900/50 border-gray-600 text-cyan-400 hover:text-white hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
+                            className="w-full mt-3 bg-background/50 border-border text-cyan-400 hover: text-foreground hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
                         >
                             <X className="w-4 h-4 mr-1.5" />
                             Close History
@@ -393,35 +393,35 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className={`border-gray-700 hover:bg-gray-800/50 transition-colors ${isExpanded ? 'bg-gray-800/30' : ''}`}
+                className={`border-border hover:bg-card/50 transition-colors ${isExpanded ? 'bg-card/30' : ''}`}
             >
                 <TableCell>
                     <div className="flex items-center gap-2">
-                        <p className="text-white font-medium">F2FIN-{application.ticketId}</p>
+                        <p className="font-medium">F2FIN-{application.ticketId}</p>
                     </div>
                 </TableCell>
                 <TableCell>
                     <div className="flex items-center space-x-3">
                         <Avatar className="w-8 h-8">
                             <AvatarImage src={application.avatar || "/placeholder.svg"} />
-                            <AvatarFallback className="bg-gray-800 text-gray-300 text-xs">
+                            <AvatarFallback className="bg-card text-foreground text-xs">
                                 {application.customerName.split(' ').map((n: string) => n[0]).join('')}
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <p className="text-white font-medium">{application.customerName}</p>
-                            <p className="text-gray-400 text-sm">{application.customerEmail}</p>
+                            <p className=" text-foreground font-medium">{application.customerName}</p>
+                            <p className=" text-muted-foreground text-sm">{application.customerEmail}</p>
                         </div>
                     </div>
                 </TableCell>
                 <TableCell>
                     <div>
-                        <p className="text-white font-medium">{formatCurrency(application.applicationAmount)}</p>
+                        <p className=" text-foreground font-medium">{formatCurrency(application.applicationAmount)}</p>
                     </div>
                 </TableCell>
                 <TableCell>
                     <div>
-                        <p className="text-white font-medium">{application.applicationProvider}</p>
+                        <p className=" text-foreground font-medium">{application.applicationProvider}</p>
                     </div>
                 </TableCell>
                 <TableCell>
@@ -437,14 +437,14 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                     </Badge>
                 </TableCell>
                 <TableCell className="text-center">
-                    <div className="inline-flex items-center gap-1.5 bg-gray-900/60 border-gray-700 rounded-lg px-2 py-1">
+                    <div className="inline-flex items-center gap-1.5 bg-background/60 border-border rounded-lg px-2 py-1">
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button
                                     variant="ghost"
                                     size="icon"
                                     onClick={onView}
-                                    className="h-8 w-8 text-blue hover:text-white hover:bg-blue-500/20"
+                                    className="h-8 w-8 text-blue hover: text-foreground hover:bg-blue-500/20"
                                 >
                                     <Eye className="w-4 h-4" />
                                 </Button>
@@ -458,7 +458,7 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                                     variant="ghost"
                                     size="icon"
                                     onClick={() => setIsExpanded(!isExpanded)}
-                                    className="h-8 w-8 text-amber-400 hover:text-white hover:bg-amber-500/20"
+                                    className="h-8 w-8 text-amber-400 hover: text-foreground hover:bg-amber-500/20"
                                 >
                                     <motion.div
                                         animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -481,7 +481,7 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                     animate={{ opacity: 1, height: 'auto' }}
                     exit={{ opacity: 0, height: 0 }}
                     transition={{ duration: 0.3 }}
-                    className="border-gray-700 bg-gray-900/50"
+                    className="border-border bg-background/50"
                 >
                     <TableCell colSpan={7} className="p-0">
                         <motion.div
@@ -490,9 +490,9 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                             transition={{ duration: 0.3 }}
                             className="p-6"
                         >
-                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-gray-700">
+                            <div className="flex items-center gap-2 mb-4 pb-3 border-b border-border">
                                 <Clock className="w-5 h-5 text-cyan-400" />
-                                <h3 className="text-white font-semibold text-lg">Work History</h3>
+                                <h3 className=" text-foreground font-semibold text-lg">Work History</h3>
                                 <Badge variant="outline" className="ml-2 border-cyan-500/30 text-cyan-400">
                                     {ticketHistory?.length || 0} {ticketHistory?.length === 1 ? 'entry' : 'entries'}
                                 </Badge>
@@ -518,23 +518,23 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                                                 initial={{ opacity: 0, x: -20 }}
                                                 animate={{ opacity: 1, x: 0 }}
                                                 transition={{ duration: 0.3, delay: idx * 0.1 }}
-                                                className="bg-gray-800/50 rounded-lg p-4 border border-gray-700 hover:border-cyan-500/30 transition-colors"
+                                                className="bg-card/50 rounded-lg p-4 border border-border hover:border-cyan-500/30 transition-colors"
                                             >
                                                 <div className="flex items-start gap-3 mb-3">
                                                     <div className="bg-cyan-500/10 rounded-full p-2 mt-0.5">
                                                         <ClipboardList className="w-4 h-4 text-cyan-400" />
                                                     </div>
                                                     <div className="flex-1">
-                                                        <p className="text-white text-sm font-medium leading-relaxed">
+                                                        <p className=" text-foreground text-sm font-medium leading-relaxed">
                                                             {capitalizeFirstLetter(history.action || '')}
                                                         </p>
                                                     </div>
                                                 </div>
 
-                                                <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-gray-700/50">
-                                                    <div className="flex items-center gap-1.5 bg-gray-900/50 rounded-md px-2 py-1">
+                                                <div className="flex items-center justify-between text-xs text-gray-500 pt-3 border-t border-border/50">
+                                                    <div className="flex items-center gap-1.5 bg-background/50 rounded-md px-2 py-1">
                                                         <Calendar className="w-3 h-3 text-green-400" />
-                                                        <span className="text-gray-400">
+                                                        <span className=" text-muted-foreground">
                                                             {formatDateIndian(history.created_at)}
                                                         </span>
                                                     </div>
@@ -582,7 +582,7 @@ const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusCl
         return (
             <div className="text-center py-12">
                 <ClipboardList className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className="text-gray-400 text-lg">No ticketsData found</p>
+                <p className=" text-muted-foreground text-lg">No ticketsData found</p>
             </div>
         );
     }
@@ -738,8 +738,8 @@ export function TicketsTab() {
                 className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
             >
                 <div>
-                    <h1 className="text-3xl font-bold text-white"> Loan Applications </h1>
-                    <p className="text-gray-400 mt-1">Manage and track all loan </p>
+                    <h1 className="text-3xl font-bold  text-foreground"> Loan Applications </h1>
+                    <p className=" text-muted-foreground mt-1">Manage and track all loan </p>
                 </div>
 
                 <Button
@@ -768,15 +768,15 @@ export function TicketsTab() {
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                         >
-                            <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
+                            <Card className="professional-card hover-lift hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
                                 <CardContent className="p-6">
                                     <div className="flex items-center justify-between">
                                         <div>
-                                            <p className="text-sm font-medium text-gray-400">{stat.title}</p>
-                                            <p className="text-2xl font-bold text-white mt-2">{stat.value}</p>
-                                            <p className="text-green-400 text-sm mt-1">{stat.change} from last month</p>
+                                            <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
+                                            <p className="text-2xl font-bold text-foreground mt-2">{stat.value}</p>
+                                            <p className="text-success text-sm mt-1">{stat.change} from last month</p>
                                         </div>
-                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-gray-900/50 ${stat.color}`}>
+                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-background/50 ${stat.color}`}>
                                             <stat.icon className="w-6 h-6" />
                                         </div>
                                     </div>
@@ -795,19 +795,19 @@ export function TicketsTab() {
                 className="flex flex-col sm:flex-row gap-4"
             >
                 <div className="relative flex-1">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2  text-muted-foreground w-4 h-4" />
                     <Input
                         placeholder="Search ticketsData..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-gray-900/50 border-gray-800 text-white"
+                        className="pl-10 bg-background/50 border-gray-800  text-foreground"
                     />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-40 bg-gray-900/50 border-gray-800 text-white">
+                    <SelectTrigger className="w-40 bg-background/50 border-gray-800  text-foreground">
                         <SelectValue placeholder="All Status" />
                     </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-700 text-white">
+                    <SelectContent className="bg-background border-border  text-foreground">
                         {Object.values(ApplicationStatus).map((status) => {
                             const key = pretty(status);
                             return (
@@ -831,7 +831,7 @@ export function TicketsTab() {
                     </SelectContent>
                 </Select>
                 {/* <Select value={filterLender} onValueChange={setFilterLender}>
-                    <SelectTrigger className="w-40 bg-gray-900/50 border-gray-800 text-white">
+                    <SelectTrigger className="w-40 bg-background/50 border-gray-800  text-foreground">
                         <SelectValue placeholder="All Lenders" />
                     </SelectTrigger>
                     <SelectContent>
@@ -849,20 +849,20 @@ export function TicketsTab() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.5 }}
             >
-                <Card className="bg-gray-800/50 border-gray-700">
+                <Card className="professional-card">
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <div className={`h-12 rounded-lg flex items-center justify-center bg-gray-900/50 text-blue`}>
+                            <div className={`h-12 rounded-lg flex items-center justify-center bg-background/50 text-blue`}>
                                 <ClipboardList className="w-6 h-6 mr-3" />
                                 <div>
-                                    <CardTitle className="text-white mb-1">Tickets Overview</CardTitle>
-                                    <CardDescription className="text-gray-400">
+                                    <CardTitle className=" text-foreground mb-1">Tickets Overview</CardTitle>
+                                    <CardDescription className=" text-muted-foreground">
                                         Track and manage all loan tickets
                                     </CardDescription>
                                 </div>
                             </div>
                             {/* VIEW TOGGLE BUTTONS */}
-                            <div className="flex items-center gap-2 bg-gray-900/50 rounded-lg p-1">
+                            <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
@@ -870,8 +870,8 @@ export function TicketsTab() {
                                             size="sm"
                                             onClick={() => setViewMode('table')}
                                             className={`${viewMode === 'table'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
-                                                : 'text-gray-400 hover:text-white'
+                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
+                                                : ' text-muted-foreground hover: text-foreground'
                                                 }`}
                                         >
                                             <List className="w-4 h-4" />
@@ -887,8 +887,8 @@ export function TicketsTab() {
                                             size="sm"
                                             onClick={() => setViewMode('grid')}
                                             className={`${viewMode === 'grid'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500 text-white'
-                                                : 'text-gray-400 hover:text-white'
+                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
+                                                : ' text-muted-foreground hover: text-foreground'
                                                 }`}
                                         >
                                             <LayoutGrid className="w-4 h-4" />
@@ -904,19 +904,19 @@ export function TicketsTab() {
                         <div ref={tableTopRef} />
                         {/* CONDITIONAL RENDERING: TABLE OR GRID */}
                         {viewMode === 'table' ? (
-                            <div className="overflow-x-auto">
+                            <div className="overflow-x-auto professional-table">
                                 {isTableLoading ? (
                                     <TableSkeleton columns={6} rows={pageSize} />
                                 ) : (
                                     <Table>
                                         <TableHeader>
-                                            <TableRow className="border-gray-700">
-                                                <TableHead className="text-gray-300">Ticket ID</TableHead>
-                                                <TableHead className="text-gray-300">Customer</TableHead>
-                                                <TableHead className="text-gray-300">Loan Amount</TableHead>
-                                                <TableHead className="text-gray-300">Lender</TableHead>
-                                                <TableHead className="text-gray-300">Status</TableHead>
-                                                <TableHead className="text-gray-300 text-center">Actions</TableHead>
+                                            <TableRow>
+                                                <TableHead>Ticket ID</TableHead>
+                                                <TableHead>Customer</TableHead>
+                                                <TableHead>Loan Amount</TableHead>
+                                                <TableHead>Lender</TableHead>
+                                                <TableHead>Status</TableHead>
+                                                <TableHead className="text-center">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
@@ -966,16 +966,16 @@ export function TicketsTab() {
 
             {/* View Application Dialog */}
             <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
+                <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-border  text-foreground max-w-3xl rounded-xl shadow-2xl">
                     {selectedApplication && (
                         <>
                             <DialogHeader>
                                 <div className="flex items-start justify-between gap-4">
                                     <div>
-                                        {/* <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                                        {/* <DialogTitle className="text-2xl font-bold  text-foreground bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
                       {selectedApplication.product.name}
                     </DialogTitle> */}
-                                        <DialogDescription className="text-gray-400 pt-1">
+                                        <DialogDescription className=" text-muted-foreground pt-1">
                                             Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{selectedApplication.applicationProvider}</span>
                                         </DialogDescription>
                                     </div>
@@ -986,7 +986,7 @@ export function TicketsTab() {
                                 variant="ghost"
                                 size="icon"
                                 onClick={() => setIsViewDialogOpen(false)}
-                                className="absolute top-4 right-4 text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+                                className="absolute top-4 right-4  text-muted-foreground hover: text-foreground hover:bg-muted rounded-full"
                             >
                                 <X className="w-5 h-5" />
                             </Button>
@@ -1024,7 +1024,7 @@ export function TicketsTab() {
                                             {(selectedApplication.documents || []).length > 0 ? (
                                                 <div className="flex flex-wrap gap-2">
                                                     {selectedApplication.documents.map((doc: string, index: number) => (
-                                                        <Badge key={index} variant="outline" className="border-gray-600 text-gray-300">{doc}</Badge>
+                                                        <Badge key={index} variant="outline" className="border-border  text-foreground">{doc}</Badge>
                                                     ))}
                                                 </div>
                                             ) : (
