@@ -194,10 +194,10 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold  text-foreground">
+        <h2 className="text-3xl font-bold text-foreground">
           Profile Details and <span className="text-accent">Proof</span>
         </h2>
-        <p className=" text-muted-foreground">Step 3/4</p>
+        <p className="text-muted-foreground">Step 3/4</p>
       </div>
 
       {/* Upload Forms */}
@@ -230,7 +230,7 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
           <Button
             variant="outline"
             onClick={prevStep}
-            className="border-border  text-foreground hover:bg-muted"
+            className="border-border text-foreground hover:bg-muted"
           >
             Back
           </Button>
@@ -239,7 +239,7 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
             <Button
               variant="ghost"
               onClick={handleSkip}
-              className=" text-muted-foreground hover: text-foreground"
+              className="text-muted-foreground hover: text-foreground"
             >
               Skip
             </Button>
@@ -247,7 +247,7 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
             <Button
               onClick={handleUpload}
               disabled={isLoading}
-              className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600  text-foreground"
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isLoading ? (
                 <>

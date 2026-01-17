@@ -548,7 +548,7 @@ export const MultiStepFormDialog: React.FC<MultiStepFormDialogProps> = ({
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-gray-900 to-black border-border p-6">
+            <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto bg-background border-border p-6">
                 <DialogHeader>
                     <DialogTitle className="text-2xl font-bold  text-foreground sr-only">
                         Loan Application Form

@@ -94,12 +94,12 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
               <SelectTrigger className="bg-card border-border  text-foreground mt-2">
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
-              <SelectContent className="glass-card bg-background border-border  text-foreground">
-                <SelectItem value="Mr" className=" text-foreground focus:bg-muted focus: text-foreground" >Mr</SelectItem>
-                <SelectItem value="Mrs" className=" text-foreground focus:bg-muted focus: text-foreground">Mrs</SelectItem>
-                <SelectItem value="Miss" className=" text-foreground focus:bg-muted focus: text-foreground">Miss</SelectItem>
-                <SelectItem value="Dr" className=" text-foreground focus:bg-muted focus: text-foreground">Dr</SelectItem>
-                <SelectItem value="Ca" className=" text-foreground focus:bg-muted focus: text-foreground">Ca</SelectItem>
+              <SelectContent className="bg-popover border-border text-popover-foreground">
+                <SelectItem value="Mr" className="focus:bg-accent focus:text-accent-foreground" >Mr</SelectItem>
+                <SelectItem value="Mrs" className="focus:bg-accent focus:text-accent-foreground">Mrs</SelectItem>
+                <SelectItem value="Miss" className="focus:bg-accent focus:text-accent-foreground">Miss</SelectItem>
+                <SelectItem value="Dr" className="focus:bg-accent focus:text-accent-foreground">Dr</SelectItem>
+                <SelectItem value="Ca" className="focus:bg-accent focus:text-accent-foreground">Ca</SelectItem>
               </SelectContent>
             </Select>
             {errors.title && (
@@ -268,22 +268,22 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
             <SelectTrigger className="bg-card border-border  text-foreground mt-2">
               <SelectValue placeholder="Select employment type" />
             </SelectTrigger>
-            <SelectContent className="bg-background border-border  text-foreground">
+            <SelectContent className="bg-popover border-border text-popover-foreground">
               <SelectItem
                 value="salaried"
-                className=" text-foreground focus:bg-muted focus: text-foreground"
+                className="focus:bg-accent focus:text-accent-foreground"
               >
                 Salaried
               </SelectItem>
               <SelectItem
                 value="business"
-                className=" text-foreground focus:bg-muted focus: text-foreground"
+                className="focus:bg-accent focus:text-accent-foreground"
               >
                 Business
               </SelectItem>
               <SelectItem
                 value="professional"
-                className=" text-foreground focus:bg-muted focus: text-foreground"
+                className="focus:bg-accent focus:text-accent-foreground"
               >
                 Professional
               </SelectItem>
@@ -327,7 +327,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                   </Button>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-auto p-0 bg-background border-border">
+                <PopoverContent className="w-auto p-0 bg-popover border-border">
                   <CalendarComponent
                     mode="single"
                     selected={date}
@@ -344,7 +344,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                       date > new Date() || date < new Date('1950-01-01')
                     }
                     initialFocus
-                    className="bg-background  text-foreground"
+                    className="bg-popover text-popover-foreground"
                   />
                 </PopoverContent>
               </Popover>
@@ -397,7 +397,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           <Button
             type="submit"
             disabled={!isDirty || isLoading}
-            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-200  text-foreground"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isLoading ? (
               <>

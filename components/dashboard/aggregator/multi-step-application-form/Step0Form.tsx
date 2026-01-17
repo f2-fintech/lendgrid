@@ -271,26 +271,26 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                             </div>
                         </SelectTrigger>
                         <SelectContent className="bg-background border-border">
-                            <div className="px-2 py-1 text-xs font-semibold text-cyan-400 select-none">
+                            <div className="px-2 py-1 text-xs font-semibold text-primary select-none">
                                 Secured Loans
                             </div>
                             {loanTypes.secured.map((loan) => (
                                 <SelectItem
                                     key={loan.value}
                                     value={loan.value}
-                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
+                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
                                 >
                                     {loan.label}
                                 </SelectItem>
                             ))}
-                            <div className="px-2 py-1 text-xs font-semibold text-cyan-400 mt-2 select-none">
+                            <div className="px-2 py-1 text-xs font-semibold text-primary mt-2 select-none">
                                 Unsecured Loans
                             </div>
                             {loanTypes.unsecured.map((loan) => (
                                 <SelectItem
                                     key={loan.value}
                                     value={loan.value}
-                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
+                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
                                 >
                                     {loan.label}
                                 </SelectItem>
@@ -332,7 +332,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 <SelectItem
                                     key={option}
                                     value={option}
-                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
+                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
                                 >
                                     {option}
                                 </SelectItem>
@@ -360,7 +360,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 <SelectItem
                                     key={type}
                                     value={type}
-                                    className="text-gray-200 focus:bg-muted focus:text-foreground hover:bg-muted cursor-pointer"
+                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
                                 >
                                     {type}
                                 </SelectItem>
@@ -406,7 +406,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                     >
                                         <span className="text-foreground text-sm">{provider}</span>
                                         <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-cyan-400">
+                                            <Badge variant="outline" className="text-primary">
                                                 ₹{providerAmount || 'Not set'}
                                             </Badge>
                                             <Button
@@ -437,7 +437,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         selectedProviders.length === 0 ||
                         !validateAllProviderAmounts()
                     }
-                    className="w-full bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600 disabled:opacity-100 disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Let's Get Started
                     <ArrowRight className="w-4 h-4 ml-2" />
@@ -475,7 +475,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         </p>
                         <Button
                             onClick={() => setAmountDialogOpen(false)}
-                            className="w-full bg-cyan-600 hover:bg-cyan-700"
+                            className="w-full bg-primary hover:bg-primary/90"
                         >
                             Done
                         </Button>

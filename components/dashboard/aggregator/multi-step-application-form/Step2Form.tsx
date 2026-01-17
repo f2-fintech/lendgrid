@@ -120,7 +120,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                             className="border-2 border-dashed border-border rounded-lg p-12 text-center hover:border-gold transition-colors cursor-pointer"
                             onClick={() => inputRef.current?.click()}
                         >
-                            <Upload className="w-12 h-12 mx-auto mb-4  text-muted-foreground" />
+                            <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
                             <p className=" text-foreground mb-2">
                                 Click to upload or drag and drop
                             </p>
@@ -152,7 +152,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                                     className="flex items-center justify-evenly bg-background/50 p-3 rounded-lg"
                                 >
                                     <div className="flex items-center space-x-3">
-                                        <FileText className="w-5 h-5 text-blue-400" />
+                                        <FileText className="w-5 h-5 text-primary" />
                                         <div>
                                             <p className=" text-foreground text-sm">{file.name}</p>
                                             <p className=" text-muted-foreground text-xs">
@@ -187,7 +187,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                         <Button
                             onClick={handleUpload}
                             disabled={selectedFiles.length === 0 || isLoading}
-                            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600  text-foreground"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
                         >
                             {isLoading ? (
                                 <>

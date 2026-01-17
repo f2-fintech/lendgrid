@@ -56,20 +56,20 @@ export function SuperAdminDashboard() {
   }
 
   const MetricCard = ({ title, value, icon: Icon, trend, color }: any) => (
-    <Card className="bg-card/50 border-border hover:border-gold/50 transition-colors">
+    <Card className={`professional-card hover-lift ${color}`}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm font-medium text-muted-foreground">{title}</p>
             <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
             {trend && (
-              <p className="text-sm text-green-400 mt-1 flex items-center">
+              <p className="text-sm text-success mt-1 flex items-center">
                 <TrendingUp className="w-4 h-4 mr-1" />
                 {trend}
               </p>
             )}
           </div>
-          <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
+          <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-opacity-20`}>
             <Icon className="w-6 h-6" />
           </div>
         </div>
@@ -111,21 +111,21 @@ export function SuperAdminDashboard() {
             title="Platform Revenue (1%)"
             value={formatCurrency(mockData.metrics.platformRevenue)}
             icon={DollarSign}
-            trend="+15.3% from last month"
+            // trend="+15.3% from last month"
             color="bg-accent/20 text-accent"
           />
           <MetricCard
             title="Total Aggregators"
             value={mockData.metrics.totalAggregators}
             icon={Users}
-            trend="+8 this month"
-            color="bg-green-500/20 text-green-400"
+            // trend="+8 this month"
+            color="metric-card-success"
           />
           <MetricCard
             title="Monthly Volume"
             value={formatCurrency(mockData.metrics.monthlyVolume)}
             icon={TrendingUp}
-            trend="+22.1% from last month"
+            // trend="+22.1% from last month"
             color="bg-purple-500/20 text-purple-400"
           />
         </div>
@@ -134,7 +134,7 @@ export function SuperAdminDashboard() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Revenue Trend */}
         <div className="lg:col-span-2">
-          <Card className="bg-card/50 border-border">
+          <Card className="professional-card">
             <CardHeader>
               <CardTitle className="text-foreground">Platform Revenue & Volume Trends</CardTitle>
               <CardDescription className="text-muted-foreground">
@@ -148,14 +148,14 @@ export function SuperAdminDashboard() {
                 <div className="h-80">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={mockData.revenueData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="month" stroke="#9CA3AF" />
-                      <YAxis yAxisId="left" stroke="#9CA3AF" />
-                      <YAxis yAxisId="right" orientation="right" stroke="#9CA3AF" />
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted-foreground" />
+                      <XAxis dataKey="month" className="stroke-muted-foreground" />
+                      <YAxis yAxisId="left" className="stroke-muted-foreground" />
+                      <YAxis yAxisId="right" orientation="right" className="stroke-muted-foreground" />
                       <Tooltip
                         contentStyle={{
-                          backgroundColor: '#1F2937',
-                          border: '1px solid #374151',
+                          backgroundColor: 'hsl(var(--popover))',
+                          border: '1px solid hsl(var(--border))',
                           borderRadius: '8px'
                         }}
                         formatter={(value, name) => [
@@ -167,17 +167,17 @@ export function SuperAdminDashboard() {
                         yAxisId="left"
                         type="monotone"
                         dataKey="revenue"
-                        stroke="#FFD700"
+                        stroke="hsl(var(--accent))"
                         strokeWidth={3}
-                        dot={{ fill: '#FFD700', strokeWidth: 2, r: 4 }}
+                        dot={{ fill: 'hsl(var(--accent))', strokeWidth: 2, r: 4 }}
                       />
                       <Line
                         yAxisId="right"
                         type="monotone"
                         dataKey="volume"
-                        stroke="#007AFF"
+                        stroke="hsl(var(--primary))"
                         strokeWidth={3}
-                        dot={{ fill: '#007AFF', strokeWidth: 2, r: 4 }}
+                        dot={{ fill: 'hsl(var(--primary))', strokeWidth: 2, r: 4 }}
                       />
                     </LineChart>
                   </ResponsiveContainer>
@@ -264,7 +264,7 @@ export function SuperAdminDashboard() {
                 {mockData.pendingApprovals.map((request) => (
                   <div key={request.id} className="flex items-center justify-between p-4 bg-background/50 rounded-lg">
                     <div className="flex items-center space-x-4">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${request.type === 'Lender' ? 'bg-blue/20 text-blue' : 'bg-green-500/20 text-green-400'
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${request.type === 'Lender' ? 'bg-primary/20 text-primary' : 'bg-green-500/20 text-success'
                         }`}>
                         {request.type === 'Lender' ? <Building2 className="w-5 h-5" /> : <Users className="w-5 h-5" />}
                       </div>
@@ -315,7 +315,7 @@ export function SuperAdminDashboard() {
                 {mockData.topPerformers.map((performer, index) => (
                   <div key={performer.name} className="flex items-center justify-between p-4 bg-background/50 rounded-lg">
                     <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 bg-gradient-to-r from-gold to-yellow-500 rounded-lg flex items-center justify-center text-dark font-bold">
+                      <div className="w-10 h-10 bg-gradient-to-r from-accent to-yellow-500 rounded-lg flex items-center justify-center text-accent-foreground font-bold">
                         {index + 1}
                       </div>
                       <div>

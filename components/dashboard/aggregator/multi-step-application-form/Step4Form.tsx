@@ -222,7 +222,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
                   className="flex items-center justify-between bg-background/50 p-3 rounded-lg"
                 >
                   <div className="flex items-center space-x-3">
-                    <FileText className="w-5 h-5 text-blue-400" />
+                    <FileText className="w-5 h-5 text-primary" />
                     <div>
                       <p className=" text-foreground text-sm">{file.name}</p>
                       <p className=" text-muted-foreground text-xs">
@@ -259,7 +259,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
           <Button
             type="submit"
             disabled={!isDirty || isLoading}
-            className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700 hover:to-cyan-600  text-foreground"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             {isLoading ? (
               <>

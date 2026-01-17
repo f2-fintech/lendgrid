@@ -10,7 +10,7 @@ interface Props {
 
 export default function MultiStepFormPage({ apiBaseUrl, providers }: Props) {
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-900 to-black text-foreground">
+        <div className="min-h-screen bg-background text-foreground">
             <div className="max-w-6xl mx-auto p-6">
                 <FormProvider>
                     <MultiStepFormContent
