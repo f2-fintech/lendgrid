@@ -402,7 +402,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                         <div className="p-2 bg-primary/20 rounded-lg">
                           <Bell className="h-5 w-5 text-primary" />
                         </div>
-                        <span>Notifications</span>
+                        <span className="text-foreground">Notifications</span>
                         {unreadCount > 0 && (
                           <Badge className="bg-destructive hover:bg-destructive px-2 py-0.5 text-xs">
                             {unreadCount} new

@@ -74,9 +74,9 @@ export function SuperAdminPayouts() {
         bgColor: 'bg-green-500/20 hover:bg-green-500/30 border-green-500/30'
       },
       'APPROVED': {
-        color: 'text-gray-300',
+        color: 'text-foreground',
         icon: CheckCircle,
-        bgColor: 'bg-blue border-blue-500/30'
+        bgColor: 'bg-primary/20 hover:bg-primary/30 border-primary/30'
       },
       'CALCULATED': {
         color: 'text-cyan-400',
@@ -89,7 +89,7 @@ export function SuperAdminPayouts() {
         bgColor: 'bg-red-500/20 hover:bg-red-500/30 border-red-500/30'
       },
       'CANCELLED': {
-        color: 'text-gray-400',
+        color: 'text-muted-foreground',
         icon: Ban,
         bgColor: 'bg-gray-500/20 hover:bg-gray-500/30 border-gray-500/30'
       },
@@ -99,7 +99,7 @@ export function SuperAdminPayouts() {
         bgColor: 'bg-yellow-500/20 hover:bg-yellow-500/30 border-yellow-500/30'
       },
     }
-    return configs[status] || { color: 'text-gray-400', icon: FileText, bgColor: 'bg-gray-500/20' }
+    return configs[status] || { color: 'text-muted-foreground', icon: FileText, bgColor: 'bg-gray-500/20' }
   }
 
   const getAvailableStatuses = (currentStatus: string, allowAllForAdmin: boolean = true) => {
@@ -282,14 +282,13 @@ export function SuperAdminPayouts() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-colors">
+      <Card className={`professional-card hover-lift ${color}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-400">{title}</p>
-              <p className="text-2xl font-bold text-white mt-2">{value}</p>
-              {subtitle && (
-                <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
+              {subtitle && (<p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
               )}
             </div>
             <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
@@ -311,8 +310,8 @@ export function SuperAdminPayouts() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold text-white">Commission Payouts</h1>
-          <p className="text-gray-400 mt-1">Manage commission payouts to aggregators</p>
+          <h1 className="text-3xl font-bold text-foreground">Commission Payouts</h1>
+          <p className="text-muted-foreground mt-1">Manage commission payouts to aggregators</p>
         </div>
       </motion.div>
 
@@ -330,7 +329,7 @@ export function SuperAdminPayouts() {
             title="Total Payouts"
             value={metrics.totalPayouts}
             icon={FileText}
-            color="bg-blue/20 text-blue"
+            color="bg-primary/20 text-primary"
             subtitle="All time"
           />
           <MetricCard
@@ -344,14 +343,14 @@ export function SuperAdminPayouts() {
             title="Completed Payouts"
             value={metrics.completedPayouts}
             icon={FileCheck}
-            color="bg-green-500/20 text-green-400"
+            color="metric-card-success"
             subtitle="Successfully processed"
           />
           <MetricCard
             title="Total Amount"
             value={formatCurrency(metrics.totalAmount)}
             icon={DollarSign}
-            color="bg-gold/20 text-gold"
+            color="bg-accent/20 text-accent"
             subtitle="Total commission"
           />
         </div>
@@ -363,30 +362,30 @@ export function SuperAdminPayouts() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 0.2 }}
       >
-        <Card className="bg-gray-800/50 border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white">All Commission Transactions</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle className="text-foreground">All Commission Transactions</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Track and manage commission transactions
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Search by ticket ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-gray-900 border-gray-600 text-white w-64"
+                    className="pl-10 bg-background border-border text-foreground w-64"
                   />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-40 bg-gray-900 border-gray-600 text-white">
+                  <SelectTrigger className="w-40 bg-background border-border text-foreground">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="PAID">Paid</SelectItem>
                     <SelectItem value="APPROVED">Approved</SelectItem>
@@ -401,20 +400,21 @@ export function SuperAdminPayouts() {
           </CardHeader>
           <CardContent>
             <div ref={tableTopRef} />
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto professional-table">
               {isLoading ? (
                 <TableSkeleton columns={7} rows={pageSize} />
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Ticket ID</TableHead>
-                      <TableHead className="text-gray-300">Product Type</TableHead>
-                      <TableHead className="text-gray-300">Amount</TableHead>
-                      <TableHead className="text-gray-300">Commission</TableHead>
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">UTR / Date</TableHead>
-                      <TableHead className="text-gray-300">Actions</TableHead>
+                    <TableRow>
+                      <TableHead>Ticket ID</TableHead>
+                      <TableHead>Product Type</TableHead>
+                      <TableHead>Amount</TableHead>
+                      <TableHead>Cashback</TableHead>
+                      <TableHead>Commission</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>UTR / Date</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -428,18 +428,21 @@ export function SuperAdminPayouts() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           transition={{ duration: 0.3, delay: index * 0.05 }}
-                          className="border-gray-700 hover:bg-gray-800/50"
+                          className="border-border hover:bg-card/50"
                         >
                           <TableCell>
-                            <p className="text-white font-medium">#{payout.ticketId}</p>
+                            <p className="text-foreground font-medium">#{payout.ticketId}</p>
                           </TableCell>
                           <TableCell>
-                            <p className="text-gray-300">{payout.productType}</p>
+                            <p className="text-foreground">{payout.productType}</p>
                           </TableCell>
-                          <TableCell className="text-white">
+                          <TableCell>
                             {formatCurrency(payout.disbursedAmount)}
                           </TableCell>
-                          <TableCell className="text-white font-semibold">
+                          <TableCell>
+                            {formatCurrency(payout.cashbackAmount)}
+                          </TableCell>
+                          <TableCell className="font-semibold">
                             {formatCurrency(payout.commissionAmount)}
                           </TableCell>
                           <TableCell>
@@ -462,13 +465,13 @@ export function SuperAdminPayouts() {
                           <TableCell>
                             {payout.status === 'PAID' && payout.utrNumber ? (
                               <div className="flex flex-col">
-                                <p className="text-white font-mono text-sm">{payout.utrNumber.toUpperCase()}</p>
-                                <p className="text-xs text-gray-400">
+                                <p className="text-foreground font-mono text-sm">{payout.utrNumber.toUpperCase()}</p>
+                                <p className="text-xs text-muted-foreground">
                                   {new Date(payout.paidAt || payout.createdAt).toLocaleDateString()}
                                 </p>
                               </div>
                             ) : (
-                              <p className="text-gray-400 text-sm">
+                              <p className="text-muted-foreground text-sm">
                                 {new Date(payout.createdAt).toLocaleDateString()}
                               </p>
                             )}
@@ -482,7 +485,7 @@ export function SuperAdminPayouts() {
                                   setSelectedPayout(payout)
                                   setIsViewDialogOpen(true)
                                 }}
-                                className="text-blue hover:text-white hover:bg-gray-700"
+                                className="text-primary hover:text-foreground hover:bg-muted"
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -491,7 +494,7 @@ export function SuperAdminPayouts() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => window.open(payout.paymentProofUrl, '_blank')}
-                                  className="text-green-400 hover:text-white hover:bg-gray-700"
+                                  className="text-green-400 hover:text-foreground hover:bg-muted"
                                   title="View Payment Proof"
                                 >
                                   <FileCheck className="w-4 h-4" />
@@ -521,10 +524,10 @@ export function SuperAdminPayouts() {
 
       {/* View Payout Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+        <DialogContent className="bg-background border-border text-foreground max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Commission Details</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-muted-foreground">
               Complete information about the commission transaction
             </DialogDescription>
           </DialogHeader>
@@ -532,41 +535,41 @@ export function SuperAdminPayouts() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-gray-300">Ticket ID</Label>
-                  <p className="text-white font-semibold mt-1">#{selectedPayout.ticketId}</p>
+                  <Label className="text-foreground">Ticket ID</Label>
+                  <p className="text-foreground font-semibold mt-1">#{selectedPayout.ticketId}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Status</Label>
+                  <Label className="text-foreground">Status</Label>
                   <Badge className={`${getStatusConfig(selectedPayout.status).bgColor} ${getStatusConfig(selectedPayout.status).color} mt-1`}>
                     {selectedPayout.status}
                   </Badge>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Product Type</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.productType}</p>
+                  <Label className="text-foreground">Product Type</Label>
+                  <p className="text-foreground font-semibold mt-1">{selectedPayout.productType}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Aggregator Rank</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.aggregatorRank || 'N/A'}</p>
+                  <Label className="text-foreground">Aggregator Rank</Label>
+                  <p className="text-foreground font-semibold mt-1">{selectedPayout.aggregatorRank || 'N/A'}</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-6">
                 <div>
-                  <Label className="text-gray-300">Disbursed Amount</Label>
-                  <p className="text-white font-semibold mt-1">{formatCurrency(selectedPayout.disbursedAmount)}</p>
+                  <Label className="text-foreground">Disbursed Amount</Label>
+                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.disbursedAmount)}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Commission Amount</Label>
-                  <p className="text-white font-semibold mt-1">{formatCurrency(selectedPayout.commissionAmount)}</p>
+                  <Label className="text-foreground">Commission Amount</Label>
+                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.commissionAmount)}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Commission Type</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.commissionType}</p>
+                  <Label className="text-foreground">Commission Type</Label>
+                  <p className="text-foreground font-semibold mt-1">{selectedPayout.commissionType}</p>
                 </div>
                 <div>
-                  <Label className="text-gray-300">Commission Rate</Label>
-                  <p className="text-white font-semibold mt-1">
+                  <Label className="text-foreground">Commission Rate</Label>
+                  <p className="text-foreground font-semibold mt-1">
                     {selectedPayout.commissionType === 'PERCENTAGE'
                       ? `${selectedPayout.commissionRate}%`
                       : formatCurrency(selectedPayout.commissionRate)}
@@ -577,20 +580,20 @@ export function SuperAdminPayouts() {
               {selectedPayout.utrNumber && (
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <Label className="text-gray-300">UTR Number</Label>
-                    <p className="text-white font-semibold mt-1">{selectedPayout.utrNumber}</p>
+                    <Label className="text-foreground">UTR Number</Label>
+                    <p className="text-foreground font-semibold mt-1">{selectedPayout.utrNumber}</p>
                   </div>
                 </div>
               )}
 
               {selectedPayout.paymentProofUrl && (
                 <div>
-                  <Label className="text-gray-300">Payment Proof</Label>
+                  <Label className="text-foreground">Payment Proof</Label>
                   <a
                     href={selectedPayout.paymentProofUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-blue hover:underline mt-1 block"
+                    className="text-primary hover:underline mt-1 block"
                   >
                     View Document
                   </a>
@@ -599,8 +602,8 @@ export function SuperAdminPayouts() {
 
               {selectedPayout.adminNotes && (
                 <div>
-                  <Label className="text-gray-300">Admin Notes</Label>
-                  <p className="text-white font-semibold mt-1">{selectedPayout.adminNotes}</p>
+                  <Label className="text-foreground">Admin Notes</Label>
+                  <p className="text-foreground font-semibold mt-1">{selectedPayout.adminNotes}</p>
                 </div>
               )}
             </div>
@@ -610,41 +613,41 @@ export function SuperAdminPayouts() {
 
       {/* Update Status Dialog */}
       <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-        <DialogContent className="bg-gray-800 border-gray-700 text-white max-w-2xl">
+        <DialogContent className="bg-background border-border text-foreground max-w-2xl">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold">Update Commission Status</DialogTitle>
-            <DialogDescription className="text-gray-400">
+            <DialogDescription className="text-muted-foreground">
               Change the status and add payment details
             </DialogDescription>
           </DialogHeader>
           {selectedPayout && (
             <div className="space-y-3">
-              <div className="bg-gray-900 p-3 rounded-lg">
+              <div className="bg-background p-3 rounded-lg">
                 <div className="flex justify-between items-center">
                   <div>
-                    <p className="text-xs text-gray-400">Ticket ID</p>
-                    <p className="text-white font-semibold text-sm">#{selectedPayout.ticketId}</p>
+                    <p className="text-xs text-muted-foreground">Ticket ID</p>
+                    <p className="text-foreground font-semibold text-sm">#{selectedPayout.ticketId}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400">Current Status</p>
+                    <p className="text-xs text-muted-foreground">Current Status</p>
                     <Badge className={`${getStatusConfig(selectedPayout.status).bgColor} ${getStatusConfig(selectedPayout.status).color} text-xs`}>
                       {selectedPayout.status}
                     </Badge>
                   </div>
                   <div>
-                    <p className="text-xs text-gray-400">Commission</p>
-                    <p className="text-white font-semibold text-sm">{formatCurrency(selectedPayout.commissionAmount)}</p>
+                    <p className="text-xs text-muted-foreground">Commission</p>
+                    <p className="text-foreground font-semibold text-sm">{formatCurrency(selectedPayout.commissionAmount)}</p>
                   </div>
                 </div>
               </div>
 
               <div>
-                <Label className="text-gray-300 text-sm">New Status *</Label>
+                <Label className="text-foreground text-sm">New Status *</Label>
                 <Select value={newStatus} onValueChange={setNewStatus}>
-                  <SelectTrigger className="bg-gray-900 border-gray-600 text-white mt-1 h-9">
+                  <SelectTrigger className="bg-background border-border text-foreground mt-1 h-9">
                     <SelectValue placeholder="Select new status" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700">
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     {getAvailableStatuses(selectedPayout.status).map((status) => {
                       const config = getStatusConfig(status)
                       const Icon = config.icon
@@ -652,7 +655,7 @@ export function SuperAdminPayouts() {
                         <SelectItem
                           key={status}
                           value={status}
-                          className="hover:bg-gray-700 cursor-pointer"
+                          className="hover:bg-accent hover:text-accent-foreground cursor-pointer"
                         >
                           <div className="flex items-center gap-2">
                             <Icon className={`w-4 h-4 ${config.color}`} />
@@ -667,28 +670,28 @@ export function SuperAdminPayouts() {
 
               {/* UTR Number */}
               <div>
-                <Label className="text-gray-300 text-sm">
+                <Label className="text-foreground text-sm">
                   UTR Number {newStatus === 'PAID' && <span className="text-red-400">*</span>}
                 </Label>
                 <Input
                   value={utrNumber}
                   onChange={(e) => setUtrNumber(e.target.value)}
                   placeholder="Enter UTR number"
-                  className="bg-gray-900 border-gray-600 text-white mt-1 h-9 text-sm"
+                  className="bg-background border-border text-foreground mt-1 h-9 text-sm"
                 />
               </div>
 
               <div>
-                <Label className="text-gray-300 text-sm">
+                <Label className="text-foreground text-sm">
                   Payment Proof {newStatus === 'PAID' && !selectedPayout.paymentProofUrl && <span className="text-red-400">*</span>}
                 </Label>
                 <div className="mt-1">
                   {!paymentProofPreview ? (
                     <label className="block">
-                      <div className="border-2 border-dashed border-gray-600 rounded-lg p-4 text-center hover:border-orange-400 hover:bg-gray-900/50 transition-all cursor-pointer">
-                        <Upload className="w-6 h-6 mx-auto mb-1 text-gray-400" />
-                        <p className="text-gray-300 text-xs">Click to upload payment proof</p>
-                        <p className="text-xs text-gray-500">PDF, JPG, PNG (Max 10MB)</p>
+                      <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-orange-400 hover:bg-muted/50 transition-all cursor-pointer">
+                        <Upload className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
+                        <p className="text-foreground text-xs">Click to upload payment proof</p>
+                        <p className="text-xs text-muted-foreground">PDF, JPG, PNG (Max 10MB)</p>
                       </div>
                       <input
                         type="file"
@@ -698,7 +701,7 @@ export function SuperAdminPayouts() {
                       />
                     </label>
                   ) : (
-                    <div className="relative border-2 border-gray-600 rounded-lg p-2 bg-gray-900/50">
+                    <div className="relative border-2 border-border rounded-lg p-2 bg-background/50">
                       {paymentProofPreview.startsWith('data:image') ? (
                         <img
                           src={paymentProofPreview}
@@ -708,8 +711,8 @@ export function SuperAdminPayouts() {
                       ) : (
                         <div className="flex items-center justify-center h-24">
                           <div className="text-center">
-                            <FileText className="w-10 h-10 mx-auto mb-1 text-blue-400" />
-                            <p className="text-xs text-gray-300">
+                            <FileText className="w-10 h-10 mx-auto mb-1 text-primary" />
+                            <p className="text-xs text-foreground">
                               {paymentProofFile ? paymentProofFile.name : 'Existing payment proof'}
                             </p>
                             {!paymentProofFile && (
@@ -717,7 +720,7 @@ export function SuperAdminPayouts() {
                                 href={paymentProofPreview}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-blue-400 hover:underline text-xs"
+                                className="text-primary hover:underline text-xs"
                               >
                                 View Document
                               </a>
@@ -727,7 +730,7 @@ export function SuperAdminPayouts() {
                       )}
                       <button
                         onClick={handleRemoveFile}
-                        className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded-full text-white"
+                        className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded-full text-foreground"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -758,41 +761,41 @@ export function SuperAdminPayouts() {
               </div>
 
               <div>
-                <Label className="text-gray-300 text-sm">Admin Notes</Label>
+                <Label className="text-foreground text-sm">Admin Notes</Label>
                 <Textarea
                   value={adminNotes}
                   onChange={(e) => setAdminNotes(e.target.value)}
                   placeholder="Add notes about this status change..."
-                  className="bg-gray-900 border-gray-600 text-white mt-1 text-sm"
+                  className="bg-background border-border text-foreground mt-1 text-sm"
                   rows={2}
                 />
               </div>
 
               {newStatus === 'PAID' && (
-                <div className="bg-blue-500/10 border border-blue-500 p-2 rounded-lg flex items-start space-x-2">
-                  <AlertCircle className="w-4 h-4 text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="bg-primary/10 border border-primary p-2 rounded-lg flex items-start space-x-2">
+                  <AlertCircle className="w-4 h-4 text-primary mt-0.5 flex-shrink-0" />
                   <div>
-                    <p className="text-xs font-semibold text-white">Payment Status Requirements</p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs font-semibold text-foreground">Payment Status Requirements</p>
+                    <p className="text-xs text-muted-foreground">
                       UTR number and payment proof are mandatory when marking as PAID
                     </p>
                   </div>
                 </div>
               )}
 
-              <div className="flex justify-end space-x-3 pt-3 border-t border-gray-700">
+              <div className="flex justify-end space-x-3 pt-3 border-t border-border">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => setIsStatusDialogOpen(false)}
                   disabled={isUploading}
-                  className="border-gray-600 text-gray-300 hover:bg-gray-700 h-8"
+                  className="border-border text-foreground hover:bg-muted h-8"
                 >
                   Cancel
                 </Button>
                 <Button
                   size="sm"
-                  className="bg-gradient-to-r from-blue to-cyan-500 hover:from-blue-600 hover:to-cyan-700 text-white h-8"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground h-8"
                   onClick={handleUpdateStatus}
                   disabled={!newStatus || isUploading}
                 >

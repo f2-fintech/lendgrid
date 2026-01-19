@@ -179,9 +179,9 @@ export function SuperAdminCommission() {
   const getStatusColor = (status: RuleStatus) => {
     switch (status) {
       case RuleStatus.ACTIVE: return 'bg-green-500/20 text-green-400'
-      case RuleStatus.INACTIVE: return 'bg-gray-500/20 text-gray-400'
+      case RuleStatus.INACTIVE: return 'bg-gray-500/20 text-muted-foreground'
       case RuleStatus.ARCHIVED: return 'bg-orange-500/20 text-orange-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+      default: return 'bg-gray-500/20 text-muted-foreground'
     }
   }
 
@@ -274,17 +274,16 @@ export function SuperAdminCommission() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-colors">
+      <Card className={`professional-card hover-lift ${color}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-400">{title}</p>
-              <p className="text-2xl font-bold text-white mt-2">{value}</p>
-              {subtitle && (
-                <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
+              {subtitle && (<p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
               )}
             </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-opacity-20`}>
               <Icon className="w-6 h-6" />
             </div>
           </div>
@@ -303,25 +302,25 @@ export function SuperAdminCommission() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold text-white">Commission Management</h1>
-          <p className="text-gray-400 mt-1">Configure and manage commission rules across the platform</p>
+          <h1 className="text-3xl font-bold text-foreground">Commission Management</h1>
+          <p className="text-muted-foreground mt-1">Configure and manage commission rules across the platform</p>
         </div>
         <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogClose}>
           <DialogTrigger asChild>
-            <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700">
+            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
               <Plus className="w-4 h-4 mr-2" />
               Create New Rule
             </Button>
           </DialogTrigger>
           <DialogContent
-            className="bg-gray-800 border-gray-700 text-white max-w-3xl max-h-[90vh] overflow-y-auto"
+            className="bg-background border-border text-foreground max-w-3xl max-h-[90vh] overflow-y-auto"
             onInteractOutside={(e) => e.preventDefault()}
           >
             <DialogHeader>
               <DialogTitle className="text-xl font-bold">
                 {editingRule ? 'Edit Commission Rule' : 'Create Commission Rule'}
               </DialogTitle>
-              <DialogDescription className="text-gray-400">
+              <DialogDescription className="text-muted-foreground">
                 {editingRule
                   ? 'Update the commission rule details'
                   : 'Set up a new commission rule for loan products'}
@@ -331,7 +330,7 @@ export function SuperAdminCommission() {
             <form onSubmit={handleSubmit(handleCreateRule)} className="space-y-6">
               {/* Basic Information */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   Basic Information
                 </h3>
 
@@ -344,7 +343,7 @@ export function SuperAdminCommission() {
                     <Input
                       id="ruleName"
                       {...register("ruleName")}
-                      className="bg-gray-900 border-gray-600"
+                      className="bg-background border-border"
                       placeholder="e.g., Personal Loan - Gold Tier"
                     />
                     {errors.ruleName && (
@@ -363,7 +362,7 @@ export function SuperAdminCommission() {
                     <Input
                       id="productType"
                       {...register("productType")}
-                      className="bg-gray-900 border-gray-600"
+                      className="bg-background border-border"
                       placeholder="e.g., Personal Loan, Home Loan"
                     />
                     {errors.productType && (
@@ -384,10 +383,10 @@ export function SuperAdminCommission() {
                       name="applicableFor"
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger id="applicableFor" className="bg-gray-900 border-gray-600">
+                          <SelectTrigger id="applicableFor" className="bg-background border-border">
                             <SelectValue placeholder="Select tier" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-popover border-border text-popover-foreground">
                             {Object.values(ApplicableFor).map((tier) => (
                               <SelectItem key={tier} value={tier} className="cursor-pointer">
                                 {getApplicableForLabel(tier)}
@@ -409,7 +408,7 @@ export function SuperAdminCommission() {
 
               {/* Commission Configuration */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   Commission Configuration
                 </h3>
 
@@ -424,10 +423,10 @@ export function SuperAdminCommission() {
                       name="commissionType"
                       render={({ field }) => (
                         <Select value={field.value} onValueChange={field.onChange}>
-                          <SelectTrigger id="commissionType" className="bg-gray-900 border-gray-600">
+                          <SelectTrigger id="commissionType" className="bg-background border-border">
                             <SelectValue placeholder="Select type" />
                           </SelectTrigger>
-                          <SelectContent>
+                          <SelectContent className="bg-popover border-border text-popover-foreground">
                             <SelectItem className='cursor-pointer' value={CommissionType.PERCENTAGE}>
                               Percentage (%)
                             </SelectItem>
@@ -451,10 +450,10 @@ export function SuperAdminCommission() {
                         type="number"
                         step="0.01"
                         {...register("commissionRate", { valueAsNumber: true })}
-                        className="bg-gray-900 border-gray-600 pr-8"
+                        className="bg-background border-border pr-8"
                         placeholder={commissionTypeWatch === CommissionType.PERCENTAGE ? "3.5" : "5000"}
                       />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
                         {commissionTypeWatch === CommissionType.PERCENTAGE ? '%' : '₹'}
                       </span>
                     </div>
@@ -467,9 +466,9 @@ export function SuperAdminCommission() {
                   </div>
                 </div>
 
-                <Alert className="bg-blue/10 border-blue/30">
-                  <Info className="h-4 w-4 text-blue" />
-                  <AlertDescription className="text-sm text-gray-300">
+                <Alert className="bg-primary/10 border-primary/30">
+                  <Info className="h-4 w-4 text-primary" />
+                  <AlertDescription className="text-sm text-foreground">
                     {commissionTypeWatch === CommissionType.PERCENTAGE
                       ? 'Commission will be calculated as a percentage of the loan amount'
                       : 'Commission will be a fixed amount regardless of loan size'}
@@ -479,7 +478,7 @@ export function SuperAdminCommission() {
 
               {/* Amount Range */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   Applicable Amount Range
                 </h3>
 
@@ -493,7 +492,7 @@ export function SuperAdminCommission() {
                       id="minAmount"
                       type="number"
                       {...register("minAmount", { valueAsNumber: true })}
-                      className="bg-gray-900 border-gray-600"
+                      className="bg-background border-border"
                       placeholder="100000"
                     />
                     {errors.minAmount && (
@@ -513,7 +512,7 @@ export function SuperAdminCommission() {
                       id="maxAmount"
                       type="number"
                       {...register("maxAmount", { valueAsNumber: true })}
-                      className="bg-gray-900 border-gray-600"
+                      className="bg-background border-border"
                       placeholder="1000000"
                     />
                     {errors.maxAmount && (
@@ -528,7 +527,7 @@ export function SuperAdminCommission() {
 
               {/* Additional Settings */}
               <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-gray-300 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   Additional Settings
                 </h3>
 
@@ -542,10 +541,10 @@ export function SuperAdminCommission() {
                       id="priority"
                       type="number"
                       {...register("priority", { valueAsNumber: true })}
-                      className="bg-gray-900 border-gray-600"
+                      className="bg-background border-border"
                       placeholder="0"
                     />
-                    <p className="text-xs text-gray-400 mt-1">Higher priority rules are applied first</p>
+                    <p className="text-xs text-muted-foreground mt-1">Higher priority rules are applied first</p>
                     {errors.priority && (
                       <p className="text-sm text-red-400 mt-1 flex items-center gap-1">
                         <AlertCircle className="w-3 h-3" />
@@ -563,7 +562,7 @@ export function SuperAdminCommission() {
                   <Textarea
                     id="description"
                     {...register("description")}
-                    className="bg-gray-900 border-gray-600 min-h-[80px]"
+                    className="bg-background border-border min-h-[80px]"
                     placeholder="Add any additional notes or conditions for this rule..."
                   />
                   {errors.description && (
@@ -576,13 +575,13 @@ export function SuperAdminCommission() {
               </div>
 
               {/* Action Buttons */}
-              <div className="flex justify-end space-x-4 pt-4 border-t border-gray-700">
+              <div className="flex justify-end space-x-4 pt-4 border-t border-border">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={() => handleDialogClose(false)}
                   disabled={isSubmitting}
-                  className="border-gray-600 hover:bg-gray-700"
+                  className="border-border hover:bg-muted"
                 >
                   Cancel
                 </Button>
@@ -590,7 +589,7 @@ export function SuperAdminCommission() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {isSubmitting
                     ? (editingRule ? "Updating..." : "Creating...")
@@ -632,14 +631,14 @@ export function SuperAdminCommission() {
             title="Active Rules"
             value={metrics.activeRules}
             icon={CreditCard}
-            color="bg-green-500/20 text-green-400"
+            color="metric-card-success"
             subtitle="Currently active"
           />
           <MetricCard
             title="Avg Commission Rate"
             value={`${metrics.avgCommissionRate}%`}
             icon={Percent}
-            color="bg-gold/20 text-gold"
+            color="bg-accent/20 text-accent"
             subtitle="Platform average"
           />
         </div>
@@ -651,21 +650,21 @@ export function SuperAdminCommission() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 0.2 }}
       >
-        <Card className="bg-gray-800/50 border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white">Commission Rules</CardTitle>
-                <CardDescription className="text-gray-400">
+                <CardTitle className="text-foreground">Commission Rules</CardTitle>
+                <CardDescription className="text-muted-foreground">
                   Manage commission rates and rules for different loan products
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-4">
                 <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val as RuleStatus | '')}>
-                  <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
+                  <SelectTrigger className="w-32 bg-background border-border text-foreground">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value={RuleStatus.ACTIVE}>Active</SelectItem>
                     <SelectItem value={RuleStatus.INACTIVE}>Inactive</SelectItem>
@@ -673,10 +672,10 @@ export function SuperAdminCommission() {
                   </SelectContent>
                 </Select>
                 <Select value={filterApplicableFor} onValueChange={(val) => setFilterApplicableFor(val as ApplicableFor | '')}>
-                  <SelectTrigger className="w-40 bg-gray-900 border-gray-600 text-white">
-                    <SelectValue placeholder="Tier" />
+                  <SelectTrigger className="w-40 bg-background border-border text-foreground">
+                    <SelectValue placeholder="Rank" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     {Object.values(ApplicableFor).map((tier) => (
                       <SelectItem key={tier} value={tier}>
                         {getApplicableForLabel(tier)}
@@ -689,20 +688,20 @@ export function SuperAdminCommission() {
           </CardHeader>
           <CardContent>
             <div ref={tableTopRef} />
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto professional-table">
               {isTableLoading ? (
                 <TableSkeleton columns={7} rows={pageSize} />
               ) : rulesData?.data && rulesData.data.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-gray-700">
-                      <TableHead className="text-gray-300">Rule Name</TableHead>
-                      <TableHead className="text-gray-300">Product Type</TableHead>
-                      <TableHead className="text-gray-300">Amount Range</TableHead>
-                      <TableHead className="text-gray-300">Commission</TableHead>
-                      <TableHead className="text-gray-300">Applicable For</TableHead>
-                      <TableHead className="text-gray-300">Status</TableHead>
-                      <TableHead className="text-gray-300">Actions</TableHead>
+                    <TableRow>
+                      <TableHead>Rule Name</TableHead>
+                      <TableHead>Product Type</TableHead>
+                      <TableHead>Amount Range</TableHead>
+                      <TableHead>Commission</TableHead>
+                      <TableHead>Applicable For</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -712,36 +711,36 @@ export function SuperAdminCommission() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="border-gray-700 hover:bg-gray-800/50"
+                        className="border-border hover:bg-card/50"
                       >
                         <TableCell>
                           <div>
-                            <p className="text-white font-medium">{rule.ruleName}</p>
-                            <p className="text-sm text-gray-400">Priority: {rule.priority}</p>
+                            <p className="font-medium">{rule.ruleName}</p>
+                            {/* <p className="text-sm text-muted-foreground">Priority: {rule.priority}</p> */}
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="border-gray-600 text-gray-300">
+                          <Badge variant="outline" className="border-border text-foreground">
                             {rule.productType}
                           </Badge>
                         </TableCell>
-                        <TableCell className="text-white">
+                        <TableCell className="text-foreground">
                           <div>
                             <p className="text-sm">{formatCurrency(rule.minAmount)}</p>
-                            <p className="text-xs text-gray-400">to {formatCurrency(rule.maxAmount)}</p>
+                            <p className="text-xs text-muted-foreground">to {formatCurrency(rule.maxAmount)}</p>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="text-gold font-semibold">
+                          <div className="text-accent font-semibold">
                             {rule.commissionType === CommissionType.PERCENTAGE
                               ? `${rule.commissionRate}%`
                               : formatCurrency(rule.commissionRate)}
                           </div>
-                          <p className="text-xs text-gray-400">
+                          <p className="text-xs text-muted-foreground">
                             {rule.commissionType === CommissionType.PERCENTAGE ? 'Percentage' : 'Flat'}
                           </p>
                         </TableCell>
-                        <TableCell className="text-gray-300">
+                        <TableCell className="text-foreground">
                           {getApplicableForLabel(rule.applicableFor)}
                         </TableCell>
                         <TableCell>
@@ -754,7 +753,7 @@ export function SuperAdminCommission() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-gold hover:text-white hover:bg-gray-700"
+                              className="text-accent hover:text-foreground hover:bg-muted"
                               onClick={() => handleEditRule(rule)}
                             >
                               <Edit className="w-4 h-4" />
@@ -762,7 +761,7 @@ export function SuperAdminCommission() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              className="text-red-400 hover:text-white hover:bg-gray-700"
+                              className="text-red-400 hover:text-foreground hover:bg-muted"
                               onClick={() => handleDeleteRule(rule.id)}
                               disabled={deleteRuleMutation.isPending}
                             >
@@ -776,9 +775,9 @@ export function SuperAdminCommission() {
                 </Table>
               ) : (
                 <div className="text-center py-12">
-                  <AlertCircle className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                  <p className="text-gray-400 text-lg">No commission rules found</p>
-                  <p className="text-gray-500 text-sm mt-2">Create your first commission rule to get started</p>
+                  <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground text-lg">No commission rules found</p>
+                  <p className="text-muted-foreground text-sm mt-2">Create your first commission rule to get started</p>
                 </div>
               )}
             </div>

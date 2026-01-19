@@ -93,24 +93,24 @@ export function SuperAdminAggregators() {
   }
 
   const getStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-500/20 text-gray-400'
+    if (!status) return 'bg-gray-500/20 text-muted-foreground'
     switch (status.toUpperCase()) {
       case 'ACTIVE': return 'bg-green-500/20 text-green-400'
       case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
       case 'SUSPENDED':
       case 'INACTIVE': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+      default: return 'bg-gray-500/20 text-muted-foreground'
     }
   }
 
   const getKycStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-500/20 text-gray-400'
+    if (!status) return 'bg-gray-500/20 text-muted-foreground'
     switch (status) {
       case 'PENDING': return 'bg-yellow-500/20 text-yellow-400'
       case 'UNDER_REVIEW': return 'bg-orange-500/20 text-orange-400'
       case 'APPROVED': return 'bg-green-500/20 text-green-400'
       case 'REJECTED': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-gray-400'
+      default: return 'bg-gray-500/20 text-muted-foreground'
     }
   }
 
@@ -200,17 +200,17 @@ export function SuperAdminAggregators() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className="bg-gray-800/50 border-gray-700 hover:border-gold/50 transition-colors">
+      <Card className={`professional-card hover-lift ${color}`}>
         <CardContent className="p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-400">{title}</p>
-              <p className="text-2xl font-bold text-white mt-2">{value}</p>
+              <p className="text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
               {subtitle && (
-                <p className="text-sm text-gray-400 mt-1">{subtitle}</p>
+                <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
               )}
             </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-opacity-20`}>
               <Icon className="w-6 h-6" />
             </div>
           </div>
@@ -223,11 +223,11 @@ export function SuperAdminAggregators() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <AlertCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white mb-2">
+          <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-foreground mb-2">
             Error Loading Aggregators
           </h3>
-          <p className="text-gray-400">{(error as Error)?.message}</p>
+          <p className="text-muted-foreground">{(error as Error)?.message}</p>
         </div>
       </div>
     )
@@ -242,11 +242,11 @@ export function SuperAdminAggregators() {
         className="flex items-center justify-between"
       >
         <div>
-          <h1 className="text-3xl font-bold text-white">Aggregator Management</h1>
-          <p className="text-gray-400 mt-1">Manage and monitor all registered aggregators</p>
+          <h1 className="text-3xl font-bold text-foreground">Aggregator Management</h1>
+          <p className="text-muted-foreground mt-1">Manage and monitor all registered aggregators</p>
         </div>
         <Button
-          className="bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground"
           onClick={() => setIsAddDialogOpen(true)}
         >
           <Plus className="w-4 h-4 mr-2" />
@@ -275,7 +275,7 @@ export function SuperAdminAggregators() {
             title="Active Aggregators"
             value={metrics.activeAggregators}
             icon={CheckCircle}
-            color="bg-green-500/20 text-green-400"
+            color="metric-card-success"
             subtitle="Currently operational"
           />
           <MetricCard
@@ -289,7 +289,7 @@ export function SuperAdminAggregators() {
             title="Avg Conversion Rate"
             value={`0%`}
             icon={TrendingUp}
-            color="bg-gold/20 text-gold"
+            color="bg-accent/20 text-accent"
             subtitle="Platform average"
           />
         </div>
@@ -301,30 +301,30 @@ export function SuperAdminAggregators() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.6, delay: 0.2 }}
       >
-        <Card className="bg-gray-800/50 border-gray-700">
+        <Card className="bg-card border-border">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-white">All Aggregators</CardTitle>
-                <CardDescription className="text-gray-400 mt-1">
+                <CardTitle className="text-foreground">All Aggregators</CardTitle>
+                <CardDescription className="text-muted-foreground mt-1">
                   Complete list of registered aggregators and their performance
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Search aggregators..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-gray-900 border-gray-600 text-white w-64"
+                    className="pl-10 bg-background border-border text-foreground w-64"
                   />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-32 bg-gray-900 border-gray-600 text-white">
+                  <SelectTrigger className="w-32 bg-background border-border text-foreground">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value="all">All Status</SelectItem>
                     <SelectItem value="ACTIVE">Active</SelectItem>
                     <SelectItem value="INACTIVE">Inactive</SelectItem>
@@ -342,7 +342,7 @@ export function SuperAdminAggregators() {
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : (
                 <div className="min-w-full">
-                  <div className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-900/50 rounded-t-lg font-medium text-gray-300 text-sm">
+                  <div className="grid grid-cols-7 gap-2 py-4 px-4 bg-muted/50 rounded-t-lg font-medium text-muted-foreground text-sm">
                     <div>Aggregator</div>
                     <div>Status</div>
                     <div>KYC Status</div>
@@ -358,11 +358,11 @@ export function SuperAdminAggregators() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="grid grid-cols-7 gap-2 py-4 px-4 bg-gray-800/30 hover:bg-gray-800/50 rounded border-b border-gray-700 items-center"
+                        className="grid grid-cols-7 gap-2 py-4 px-4 bg-card/30 hover:bg-card/50 rounded border-b border-border items-center"
                       >
                         <div>
-                          <p className="text-white font-medium">{aggregator.companyName}</p>
-                          <p className="text-sm text-gray-400 truncate">{aggregator.user?.email}</p>
+                          <p className="text-foreground font-medium">{aggregator.companyName}</p>
+                          <p className="text-sm text-muted-foreground truncate">{aggregator.user?.email}</p>
                         </div>
                         <div>
                           <Badge className={getStatusColor(aggregator.user?.status)}>
@@ -374,20 +374,20 @@ export function SuperAdminAggregators() {
                             {aggregator.kycStatus || 'UNKNOWN'}
                           </Badge>
                         </div>
-                        <div className="text-white">
+                        <div className="text-foreground">
                           <p>{aggregator.totalApplicationsSubmitted || 0} worked</p>
-                          <p className="text-sm text-gray-400">
+                          <p className="text-sm text-muted-foreground">
                             {aggregator.totalApplicationsSubmitted || 0} approved
                           </p>
                         </div>
-                        <div className="text-white">
+                        <div className="text-foreground">
                           {(aggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(aggregator.totalCommissionEarned || 0) : '0'}
                         </div>
-                        <div className="text-gray-300">
+                        <div className="text-foreground">
                           {aggregator.createdAt ? new Date(aggregator.createdAt).toLocaleDateString() : '-'}
                         </div>
                         {/* <div className="flex items-center gap-2">
-                            <span className="text-white font-medium">
+                            <span className="text-foreground font-medium">
                               {aggregator.teamMemberUsers?.length || 0}
                             </span>
                             {(aggregator.teamMemberUsers?.length || 0) > 0 && (
@@ -399,7 +399,7 @@ export function SuperAdminAggregators() {
                                   setSelectedCompanyName(aggregator.companyName)
                                   setIsTeamMembersDialogOpen(true)
                                 }}
-                                className="text-cyan-400 hover:text-white hover:bg-gray-700 h-7 w-7 p-0"
+                                className="text-primary hover:text-foreground hover:bg-muted h-7 w-7 p-0"
                               >
                                 <Eye className="w-4 h-4" />
                               </Button>
@@ -416,7 +416,7 @@ export function SuperAdminAggregators() {
                                     setSelectedAggregator(aggregator)
                                     setIsViewDialogOpen(true)
                                   }}
-                                  className="text-blue hover:text-white hover:bg-gray-700"
+                                  className="text-primary hover:text-foreground hover:bg-muted"
                                 >
                                   <Eye className="w-4 h-4" />
                                 </Button>
@@ -431,7 +431,7 @@ export function SuperAdminAggregators() {
                                   variant="ghost"
                                   size="sm"
                                   asChild
-                                  className="text-gold hover:text-white hover:bg-gray-700"
+                                  className="text-accent hover:text-foreground hover:bg-muted"
                                 >
                                   <Link href={`/super-admin/aggregators/profile/${aggregator?._id}`}>
                                     <Edit className="w-4 h-4" />
@@ -447,7 +447,7 @@ export function SuperAdminAggregators() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-violet-400 hover:text-white hover:bg-gray-700"
+                                  className="text-violet-400 hover:text-foreground hover:bg-muted"
                                   onClick={() => {
                                     setSelectedAggregatorForTeam(aggregator)
                                     setIsAddTeamMemberDialogOpen(true)
@@ -465,7 +465,7 @@ export function SuperAdminAggregators() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  className="text-red-300 hover:text-white hover:bg-red-600/20 rounded-lg"
+                                  className="text-red-300 hover:text-foreground hover:bg-red-600/20 rounded-lg"
                                   onClick={() => handleReject(aggregator.user?._id)}
                                 >
                                   <Trash2 className="w-4 h-4" />
@@ -504,27 +504,27 @@ export function SuperAdminAggregators() {
         setIsViewDialogOpen(val)
       }}>
         <DialogContent
-          className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700/50 text-white max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+          className="bg-background border border-border text-foreground max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
           onInteractOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
         >
-          <DialogHeader className="border-b border-gray-700/50 pb-4 flex justify-between items-center">
+          <DialogHeader className="border-b border-border/50 pb-4 flex justify-between items-center">
             <div>
-              <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-white">
+              <DialogTitle className="text-2xl font-bold text-foreground">
                 Aggregator Profile
               </DialogTitle>
-              <DialogDescription className="text-gray-400 text-sm">
+              <DialogDescription className="text-muted-foreground text-sm">
                 Comprehensive overview of aggregator performance and details
               </DialogDescription>
             </div>
 
             <DialogClose asChild>
               <button
-                className="p-2 rounded hover:bg-gray-700/50 transition"
+                className="p-2 rounded hover:bg-muted transition"
                 aria-label="Close"
                 onClick={() => setIsViewDialogOpen(false)}
               >
-                <X className="w-5 h-5 text-gray-300" />
+                <X className="w-5 h-5 text-muted-foreground" />
               </button>
             </DialogClose>
           </DialogHeader>
@@ -551,7 +551,7 @@ export function SuperAdminAggregators() {
                 {selectedAggregator.user?.status === "INACTIVE" && (
                   <div className="flex items-center space-x-4">
                     <Button
-                      className="bg-green-500 hover:bg-green-600 text-white"
+                      className="bg-green-500 hover:bg-green-600 text-foreground"
                       onClick={() => {
                         handleApprove(selectedAggregator.user?._id)
                         setIsViewDialogOpen(false)
@@ -563,7 +563,7 @@ export function SuperAdminAggregators() {
 
                     <Button
                       variant="outline"
-                      className="border-red-500 text-red-400 hover:bg-red-500 hover:text-white"
+                      className="border-red-500 text-red-400 hover:bg-red-500 hover:text-foreground"
                       onClick={() => {
                         handleReject(selectedAggregator.user?._id)
                         setIsViewDialogOpen(false)
@@ -577,19 +577,19 @@ export function SuperAdminAggregators() {
               </div>
 
               {/* Personal Information Card */}
-              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
-                <h3 className="text-lg font-semibold mb-4 text-blue-400 flex items-center gap-2">
+              <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-primary flex items-center gap-2">
                   <User className="w-5 h-5" />
                   Personal Information
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
-                    <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
-                      <User className="w-4 h-4 text-blue-400" />
+                    <div className="bg-primary/10 p-2 rounded-lg mt-1">
+                      <User className="w-4 h-4 text-primary" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400 mb-1">Username</p>
-                      <p className="text-white font-semibold">{selectedAggregator.user?.username}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Username</p>
+                      <p className="text-foreground font-semibold">{selectedAggregator.user?.username}</p>
                     </div>
                   </div>
 
@@ -598,8 +598,8 @@ export function SuperAdminAggregators() {
                       <Mail className="w-4 h-4 text-purple-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400 mb-1">Email</p>
-                      <p className="text-white font-semibold break-all">{selectedAggregator.user?.email}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Email</p>
+                      <p className="text-foreground font-semibold break-all">{selectedAggregator.user?.email}</p>
                     </div>
                   </div>
 
@@ -608,8 +608,8 @@ export function SuperAdminAggregators() {
                       <Phone className="w-4 h-4 text-green-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400 mb-1">Contact</p>
-                      <p className="text-white font-semibold">{selectedAggregator.user?.contact || 'Not provided'}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Contact</p>
+                      <p className="text-foreground font-semibold">{selectedAggregator.user?.contact || 'Not provided'}</p>
                     </div>
                   </div>
 
@@ -618,8 +618,8 @@ export function SuperAdminAggregators() {
                       <Building className="w-4 h-4 text-orange-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400 mb-1">Company Name</p>
-                      <p className="text-white font-semibold">{selectedAggregator.companyName || 'Not specified'}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Company Name</p>
+                      <p className="text-foreground font-semibold">{selectedAggregator.companyName || 'Not specified'}</p>
                     </div>
                   </div>
 
@@ -628,39 +628,39 @@ export function SuperAdminAggregators() {
                       <MapPin className="w-4 h-4 text-pink-400" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-xs text-gray-400 mb-1">Address</p>
-                      <p className="text-white font-semibold">{selectedAggregator.registeredAddress || 'Not provided'}</p>
+                      <p className="text-xs text-muted-foreground mb-1">Address</p>
+                      <p className="text-foreground font-semibold">{selectedAggregator.registeredAddress || 'Not provided'}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Performance Metrics */}
-              <div className="bg-gradient-to-br from-blue-900/30 to-purple-900/30 rounded-lg p-6 border border-blue-700/30 backdrop-blur-sm">
+              <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
                 <h3 className="text-lg font-semibold mb-4 text-purple-400 flex items-center gap-2">
                   <TrendingUp className="w-5 h-5" />
                   Performance Metrics
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
-                    <p className="text-xs text-gray-400 mb-2">Total Applications</p>
-                    <p className="text-2xl font-bold text-blue-400">{selectedAggregator.totalApplicationsSubmitted || 0}</p>
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Total Applications</p>
+                    <p className="text-2xl font-bold text-primary">{selectedAggregator.totalApplicationsSubmitted || 0}</p>
                   </div>
 
-                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
-                    <p className="text-xs text-gray-400 mb-2">Approved</p>
+                  <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">Approved</p>
                     <p className="text-2xl font-bold text-green-400">{selectedAggregator.approvedApplications || 0}</p>
                   </div>
 
-                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
-                    <p className="text-xs text-gray-400 mb-2">Conversion Rate</p>
+                  <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">Conversion Rate</p>
                     <p className="text-2xl font-bold text-purple-400">
                       {(selectedAggregator.conversionRate || 0) > 0 ? `${selectedAggregator.conversionRate.toFixed(1)}%` : 'N/A'}
                     </p>
                   </div>
 
-                  <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/50">
-                    <p className="text-xs text-gray-400 mb-2">Commission Earned</p>
+                  <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">Commission Earned</p>
                     <p className="text-xl font-bold text-yellow-400">
                       {(selectedAggregator.totalCommissionEarned || 0) > 0
                         ? formatCurrency(selectedAggregator.totalCommissionEarned || 0)
@@ -671,17 +671,17 @@ export function SuperAdminAggregators() {
               </div>
 
               {/* Activity Timeline */}
-              <div className="bg-gray-800/50 rounded-lg p-6 border border-gray-700/50 backdrop-blur-sm">
+              <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
                 <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
                   <Activity className="w-5 h-5" />
                   Activity Timeline
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700/30">
-                    <Calendar className="w-5 h-5 text-blue-400" />
+                  <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg border border-border">
+                    <Calendar className="w-5 h-5 text-primary" />
                     <div>
-                      <p className="text-xs text-gray-400">Join Date</p>
-                      <p className="text-white font-semibold">
+                      <p className="text-xs text-muted-foreground">Join Date</p>
+                      <p className="text-foreground font-semibold">
                         {selectedAggregator?.user?.createdAt
                           ? new Date(selectedAggregator.user.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                           : 'N/A'}
@@ -689,11 +689,11 @@ export function SuperAdminAggregators() {
                     </div>
                   </div>
 
-                  <div className="flex items-center gap-3 bg-gray-900/50 p-4 rounded-lg border border-gray-700/30">
+                  <div className="flex items-center gap-3 bg-background/50 p-4 rounded-lg border border-border/30">
                     <Activity className="w-5 h-5 text-green-400" />
                     <div>
-                      <p className="text-xs text-gray-400">Last Activity</p>
-                      <p className="text-white font-semibold">
+                      <p className="text-xs text-muted-foreground">Last Activity</p>
+                      <p className="text-foreground font-semibold">
                         {lastLogin
                           ? new Date(lastLogin).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
                           : 'N/A'}
@@ -705,9 +705,9 @@ export function SuperAdminAggregators() {
 
               {/* Footer action buttons (shows only when selectedAggregator exists and is INACTIVE) */}
               {selectedAggregator && selectedAggregator.user?.status === 'INACTIVE' && (
-                <div className="flex gap-4 pt-4 border-t border-gray-700/50">
+                <div className="flex gap-4 pt-4 border-t border-border/50">
                   <Button
-                    className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-600 text-white font-semibold py-3 shadow-lg shadow-green-500/20 transition-all duration-200"
+                    className="flex-1 bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-600 text-foreground font-semibold py-3 shadow-lg shadow-green-500/20 transition-all duration-200"
                     onClick={() => {
                       handleApprove(selectedAggregator.user?._id)
                       setIsViewDialogOpen(false)
@@ -717,7 +717,7 @@ export function SuperAdminAggregators() {
                     Approve Aggregator
                   </Button>
                   <Button
-                    className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-white font-semibold py-3 shadow-lg shadow-red-500/20 transition-all duration-200"
+                    className="flex-1 bg-gradient-to-r from-red-600 to-red-500 hover:from-red-500 hover:to-red-600 text-foreground font-semibold py-3 shadow-lg shadow-red-500/20 transition-all duration-200"
                     onClick={() => {
                       handleReject(selectedAggregator.user?._id)
                       setIsViewDialogOpen(false)
@@ -751,14 +751,14 @@ export function SuperAdminAggregators() {
 
       {/* Team Members Dialog */}
       {/* <Dialog open={isTeamMembersDialogOpen} onOpenChange={setIsTeamMembersDialogOpen}>
-        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl max-h-[85vh]">
+        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-border text-foreground max-w-3xl max-h-[85vh]">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
                 <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
                   Team Members
                 </DialogTitle>
-                <DialogDescription className="text-gray-400 mt-1">
+                <DialogDescription className="text-muted-foreground mt-1">
                   <span className="font-semibold text-cyan-400">{selectedCompanyName}</span> - {selectedTeamMembers.length} member{selectedTeamMembers.length !== 1 ? 's' : ''}
                 </DialogDescription>
               </div>
@@ -766,7 +766,7 @@ export function SuperAdminAggregators() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setIsTeamMembersDialogOpen(false)}
-                className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+                className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
               >
                 <X className="w-5 h-5" />
               </Button>
@@ -777,7 +777,7 @@ export function SuperAdminAggregators() {
             {selectedTeamMembers.length === 0 ? (
               <div className="text-center py-12">
                 <Users className="w-16 h-16 text-gray-600 mx-auto mb-3" />
-                <p className="text-gray-500 text-sm">No team members found</p>
+                <p className="text-muted-foreground text-sm">No team members found</p>
               </div>
             ) : (
               selectedTeamMembers.map((member, index) => (
@@ -786,7 +786,7 @@ export function SuperAdminAggregators() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className="bg-gray-800/50 rounded-lg p-5 border border-gray-700 hover:border-cyan-500/50 transition-all"
+                  className="bg-card/50 rounded-lg p-5 border border-border hover:border-cyan-500/50 transition-all"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex items-start gap-4 flex-1">
@@ -796,7 +796,7 @@ export function SuperAdminAggregators() {
 
                       <div className="flex-1 space-y-3">
                         <div className="flex items-center gap-3">
-                          <h3 className="text-lg font-semibold text-white">
+                          <h3 className="text-lg font-semibold text-foreground">
                             {member.username}
                           </h3>
                           <Badge className={getStatusColor(member.status)}>
@@ -810,8 +810,8 @@ export function SuperAdminAggregators() {
                               <Mail className="w-3.5 h-3.5 text-purple-400" />
                             </div>
                             <div>
-                              <p className="text-xs text-gray-400">Email</p>
-                              <p className="text-sm text-white font-medium truncate">
+                              <p className="text-xs text-muted-foreground">Email</p>
+                              <p className="text-sm text-foreground font-medium truncate">
                                 {member.email}
                               </p>
                             </div>
@@ -822,8 +822,8 @@ export function SuperAdminAggregators() {
                               <Phone className="w-3.5 h-3.5 text-green-400" />
                             </div>
                             <div>
-                              <p className="text-xs text-gray-400">Contact</p>
-                              <p className="text-sm text-white font-medium">
+                              <p className="text-xs text-muted-foreground">Contact</p>
+                              <p className="text-sm text-foreground font-medium">
                                 {member.contact || 'N/A'}
                               </p>
                             </div>

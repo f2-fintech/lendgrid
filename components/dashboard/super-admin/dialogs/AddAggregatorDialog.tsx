@@ -185,12 +185,12 @@ export function AddAggregatorDialog({
 
     return (
         <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-3xl rounded-xl shadow-2xl">
+            <DialogContent className="bg-background border-border text-foreground max-w-3xl rounded-xl shadow-2xl">
                 <DialogHeader>
-                    <DialogTitle className="text-2xl font-bold text-white bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
+                    <DialogTitle className="text-2xl font-bold text-foreground">
                         Add New Aggregator
                     </DialogTitle>
-                    <DialogDescription className="text-gray-400">
+                    <DialogDescription className="text-muted-foreground">
                         Register a new Aggregator Admin and their company profile.
                     </DialogDescription>
                 </DialogHeader>
@@ -203,7 +203,7 @@ export function AddAggregatorDialog({
                             <Input
                                 id="companyName"
                                 {...register("companyName")}
-                                className="bg-gray-800 border-gray-700 h-11"
+                                className="bg-background border-border h-11"
                                 placeholder="e.g., Acme Corporation"
                             />
                             {errors.companyName && (
@@ -217,7 +217,7 @@ export function AddAggregatorDialog({
                             <Input
                                 id="fullName"
                                 {...register("fullName")}
-                                className="bg-gray-800 border-gray-700 h-11"
+                                className="bg-background border-border h-11"
                                 placeholder="e.g., John Doe"
                             />
                             {errors.fullName && (
@@ -231,7 +231,7 @@ export function AddAggregatorDialog({
                             <Input
                                 id="contact"
                                 {...register('contact')}
-                                className="bg-gray-800 border-gray-700 h-11"
+                                className="bg-background border-border h-11"
                                 placeholder="e.g., 9876543210"
                             />
                             {errors.contact && (<p className="text-red-400 text-sm mt-1">{errors.contact.message}</p>)}
@@ -244,7 +244,7 @@ export function AddAggregatorDialog({
                                 id="email"
                                 type="email"
                                 {...register("email")}
-                                className="bg-gray-800 border-gray-700 h-11"
+                                className="bg-background border-border h-11"
                                 placeholder="e.g., john.doe@acme.com"
                             />
                             {errors.email && (
@@ -260,13 +260,13 @@ export function AddAggregatorDialog({
                                     id="password"
                                     type={showPassword ? "text" : "password"}
                                     {...register("password")}
-                                    className="bg-gray-800 border-gray-700 h-11 pr-10"
+                                    className="bg-background border-border h-11 pr-10"
                                     placeholder="Create a strong password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowPassword(!showPassword)}
-                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
                                 >
                                     {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
@@ -284,13 +284,13 @@ export function AddAggregatorDialog({
                                     id="confirmPassword"
                                     type={showConfirmPassword ? "text" : "password"}
                                     {...register("confirmPassword")}
-                                    className="bg-gray-800 border-gray-700 h-11 pr-10"
+                                    className="bg-background border-border h-11 pr-10"
                                     placeholder="Re-enter your password"
                                 />
                                 <button
                                     type="button"
                                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-gray-400 hover:text-white"
+                                    className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground hover:text-foreground"
                                 >
                                     {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                                 </button>
@@ -314,7 +314,7 @@ export function AddAggregatorDialog({
                     </div> */}
 
                     {/* Buttons */}
-                    <div className="flex justify-end space-x-4 pt-5 border-t border-gray-700/50">
+                    <div className="flex justify-end space-x-4 pt-5 border-t border-border">
                         <Button
                             type="button"
                             variant="outline"
@@ -322,7 +322,7 @@ export function AddAggregatorDialog({
                                 reset();
                                 onClose?.();
                             }}
-                            className="border-gray-600 text-gray-300 hover:bg-gray-700"
+                            className="border-border text-foreground hover:bg-muted"
                         >
                             Cancel
                         </Button>
@@ -330,7 +330,7 @@ export function AddAggregatorDialog({
                         <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className="bg-gradient-to-r from-blue to-cyan-500 text-white shadow-lg disabled:opacity-50"
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg disabled:opacity-50"
                         >
                             {isSubmitting ? (
                                 <>

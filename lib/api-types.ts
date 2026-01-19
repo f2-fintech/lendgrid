@@ -426,6 +426,7 @@ export interface CommissionTransaction {
   ruleId: string;
   disbursedAmount: number;
   disbursedDate: string;
+  cashbackAmount: number;
   commissionAmount: number;
   commissionType: CommissionType;
   commissionRate: number;

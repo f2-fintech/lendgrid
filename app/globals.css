@@ -343,7 +343,8 @@ body,
 
 /* Glass Effect */
 .glass-effect {
-  @apply bg-card/80 backdrop-blur-xl border border-border/50;
+  @apply bg-card border border-border shadow-xl;
+  backdrop-filter: blur(8px);
 }
 
 /* Hover Lift Effect */

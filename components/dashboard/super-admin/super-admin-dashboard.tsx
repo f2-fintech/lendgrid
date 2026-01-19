@@ -108,7 +108,7 @@ export function SuperAdminDashboard() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
-            title="Platform Revenue (1%)"
+            title="Platform Revenue"
             value={formatCurrency(mockData.metrics.platformRevenue)}
             icon={DollarSign}
             // trend="+15.3% from last month"
@@ -188,7 +188,7 @@ export function SuperAdminDashboard() {
         </div>
 
         {/* Lender Distribution */}
-        {/* <Card className="bg-card/50 border-border">
+        {/* <Card className="bg-card border-border">
           <CardHeader>
             <CardTitle className="text-foreground">Lender Distribution</CardTitle>
             <CardDescription className="text-muted-foreground">
