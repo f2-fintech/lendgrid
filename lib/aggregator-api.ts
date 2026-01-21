@@ -78,6 +78,7 @@ export const aggregatorProfileApi = {
               _id
               userId
               companyName
+              companyId
               rank
               businessType
               yearOfEstablishment,
@@ -131,6 +132,7 @@ export const aggregatorProfileApi = {
           _id
           userId
           companyName
+          companyId
           rank
           businessType
           yearOfEstablishment
@@ -209,6 +211,7 @@ export const aggregatorProfileApi = {
             _id
             userId
             companyName
+            companyId
             rank
             businessType
             city
@@ -330,6 +333,7 @@ export const aggregatorProfileApi = {
           updateAggregatorProfile(updateInput: $updateInput) {
             _id
             companyName
+            companyId
             kycStatus
             updatedAt
           }

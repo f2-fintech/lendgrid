@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
   FileText, Search, Eye, Clock, Upload, AlertCircle, DollarSign, FileCheck, ChevronDown, CheckCircle, XCircle, Ban,
-  AlertTriangle, Loader2, X, ImageIcon
+  AlertTriangle, Loader2, X, ImageIcon, User, Calendar, TrendingUp
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { useCommissionTransactions, useUpdateCommissionStatus } from '@/hooks/use-commissions'
 import { useToast } from '@/hooks/use-toast'
+import { uploadToS3 } from '@/lib/utils'
 
 export function SuperAdminPayouts() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -34,9 +35,10 @@ export function SuperAdminPayouts() {
   const [newStatus, setNewStatus] = useState('')
   const [utrNumber, setUtrNumber] = useState('')
   const [adminNotes, setAdminNotes] = useState('')
-  const [paymentProofFile, setPaymentProofFile] = useState<File | null>(null)
   const [paymentProofPreview, setPaymentProofPreview] = useState<string | null>(null)
+  const [uploadedPaymentProofUrl, setUploadedPaymentProofUrl] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
+  const [isUploadingFile, setIsUploadingFile] = useState(false)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
@@ -124,34 +126,57 @@ export function SuperAdminPayouts() {
     setNewStatus('')
     setUtrNumber(payout.utrNumber || '')
     setAdminNotes('')
-    setPaymentProofFile(null)
     setPaymentProofPreview(payout.paymentProofUrl || null)
+    setUploadedPaymentProofUrl(payout.paymentProofUrl || null)
     setIsStatusDialogOpen(true)
   }
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (file) {
-      if (file.size > 10 * 1024 * 1024) {
-        alert('File size exceeds 10MB limit')
+      if (file.size > 5 * 1024 * 1024) {
+        toast({
+          title: 'Error',
+          description: 'File size exceeds 5MB limit',
+          variant: 'destructive',
+        })
         return
       }
-      setPaymentProofFile(file)
 
+      // Show preview immediately
       const reader = new FileReader()
       reader.onloadend = () => {
         setPaymentProofPreview(reader.result as string)
       }
       reader.readAsDataURL(file)
+
+      // Upload to S3 immediately
+      try {
+        setIsUploadingFile(true)
+        const uploadedUrl = await uploadToS3(file, 'commission-payments')
+        setUploadedPaymentProofUrl(uploadedUrl)
+        toast({
+          title: 'Success',
+          description: 'Payment proof uploaded successfully',
+        })
+      } catch (error) {
+        console.error('Error uploading file:', error)
+        setPaymentProofPreview(null)
+        toast({
+          title: 'Error',
+          description: 'Failed to upload payment proof',
+          variant: 'destructive',
+        })
+      } finally {
+        setIsUploadingFile(false)
+      }
     }
   }
 
   const handleRemoveFile = () => {
-    setPaymentProofFile(null)
     setPaymentProofPreview(selectedPayout?.paymentProofUrl || null)
+    setUploadedPaymentProofUrl(selectedPayout?.paymentProofUrl || null)
   }
-
-//use upload to s3 from import from utils
 
 
   const handleUpdateStatus = async () => {
@@ -174,7 +199,7 @@ export function SuperAdminPayouts() {
         })
         return
       }
-      if (!paymentProofFile && !selectedPayout.paymentProofUrl) {
+      if (!uploadedPaymentProofUrl) {
         toast({
           title: 'Error',
           description: 'Payment proof is required for PAID status',
@@ -186,20 +211,14 @@ export function SuperAdminPayouts() {
 
     try {
       setIsUploading(true)
-      let paymentProofUrl = selectedPayout.paymentProofUrl
 
-      // Upload payment proof if new file is selected
-      if (paymentProofFile) {
-        paymentProofUrl = await uploadToS3(paymentProofFile, 'commission-payments')
-      }
-
-      // Update commission status
+      // Update commission status with the already-uploaded URL
       await updateStatusMutation.mutateAsync({
         id: selectedPayout.id,
         input: {
           status: newStatus,
           utrNumber: utrNumber || undefined,
-          paymentProofUrl: paymentProofUrl || undefined,
+          paymentProofUrl: uploadedPaymentProofUrl || undefined,
           adminNotes: adminNotes || undefined,
         },
       })
@@ -508,95 +527,269 @@ export function SuperAdminPayouts() {
       </motion.div>
 
       {/* View Payout Dialog */}
-      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="bg-background border-border text-foreground max-w-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold">Commission Details</DialogTitle>
-            <DialogDescription className="text-muted-foreground">
-              Complete information about the commission transaction
-            </DialogDescription>
+      <Dialog open={isViewDialogOpen} onOpenChange={(val) => {
+        setIsViewDialogOpen(val)
+      }}>
+        <DialogContent
+          className="bg-background border border-border text-foreground max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+          onInteractOutside={(e) => e.preventDefault()}
+          onEscapeKeyDown={(e) => e.preventDefault()}
+        >
+          <DialogHeader className="border-b border-border/50 pb-4 flex justify-between items-center">
+            <div>
+              <DialogTitle className="text-2xl font-bold text-foreground">
+                Commission Transaction Details
+              </DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
+                Complete information about this commission payout
+              </DialogDescription>
+            </div>
+            <button
+              className="p-2 rounded hover:bg-muted transition absolute right-6 top-6"
+              aria-label="Close"
+              onClick={() => setIsViewDialogOpen(false)}
+            >
+              <X className="w-5 h-5 text-muted-foreground" />
+            </button>
           </DialogHeader>
+
           {selectedPayout && (
-            <div className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-foreground">Ticket ID</Label>
-                  <p className="text-foreground font-semibold mt-1">#{selectedPayout.ticketId}</p>
-                </div>
-                <div>
-                  <Label className="text-foreground">Status</Label>
-                  <Badge className={`${getStatusConfig(selectedPayout.status).bgColor} ${getStatusConfig(selectedPayout.status).color} mt-1`}>
+            <div className="space-y-6 pt-4">
+
+              {/* Status and ID Section */}
+              <div className="flex gap-3 justify-between items-start">
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    className={`${getStatusConfig(selectedPayout.status).bgColor} ${getStatusConfig(selectedPayout.status).color} border px-4 py-1.5 text-sm font-semibold`}
+                  >
                     {selectedPayout.status}
                   </Badge>
-                </div>
-                <div>
-                  <Label className="text-foreground">Product Type</Label>
-                  <p className="text-foreground font-semibold mt-1">{selectedPayout.productType}</p>
-                </div>
-                <div>
-                  <Label className="text-foreground">Aggregator Rank</Label>
-                  <p className="text-foreground font-semibold mt-1">{selectedPayout.aggregatorRank || 'N/A'}</p>
+                  <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 text-sm font-semibold">
+                    Ticket #{selectedPayout.ticketId}
+                  </Badge>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-foreground">Disbursed Amount</Label>
-                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.disbursedAmount)}</p>
-                </div>
-                <div>
-                  <Label className="text-foreground">Cashback</Label>
-                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.cashbackAmount)}</p>
-                </div>
-                <div>
-                  <Label className="text-foreground">Gross Commission Amount</Label>
-                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.grossCommissionAmount)}</p>
-                </div>
-                <div>
-                  <Label className="text-foreground">Commission Amount</Label>
-                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.commissionAmount)}</p>
-                </div>
-                <div>
-                  <Label className="text-foreground">Commission Type</Label>
-                  <p className="text-foreground font-semibold mt-1">{selectedPayout.commissionType}</p>
-                </div>
-                <div>
-                  <Label className="text-foreground">Commission Rate</Label>
-                  <p className="text-foreground font-semibold mt-1">
-                    {selectedPayout.commissionType === 'PERCENTAGE'
-                      ? `${selectedPayout.commissionRate}%`
-                      : formatCurrency(selectedPayout.commissionRate)}
-                  </p>
+              {/* Transaction Information Card */}
+              <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-primary flex items-center gap-2">
+                  <FileText className="w-5 h-5" />
+                  Transaction Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="flex items-start gap-3">
+                    <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
+                      <FileText className="w-4 h-4 text-blue-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Product Type</p>
+                      <p className="text-foreground font-semibold">{selectedPayout.productType}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-purple-500/10 p-2 rounded-lg mt-1">
+                      <TrendingUp className="w-4 h-4 text-purple-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Aggregator Rank</p>
+                      <p className="text-foreground font-semibold">{selectedPayout.aggregatorRank || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-green-500/10 p-2 rounded-lg mt-1">
+                      <DollarSign className="w-4 h-4 text-green-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Provider</p>
+                      <p className="text-foreground font-semibold">{selectedPayout.provider || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
+                    <div className="bg-orange-500/10 p-2 rounded-lg mt-1">
+                      <FileCheck className="w-4 h-4 text-orange-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Commission Type</p>
+                      <p className="text-foreground font-semibold">{selectedPayout.commissionType}</p>
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {selectedPayout.utrNumber && (
-                <div className="grid grid-cols-2 gap-6">
-                  <div>
-                    <Label className="text-foreground">UTR Number</Label>
-                    <p className="text-foreground font-semibold mt-1">{selectedPayout.utrNumber}</p>
+              {/* Financial Details Card */}
+              <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
+                  <DollarSign className="w-5 h-5" />
+                  Financial Breakdown
+                </h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Disbursed Amount</p>
+                    <p className="text-xl font-bold text-primary">{formatCurrency(selectedPayout.disbursedAmount)}</p>
+                  </div>
+
+                  <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">Cashback Amount</p>
+                    <p className="text-xl font-bold text-cyan-400">{formatCurrency(selectedPayout.cashbackAmount)}</p>
+                  </div>
+
+                  <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">Gross Commission</p>
+                    <p className="text-xl font-bold text-purple-400">{formatCurrency(selectedPayout.grossCommissionAmount)}</p>
+                  </div>
+
+                  <div className="bg-background/50 rounded-lg p-4 border border-border/50 md:col-span-2">
+                    <p className="text-xs text-muted-foreground mb-2">Net Commission Amount</p>
+                    <p className="text-2xl font-bold text-green-400">{formatCurrency(selectedPayout.commissionAmount)}</p>
+                  </div>
+
+                  <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                    <p className="text-xs text-muted-foreground mb-2">Commission Rate</p>
+                    <p className="text-xl font-bold text-yellow-400">
+                      {selectedPayout.commissionType === 'PERCENTAGE'
+                        ? `${selectedPayout.commissionRate}%`
+                        : formatCurrency(selectedPayout.commissionRate)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment Details Card (if paid) */}
+              {(selectedPayout.utrNumber || selectedPayout.paymentProofUrl || selectedPayout.paidBy || selectedPayout.paidAt) && (
+                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                  <h3 className="text-lg font-semibold mb-4 text-emerald-400 flex items-center gap-2">
+                    <CheckCircle className="w-5 h-5" />
+                    Payment Details
+                  </h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {selectedPayout.utrNumber && (
+                      <div className="flex items-start gap-3">
+                        <div className="bg-emerald-500/10 p-2 rounded-lg mt-1">
+                          <FileCheck className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1">UTR Number</p>
+                          <p className="text-foreground font-semibold font-mono">{selectedPayout.utrNumber.toUpperCase()}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPayout.paidAt && (
+                      <div className="flex items-start gap-3">
+                        <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
+                          <Calendar className="w-4 h-4 text-blue-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1">Paid On</p>
+                          <p className="text-foreground font-semibold">
+                            {new Date(selectedPayout.paidAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPayout.paidBy && (
+                      <div className="flex items-start gap-3">
+                        <div className="bg-purple-500/10 p-2 rounded-lg mt-1">
+                          <User className="w-4 h-4 text-purple-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1">Paid By</p>
+                          <p className="text-foreground font-semibold">{selectedPayout.paidBy}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {selectedPayout.paymentProofUrl && (
+                      <div className="flex items-start gap-3">
+                        <div className="bg-cyan-500/10 p-2 rounded-lg mt-1">
+                          <ImageIcon className="w-4 h-4 text-cyan-400" />
+                        </div>
+                        <div className="flex-1">
+                          <p className="text-xs text-muted-foreground mb-1">Payment Proof</p>
+                          <a
+                            href={selectedPayout.paymentProofUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline font-semibold inline-flex items-center gap-1"
+                          >
+                            View Document
+                            <Eye className="w-3 h-3" />
+                          </a>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
 
-              {selectedPayout.paymentProofUrl && (
-                <div>
-                  <Label className="text-foreground">Payment Proof</Label>
-                  <a
-                    href={selectedPayout.paymentProofUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-primary hover:underline mt-1 block"
-                  >
-                    View Document
-                  </a>
-                </div>
-              )}
+              {/* Timeline Card */}
+              <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                <h3 className="text-lg font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+                  <Clock className="w-5 h-5" />
+                  Activity Timeline
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg border border-border">
+                    <Calendar className="w-5 h-5 text-primary" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Calculated At</p>
+                      <p className="text-foreground font-semibold text-sm">
+                        {selectedPayout.calculatedAt
+                          ? new Date(selectedPayout.calculatedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
+                          : 'N/A'}
+                      </p>
+                    </div>
+                  </div>
 
-              {selectedPayout.adminNotes && (
-                <div>
-                  <Label className="text-foreground">Admin Notes</Label>
-                  <p className="text-foreground font-semibold mt-1">{selectedPayout.adminNotes}</p>
+                  {selectedPayout.approvedAt && (
+                    <div className="flex items-center gap-3 bg-background/50 p-4 rounded-lg border border-border/30">
+                      <CheckCircle className="w-5 h-5 text-green-400" />
+                      <div>
+                        <p className="text-xs text-muted-foreground">Approved At</p>
+                        <p className="text-foreground font-semibold text-sm">
+                          {new Date(selectedPayout.approvedAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-3 bg-background/50 p-4 rounded-lg border border-border/30">
+                    <Clock className="w-5 h-5 text-orange-400" />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Created At</p>
+                      <p className="text-foreground font-semibold text-sm">
+                        {new Date(selectedPayout.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Remarks/Notes Section */}
+              {(selectedPayout.remarks || selectedPayout.adminNotes) && (
+                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                  <h3 className="text-lg font-semibold mb-4 text-amber-400 flex items-center gap-2">
+                    <AlertCircle className="w-5 h-5" />
+                    Notes & Remarks
+                  </h3>
+                  <div className="space-y-4">
+                    {selectedPayout.remarks && (
+                      <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                        <p className="text-xs text-muted-foreground mb-2">System Remarks</p>
+                        <p className="text-foreground text-sm">{selectedPayout.remarks}</p>
+                      </div>
+                    )}
+                    {selectedPayout.adminNotes && (
+                      <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                        <p className="text-xs text-muted-foreground mb-2">Admin Notes</p>
+                        <p className="text-foreground text-sm">{selectedPayout.adminNotes}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -668,23 +861,29 @@ export function SuperAdminPayouts() {
                 </Label>
                 <Input
                   value={utrNumber}
-                  onChange={(e) => setUtrNumber(e.target.value)}
+                  onChange={(e) => setUtrNumber(e.target.value.toUpperCase())}
                   placeholder="Enter UTR number"
-                  className="bg-background border-border text-foreground mt-1 h-9 text-sm"
+                  className="bg-background border-border text-foreground mt-1 h-9 text-sm uppercase"
                 />
               </div>
 
               <div>
                 <Label className="text-foreground text-sm">
-                  Payment Proof {newStatus === 'PAID' && !selectedPayout.paymentProofUrl && <span className="text-red-400">*</span>}
+                  Payment Proof {newStatus === 'PAID' && !uploadedPaymentProofUrl && <span className="text-red-400">*</span>}
                 </Label>
                 <div className="mt-1">
-                  {!paymentProofPreview ? (
+                  {isUploadingFile ? (
+                    <div className="border-2 border-dashed border-primary rounded-lg p-4 text-center bg-primary/5">
+                      <Loader2 className="w-6 h-6 mx-auto mb-1 text-primary animate-spin" />
+                      <p className="text-foreground text-xs">Uploading payment proof...</p>
+                      <p className="text-xs text-muted-foreground">Please wait</p>
+                    </div>
+                  ) : !paymentProofPreview ? (
                     <label className="block">
                       <div className="border-2 border-dashed border-border rounded-lg p-4 text-center hover:border-orange-400 hover:bg-muted/50 transition-all cursor-pointer">
                         <Upload className="w-6 h-6 mx-auto mb-1 text-muted-foreground" />
                         <p className="text-foreground text-xs">Click to upload payment proof</p>
-                        <p className="text-xs text-muted-foreground">PDF, JPG, PNG (Max 10MB)</p>
+                        <p className="text-xs text-muted-foreground">PDF, JPG, PNG (Max 5MB)</p>
                       </div>
                       <input
                         type="file"
@@ -695,7 +894,7 @@ export function SuperAdminPayouts() {
                     </label>
                   ) : (
                     <div className="relative border-2 border-border rounded-lg p-2 bg-background/50">
-                      {paymentProofPreview.startsWith('data:image') ? (
+                      {paymentProofPreview.startsWith('data:image') || (paymentProofPreview.startsWith('http') && (paymentProofPreview.includes('.jpg') || paymentProofPreview.includes('.jpeg') || paymentProofPreview.includes('.png') || paymentProofPreview.includes('.gif') || paymentProofPreview.includes('.webp'))) ? (
                         <img
                           src={paymentProofPreview}
                           alt="Payment proof preview"
@@ -706,11 +905,11 @@ export function SuperAdminPayouts() {
                           <div className="text-center">
                             <FileText className="w-10 h-10 mx-auto mb-1 text-primary" />
                             <p className="text-xs text-foreground">
-                              {paymentProofFile ? paymentProofFile.name : 'Existing payment proof'}
+                              {uploadedPaymentProofUrl && uploadedPaymentProofUrl !== selectedPayout?.paymentProofUrl ? 'Uploaded payment proof' : 'Existing payment proof'}
                             </p>
-                            {!paymentProofFile && (
+                            {uploadedPaymentProofUrl && (
                               <a
-                                href={paymentProofPreview}
+                                href={uploadedPaymentProofUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="text-primary hover:underline text-xs"
@@ -723,7 +922,8 @@ export function SuperAdminPayouts() {
                       )}
                       <button
                         onClick={handleRemoveFile}
-                        className="absolute top-1 right-1 p-1 bg-red-500 hover:bg-red-600 rounded-full text-foreground"
+                        className="absolute top-1 right-1 p-1.5 bg-red-500 hover:bg-red-600 rounded-full text-white shadow-md transition-colors"
+                        title="Remove and upload another"
                       >
                         <X className="w-3 h-3" />
                       </button>
@@ -781,7 +981,7 @@ export function SuperAdminPayouts() {
                   variant="outline"
                   size="sm"
                   onClick={() => setIsStatusDialogOpen(false)}
-                  disabled={isUploading}
+                  disabled={isUploading || isUploadingFile}
                   className="border-border text-foreground hover:bg-muted h-8"
                 >
                   Cancel
@@ -790,7 +990,7 @@ export function SuperAdminPayouts() {
                   size="sm"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground h-8"
                   onClick={handleUpdateStatus}
-                  disabled={!newStatus || isUploading}
+                  disabled={!newStatus || isUploading || isUploadingFile}
                 >
                   {isUploading ? (
                     <>

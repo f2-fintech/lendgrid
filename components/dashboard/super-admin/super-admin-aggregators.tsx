@@ -42,6 +42,20 @@ import { useAggregators } from '@/hooks/use-aggregators'
 import { useUpdateUser } from '@/hooks/use-users'
 import { AggregatorProfile } from '@/lib'
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useApplicationCount } from '@/hooks/use-applications-rest'
+
+const ApplicationCountCell = ({ companyId }: { companyId?: number }) => {
+  const { count, isLoading } = useApplicationCount(companyId)
+
+  if (isLoading) return <p className="text-muted-foreground animate-pulse text-xs">Loading...</p>
+
+  return (
+    <div className="text-foreground">
+      <p>{count} submitted</p>
+      {/* <p className="text-sm text-muted-foreground">0 approved</p> */}
+    </div>
+  )
+}
 
 export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -346,7 +360,7 @@ export function SuperAdminAggregators() {
                     <div>Aggregator</div>
                     <div>Status</div>
                     <div>KYC Status</div>
-                    <div>Applications</div>
+                    <div>Total Applications</div>
                     <div>Total Commission</div>
                     <div>Join Date</div>
                     <div>Actions</div>
@@ -374,14 +388,9 @@ export function SuperAdminAggregators() {
                             {aggregator.kycStatus || 'UNKNOWN'}
                           </Badge>
                         </div>
+                        <ApplicationCountCell companyId={aggregator.companyId} />
                         <div className="text-foreground">
-                          <p>{aggregator.totalApplicationsSubmitted || 0} worked</p>
-                          <p className="text-sm text-muted-foreground">
-                            {aggregator.totalApplicationsSubmitted || 0} approved
-                          </p>
-                        </div>
-                        <div className="text-foreground">
-                          {(aggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(aggregator.totalCommissionEarned || 0) : '0'}
+                          {(aggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(aggregator.totalCommissionEarned || 0) : '₹0'}
                         </div>
                         <div className="text-foreground">
                           {aggregator.createdAt ? new Date(aggregator.createdAt).toLocaleDateString() : '-'}

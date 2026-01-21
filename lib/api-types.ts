@@ -149,6 +149,7 @@ export type AggregatorProfile = {
   _id: string
   userId: string
   companyName: string
+  companyId?: number
   rank?: ApplicableFor
   businessType?: BusinessType
   yearOfEstablishment?: string

@@ -72,3 +72,32 @@ export function useApplicationsRest({
         refetch: () => mutate(),
     }
 }
+
+/**
+ * Hook to fetch application count for a specific company/aggregator
+ */
+export function useApplicationCount(companyId: number | undefined) {
+    const key = companyId ? `/application/count-${companyId}` : null
+
+    const { data, error, isLoading } = useSWR<{
+        success: boolean
+        data: number
+    }>(
+        key,
+        () => apiFetch('/application/count', {
+            headers: {
+                'Companyid': companyId!.toString(),
+            },
+        }),
+        {
+            revalidateOnFocus: false,
+            revalidateOnReconnect: false,
+        }
+    )
+
+    return {
+        count: data?.data ?? 0,
+        isLoading,
+        error,
+    }
+}
