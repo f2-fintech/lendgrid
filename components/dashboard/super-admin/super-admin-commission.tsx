@@ -526,13 +526,12 @@ export function SuperAdminCommission() {
               </div>
 
               {/* Additional Settings */}
-              <div className="space-y-4">
+              {/* <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
                   Additional Settings
                 </h3>
 
                 <div className="grid grid-cols-2 gap-4">
-                  {/* Priority */}
                   <div>
                     <Label htmlFor="priority">
                       Priority (Optional)
@@ -554,7 +553,6 @@ export function SuperAdminCommission() {
                   </div>
                 </div>
 
-                {/* Description */}
                 <div>
                   <Label htmlFor="description">
                     Description (Optional)
@@ -572,7 +570,7 @@ export function SuperAdminCommission() {
                     </p>
                   )}
                 </div>
-              </div>
+              </div> */}
 
               {/* Action Buttons */}
               <div className="flex justify-end space-x-4 pt-4 border-t border-border">

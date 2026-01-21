@@ -170,33 +170,26 @@ export const MultiStepFormContent: React.FC<{
 
     // API call to upload to S3
     const uploadToS3 = async (file: File, folder: string) => {
-        // const formData = new FormData();
-        // formData.append('document', file);
-        // formData.append('folder', `document/${folder}`);
+        const formData = new FormData();
+        formData.append('document', file);
+        formData.append('folder', `document/${folder}`);
 
-        // const response = await fetch(`${apiBaseUrl}/upload-to-s3`, {
-        //     method: 'POST',
-        //     body: formData,
-        // });
-
-        // const result = await response.json();
-        // return result.data;
-        console.log('UPLOAD TO S3:', {
-            fileName: file.name,
-            size: file.size,
-            folder,
+        const response = await fetch(`${apiBaseUrl}/upload-to-s3`, {
+            method: 'POST',
+            body: formData,
         });
 
-        return `mock-url/${folder}/${file.name}`;
+        const result = await response.json();
+        return result.data;
     };
 
     // API call to create document record
     const createDocument = async (documentData: any) => {
-        // await fetch(`${apiBaseUrl}/create-document`, {
-        //     method: 'POST',
-        //     headers: commonHeaders,
-        //     body: JSON.stringify(documentData),
-        // });
+        await fetch(`${apiBaseUrl}/create-document`, {
+            method: 'POST',
+            headers: commonHeaders,
+            body: JSON.stringify(documentData),
+        });
         console.log('CREATE DOCUMENT:', documentData);
     };
 

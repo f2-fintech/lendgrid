@@ -23,8 +23,6 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useCommissionTransactions, useUpdateCommissionStatus } from '@/hooks/use-commissions'
 import { useToast } from '@/hooks/use-toast'
 
-const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
-
 export function SuperAdminPayouts() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
@@ -153,21 +151,8 @@ export function SuperAdminPayouts() {
     setPaymentProofPreview(selectedPayout?.paymentProofUrl || null)
   }
 
-  const uploadToS3 = async (file: File, folder: string) => {
+//use upload to s3 from import from utils
 
-    // const formData = new FormData()
-    // formData.append('document', file)
-    // formData.append('folder', `document/${folder}`)
-
-    // const response = await fetch(`${apiBaseUrl}/upload-to-s3`, {
-    //   method: 'POST',
-    //   body: formData,
-    // })
-
-    // const result = await response.json()
-    // return result.data
-    return `https://in.pinterest.com/pin/my-saves-in-2025--9781324186200199/`;
-  }
 
   const handleUpdateStatus = async () => {
     if (!selectedPayout || !newStatus) {
@@ -558,6 +543,14 @@ export function SuperAdminPayouts() {
                 <div>
                   <Label className="text-foreground">Disbursed Amount</Label>
                   <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.disbursedAmount)}</p>
+                </div>
+                <div>
+                  <Label className="text-foreground">Cashback</Label>
+                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.cashbackAmount)}</p>
+                </div>
+                <div>
+                  <Label className="text-foreground">Gross Commission Amount</Label>
+                  <p className="text-foreground font-semibold mt-1">{formatCurrency(selectedPayout.grossCommissionAmount)}</p>
                 </div>
                 <div>
                   <Label className="text-foreground">Commission Amount</Label>

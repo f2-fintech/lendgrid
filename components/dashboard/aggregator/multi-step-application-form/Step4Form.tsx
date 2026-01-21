@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Upload, X, FileText, Loader2, IndianRupee } from 'lucide-react';
@@ -20,10 +20,15 @@ interface Step4FormProps {
   isLoading: boolean;
 }
 
+interface FileWithPreview {
+  file: File;
+  preview: string;
+}
+
 export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => {
   const { prevStep, resetForm } = useFormContext();
   const { toast } = useToast();
-  const [certificates, setCertificates] = useState<File[]>([]);
+  const [certificates, setCertificates] = useState<FileWithPreview[]>([]);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -59,38 +64,57 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
       return true;
     });
 
-    setCertificates((prev) => [...prev, ...validFiles]);
+    const filesWithPreview = validFiles.map((file) => ({
+      file,
+      preview: URL.createObjectURL(file),
+    }));
+
+    setCertificates((prev) => [...prev, ...filesWithPreview]);
   };
 
   const handleRemoveFile = (index: number) => {
+    const fileToRemove = certificates[index];
+    if (fileToRemove.preview) {
+      URL.revokeObjectURL(fileToRemove.preview);
+    }
     setCertificates((prev) => prev.filter((_, i) => i !== index));
     if (inputRef.current) {
       inputRef.current.value = '';
     }
   };
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      certificates.forEach((f) => URL.revokeObjectURL(f.preview));
+    };
+  }, []);
+
   const onFormSubmit = async (data: Step4FormData) => {
     try {
       console.log('STEP 4 FORM DATA:', data);
 
+      const files = certificates.map((c) => c.file);
       console.log(
         'CERTIFICATES:',
-        certificates.map((f) => ({
+        files.map((f) => ({
           name: f.name,
           size: f.size,
           type: f.type,
         }))
       );
 
-      await onSubmit(data, certificates);
+      await onSubmit(data, files);
+
+      // Cleanup previews
+      certificates.forEach((f) => URL.revokeObjectURL(f.preview));
+
       toast({
         title: 'Success',
         description: 'Application submitted successfully',
       });
       setTimeout(() => {
         resetForm();
-        // Reload or redirect as needed
-        // window.location.reload();
       }, 800);
     } catch (error) {
       toast({
@@ -110,25 +134,25 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
     >
       {/* Header */}
       <div className="text-center space-y-2">
-        <h2 className="text-3xl font-bold  text-foreground">
+        <h2 className="text-3xl font-bold text-foreground">
           Additional <span className="text-accent">Details</span>
         </h2>
-        <p className=" text-muted-foreground">Step 4/4</p>
+        <p className="text-muted-foreground">Step 4/4</p>
       </div>
 
       <form onSubmit={handleSubmit(onFormSubmit)} className="space-y-6">
         <Card className="bg-card/50 border-border p-6 space-y-4">
           {/* Salary/Turnover */}
           <div>
-            <Label htmlFor="salary" className=" text-foreground">
+            <Label htmlFor="salary" className="text-foreground">
               Salary/Turnover (p.a)*
             </Label>
             <div className="relative mt-2">
-              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4  text-muted-foreground" />
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 {...register('salary')}
                 type="number"
-                className="bg-card border-border  text-foreground pl-10"
+                className="bg-card border-border text-foreground pl-10"
                 placeholder="Enter annual salary or turnover"
               />
             </div>
@@ -139,15 +163,15 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
 
           {/* Existing EMI */}
           <div>
-            <Label htmlFor="existing_emi" className=" text-foreground">
+            <Label htmlFor="existing_emi" className="text-foreground">
               Existing EMI Amount (Optional)
             </Label>
             <div className="relative mt-2">
-              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4  text-muted-foreground" />
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 {...register('existing_emi')}
                 type="number"
-                className="bg-card border-border  text-foreground pl-10"
+                className="bg-card border-border text-foreground pl-10"
                 placeholder="Enter existing EMI amount"
               />
             </div>
@@ -160,15 +184,15 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
 
           {/* Existing Liability */}
           <div>
-            <Label htmlFor="existing_liability" className=" text-foreground">
+            <Label htmlFor="existing_liability" className="text-foreground">
               Existing Credit Card Liability (Optional)
             </Label>
             <div className="relative mt-2">
-              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4  text-muted-foreground" />
+              <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
                 {...register('existing_liability')}
                 type="number"
-                className="bg-card border-border  text-foreground pl-10"
+                className="bg-card border-border text-foreground pl-10"
                 placeholder="Enter credit card liability"
               />
             </div>
@@ -182,7 +206,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
 
         {/* Certificate Upload */}
         <Card className="bg-card/50 border-border p-6">
-          <Label className=" text-foreground mb-4 block">
+          <Label className="text-foreground mb-4 block">
             Degree and Registration Certificate (Optional)
           </Label>
 
@@ -192,9 +216,9 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
               className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-gold transition-colors cursor-pointer mb-4"
               onClick={() => inputRef.current?.click()}
             >
-              <Upload className="w-10 h-10 mx-auto mb-3  text-muted-foreground" />
-              <p className=" text-foreground mb-1">Click to upload certificates</p>
-              <p className="text-sm  text-muted-foreground">
+              <Upload className="w-10 h-10 mx-auto mb-3 text-muted-foreground" />
+              <p className="text-foreground mb-1">Click to upload certificates</p>
+              <p className="text-sm text-muted-foreground">
                 PDF, DOC, DOCX, JPG, PNG (Max 5MB per file, up to 4 files)
               </p>
               <input
@@ -208,39 +232,54 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
             </div>
           )}
 
-          {/* Selected Files List */}
+          {/* Selected Files List with Previews */}
           {certificates.length > 0 && (
             <div className="space-y-2">
-              <p className="text-sm  text-muted-foreground mb-2">
+              <p className="text-sm text-muted-foreground mb-2">
                 Selected Files ({certificates.length}/4)
               </p>
-              {certificates.map((file, index) => (
-                <motion.div
-                  key={index}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between bg-background/50 p-3 rounded-lg"
-                >
-                  <div className="flex items-center space-x-3">
-                    <FileText className="w-5 h-5 text-primary" />
-                    <div>
-                      <p className=" text-foreground text-sm">{file.name}</p>
-                      <p className=" text-muted-foreground text-xs">
-                        {(file.size / 1024 / 1024).toFixed(2)} MB
+              <div className="grid grid-cols-2 gap-4">
+                {certificates.map((fileData, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative bg-background/50 border-2 border-border rounded-lg overflow-hidden"
+                  >
+                    {fileData.file.type.startsWith('image/') ? (
+                      <img
+                        src={fileData.preview}
+                        alt={fileData.file.name}
+                        className="w-full h-32 object-contain bg-black/5"
+                      />
+                    ) : (
+                      <div className="w-full h-32 flex flex-col items-center justify-center bg-black/5 p-2">
+                        <FileText className="w-12 h-12 text-blue-400 mb-2" />
+                        <p className="text-foreground text-xs truncate w-full text-center px-2">
+                          {fileData.file.name}
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="p-2 bg-background/80">
+                      <p className="text-foreground text-xs truncate">
+                        {fileData.file.name}
+                      </p>
+                      <p className="text-muted-foreground text-xs">
+                        {(fileData.file.size / 1024 / 1024).toFixed(2)} MB
                       </p>
                     </div>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleRemoveFile(index)}
-                    className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
-                </motion.div>
-              ))}
+
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveFile(index)}
+                      className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </motion.div>
+                ))}
+              </div>
             </div>
           )}
         </Card>
@@ -251,7 +290,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
             type="button"
             variant="outline"
             onClick={prevStep}
-            className="border-border  text-foreground hover:bg-muted"
+            className="border-border text-foreground hover:bg-muted"
           >
             Back
           </Button>
@@ -273,5 +312,5 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
         </div>
       </form>
     </motion.div>
-  );
+  )
 };

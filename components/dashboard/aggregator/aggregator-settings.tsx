@@ -47,7 +47,7 @@ import {
   useUpdateAggregatorProfile
 } from "@/hooks/use-aggregators"
 import { ApplicableFor, BusinessType, KYCStatus } from "@/lib"
-import { createPublicFilePath } from "@/lib/utils"
+import { uploadToS3 } from "@/lib/utils"
 import { ProfileCompletionBanner } from "@/components/ui/progressbar"
 
 // VALIDATION SCHEMAS (Optional Fields with Format Validation)
@@ -172,9 +172,14 @@ const getKycStatusIcon = (status?: string) => {
 
 //  TAB 1: PROFILE & CONTACT
 function ProfileAndContactTab() {
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const { register, setValue, watch, formState: { errors }, trigger } = useFormContext<RootForm>()
-  const photo = watch("profile.photoUrl")
+
   const profileStatus = watch("profile.status")
+  const savedPhotoUrl = watch("profile.photoUrl")
+  const displayPhoto = previewUrl || savedPhotoUrl
+  const uploadButtonLabel = savedPhotoUrl ? "Re-upload Photo" : "Upload Photo"
 
   return (
     <Card className="bg-background/50 border-border">
@@ -190,39 +195,82 @@ function ProfileAndContactTab() {
       <CardContent className="space-y-6">
         {/* Profile Photo Section */}
         <div className="flex items-center space-x-6 pb-6 border-b border-border">
-          <Avatar className="w-24 h-24">
-            <AvatarImage src={photo || "/placeholder.svg"} alt="Profile" />
-            <AvatarFallback className="bg-gradient-to-r from-blue-500 to-cyan-500 text-foreground text-xl font-bold">
-              {watch("profile.firstName")?.[0]}{watch("profile.lastName")?.[0]}
-            </AvatarFallback>
-          </Avatar>
-          <div>
-            <label className="inline-block">
-              <Button variant="outline" className="border-border text-foreground hover:bg-card">
-                <Input
-                  type="file"
-                  accept="image/*"
-                  className="sr-only"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0]
-                    if (!file) return
-                    try {
-                      const url = createPublicFilePath(file)
-                      setValue("profile.photoUrl", url, { shouldValidate: true })
-                      trigger("profile.photoUrl")
-                    } catch (err) {
-                      console.error("Upload failed", err)
-                    }
-                  }}
-                />
-                <Upload className="w-4 h-4 mr-2" />
-                Upload Photo
-              </Button>
-            </label>
-            <p className="text-muted-foreground text-sm mt-2">JPG, PNG or GIF. Max size 2MB.</p>
+          <div className="relative">
+            <Avatar className="w-24 h-24">
+              <AvatarImage src={displayPhoto || undefined} alt="Profile" />
+              <AvatarFallback className="bg-muted text-xl font-semibold">
+                {watch("profile.firstName")?.[0]}
+                {watch("profile.lastName")?.[0]}
+              </AvatarFallback>
+            </Avatar>
+
+            {/* Remove button */}
+            {previewUrl && (
+              <button
+                type="button"
+                onClick={() => {
+                  URL.revokeObjectURL(previewUrl)
+                  setPreviewUrl(null)
+                  setValue("profile.photoUrl", savedPhotoUrl || "", {
+                    shouldDirty: true,
+                  })
+                  if (fileInputRef.current) {
+                    fileInputRef.current.value = ""
+                  }
+                }}
+                className="absolute -top-2 -right-2 bg-black/70 hover:bg-black text-white rounded-full p-1"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
+
+          {/* Upload Button */}
+          <div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+
+                if (file.size > 2 * 1024 * 1024) {
+                  console.error("File exceeds 2MB")
+                  return
+                }
+
+                const localPreview = URL.createObjectURL(file)
+                setPreviewUrl(localPreview)
+
+                const uploadedUrl = await uploadToS3(
+                  file,
+                  `profile-photos/${Date.now()}-${file.name}`
+                )
+
+                setValue("profile.photoUrl", uploadedUrl, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }}
+            />
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => fileInputRef.current?.click()}
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              {uploadButtonLabel}
+            </Button>
+
+            <p className="text-muted-foreground text-sm mt-2">
+              JPG, PNG or GIF. Max size 2MB.
+            </p>
+          </div>
+
           <div className="ml-auto">
-            <Badge className={`${getStatusColor(profileStatus)} border px-4 py-1.5 text-sm font-semibold`}>
+            <Badge className={`${getStatusColor(profileStatus)} px-4 py-1.5`}>
               {profileStatus || "N/A"}
             </Badge>
           </div>
@@ -289,9 +337,11 @@ function ProfileAndContactTab() {
 
 //  TAB 2: BUSINESS & STATUTORY DETAILS
 function BusinessDetailsTab() {
+  const { user } = useAuth()
   const { register, setValue, trigger, watch, formState: { errors } } = useFormContext<RootForm>()
   const businessType = watch("business.businessType")
   const rank = watch("business.rank")
+  const isSuperAdmin = user?.role === "SUPER_ADMIN"
 
   return (
     <div className="space-y-6">
@@ -321,44 +371,60 @@ function BusinessDetailsTab() {
 
             <div className="space-y-2">
               <Label className="text-foreground font-medium">Company Rank *</Label>
-              <Select
-                value={rank || ""}
-                onValueChange={(value) =>
-                  setValue("business.rank", value as ApplicableFor, { shouldValidate: true })
-                }
-              >
-                <SelectTrigger className="bg-card border-border text-foreground h-11">
-                  <SelectValue placeholder="Select Business Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  <SelectItem value={ApplicableFor.BRONZE_AGGREGATORS} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4" />
-                      <span>{ApplicableFor.BRONZE_AGGREGATORS}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={ApplicableFor.SILVER_AGGREGATORS} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4" />
-                      <span>{ApplicableFor.SILVER_AGGREGATORS}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4" />
-                      <span>{ApplicableFor.GOLD_AGGREGATORS}</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Landmark className="w-4 h-4" />
-                      <span>{ApplicableFor.PLATINUM_AGGREGATORS}</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <input type="hidden" {...register("business.rank")} />
-              {errors.business?.rank && <p className="text-red-400 text-sm">{errors.business.rank.message}</p>}
+              {isSuperAdmin ? (
+                <>
+                  <Select
+                    value={rank || ""}
+                    onValueChange={(value) =>
+                      setValue("business.rank", value as ApplicableFor, { shouldValidate: true, shouldDirty: true })
+                    }
+                  >
+                    <SelectTrigger className="bg-card border-border text-foreground h-11">
+                      <SelectValue placeholder="Select Aggregator Rank" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-border">
+                      <SelectItem value={ApplicableFor.BRONZE_AGGREGATORS} className="text-foreground">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4" />
+                          <span>{ApplicableFor.BRONZE_AGGREGATORS}</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={ApplicableFor.SILVER_AGGREGATORS} className="text-foreground">
+                        <div className="flex items-center gap-2">
+                          <Briefcase className="w-4 h-4" />
+                          <span>{ApplicableFor.SILVER_AGGREGATORS}</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
+                        <div className="flex items-center gap-2">
+                          <Building className="w-4 h-4" />
+                          <span>{ApplicableFor.GOLD_AGGREGATORS}</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
+                        <div className="flex items-center gap-2">
+                          <Landmark className="w-4 h-4" />
+                          <span>{ApplicableFor.PLATINUM_AGGREGATORS}</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <input type="hidden" {...register("business.rank")} />
+                  {errors.business?.rank && <p className="text-red-400 text-sm">{errors.business.rank.message}</p>}
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-4 py-3">
+                    <span className="text-muted-foreground">Assigned Rank</span>
+                    <Badge variant="outline" className="font-semibold">
+                      {rank || "N/A"}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Rank is assigned by Admin
+                  </p>
+                </>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -578,8 +644,8 @@ function BusinessDetailsTab() {
 interface DocumentUploadFieldProps {
   label: string;
   fieldName: string;
-  currentValue: string | File | null | undefined;
-  onFileSelect: (file: File) => void;
+  currentValue: string | null | undefined;
+  onFileSelect: (url: string) => void;
   onRemove: () => void;
   acceptTypes?: string;
 }
@@ -594,56 +660,127 @@ function DocumentUploadField({
 }: DocumentUploadFieldProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
 
-  const isFile = currentValue instanceof File;
+  // Check if we have a saved URL from database
   const isUrl = typeof currentValue === "string" && currentValue.trim() !== "";
-  const hasValue = isFile || isUrl;
+  const displayUrl = isUrl ? currentValue : "";
+  const isImageUrl = isUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(displayUrl);
+  const isPdfUrl = isUrl && /\.pdf$/i.test(displayUrl);
 
-  const displayUrl = isFile
-    ? URL.createObjectURL(currentValue)
-    : isUrl
-      ? currentValue
-      : "";
+  // Determine if we're showing a preview of selected file or uploaded document
+  const showingPreview = selectedFile !== null;
+  const showingUploaded = !showingPreview && isUrl;
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate file size (5MB limit)
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 2 * 1024 * 1024) {
       toast({
         title: "File Too Large",
-        description: `${file.name} exceeds 5MB limit`,
+        description: "Max file size is 2MB",
         variant: "destructive",
       });
       return;
     }
 
-    onFileSelect(file);
+    // Store the file and create preview
+    setSelectedFile(file);
+    const preview = URL.createObjectURL(file);
+    setPreviewUrl(preview);
+  };
+
+  const handleUpload = async () => {
+    if (!selectedFile) return;
+
+    setIsUploading(true);
+    try {
+      // Upload to S3
+      const uploadedUrl = await uploadToS3(
+        selectedFile,
+        `documents/${fieldName}/${Date.now()}-${selectedFile.name}`
+      );
+
+      // Store the URL in form state
+      onFileSelect(uploadedUrl);
+
+      // Clear preview state
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(null);
+      setPreviewUrl(null);
+
+      toast({
+        title: "Upload Successful",
+        description: "Document uploaded successfully",
+      });
+    } catch (error) {
+      toast({
+        title: "Upload Failed",
+        description: "Unable to upload document",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleRemove = () => {
-    if (isFile && displayUrl) {
-      URL.revokeObjectURL(displayUrl);
-    }
-    onRemove();
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
+    // Clear selected file preview
+    if (selectedFile) {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+      setSelectedFile(null);
+      setPreviewUrl(null);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    } else {
+      // Clear uploaded document from form
+      onRemove();
     }
   };
+
+  const handleBoxClick = () => {
+    if (!showingPreview && !showingUploaded) {
+      fileInputRef.current?.click();
+    }
+  };
+
+  const handlePdfClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (isPdfUrl && displayUrl) {
+      window.open(displayUrl, '_blank');
+    }
+  };
+
+  // Cleanup preview URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   return (
     <div className="space-y-2">
       <Label className="text-foreground">{label}</Label>
 
-      {!hasValue ? (
+      {!showingPreview && !showingUploaded ? (
+        // EMPTY STATE - Click to upload
         <div
           className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={handleBoxClick}
         >
           <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
           <p className="text-sm text-muted-foreground">Click to upload</p>
-          <p className="text-xs text-gray-500 mt-1">Max 5MB</p>
+          <p className="text-xs text-gray-500 mt-1">Max Size 2MB</p>
           <input
             ref={fileInputRef}
             type="file"
@@ -653,60 +790,86 @@ function DocumentUploadField({
           />
         </div>
       ) : (
-        <div className="relative bg-card/50 border border-border rounded-lg p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-3 flex-1 min-w-0">
-              <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
-              <div className="min-w-0 flex-1">
-                <p className="text-foreground text-sm truncate">
-                  {isFile ? currentValue.name : "Uploaded Document"}
-                </p>
-                <p className="text-muted-foreground text-xs">
-                  {isFile
-                    ? `${(currentValue.size / 1024 / 1024).toFixed(2)} MB`
-                    : "View Document"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
-              {isUrl && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => window.open(displayUrl, "_blank")}
-                  className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
-                >
-                  View
-                </Button>
+        // PREVIEW OR UPLOADED STATE
+        <div className="relative bg-card/50 border-2 border-border rounded-lg overflow-hidden group">
+          {showingPreview ? (
+            // Selected file preview (not yet uploaded)
+            <>
+              {selectedFile?.type.startsWith('image/') ? (
+                <img
+                  src={previewUrl!}
+                  alt="Preview"
+                  className="w-full h-48 object-contain bg-black/5"
+                />
+              ) : (
+                <div className="w-full h-48 flex items-center justify-center bg-black/5">
+                  <FileText className="w-16 h-16 text-blue-400" />
+                  <p className="text-foreground text-sm ml-3">{selectedFile?.name}</p>
+                </div>
               )}
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => fileInputRef.current?.click()}
-                className="text-muted-foreground hover:text-foreground hover:bg-muted"
-              >
-                Replace
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={handleRemove}
-                className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-              >
-                <X className="w-4 h-4" />
-              </Button>
-            </div>
-          </div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={acceptTypes}
-            onChange={handleFileChange}
-            className="hidden"
-          />
+
+              {/* Action buttons for preview */}
+              <div className="absolute top-2 right-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleUpload}
+                  disabled={isUploading}
+                  className="bg-green-500/90 hover:bg-green-600 text-white rounded-full p-2 transition-colors disabled:opacity-50"
+                  title="Upload"
+                >
+                  {isUploading ? (
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <Upload className="w-5 h-5" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
+                  title="Remove"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </>
+          ) : (
+            // Uploaded document from database
+            <>
+              {isImageUrl ? (
+                <img
+                  src={displayUrl}
+                  alt="Uploaded document"
+                  className="w-full h-48 object-contain bg-black/5"
+                />
+              ) : isPdfUrl ? (
+                <div
+                  className="w-full h-48 flex items-center justify-center bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
+                  onClick={handlePdfClick}
+                >
+                  <FileText className="w-16 h-16 text-blue-400" />
+                  <p className="text-foreground text-sm ml-3">Click to view PDF</p>
+                </div>
+              ) : (
+                <div className="w-full h-48 flex items-center justify-center bg-black/5">
+                  <FileText className="w-16 h-16 text-blue-400" />
+                  <p className="text-foreground text-sm ml-3">Document uploaded</p>
+                </div>
+              )}
+
+              {/* Remove button for uploaded document */}
+              <div className="absolute top-2 right-2">
+                <button
+                  type="button"
+                  onClick={handleRemove}
+                  className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
+                  title="Remove"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
@@ -889,28 +1052,28 @@ function BankingKycDocumentsTab() {
                 label="Aadhaar Card - Front"
                 fieldName="documents.aadhaarFront"
                 currentValue={watch("documents.aadhaarFront")}
-                onFileSelect={(file) => setValue("documents.aadhaarFront", file)}
+                onFileSelect={(url) => setValue("documents.aadhaarFront", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.aadhaarFront", "")}
               />
               <DocumentUploadField
                 label="Aadhaar Card - Back"
                 fieldName="documents.aadhaarBack"
                 currentValue={watch("documents.aadhaarBack")}
-                onFileSelect={(file) => setValue("documents.aadhaarBack", file)}
+                onFileSelect={(url) => setValue("documents.aadhaarBack", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.aadhaarBack", "")}
               />
               <DocumentUploadField
                 label="PAN Card"
                 fieldName="documents.panCard"
                 currentValue={watch("documents.panCard")}
-                onFileSelect={(file) => setValue("documents.panCard", file)}
+                onFileSelect={(url) => setValue("documents.panCard", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.panCard", "")}
               />
               <DocumentUploadField
                 label="Address Proof"
                 fieldName="documents.addressProof"
                 currentValue={watch("documents.addressProof")}
-                onFileSelect={(file) => setValue("documents.addressProof", file)}
+                onFileSelect={(url) => setValue("documents.addressProof", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.addressProof", "")}
                 acceptTypes="image/*,application/pdf"
               />
@@ -924,7 +1087,7 @@ function BankingKycDocumentsTab() {
                 label="GST Certificate"
                 fieldName="documents.gstCertificate"
                 currentValue={watch("documents.gstCertificate")}
-                onFileSelect={(file) => setValue("documents.gstCertificate", file)}
+                onFileSelect={(url) => setValue("documents.gstCertificate", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.gstCertificate", "")}
                 acceptTypes="image/*,application/pdf"
               />
@@ -932,7 +1095,7 @@ function BankingKycDocumentsTab() {
                 label="Certificate of Incorporation"
                 fieldName="documents.incorporationCertificate"
                 currentValue={watch("documents.incorporationCertificate")}
-                onFileSelect={(file) => setValue("documents.incorporationCertificate", file)}
+                onFileSelect={(url) => setValue("documents.incorporationCertificate", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.incorporationCertificate", "")}
                 acceptTypes="image/*,application/pdf"
               />
@@ -946,7 +1109,7 @@ function BankingKycDocumentsTab() {
                 label="Bank Statement (Last 6 months)"
                 fieldName="documents.bankStatement"
                 currentValue={watch("documents.bankStatement")}
-                onFileSelect={(file) => setValue("documents.bankStatement", file)}
+                onFileSelect={(url) => setValue("documents.bankStatement", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.bankStatement", "")}
                 acceptTypes="image/*,application/pdf"
               />
@@ -954,7 +1117,7 @@ function BankingKycDocumentsTab() {
                 label="Cancelled Cheque"
                 fieldName="documents.cancelledCheque"
                 currentValue={watch("documents.cancelledCheque")}
-                onFileSelect={(file) => setValue("documents.cancelledCheque", file)}
+                onFileSelect={(url) => setValue("documents.cancelledCheque", url, { shouldDirty: true })}
                 onRemove={() => setValue("documents.cancelledCheque", "")}
                 acceptTypes="image/*,application/pdf"
               />
@@ -1125,7 +1288,7 @@ export function AggregatorSettings() {
         username: `${values.profile.firstName} ${values.profile.lastName}`.trim(),
         email: values.profile.email,
         contact: values.profile.contact,
-        photoUrl: values.profile.photoUrl || 'https://testingprofilebar.com',
+        photoUrl: values.profile.photoUrl,
         status: values.profile.status,
       };
 
@@ -1164,14 +1327,14 @@ export function AggregatorSettings() {
             ? values.bankAndKyc.kycApprovedBy
             : undefined,
         documents: {
-          aadhaarFront: values.documents?.aadhaarFront || "https://placeholder.com/aadhaar-front.jpg",
-          aadhaarBack: values.documents?.aadhaarBack || "https://placeholder.com/aadhaar-back.jpg",
-          panCard: values.documents?.panCard || "https://placeholder.com/pan-card.jpg",
-          gstCertificate: values.documents?.gstCertificate || "https://placeholder.com/gst-cert.jpg",
-          incorporationCertificate: values.documents?.incorporationCertificate || "https://placeholder.com/incorporation.jpg",
-          bankStatement: values.documents?.bankStatement || "https://placeholder.com/bank-statement.jpg",
-          cancelledCheque: values.documents?.cancelledCheque || "https://placeholder.com/cheque.jpg",
-          addressProof: values.documents?.addressProof || "https://placeholder.com/address-proof.jpg",
+          aadhaarFront: values.documents?.aadhaarFront,
+          aadhaarBack: values.documents?.aadhaarBack,
+          panCard: values.documents?.panCard,
+          gstCertificate: values.documents?.gstCertificate,
+          incorporationCertificate: values.documents?.incorporationCertificate,
+          bankStatement: values.documents?.bankStatement,
+          cancelledCheque: values.documents?.cancelledCheque,
+          addressProof: values.documents?.addressProof,
         },
       }
       console.log(aggPayload, 'aggpayload')

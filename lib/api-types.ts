@@ -427,6 +427,7 @@ export interface CommissionTransaction {
   disbursedAmount: number;
   disbursedDate: string;
   cashbackAmount: number;
+  grossCommissionAmount: number;
   commissionAmount: number;
   commissionType: CommissionType;
   commissionRate: number;

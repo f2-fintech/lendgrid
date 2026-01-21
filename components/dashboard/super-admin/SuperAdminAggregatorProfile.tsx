@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useRef, useState } from "react"
 import { motion } from "framer-motion"
+import confetti from 'canvas-confetti';
 import {
     Card,
     CardContent,
@@ -15,19 +16,23 @@ import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
-import { Switch } from "@/components/ui/switch"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"
 import {
     User,
     Building2,
-    CreditCard,
-    Bell,
+    FileCheck,
     Upload,
     Save,
     Building,
     Landmark,
-    Cpu,
+    Briefcase,
+    CheckCircle2,
+    XCircle,
+    Clock,
+    AlertCircle,
+    X,
+    FileText,
 } from "lucide-react"
 import { CardSkeleton } from "@/components/ui/loading-skeleton"
 import { useForm, FormProvider, useFormContext } from "react-hook-form"
@@ -35,238 +40,178 @@ import { z } from "zod"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useToast } from "@/hooks/use-toast"
 
-import { useUpdateUser } from "@/hooks/use-users"
+import { useAuth } from "@/lib/auth"
+import { useProfile, useUpdateUser } from "@/hooks/use-users"
 import {
     useAggregator,
-    useUpdateAggregatorProfile,
-    useUpdateAggregatorKycStatus,
+    useUpdateAggregatorProfile
 } from "@/hooks/use-aggregators"
-import { BusinessType, KYCStatus } from "@/lib";
+import { ApplicableFor, BusinessType, KYCStatus } from "@/lib"
 import { createPublicFilePath } from "@/lib/utils"
+import { ProfileCompletionBanner } from "@/components/ui/progressbar"
 
-/* -------------------------------
-   Validation Schema (optional, validated)
-   - Fields are optional
-   - When provided, they must match the format
-   - Zod provides clear messages used by RHF
-   ------------------------------- */
+// VALIDATION SCHEMAS (Optional Fields with Format Validation)
 const profileSchema = z.object({
     userId: z.string().optional(),
-
-    firstName: z
-        .string()
-        .optional()
-        .refine(val => !val || val.trim().length >= 2, "First name must be at least 2 chars"),
-
-    lastName: z
-        .string()
-        .optional(),
-
-    email: z
-        .string()
-        .optional()
-        .refine(val => !val || /\S+@\S+\.\S+/.test(val), "Invalid email"),
-
-    contact: z
-        .string()
-        .optional()
-        .refine(val => !val || /^[0-9]{10}$/.test(val), "Phone must be 10 digits"),
-
+    firstName: z.string().optional().refine(val => !val || val.trim().length >= 2, "First name must be at least 2 chars"),
+    lastName: z.string().optional(),
+    email: z.string().optional().refine(val => !val || /\S+@\S+\.\S+/.test(val), "Invalid email"),
+    contact: z.string().optional().refine(val => !val || /^[0-9]{10}$/.test(val), "Phone must be 10 digits"),
     status: z.string().optional(),
     photoUrl: z.string().optional(),
 })
 
-const kycSchema = z.object({
+const businessSchema = z.object({
+    id: z.string().optional(),
+    companyName: z.string().optional().refine(val => !val || val.trim().length >= 2, "Company name must be at least 2 chars"),
+    businessType: z.nativeEnum(BusinessType).optional(),
+    rank: z.nativeEnum(ApplicableFor).optional(),
+    yearOfEstablishment: z.string().optional().refine(val => !val || /^[0-9]{4}$/.test(val), "Must be YYYY format"),
+    registeredAddress: z.string().optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
+    pincode: z.string().optional().refine(val => !val || /^[0-9]{6}$/.test(val), "Pincode must be 6 digits"),
+    websiteUrl: z.string().optional().refine(val => !val || /^https?:\/\/.+/.test(val), "Invalid website URL"),
+    gstNumber: z.string().optional().refine(
+        val => !val || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(val),
+        "Invalid GST Number"
+    ),
+    panNumber: z.string().optional().refine(val => !val || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(val), "Invalid PAN Number"),
+    aadhaarNumber: z.string().optional().refine(val => !val || /^[0-9]{12}$/.test(val), "Aadhaar must be 12 digits"),
+    tanNumber: z.string().optional(),
+    cinNumber: z.string().optional(),
+})
+
+const bankAndKycSchema = z.object({
+    accountHolderName: z.string().optional(),
+    accountNumber: z.string().optional().refine(val => !val || /^[0-9]{9,18}$/.test(val), "Invalid account number"),
+    ifscCode: z.string().optional().refine(val => !val || /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val), "Invalid IFSC code"),
+    bankName: z.string().optional(),
     kycStatus: z.string().optional(),
     kycRejectionReason: z.string().optional(),
     kycApprovedAt: z.string().optional(),
     kycApprovedBy: z.string().optional(),
 })
 
-const businessSchema = z.object({
-    id: z.string().optional(),
-
-    companyName: z
-        .string()
-        .optional()
-        .refine(val => !val || val.trim().length >= 2, "Company name must be at least 2 chars"),
-
-    businessType: z
-        .nativeEnum(BusinessType)
-        .optional(),
-
-    registeredAddress: z.string().optional(),
-    city: z.string().optional(),
-    state: z.string().optional(),
-
-    pincode: z
-        .string()
-        .optional()
-        .refine(val => !val || /^[0-9]{6}$/.test(val), "Pincode must be 6 digits"),
-
-    websiteUrl: z
-        .string()
-        .optional()
-        .refine(val => !val || /^https?:\/\/.+/.test(val), "Invalid website URL"),
-
-    gstNumber: z
-        .string()
-        .optional()
-        .refine(
-            val => !val || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(val),
-            "Invalid GST Number"
-        ),
-
-    panNumber: z
-        .string()
-        .optional()
-        .refine(
-            val => !val || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(val),
-            "Invalid PAN Number"
-        ),
-
-    tanNumber: z.string().optional(),
-    cinNumber: z.string().optional(),
-    pocName: z.string().optional()
-})
-
-const bankSchema = z.object({
-    accountHolderName: z.string().optional(),
-
-    accountNumber: z
-        .string()
-        .optional()
-        .refine(val => !val || /^[0-9]{9,18}$/.test(val), "Invalid account number"),
-
-    ifscCode: z
-        .string()
-        .optional()
-        .refine(val => !val || /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val), "Invalid IFSC code"),
-
-    bankName: z.string().optional(),
-})
-
 const documentsSchema = z.object({
-    aadhaarNumber: z
-        .string()
-        .optional()
-        .refine(val => !val || /^[0-9]{12}$/.test(val), "Aadhaar must be 12 digits"),
-
-    panNumber: z
-        .string()
-        .optional()
-        .refine(val => !val || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(val), "Invalid PAN Number"),
-
-    gstNumber: z
-        .string()
-        .optional()
-        .refine(
-            val => !val || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(val),
-            "Invalid GST Number"
-        ),
-    panCard: z.string().optional(),
-    gstCertificate: z.string().optional(),
     aadhaarFront: z.string().optional(),
     aadhaarBack: z.string().optional(),
+    panCard: z.string().optional(),
+    gstCertificate: z.string().optional(),
     incorporationCertificate: z.string().optional(),
     bankStatement: z.string().optional(),
     cancelledCheque: z.string().optional(),
-    addressProof: z.string().optional(),
-    authorizedSignatory: z.string().optional(),
+    addressProof: z.string().optional()
 })
 
 const rootSchema = z.object({
     profile: profileSchema,
     business: businessSchema,
-    bank: bankSchema,
+    bankAndKyc: bankAndKycSchema,
     documents: documentsSchema,
-    kyc: kycSchema,
 })
 
 type RootForm = z.infer<typeof rootSchema>
 
-/* -------------------------------
-   Helpers: formatters & small utils
-   ------------------------------- */
-const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.readAsDataURL(file);
-    reader.onload = () => resolve(reader.result as string);
-    reader.onerror = error => reject(error);
-});
-
+//  Helper functions
 function formatPan(val?: string) {
     if (!val) return val
     return val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 10)
 }
+
 function formatGst(val?: string) {
     if (!val) return val
     return val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 15)
 }
+
 function formatIfsc(val?: string) {
     if (!val) return val
     return val.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 11)
 }
+
 function formatAadhaar(val?: string) {
     if (!val) return val
     return val.replace(/[^0-9]/g, "").slice(0, 12)
 }
+
 function formatPhone(val?: string) {
     if (!val) return val
     return val.replace(/[^0-9]/g, "").slice(0, 10)
 }
 
 const getStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-500/20 text-gray-400'
+    if (!status) return 'bg-gray-500/20 text-muted-foreground'
     switch (status.toUpperCase()) {
         case 'ACTIVE': return 'bg-green-500/20 text-green-400'
         case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
         case 'SUSPENDED':
         case 'INACTIVE': return 'bg-red-500/20 text-red-400'
-        default: return 'bg-gray-500/20 text-gray-400'
+        default: return 'bg-gray-500/20 text-muted-foreground'
     }
 }
 
-/* ---------------------------------------------------------
-   Profile Tab
---------------------------------------------------------- */
-function ProfileTab() {
+const getKycStatusColor = (status?: string) => {
+    switch (status?.toUpperCase()) {
+        case 'APPROVED': return 'bg-green-500/20 text-green-400 border-green-500/50'
+        case 'REJECTED': return 'bg-red-500/20 text-red-400 border-red-500/50'
+        case 'UNDER_REVIEW': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/50'
+        case 'PENDING': return 'bg-gray-500/20 text-muted-foreground border-gray-500/50'
+        default: return 'bg-gray-500/20 text-muted-foreground border-gray-500/50'
+    }
+}
+
+const getKycStatusIcon = (status?: string) => {
+    switch (status?.toUpperCase()) {
+        case 'APPROVED': return <CheckCircle2 className="w-5 h-5 text-green-400" />
+        case 'REJECTED': return <XCircle className="w-5 h-5 text-red-400" />
+        case 'UNDER_REVIEW': return <Clock className="w-5 h-5 text-yellow-400" />
+        case 'PENDING': return <AlertCircle className="w-5 h-5 text-muted-foreground" />
+        default: return <AlertCircle className="w-5 h-5 text-muted-foreground" />
+    }
+}
+
+//  TAB 1: PROFILE & CONTACT
+function ProfileAndContactTab() {
     const { register, setValue, watch, formState: { errors }, trigger } = useFormContext<RootForm>()
     const photo = watch("profile.photoUrl")
     const profileStatus = watch("profile.status")
 
     return (
-        <Card className="bg-gray-900/50 border-gray-800">
+        <Card className="bg-background/50 border-border">
             <CardHeader>
-                <CardTitle className="text-white">Profile Information</CardTitle>
-                <CardDescription className="text-gray-400">Update your personal details</CardDescription>
+                <CardTitle className="text-foreground flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    Profile & Contact Information
+                </CardTitle>
+                <CardDescription className="text-muted-foreground">
+                    Personal details and primary contact information
+                </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-                <div className="flex items-center space-x-6">
+                {/* Profile Photo Section */}
+                <div className="flex items-center space-x-6 pb-6 border-b border-border">
                     <Avatar className="w-24 h-24">
                         <AvatarImage src={photo || "/placeholder.svg"} alt="Profile" />
-                        <AvatarFallback className="bg-gradient-to-r from-gold to-blue text-dark text-xl">
+                        <AvatarFallback className="bg-gradient-to-r from-blue-500 to-cyan-500 text-foreground text-xl font-bold">
                             {watch("profile.firstName")?.[0]}{watch("profile.lastName")?.[0]}
                         </AvatarFallback>
                     </Avatar>
                     <div>
                         <label className="inline-block">
-                            <Button variant="outline" className="border-gray-700 text-gray-300 hover:bg-gray-800">
+                            <Button variant="outline" className="border-border text-foreground hover:bg-card">
                                 <Input
                                     type="file"
                                     accept="image/*"
                                     className="sr-only"
                                     onChange={async (e) => {
-                                        const file = e.target.files?.[0];
-                                        if (!file) return;
+                                        const file = e.target.files?.[0]
+                                        if (!file) return
                                         try {
-                                            const url = createPublicFilePath(file);
-                                            // set the returned public path into the form
-                                            setValue("profile.photoUrl", url, { shouldValidate: true });
-                                            // trigger validation if you want
-                                            trigger("profile.photoUrl");
-                                        } catch (err: any) {
-                                            console.error("Upload failed", err);
+                                            const url = createPublicFilePath(file)
+                                            setValue("profile.photoUrl", url, { shouldValidate: true })
+                                            trigger("profile.photoUrl")
+                                        } catch (err) {
+                                            console.error("Upload failed", err)
                                         }
                                     }}
                                 />
@@ -274,43 +219,53 @@ function ProfileTab() {
                                 Upload Photo
                             </Button>
                         </label>
-                        <p className="text-gray-400 text-sm mt-2">JPG, PNG or GIF. Max size 2MB.</p>
+                        <p className="text-muted-foreground text-sm mt-2">JPG, PNG or GIF. Max size 2MB.</p>
+                    </div>
+                    <div className="ml-auto">
+                        <Badge className={`${getStatusColor(profileStatus)} border px-4 py-1.5 text-sm font-semibold`}>
+                            {profileStatus || "N/A"}
+                        </Badge>
                     </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    <Badge
-                        className={`${getStatusColor(profileStatus)} border px-4 py-1.5 text-sm font-semibold`}
-                    >
-                        {profileStatus || "N/A"}
-                    </Badge>
-                </div>
-
+                {/* Name & Email */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="space-y-2">
-                        <Label htmlFor="firstName" className="text-white">First Name</Label>
+                        <Label htmlFor="firstName" className="text-foreground">First Name *</Label>
                         <Input
                             id="firstName"
-                            {...register("profile.firstName", {
-                                onBlur: () => trigger("profile.firstName")
-                            })}
-                            className="bg-gray-800 border-gray-700 text-white"
+                            {...register("profile.firstName", { onBlur: () => trigger("profile.firstName") })}
+                            className="bg-card border-border text-foreground"
+                            placeholder="Enter first name"
                         />
-
                         {errors.profile?.firstName && <p className="text-red-400 text-sm">{errors.profile.firstName.message}</p>}
                     </div>
+
                     <div className="space-y-2">
-                        <Label htmlFor="lastName" className="text-white">Last Name</Label>
-                        <Input id="lastName" {...register("profile.lastName", { onBlur: () => trigger("profile.lastName") })} className="bg-gray-800 border-gray-700 text-white" />
+                        <Label htmlFor="lastName" className="text-foreground">Last Name</Label>
+                        <Input
+                            id="lastName"
+                            {...register("profile.lastName", { onBlur: () => trigger("profile.lastName") })}
+                            className="bg-card border-border text-foreground"
+                            placeholder="Enter last name"
+                        />
                         {errors.profile?.lastName && <p className="text-red-400 text-sm">{errors.profile.lastName.message}</p>}
                     </div>
+
                     <div className="space-y-2">
-                        <Label htmlFor="email" className="text-white">Email Address</Label>
-                        <Input id="email" type="email" {...register("profile.email", { onBlur: () => trigger("profile.email") })} className="bg-gray-800 border-gray-700 text-white" />
+                        <Label htmlFor="email" className="text-foreground">Email Address *</Label>
+                        <Input
+                            id="email"
+                            type="email"
+                            {...register("profile.email", { onBlur: () => trigger("profile.email") })}
+                            className="bg-card border-border text-foreground"
+                            placeholder="email@example.com"
+                        />
                         {errors.profile?.email && <p className="text-red-400 text-sm">{errors.profile.email.message}</p>}
                     </div>
+
                     <div className="space-y-2">
-                        <Label htmlFor="phone" className="text-white">Phone Number</Label>
+                        <Label htmlFor="phone" className="text-foreground">Phone Number *</Label>
                         <Input
                             id="phone"
                             {...register("profile.contact", {
@@ -321,7 +276,8 @@ function ProfileTab() {
                                     trigger("profile.contact")
                                 }
                             })}
-                            className="bg-gray-800 border-gray-700 text-white"
+                            className="bg-card border-border text-foreground"
+                            placeholder="10-digit mobile number"
                         />
                         {errors.profile?.contact && <p className="text-red-400 text-sm">{errors.profile.contact.message}</p>}
                     </div>
@@ -331,401 +287,682 @@ function ProfileTab() {
     )
 }
 
-/* ---------------------------------------------------------
-   Business Tab
---------------------------------------------------------- */
-function BusinessTab() {
-    const { register, setValue, trigger, watch, formState: { errors } } = useFormContext<RootForm>();
+//  TAB 2: BUSINESS & STATUTORY DETAILS
+function BusinessDetailsTab() {
+    const { register, setValue, trigger, watch, formState: { errors } } = useFormContext<RootForm>()
     const businessType = watch("business.businessType")
-    return (
-        <Card className="bg-gray-900/50 border-gray-800">
-            <CardHeader>
-                <CardTitle className="text-white">Business Information</CardTitle>
-                <CardDescription className="text-gray-400">Manage your organization details</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="companyName" className="text-white">Company Name</Label>
-                        <Input id="companyName" {...register("business.companyName", { onBlur: () => trigger("business.companyName") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.companyName && <p className="text-red-400 text-sm">{errors.business.companyName.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="pocName" className="text-white">Point of Contact</Label>
-                        <Input id="pocName" {...register("business.pocName", { onBlur: () => trigger("business.pocName") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.pocName && <p className="text-red-400 text-sm">{errors.business.pocName.message}</p>}
-                    </div>
-                    {/* Business Type */}
-                    <div className="space-y-2">
-                        <Label className="text-gray-300 font-medium">Business Type</Label>
-                        <Select
-                            value={businessType || ""}
-                            onValueChange={(value) =>
-                                setValue("business.businessType", value as BusinessType, { shouldValidate: true })
-                            }
-                        >
-                            <SelectTrigger className="bg-gray-800 border-gray-700 text-white h-11">
-                                <SelectValue placeholder="Select Business Type" />
-                            </SelectTrigger>
-                            <SelectContent className="glass-card border-white/10">
-                                <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-black hover:bg-white/10 cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                        <Building className="w-4 h-4" />
-                                        <span>PRIVATE LIMITED</span>
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value={BusinessType.PUBLIC_LIMITED} className="text-black hover:bg-white/10 cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                        <Landmark className="w-4 h-4" />
-                                        <span>PUBLIC LIMITED</span>
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value={BusinessType.PROPRIETORSHIP} className="text-black hover:bg-white/10 cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                        <Cpu className="w-4 h-4" />
-                                        <span>PROPRIETORSHIP</span>
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value={BusinessType.PARTNERSHIP} className="text-black hover:bg-white/10 cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                        <Cpu className="w-4 h-4" />
-                                        <span>PARTNERSHIP</span>
-                                    </div>
-                                </SelectItem>
-                                <SelectItem value={BusinessType.LLP} className="text-black hover:bg-white/10 cursor-pointer">
-                                    <div className="flex items-center gap-2">
-                                        <Cpu className="w-4 h-4" />
-                                        <span>LLP</span>
-                                    </div>
-                                </SelectItem>
-                            </SelectContent>
-                        </Select>
-                        {/* Hidden field to sync with react-hook-form */}
-                        <input type="hidden" {...register("business.businessType")} />
-                        {errors.business?.businessType && (
-                            <p className="text-red-400 text-sm">{errors.business.businessType.message}</p>
-                        )}
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="cinNumber" className="text-white">Registration Number</Label>
-                        <Input id="cinNumber" {...register("business.cinNumber", { onBlur: () => trigger("business.cinNumber") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.cinNumber && <p className="text-red-400 text-sm">{errors.business.cinNumber.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="gstNumber" className="text-white">GST Number</Label>
-                        <Input id="gstNumber" {...register("business.gstNumber", {
-                            onBlur: (e: any) => {
-                                const formatted = formatGst(e.target.value)
-                                e.target.value = formatted
-                                setValue("business.gstNumber", formatted, { shouldValidate: true })
-                                trigger("business.gstNumber")
-                            }
-                        })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.gstNumber && <p className="text-red-400 text-sm">{errors.business.gstNumber.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="panNumber" className="text-white">TAN Number</Label>
-                        <Input id="panNumber" {...register("business.tanNumber", { onBlur: () => trigger("business.tanNumber") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.tanNumber && <p className="text-red-400 text-sm">{errors.business.tanNumber.message}</p>}
-                    </div>
-                </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="address" className="text-white">Registered Address</Label>
-                    <Textarea id="address" {...register("business.registeredAddress", { onBlur: () => trigger("business.registeredAddress") })} className="bg-gray-800 border-gray-700 text-white" rows={3} />
-                    {errors.business?.registeredAddress && <p className="text-red-400 text-sm">{errors.business.registeredAddress.message}</p>}
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="website" className="text-white">Website</Label>
-                        <Input id="website" {...register("business.websiteUrl", { onBlur: () => trigger("business.websiteUrl") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.websiteUrl && <p className="text-red-400 text-sm">{errors.business.websiteUrl.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="city" className="text-white">City</Label>
-                        <Input id="city" {...register("business.city", { onBlur: () => trigger("business.city") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.city && <p className="text-red-400 text-sm">{errors.business.city.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="state" className="text-white">State</Label>
-                        <Input id="state" {...register("business.state", { onBlur: () => trigger("business.state") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.business?.state && <p className="text-red-400 text-sm">{errors.business.state.message}</p>}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
-}
-
-/* ---------------------------------------------------------
-   Banking Tab
---------------------------------------------------------- */
-function BankingTab() {
-    const { register, formState: { errors }, trigger, setValue } = useFormContext<RootForm>()
-    return (
-        <Card className="bg-gray-900/50 border-gray-800">
-            <CardHeader>
-                <CardTitle className="text-white">Banking</CardTitle>
-                <CardDescription className="text-gray-400">Update bank details for payouts</CardDescription>
-            </CardHeader>
-            <CardContent>
-                <div className="flex items-center justify-end mb-4">
-                    <div className="flex items-center space-x-3">
-                        <span className="text-gray-300">Bank Verified</span>
-                    </div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                        <Label htmlFor="accountHolderName" className="text-white">Account Holder Name</Label>
-                        <Input id="accountHolderName" {...register("bank.accountHolderName", { onBlur: () => trigger("bank.accountHolderName") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.bank?.accountHolderName && <p className="text-red-400 text-sm">{errors.bank.accountHolderName.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="accountNumber" className="text-white">Account Number</Label>
-                        <Input id="accountNumber" {...register("bank.accountNumber", { onBlur: () => trigger("bank.accountNumber") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.bank?.accountNumber && <p className="text-red-400 text-sm">{errors.bank.accountNumber.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="ifsc" className="text-white">IFSC Code</Label>
-                        <Input id="ifsc" {...register("bank.ifscCode", {
-                            onBlur: (e: any) => {
-                                const formatted = formatIfsc(e.target.value)
-                                e.target.value = formatted
-                                setValue("bank.ifscCode", formatted, { shouldValidate: true })
-                                trigger("bank.ifscCode")
-                            }
-                        })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.bank?.ifscCode && <p className="text-red-400 text-sm">{errors.bank.ifscCode.message}</p>}
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="bankName" className="text-white">Bank Name</Label>
-                        <Input id="bankName" {...register("bank.bankName", { onBlur: () => trigger("bank.bankName") })} className="bg-gray-800 border-gray-700 text-white" />
-                        {errors.bank?.bankName && <p className="text-red-400 text-sm">{errors.bank.bankName.message}</p>}
-                    </div>
-                </div>
-            </CardContent>
-        </Card>
-    )
-}
-
-/* ---------------------------------------------------------
-   KYC Tab
---------------------------------------------------------- */
-function KycTab() {
-    const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
-    const kycStatus = watch("kyc.kycStatus")
-    const [aadhaarFrontPreview, setAadhaarFrontPreview] = useState<string | null>(null)
-    const [aadhaarBackPreview, setAadhaarBackPreview] = useState<string | null>(null)
-    const [panImagePreview, setPanImagePreview] = useState<string | null>(null)
-    const [incorporationPreview, setIncorporationPreview] = useState<string | null>(null)
-    const [bankStatementPreview, setBankStatementPreview] = useState<string | null>(null)
-    const [cancelledChequePreview, setCancelledChequePreview] = useState<string | null>(null)
-    const [addressProofPreview, setAddressProofPreview] = useState<string | null>(null)
-    const [authorizedSignatoryPreview, setAuthorizedSignatoryPreview] = useState<string | null>(null)
+    const rank = watch("business.rank")
 
     return (
-        <Card className="bg-gray-900/50 border-gray-800">
-            <CardHeader>
-                <CardTitle className="text-white">KYC Documents</CardTitle>
-                <CardDescription className="text-gray-400">Upload your verification documents</CardDescription>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="md:col-span-2 p-4 bg-gray-800/30 rounded">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h4 className="text-white font-semibold">KYC Status</h4>
-                            <p className="text-gray-400 text-sm">Set or review the KYC verification status.</p>
+        <div className="space-y-6">
+            {/* Company Information */}
+            <Card className="bg-background/50 border-border">
+                <CardHeader>
+                    <CardTitle className="text-foreground flex items-center gap-2">
+                        <Building2 className="w-5 h-5" />
+                        Company Information
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                        Organization details and business structure
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="companyName" className="text-foreground">Company Name *</Label>
+                            <Input
+                                id="companyName"
+                                {...register("business.companyName", { onBlur: () => trigger("business.companyName") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="Registered company name"
+                            />
+                            {errors.business?.companyName && <p className="text-red-400 text-sm">{errors.business.companyName.message}</p>}
                         </div>
-                        <div className="flex items-center space-x-3">
+
+                        <div className="space-y-2">
+                            <Label className="text-foreground font-medium">Company Rank *</Label>
                             <Select
-                                value={kycStatus?.toUpperCase()}
-                                onValueChange={(v) => setValue("kyc.kycStatus", v as string, { shouldValidate: true })}
+                                value={rank || ""}
+                                onValueChange={(value) =>
+                                    setValue("business.rank", value as ApplicableFor, { shouldValidate: true })
+                                }
                             >
-                                <SelectTrigger className="glass-input text-black h-10 w-48">
-                                    <SelectValue placeholder="Change KYC Status" />
+                                <SelectTrigger className="bg-card border-border text-foreground h-11">
+                                    <SelectValue placeholder="Select Business Type" />
                                 </SelectTrigger>
-                                <SelectContent className="glass-card border-white/10">
-                                    <SelectItem value={KYCStatus.PENDING}>PENDING</SelectItem>
-                                    <SelectItem value={KYCStatus.UNDER_REVIEW}>UNDER_REVIEW</SelectItem>
-                                    <SelectItem value={KYCStatus.APPROVED}>APPROVED</SelectItem>
-                                    <SelectItem value={KYCStatus.REJECTED}>REJECTED</SelectItem>
+                                <SelectContent className="bg-card border-border">
+                                    <SelectItem value={ApplicableFor.BRONZE_AGGREGATORS} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4" />
+                                            <span>{ApplicableFor.BRONZE_AGGREGATORS}</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={ApplicableFor.SILVER_AGGREGATORS} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4" />
+                                            <span>{ApplicableFor.SILVER_AGGREGATORS}</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Building className="w-4 h-4" />
+                                            <span>{ApplicableFor.GOLD_AGGREGATORS}</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Landmark className="w-4 h-4" />
+                                            <span>{ApplicableFor.PLATINUM_AGGREGATORS}</span>
+                                        </div>
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
+                            <input type="hidden" {...register("business.rank")} />
+                            {errors.business?.rank && <p className="text-red-400 text-sm">{errors.business.rank.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label className="text-foreground font-medium">Business Type *</Label>
+                            <Select
+                                value={businessType || ""}
+                                onValueChange={(value) =>
+                                    setValue("business.businessType", value as BusinessType, { shouldValidate: true })
+                                }
+                            >
+                                <SelectTrigger className="bg-card border-border text-foreground h-11">
+                                    <SelectValue placeholder="Select Business Type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-card border-border">
+                                    <SelectItem value={BusinessType.PROPRIETORSHIP} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4" />
+                                            <span>Proprietorship</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={BusinessType.PARTNERSHIP} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4" />
+                                            <span>Partnership</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Building className="w-4 h-4" />
+                                            <span>Private Limited</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={BusinessType.PUBLIC_LIMITED} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Landmark className="w-4 h-4" />
+                                            <span>Public Limited</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={BusinessType.LLP} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Briefcase className="w-4 h-4" />
+                                            <span>LLP</span>
+                                        </div>
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <input type="hidden" {...register("business.businessType")} />
+                            {errors.business?.businessType && <p className="text-red-400 text-sm">{errors.business.businessType.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="yearOfEstablishment" className="text-foreground">Year of Establishment</Label>
+                            <Input
+                                id="yearOfEstablishment"
+                                {...register("business.yearOfEstablishment", { onBlur: () => trigger("business.yearOfEstablishment") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="YYYY (e.g., 2020)"
+                            />
+                            {errors.business?.yearOfEstablishment && <p className="text-red-400 text-sm">{errors.business.yearOfEstablishment.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="websiteUrl" className="text-foreground">Website URL</Label>
+                            <Input
+                                id="websiteUrl"
+                                {...register("business.websiteUrl", { onBlur: () => trigger("business.websiteUrl") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="https://example.com"
+                            />
+                            {errors.business?.websiteUrl && <p className="text-red-400 text-sm">{errors.business.websiteUrl.message}</p>}
                         </div>
                     </div>
 
-                    <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label className="text-gray-300">Rejection Reason (if any)</Label>
-                            <Input {...register("kyc.kycRejectionReason")} className="bg-gray-800 border-gray-700 text-white" />
+                    {/* Address */}
+                    <div className="space-y-2">
+                        <Label htmlFor="registeredAddress" className="text-foreground">Registered Address *</Label>
+                        <Textarea
+                            id="registeredAddress"
+                            {...register("business.registeredAddress", { onBlur: () => trigger("business.registeredAddress") })}
+                            className="bg-card border-border text-foreground"
+                            rows={3}
+                            placeholder="Complete registered office address"
+                        />
+                        {errors.business?.registeredAddress && <p className="text-red-400 text-sm">{errors.business.registeredAddress.message}</p>}
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="city" className="text-foreground">City *</Label>
+                            <Input
+                                id="city"
+                                {...register("business.city", { onBlur: () => trigger("business.city") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="City name"
+                            />
+                            {errors.business?.city && <p className="text-red-400 text-sm">{errors.business.city.message}</p>}
                         </div>
-                        <div>
-                            <Label className="text-gray-300">Approved At</Label>
-                            <Input type="datetime-local" {...register("kyc.kycApprovedAt")} className="bg-gray-800 border-gray-700 text-white" />
+
+                        <div className="space-y-2">
+                            <Label htmlFor="state" className="text-foreground">State *</Label>
+                            <Input
+                                id="state"
+                                {...register("business.state", { onBlur: () => trigger("business.state") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="State name"
+                            />
+                            {errors.business?.state && <p className="text-red-400 text-sm">{errors.business.state.message}</p>}
                         </div>
-                        <div className="md:col-span-2">
-                            <Label className="text-gray-300">Approved By</Label>
-                            <Input {...register("kyc.kycApprovedBy")} className="bg-gray-800 border-gray-700 text-white" />
+
+                        <div className="space-y-2">
+                            <Label htmlFor="pincode" className="text-foreground">Pincode *</Label>
+                            <Input
+                                id="pincode"
+                                {...register("business.pincode", { onBlur: () => trigger("business.pincode") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="6-digit pincode"
+                            />
+                            {errors.business?.pincode && <p className="text-red-400 text-sm">{errors.business.pincode.message}</p>}
                         </div>
                     </div>
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="aadhaarNumber" className="text-gray-300">Aadhaar Number</Label>
-                    <Input id="aadhaarNumber" {...register("documents.aadhaarNumber", {
-                        onBlur: (e: any) => {
-                            const formatted = formatAadhaar(e.target.value)
-                            e.target.value = formatted
-                            setValue("documents.aadhaarNumber", formatted, { shouldValidate: true })
-                            trigger("documents.aadhaarNumber")
-                        }
-                    })} className="bg-gray-800 border-gray-700 text-white" placeholder="Enter 12-digit Aadhaar" />
-                    {errors.documents?.aadhaarNumber && <p className="text-red-400 text-sm">{errors.documents.aadhaarNumber.message}</p>}
-                </div>
+                </CardContent>
+            </Card>
 
-                <div className="space-y-2">
-                    <Label htmlFor="aadhaarFront" className="text-gray-300">Aadhaar Front</Label>
+            {/* Statutory Details */}
+            <Card className="bg-background/50 border-border">
+                <CardHeader>
+                    <CardTitle className="text-foreground">Statutory Details</CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                        Tax registration and identification numbers
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="panNumber" className="text-foreground">PAN Number *</Label>
+                            <Input
+                                id="panNumber"
+                                {...register("business.panNumber", {
+                                    onBlur: (e: any) => {
+                                        const formatted = formatPan(e.target.value)
+                                        e.target.value = formatted
+                                        setValue("business.panNumber", formatted, { shouldValidate: true })
+                                        trigger("business.panNumber")
+                                    }
+                                })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="ABCDE1234F"
+                            />
+                            {errors.business?.panNumber && <p className="text-red-400 text-sm">{errors.business.panNumber.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="gstNumber" className="text-foreground">GST Number</Label>
+                            <Input
+                                id="gstNumber"
+                                {...register("business.gstNumber", {
+                                    onBlur: (e: any) => {
+                                        const formatted = formatGst(e.target.value)
+                                        e.target.value = formatted
+                                        setValue("business.gstNumber", formatted, { shouldValidate: true })
+                                        trigger("business.gstNumber")
+                                    }
+                                })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="15-character GST"
+                            />
+                            {errors.business?.gstNumber && <p className="text-red-400 text-sm">{errors.business.gstNumber.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="aadhaarNumber" className="text-foreground">Aadhaar Number (Proprietor)</Label>
+                            <Input
+                                id="aadhaarNumber"
+                                {...register("business.aadhaarNumber", {
+                                    onBlur: (e: any) => {
+                                        const formatted = formatAadhaar(e.target.value)
+                                        e.target.value = formatted
+                                        setValue("business.aadhaarNumber", formatted, { shouldValidate: true })
+                                        trigger("business.aadhaarNumber")
+                                    }
+                                })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="12-digit Aadhaar"
+                            />
+                            {errors.business?.aadhaarNumber && <p className="text-red-400 text-sm">{errors.business.aadhaarNumber.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="cinNumber" className="text-foreground">CIN / Registration Number</Label>
+                            <Input
+                                id="cinNumber"
+                                {...register("business.cinNumber", { onBlur: () => trigger("business.cinNumber") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="Company/LLP registration number"
+                            />
+                            {errors.business?.cinNumber && <p className="text-red-400 text-sm">{errors.business.cinNumber.message}</p>}
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="tanNumber" className="text-foreground">TAN Number</Label>
+                            <Input
+                                id="tanNumber"
+                                {...register("business.tanNumber", { onBlur: () => trigger("business.tanNumber") })}
+                                className="bg-card border-border text-foreground"
+                                placeholder="Tax Deduction Account Number"
+                            />
+                            {errors.business?.tanNumber && <p className="text-red-400 text-sm">{errors.business.tanNumber.message}</p>}
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    )
+}
+
+// Document Upload Field Component
+interface DocumentUploadFieldProps {
+    label: string;
+    fieldName: string;
+    currentValue: string | File | null | undefined;
+    onFileSelect: (file: File) => void;
+    onRemove: () => void;
+    acceptTypes?: string;
+}
+
+function DocumentUploadField({
+    label,
+    fieldName,
+    currentValue,
+    onFileSelect,
+    onRemove,
+    acceptTypes = "image/*"
+}: DocumentUploadFieldProps) {
+    const { toast } = useToast();
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const isFile = currentValue instanceof File;
+    const isUrl = typeof currentValue === "string" && currentValue.trim() !== "";
+    const hasValue = isFile || isUrl;
+
+    const displayUrl = isFile
+        ? URL.createObjectURL(currentValue)
+        : isUrl
+            ? currentValue
+            : "";
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        // Validate file size (5MB limit)
+        if (file.size > 5 * 1024 * 1024) {
+            toast({
+                title: "File Too Large",
+                description: `${file.name} exceeds 5MB limit`,
+                variant: "destructive",
+            });
+            return;
+        }
+
+        onFileSelect(file);
+    };
+
+    const handleRemove = () => {
+        if (isFile && displayUrl) {
+            URL.revokeObjectURL(displayUrl);
+        }
+        onRemove();
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+    };
+
+    return (
+        <div className="space-y-2">
+            <Label className="text-foreground">{label}</Label>
+
+            {!hasValue ? (
+                <div
+                    className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
+                    onClick={() => fileInputRef.current?.click()}
+                >
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground">Click to upload</p>
+                    <p className="text-xs text-gray-500 mt-1">Max 5MB</p>
                     <input
-                        id="aadhaarFront"
+                        ref={fileInputRef}
                         type="file"
-                        accept="image/*"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setAadhaarFrontPreview("https://placeholder.com/aadhaar-front.jpg")
-                            }
-                        }}
+                        accept={acceptTypes}
+                        onChange={handleFileChange}
+                        className="hidden"
                     />
-                    {aadhaarFrontPreview && <img src={aadhaarFrontPreview} alt="Preview" className="mt-2 h-32 rounded" />}
                 </div>
-
-                <div className="space-y-2">
-                    <Label htmlFor="aadhaarBack" className="text-gray-300">Aadhaar Back</Label>
+            ) : (
+                <div className="relative bg-card/50 border border-border rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-3 flex-1 min-w-0">
+                            <FileText className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                            <div className="min-w-0 flex-1">
+                                <p className="text-foreground text-sm truncate">
+                                    {isFile ? currentValue.name : "Uploaded Document"}
+                                </p>
+                                <p className="text-muted-foreground text-xs">
+                                    {isFile
+                                        ? `${(currentValue.size / 1024 / 1024).toFixed(2)} MB`
+                                        : "View Document"}
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
+                            {isUrl && (
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => window.open(displayUrl, "_blank")}
+                                    className="text-blue-400 hover:text-blue-300 hover:bg-blue-400/10"
+                                >
+                                    View
+                                </Button>
+                            )}
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => fileInputRef.current?.click()}
+                                className="text-muted-foreground hover:text-foreground hover:bg-muted"
+                            >
+                                Replace
+                            </Button>
+                            <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleRemove}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
+                            >
+                                <X className="w-4 h-4" />
+                            </Button>
+                        </div>
+                    </div>
                     <input
-                        id="aadhaarBack"
+                        ref={fileInputRef}
                         type="file"
-                        accept="image/*"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setAadhaarBackPreview("https://placeholder.com/aadhaar-back.jpg")
-                            }
-                        }}
+                        accept={acceptTypes}
+                        onChange={handleFileChange}
+                        className="hidden"
                     />
-                    {aadhaarBackPreview && <img src={aadhaarBackPreview} alt="Preview" className="mt-2 h-32 rounded" />}
                 </div>
+            )}
+        </div>
+    );
+}
 
-                <div className="space-y-2">
-                    <Label htmlFor="panNumber" className="text-gray-300">PAN Number</Label>
-                    <Input id="panNumber" {...register("documents.panNumber", {
-                        onBlur: (e: any) => {
-                            const formatted = formatPan(e.target.value)
-                            e.target.value = formatted
-                            setValue("documents.panNumber", formatted, { shouldValidate: true })
-                            trigger("documents.panNumber")
-                        }
-                    })} className="bg-gray-800 border-gray-700 text-white" placeholder="Enter 10-character PAN" />
-                    {errors.documents?.panNumber && <p className="text-red-400 text-sm">{errors.documents.panNumber.message}</p>}
-                </div>
+// TAB 3: BANKING, KYC & DOCUMENTS
+function BankingKycDocumentsTab() {
+    const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
+    const { user } = useAuth()    // Get current user
+    const kycStatus = watch("bankAndKyc.kycStatus")
+    const approvedBy = watch("bankAndKyc.kycApprovedBy")
+    const kycRejectionReason = watch("bankAndKyc.kycRejectionReason")
+    const kycApprovedAt = watch("bankAndKyc.kycApprovedAt")
 
-                <div className="space-y-2">
-                    <Label htmlFor="panImage" className="text-gray-300">PAN Card Image</Label>
-                    <input
-                        id="panImage"
-                        type="file"
-                        accept="image/*"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setPanImagePreview("https://placeholder.com/pan-card.jpg")
-                            }
-                        }}
-                    />
-                    {panImagePreview && <img src={panImagePreview} alt="Preview" className="mt-2 h-32 rounded" />}
-                </div>
+    // Check if current user is super admin
+    const isSuperAdmin = user?.role === "SUPER_ADMIN"
 
-                <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="incorporationCertificate" className="text-gray-300">Incorporation Certificate</Label>
-                    <input
-                        id="incorporationCertificate"
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setIncorporationPreview("https://placeholder.com/incorporation.jpg")
-                            }
-                        }}
-                    />
-                    {incorporationPreview && <img src={incorporationPreview} alt="Incorporation" className="mt-2 h-32 rounded" />}
-                </div>
+    return (
+        <div className="space-y-6">
+            {/* Banking Details */}
+            <Card className="bg-background/50 border-border">
+                <CardHeader>
+                    <CardTitle className="text-foreground flex items-center gap-2"><Landmark className="w-5 h-5" />Banking Details</CardTitle>
+                    <CardDescription className="text-muted-foreground">Bank account for commission payouts</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-2">
+                            <Label htmlFor="accountHolderName" className="text-foreground">Account Holder Name</Label>
+                            <Input id="accountHolderName" {...register("bankAndKyc.accountHolderName")} className="bg-card border-border text-foreground" placeholder="As per bank" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="accountNumber" className="text-foreground">Account Number</Label>
+                            <Input id="accountNumber" {...register("bankAndKyc.accountNumber")} className="bg-card border-border text-foreground" placeholder="9-18 digits" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="ifscCode" className="text-foreground">IFSC Code</Label>
+                            <Input id="ifscCode" {...register("bankAndKyc.ifscCode", {
+                                onBlur: (e: any) => {
+                                    const formatted = formatIfsc(e.target.value)
+                                    e.target.value = formatted
+                                    setValue("bankAndKyc.ifscCode", formatted, { shouldValidate: true })
+                                }
+                            })} className="bg-card border-border text-foreground" placeholder="SBIN0001234" />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="bankName" className="text-foreground">Bank Name</Label>
+                            <Input id="bankName" {...register("bankAndKyc.bankName")} className="bg-card border-border text-foreground" placeholder="Bank name" />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
 
-                <div className="space-y-2">
-                    <Label htmlFor="bankStatement" className="text-gray-300">Bank Statement</Label>
-                    <input
-                        id="bankStatement"
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setBankStatementPreview("https://placeholder.com/bank-statement.jpg")
-                            }
-                        }}
-                    />
-                    {bankStatementPreview && <img src={bankStatementPreview} alt="Bank Statement" className="mt-2 h-32 rounded" />}
-                </div>
+            {/* KYC STATUS */}
+            <Card className="bg-background/50 border-border">
+                <CardHeader>
+                    <CardTitle className="text-foreground flex items-center gap-2">
+                        <FileCheck className="w-5 h-5" />
+                        KYC Verification Status
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                        {isSuperAdmin
+                            ? "Set or review KYC status after document verification"
+                            : "Your KYC verification status"}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="p-4 bg-card/30 rounded-lg border border-border">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                                {getKycStatusIcon(kycStatus)}
+                                <div>
+                                    <h4 className="text-foreground font-semibold">Current Status</h4>
+                                    <p className="text-muted-foreground text-sm">
+                                        {isSuperAdmin
+                                            ? "Update after document review"
+                                            : "Your documents are being reviewed"}
+                                    </p>
+                                </div>
+                            </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="cancelledCheque" className="text-gray-300">Cancelled Cheque</Label>
-                    <input
-                        id="cancelledCheque"
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setCancelledChequePreview("https://placeholder.com/cheque.jpg")
-                            }
-                        }}
-                    />
-                    {cancelledChequePreview && <img src={cancelledChequePreview} alt="Cancelled Cheque" className="mt-2 h-32 rounded" />}
-                </div>
+                            {/* Status Selector - Only for Super Admin */}
+                            {isSuperAdmin ? (
+                                <Select
+                                    value={kycStatus?.toUpperCase()}
+                                    onValueChange={(v) => setValue("bankAndKyc.kycStatus", v)}
+                                >
+                                    <SelectTrigger className="bg-card border-border text-foreground h-10 w-48">
+                                        <SelectValue placeholder="Select status" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-card border-border">
+                                        <SelectItem value={KYCStatus.PENDING} className="text-foreground">PENDING</SelectItem>
+                                        <SelectItem value={KYCStatus.UNDER_REVIEW} className="text-foreground">UNDER REVIEW</SelectItem>
+                                        <SelectItem value={KYCStatus.APPROVED} className="text-foreground">APPROVED</SelectItem>
+                                        <SelectItem value={KYCStatus.REJECTED} className="text-foreground">REJECTED</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            ) : (
+                                // Read-only badge for Aggregators
+                                <Badge className={`${getKycStatusColor(kycStatus)} px-4 py-2 text-sm font-semibold`}>
+                                    {kycStatus?.toUpperCase() || "PENDING"}
+                                </Badge>
+                            )}
+                        </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="addressProof" className="text-gray-300">Address Proof</Label>
-                    <input
-                        id="addressProof"
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setAddressProofPreview("https://placeholder.com/address-proof.jpg")
-                            }
-                        }}
-                    />
-                    {addressProofPreview && <img src={addressProofPreview} alt="Address Proof" className="mt-2 h-32 rounded" />}
-                </div>
+                        {/* Conditional Fields - Only show if data exists OR if Super Admin */}
+                        {(isSuperAdmin || kycRejectionReason) && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <Label className="text-foreground">Rejection Reason</Label>
+                                    {isSuperAdmin ? (
+                                        <Textarea
+                                            {...register("bankAndKyc.kycRejectionReason")}
+                                            className="bg-card border-border text-foreground mt-2"
+                                            rows={2}
+                                            placeholder="Specify reason if rejected"
+                                        />
+                                    ) : kycRejectionReason ? (
+                                        <div className="bg-card/50 border border-border text-red-400 px-3 py-2 rounded mt-2">
+                                            {kycRejectionReason}
+                                        </div>
+                                    ) : null}
+                                </div>
 
-                <div className="space-y-2">
-                    <Label htmlFor="authorizedSignatory" className="text-gray-300">Authorized Signatory ID</Label>
-                    <input
-                        id="authorizedSignatory"
-                        type="file"
-                        accept="image/*,application/pdf"
-                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:bg-gray-800 file:text-gray-300"
-                        onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                                setAuthorizedSignatoryPreview("https://placeholder.com/signatory.jpg")
-                            }
-                        }}
-                    />
-                    {authorizedSignatoryPreview && <img src={authorizedSignatoryPreview} alt="Authorized" className="mt-2 h-32 rounded" />}
-                </div>
-            </CardContent>
-        </Card>
+                                {(isSuperAdmin || kycApprovedAt) && (
+                                    <div>
+                                        <Label className="text-foreground">Approved At</Label>
+                                        {isSuperAdmin ? (
+                                            <Input
+                                                type="datetime-local"
+                                                {...register("bankAndKyc.kycApprovedAt")}
+                                                className="bg-card border-border text-foreground mt-2"
+                                            />
+                                        ) : kycApprovedAt ? (
+                                            <div className="bg-card/50 border border-border text-green-400 px-3 py-2 rounded mt-2">
+                                                {new Date(kycApprovedAt).toLocaleString('en-IN', {
+                                                    dateStyle: 'medium',
+                                                    timeStyle: 'short'
+                                                })}
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Approved By - Only show if data exists OR if Super Admin */}
+                        {(isSuperAdmin || approvedBy) && (
+                            <div className="mt-4">
+                                <Label className="text-foreground">
+                                    {isSuperAdmin ? "Approved By (Admin ID)" : "Approved By"}
+                                </Label>
+                                <div className="bg-card/50 border border-border text-foreground px-3 py-2 rounded mt-2">
+                                    {approvedBy ? (
+                                        <span className="text-foreground">{approvedBy}</span>
+                                    ) : isSuperAdmin ? (
+                                        <span className="text-gray-500">Auto-populated on approval</span>
+                                    ) : (
+                                        <span className="text-gray-500">Not yet approved</span>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* DOCUMENT UPLOADS */}
+            <Card className="bg-background/50 border-border">
+                <CardHeader>
+                    <CardTitle className="text-foreground">KYC Documents</CardTitle>
+                    <CardDescription className="text-muted-foreground">Upload all required verification documents</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div>
+                        <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Identity Documents</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <DocumentUploadField
+                                label="Aadhaar Card - Front"
+                                fieldName="documents.aadhaarFront"
+                                currentValue={watch("documents.aadhaarFront")}
+                                onFileSelect={(file) => setValue("documents.aadhaarFront", file)}
+                                onRemove={() => setValue("documents.aadhaarFront", "")}
+                            />
+                            <DocumentUploadField
+                                label="Aadhaar Card - Back"
+                                fieldName="documents.aadhaarBack"
+                                currentValue={watch("documents.aadhaarBack")}
+                                onFileSelect={(file) => setValue("documents.aadhaarBack", file)}
+                                onRemove={() => setValue("documents.aadhaarBack", "")}
+                            />
+                            <DocumentUploadField
+                                label="PAN Card"
+                                fieldName="documents.panCard"
+                                currentValue={watch("documents.panCard")}
+                                onFileSelect={(file) => setValue("documents.panCard", file)}
+                                onRemove={() => setValue("documents.panCard", "")}
+                            />
+                            <DocumentUploadField
+                                label="Address Proof"
+                                fieldName="documents.addressProof"
+                                currentValue={watch("documents.addressProof")}
+                                onFileSelect={(file) => setValue("documents.addressProof", file)}
+                                onRemove={() => setValue("documents.addressProof", "")}
+                                acceptTypes="image/*,application/pdf"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Business Documents</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <DocumentUploadField
+                                label="GST Certificate"
+                                fieldName="documents.gstCertificate"
+                                currentValue={watch("documents.gstCertificate")}
+                                onFileSelect={(file) => setValue("documents.gstCertificate", file)}
+                                onRemove={() => setValue("documents.gstCertificate", "")}
+                                acceptTypes="image/*,application/pdf"
+                            />
+                            <DocumentUploadField
+                                label="Certificate of Incorporation"
+                                fieldName="documents.incorporationCertificate"
+                                currentValue={watch("documents.incorporationCertificate")}
+                                onFileSelect={(file) => setValue("documents.incorporationCertificate", file)}
+                                onRemove={() => setValue("documents.incorporationCertificate", "")}
+                                acceptTypes="image/*,application/pdf"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Banking Documents</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <DocumentUploadField
+                                label="Bank Statement (Last 6 months)"
+                                fieldName="documents.bankStatement"
+                                currentValue={watch("documents.bankStatement")}
+                                onFileSelect={(file) => setValue("documents.bankStatement", file)}
+                                onRemove={() => setValue("documents.bankStatement", "")}
+                                acceptTypes="image/*,application/pdf"
+                            />
+                            <DocumentUploadField
+                                label="Cancelled Cheque"
+                                fieldName="documents.cancelledCheque"
+                                currentValue={watch("documents.cancelledCheque")}
+                                onFileSelect={(file) => setValue("documents.cancelledCheque", file)}
+                                onRemove={() => setValue("documents.cancelledCheque", "")}
+                                acceptTypes="image/*,application/pdf"
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
     )
 }
 
@@ -736,36 +973,26 @@ export function AggregatorProfilePage({ id }: { id: string }) {
     const { data: aggData, isLoading: aggLoading } = useAggregator(id ?? null, true)
     const updateUserHook = useUpdateUser()
     const updateAggHook = useUpdateAggregatorProfile()
-    const updateKycStatusHook = useUpdateAggregatorKycStatus()
     const { toast } = useToast()
 
-    const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking" | "kyc">("profile")
+    const [activeTab, setActiveTab] = useState<"profile" | "business" | "banking">("profile")
     const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(["profile"]))
     const [isSaving, setIsSaving] = useState(false)
+    const [profileCompletePct, setProfileCompletePct] = useState<number>(100)
 
-    console.log(aggData, id, 'this is aggregator data')
     const methods = useForm<RootForm>({
         resolver: zodResolver(rootSchema),
         mode: "onBlur",
         defaultValues: {
-            profile: {
-                firstName: "",
-                lastName: "",
-                email: "",
-                contact: "",
-                status: '',
-            },
-            business: {
-                companyName: "",
-                pocName: ""
-            },
-            bank: {},
+            profile: { firstName: "", lastName: "", email: "", contact: "", status: "" },
+            business: { companyName: "" },
+            bankAndKyc: {},
             documents: {},
-            kyc: {},
         },
     })
 
     const { handleSubmit, trigger, reset } = methods
+
     // Populate form when data loads
     useEffect(() => {
         if (aggData) {
@@ -787,37 +1014,40 @@ export function AggregatorProfilePage({ id }: { id: string }) {
                     businessType: aggData.businessType
                         ? (aggData.businessType.toLowerCase() as BusinessType)
                         : undefined,
-                    gstNumber: aggData.gstNumber || "",
-                    panNumber: aggData.panNumber || "",
-                    cinNumber: aggData.cinNumber || "",
-                    websiteUrl: aggData.websiteUrl || "",
+                    rank: aggData.rank
+                        ? (aggData.rank as ApplicableFor)
+                        : undefined,
+                    yearOfEstablishment: aggData.yearOfEstablishment || "",
                     registeredAddress: aggData.registeredAddress || "",
                     city: aggData.city || "",
                     state: aggData.state || "",
                     pincode: aggData.pincode || "",
-                    pocName: aggData.pocName || ""
+                    websiteUrl: aggData.websiteUrl || "",
+                    gstNumber: aggData.gstNumber || "",
+                    panNumber: aggData.panNumber || "",
+                    aadhaarNumber: aggData.aadhaarNumber || "",
+                    cinNumber: aggData.cinNumber || "",
+                    tanNumber: aggData.tanNumber || "",
                 },
-                bank: {
+                bankAndKyc: {
                     accountHolderName: aggData.accountHolderName || "",
                     accountNumber: aggData.accountNumber || "",
                     ifscCode: aggData.ifscCode || "",
-                    bankName: aggData.bankName || ""
+                    bankName: aggData.bankName || "",
+                    kycStatus: (aggData as any).kycStatus?.toLowerCase() || "",
+                    kycRejectionReason: (aggData as any).kycRejectionReason || "",
+                    kycApprovedAt: (aggData as any).kycApprovedAt || "",
+                    kycApprovedBy: (aggData as any).kycApprovedBy || "",
                 },
                 documents: {
-                    aadhaarNumber: "",
-                    panNumber: aggData.panNumber || "",
-                    gstNumber: aggData.gstNumber || "",
+                    aadhaarFront: (aggData as any).documents?.aadhaarFront || "",
+                    aadhaarBack: (aggData as any).documents?.aadhaarBack || "",
+                    panCard: (aggData as any).documents?.panCard || "",
+                    gstCertificate: (aggData as any).documents?.gstCertificate || "",
                     incorporationCertificate: (aggData as any).documents?.incorporationCertificate || "",
                     bankStatement: (aggData as any).documents?.bankStatement || "",
                     cancelledCheque: (aggData as any).documents?.cancelledCheque || "",
                     addressProof: (aggData as any).documents?.addressProof || "",
-                    authorizedSignatory: (aggData as any).documents?.authorizedSignatory || "",
-                },
-                kyc: {
-                    kycStatus: (aggData as any).kycStatus.toLowerCase(),
-                    kycRejectionReason: (aggData as any).kycRejectionReason || "",
-                    kycApprovedAt: (aggData as any).kycApprovedAt || "",
-                    kycApprovedBy: (aggData as any).kycApprovedBy || "",
                 },
             })
         }
@@ -827,12 +1057,66 @@ export function AggregatorProfilePage({ id }: { id: string }) {
         setVisitedTabs((prev) => new Set(prev).add(activeTab))
     }, [activeTab])
 
-    const allTabsVisited = visitedTabs.has("profile") && visitedTabs.has("business") &&
-        visitedTabs.has("banking") && visitedTabs.has("kyc")
+    // compute profile completeness
+    useEffect(() => {
+        if (!aggData) return
+
+        // groups checks
+        const profileChecks = [
+            Boolean(aggData?.user?.username),
+            Boolean(aggData?.user?.email),
+            Boolean(aggData?.user?.contact),
+            Boolean(aggData?.user?.photoUrl),
+            Boolean(aggData?.user?.status),
+        ]
+
+        const businessChecks = [
+            Boolean(aggData?.companyName),
+            Boolean(aggData?.rank),
+            Boolean(aggData?.businessType),
+            Boolean(aggData?.yearOfEstablishment),
+            Boolean(aggData?.registeredAddress),
+            Boolean(aggData?.city),
+            Boolean(aggData?.state),
+            Boolean(aggData?.pincode),
+            Boolean(aggData?.websiteUrl),
+            Boolean(aggData?.gstNumber),
+            Boolean(aggData?.panNumber),
+            Boolean(aggData?.aadhaarNumber),
+            Boolean(aggData?.cinNumber),
+            Boolean(aggData?.tanNumber),
+        ]
+
+        const bankChecks = [
+            Boolean(aggData?.bankName),
+            Boolean(aggData?.accountNumber),
+            Boolean(aggData?.ifscCode),
+            Boolean(aggData?.accountHolderName),
+        ]
+
+        const docs = (aggData as any)?.documents || {}
+        const documentsChecks = [
+            Boolean(docs?.aadhaarFront),
+            Boolean(docs?.aadhaarBack),
+            Boolean(docs?.panCard),
+            Boolean(docs?.gstCertificate),
+            Boolean(docs?.bankStatement),
+            Boolean(docs?.incorporationCertificate),
+            Boolean(docs?.bankStatement),
+            Boolean(docs?.cancelledCheque),
+        ]
+
+        const allChecks = [...profileChecks, ...businessChecks, ...bankChecks, ...documentsChecks]
+        const total = allChecks.length
+        const filled = allChecks.filter(Boolean).length
+        const pct = total > 0 ? Math.round((filled / total) * 100) : 100
+        setProfileCompletePct(pct)
+    }, [aggData])
+
+    const allTabsVisited = visitedTabs.has("profile") && visitedTabs.has("business") && visitedTabs.has("banking");
 
     const onSaveAll = handleSubmit(async (values) => {
         setIsSaving(true)
-        console.log(values, 'onsubmit')
         try {
             // Update User
             const userPayload = {
@@ -841,8 +1125,8 @@ export function AggregatorProfilePage({ id }: { id: string }) {
                 email: values.profile.email,
                 contact: values.profile.contact,
                 photoUrl: values.profile.photoUrl,
-                status: values.profile.status
-            }
+                status: values.profile.status,
+            };
 
             console.log(userPayload, 'userpayload')
             await updateUserHook.mutateAsync(userPayload)
@@ -852,50 +1136,86 @@ export function AggregatorProfilePage({ id }: { id: string }) {
                 id: values.business.id!,
                 companyName: values.business.companyName,
                 businessType: values.business.businessType?.toUpperCase() as BusinessType,
+                rank: values.business.rank,
+                yearOfEstablishment: values.business.yearOfEstablishment,
                 registeredAddress: values.business.registeredAddress,
                 city: values.business.city,
                 state: values.business.state,
                 pincode: values.business.pincode,
                 websiteUrl: values.business.websiteUrl,
-                pocName: values.business.pocName,
                 gstNumber: values.business.gstNumber,
                 panNumber: values.business.panNumber,
+                aadhaarNumber: values.business.aadhaarNumber,
                 cinNumber: values.business.cinNumber,
-                bankName: values.bank.bankName,
-                accountNumber: values.bank.accountNumber,
-                ifscCode: values.bank.ifscCode,
-                accountHolderName: values.bank.accountHolderName,
+                tanNumber: values.business.tanNumber,
+                bankName: values.bankAndKyc.bankName,
+                accountNumber: values.bankAndKyc.accountNumber,
+                ifscCode: values.bankAndKyc.ifscCode,
+                accountHolderName: values.bankAndKyc.accountHolderName,
+                kycStatus: values.bankAndKyc?.kycStatus?.toUpperCase() as KYCStatus,
+                kycRejectionReason: values.bankAndKyc.kycRejectionReason?.trim() || undefined,
+                kycApprovedAt:
+                    values.bankAndKyc.kycApprovedAt && values.bankAndKyc.kycApprovedAt.trim() !== ""
+                        ? values.bankAndKyc.kycApprovedAt
+                        : undefined,
+                kycApprovedBy:
+                    values.bankAndKyc.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.bankAndKyc.kycApprovedBy)
+                        ? values.bankAndKyc.kycApprovedBy
+                        : undefined,
                 documents: {
-                    panCard: values.documents?.panCard || "https://placeholder.com/pan-card.jpg",
                     aadhaarFront: values.documents?.aadhaarFront || "https://placeholder.com/aadhaar-front.jpg",
                     aadhaarBack: values.documents?.aadhaarBack || "https://placeholder.com/aadhaar-back.jpg",
+                    panCard: values.documents?.panCard || "https://placeholder.com/pan-card.jpg",
                     gstCertificate: values.documents?.gstCertificate || "https://placeholder.com/gst-cert.jpg",
                     incorporationCertificate: values.documents?.incorporationCertificate || "https://placeholder.com/incorporation.jpg",
                     bankStatement: values.documents?.bankStatement || "https://placeholder.com/bank-statement.jpg",
                     cancelledCheque: values.documents?.cancelledCheque || "https://placeholder.com/cheque.jpg",
                     addressProof: values.documents?.addressProof || "https://placeholder.com/address-proof.jpg",
-                    authorizedSignatory: values.documents?.authorizedSignatory || "https://placeholder.com/signatory.jpg",
                 },
-                kycStatus: values.kyc?.kycStatus?.toUpperCase() as KYCStatus,
-                kycRejectionReason: values.kyc.kycRejectionReason?.trim() || undefined,
-                kycApprovedAt:
-                    values.kyc.kycApprovedAt && values.kyc.kycApprovedAt.trim() !== ""
-                        ? values.kyc.kycApprovedAt
-                        : undefined,
-
-                kycApprovedBy:
-                    values.kyc.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.kyc.kycApprovedBy)
-                        ? values.kyc.kycApprovedBy
-                        : undefined,
             }
-
             console.log(aggPayload, 'aggpayload')
             await updateAggHook.mutateAsync(aggPayload)
+
+            var duration = 3 * 1000;
+            var end = Date.now() + duration;
+
+            (function frame() {
+                // Left bottom cannon
+                confetti({
+                    particleCount: 25,
+                    angle: 60,
+                    spread: 60,
+                    startVelocity: 50,
+                    gravity: 0.8,
+                    scalar: 1.1,
+                    ticks: 300,
+                    origin: { x: 0, y: 1 }
+                });
+
+                // Right bottom cannon
+                confetti({
+                    particleCount: 25,
+                    angle: 120,
+                    spread: 60,
+                    startVelocity: 50,
+                    gravity: 0.8,
+                    scalar: 1.1,
+                    ticks: 300,
+                    origin: { x: 1, y: 1 }
+                });
+
+                if (Date.now() < end) {
+                    requestAnimationFrame(frame);
+                }
+            })();
 
             toast({
                 title: "Success",
                 description: "Profile updated successfully",
             })
+            setTimeout(() => {
+                setActiveTab('profile');
+            }, 2000)
         } catch (error: any) {
             toast({
                 title: "Error",
@@ -917,63 +1237,48 @@ export function AggregatorProfilePage({ id }: { id: string }) {
 
     return (
         <FormProvider {...methods}>
-            <div className="space-y-6">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="flex justify-between items-center"
-                >
+            <div className="min-h-screen bg-background p-6 space-y-6">
+                {/* Profile completion banner */}
+                {profileCompletePct <= 100 && (
+                    <ProfileCompletionBanner
+                        percent={profileCompletePct}
+                        showAction={profileCompletePct < 100}
+                    />
+                )}
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
                     <div>
-                        <h1 className="text-3xl font-bold text-white">Aggregator Profile</h1>
-                        <p className="text-gray-400 mt-1">Manage Account and Business preferences</p>
+                        <h1 className="text-3xl font-bold text-foreground">Aggregator Settings</h1>
+                        <p className="text-muted-foreground mt-1">Manage your profile, business details, and documents</p>
                     </div>
 
-                    <Button
-                        className="bg-gradient-to-r from-blue to-cyan-500 text-dark"
-                        onClick={async () => {
-                            // trigger all fields validation before saving
-                            const ok = await trigger()
-                            if (!ok) {
-                                toast({
-                                    title: "Validation failed",
-                                    description: "Please check all fields",
-                                    variant: "destructive",
-                                })
-                                return
-                            }
-                            await onSaveAll()
-                        }}
-                        disabled={!allTabsVisited || isSaving}
-                    >
-                        <Save className="w-4 h-4 mr-2" />
-                        {isSaving ? "Saving..." : "Save Changes"}
+                    <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700" onClick={async () => {
+                        const ok = await trigger()
+                        if (!ok) {
+                            toast({ title: "Validation failed", description: "Please check all required fields", variant: "destructive" })
+                            return
+                        }
+                        await onSaveAll()
+                    }} disabled={!allTabsVisited || isSaving}>
+                        <Save className="w-5 h-5 mr-2" />{isSaving ? "Saving..." : "Save Changes"}
                     </Button>
                 </motion.div>
 
-                <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-6 ">
-                    <TabsList className="bg-gray-900/50 border-gray-800 grid w-full grid-cols-4">
-                        <TabsTrigger value="profile" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
-                            <User className="w-4 h-4 mr-2" />
-                            Profile
+                <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-6">
+                    <TabsList className="bg-card border-border grid w-full grid-cols-3">
+                        <TabsTrigger value="profile" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
+                            <User className="w-5 h-5 mr-2" />Profile & Contact
                         </TabsTrigger>
-                        <TabsTrigger value="business" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
-                            <Building2 className="w-4 h-4 mr-2" />
-                            Business
+                        <TabsTrigger value="business" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
+                            <Building2 className="w-5 h-5 mr-2" />Business Details
                         </TabsTrigger>
-                        <TabsTrigger value="banking" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
-                            <CreditCard className="w-4 h-4 mr-2" />
-                            Banking
-                        </TabsTrigger>
-                        <TabsTrigger value="kyc" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500">
-                            <Bell className="w-4 h-4 mr-2" />
-                            KYC
+                        <TabsTrigger value="banking" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
+                            <FileCheck className="w-5 h-5 mr-2" />Banking & KYC
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="profile"><ProfileTab /></TabsContent>
-                    <TabsContent value="business"><BusinessTab /></TabsContent>
-                    <TabsContent value="banking"><BankingTab /></TabsContent>
-                    <TabsContent value="kyc"><KycTab /></TabsContent>
+                    <TabsContent value="profile"><ProfileAndContactTab /></TabsContent>
+                    <TabsContent value="business"><BusinessDetailsTab /></TabsContent>
+                    <TabsContent value="banking"><BankingKycDocumentsTab /></TabsContent>
                 </Tabs>
             </div>
         </FormProvider>

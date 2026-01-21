@@ -29,10 +29,10 @@ export function TablePagination({
 
   return (
     <div
-      className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-gray-700 pt-4 ${className || ""}`}
+      className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-t border-border pt-4 ${className || ""}`}
     >
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400">Rows per page</span>
+        <span className="text-sm text-muted-foreground">Rows per page</span>
         <Select
           value={String(pageSize)}
           onValueChange={async (val) => {
@@ -42,10 +42,10 @@ export function TablePagination({
             await onPageChange(1)
           }}
         >
-          <SelectTrigger className="w-[84px] bg-gray-900 border-gray-600 text-white">
+          <SelectTrigger className="w-[84px] bg-background border-border text-foreground">
             <SelectValue placeholder={pageSize} />
           </SelectTrigger>
-          <SelectContent>
+          <SelectContent className="bg-popover border-border text-popover-foreground">
             {pageSizeOptions.map((opt) => (
               <SelectItem key={opt} value={String(opt)}>
                 {opt}
@@ -56,14 +56,14 @@ export function TablePagination({
       </div>
 
       <div className="flex items-center gap-4">
-        <div className="text-sm text-gray-400 tabular-nums">
+        <div className="text-sm text-muted-foreground tabular-nums">
           {start}–{end} of {total}
         </div>
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
             size="icon"
-            className="border-gray-600 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
+            className="border-border text-foreground hover:text-foreground hover:bg-muted bg-transparent"
             disabled={page <= 1}
             onClick={() => onPageChange(Math.max(1, page - 1))}
             aria-label="Previous page"
@@ -73,7 +73,7 @@ export function TablePagination({
           <Button
             variant="outline"
             size="icon"
-            className="border-gray-600 text-gray-300 hover:text-white hover:bg-gray-800 bg-transparent"
+            className="border-border text-foreground hover:text-foreground hover:bg-muted bg-transparent"
             disabled={page >= totalPages}
             onClick={() => onPageChange(Math.min(totalPages, page + 1))}
             aria-label="Next page"

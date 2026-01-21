@@ -15,10 +15,15 @@ interface Step2FormProps {
     onSkip?: () => void;
 }
 
+interface FileWithPreview {
+    file: File;
+    preview: string;
+}
+
 export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSkip }) => {
     const { nextStep } = useFormContext();
     const { toast } = useToast();
-    const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+    const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([]);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,10 +51,19 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
             return true;
         });
 
-        setSelectedFiles((prev) => [...prev, ...validFiles]);
+        const filesWithPreview = validFiles.map((file) => ({
+            file,
+            preview: URL.createObjectURL(file),
+        }));
+
+        setSelectedFiles((prev) => [...prev, ...filesWithPreview]);
     };
 
     const handleRemoveFile = (index: number) => {
+        const fileToRemove = selectedFiles[index];
+        if (fileToRemove.preview) {
+            URL.revokeObjectURL(fileToRemove.preview);
+        }
         setSelectedFiles((prev) => prev.filter((_, i) => i !== index));
         if (inputRef.current) {
             inputRef.current.value = '';
@@ -58,15 +72,20 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
 
     const handleUpload = async () => {
         try {
+            const files = selectedFiles.map((f) => f.file);
             console.log(
                 'STEP 2 FILES:',
-                selectedFiles.map((f) => ({
+                files.map((f) => ({
                     name: f.name,
                     size: f.size,
                     type: f.type,
                 }))
             );
-            await onSubmit(selectedFiles);
+            await onSubmit(files);
+
+            // Cleanup previews
+            selectedFiles.forEach((f) => URL.revokeObjectURL(f.preview));
+
             toast({
                 title: 'Success',
                 description: 'Documents uploaded successfully',
@@ -84,12 +103,16 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
     };
 
     const handleSkip = () => {
+        // Cleanup previews before skipping
+        selectedFiles.forEach((f) => URL.revokeObjectURL(f.preview));
         if (onSkip) {
             onSkip();
         } else {
             nextStep();
         }
     };
+
+    const isPdf = (filename: string) => /\.pdf$/i.test(filename);
 
     return (
         <motion.div
@@ -100,11 +123,11 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
         >
             {/* Header */}
             <div className="text-center space-y-2">
-                <h2 className="text-3xl font-bold  text-foreground">
+                <h2 className="text-3xl font-bold text-foreground">
                     Statement <span className="text-accent">Upload</span>
                 </h2>
-                <p className=" text-muted-foreground">Step 2/4</p>
-                <p className="text-sm  text-muted-foreground">
+                <p className="text-muted-foreground">Step 2/4</p>
+                <p className="text-sm text-muted-foreground">
                     Upload your recent 6 months Bank Statement
                     <br />
                     Maximum File Upload Limit is <span className="text-accent">10</span>
@@ -121,10 +144,10 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                             onClick={() => inputRef.current?.click()}
                         >
                             <Upload className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-                            <p className=" text-foreground mb-2">
+                            <p className="text-foreground mb-2">
                                 Click to upload or drag and drop
                             </p>
-                            <p className="text-sm  text-muted-foreground">
+                            <p className="text-sm text-muted-foreground">
                                 PDF, DOC, DOCX, JPG, PNG (Max 10MB per file)
                             </p>
                             <input
@@ -138,38 +161,54 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                         </div>
                     )}
 
-                    {/* Selected Files List */}
+                    {/* Selected Files List with Previews */}
                     {selectedFiles.length > 0 && (
                         <div className="space-y-2">
-                            <p className="text-sm  text-muted-foreground">
+                            <p className="text-sm text-muted-foreground">
                                 Selected Files ({selectedFiles.length}/10)
                             </p>
-                            {selectedFiles.map((file, index) => (
-                                <motion.div
-                                    key={index}
-                                    initial={{ opacity: 0, x: -20 }}
-                                    animate={{ opacity: 1, x: 0 }}
-                                    className="flex items-center justify-evenly bg-background/50 p-3 rounded-lg"
-                                >
-                                    <div className="flex items-center space-x-3">
-                                        <FileText className="w-5 h-5 text-primary" />
-                                        <div>
-                                            <p className=" text-foreground text-sm">{file.name}</p>
-                                            <p className=" text-muted-foreground text-xs">
-                                                {(file.size / 1024 / 1024).toFixed(2)} MB
+                            <div className="grid grid-cols-2 gap-4">
+                                {selectedFiles.map((fileData, index) => (
+                                    <motion.div
+                                        key={index}
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="relative bg-background/50 border-2 border-border rounded-lg overflow-hidden"
+                                    >
+                                        {fileData.file.type.startsWith('image/') ? (
+                                            <img
+                                                src={fileData.preview}
+                                                alt={fileData.file.name}
+                                                className="w-full h-32 object-contain bg-black/5"
+                                            />
+                                        ) : (
+                                            <div className="w-full h-32 flex flex-col items-center justify-center bg-black/5 p-2">
+                                                <FileText className="w-12 h-12 text-blue-400 mb-2" />
+                                                <p className="text-foreground text-xs truncate w-full text-center px-2">
+                                                    {fileData.file.name}
+                                                </p>
+                                            </div>
+                                        )}
+
+                                        <div className="p-2 bg-background/80">
+                                            <p className="text-foreground text-xs truncate">
+                                                {fileData.file.name}
+                                            </p>
+                                            <p className="text-muted-foreground text-xs">
+                                                {(fileData.file.size / 1024 / 1024).toFixed(2)} MB
                                             </p>
                                         </div>
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleRemoveFile(index)}
-                                        className="text-red-400 hover:text-red-300 hover:bg-red-400/10"
-                                    >
-                                        <X className="w-4 h-4" />
-                                    </Button>
-                                </motion.div>
-                            ))}
+
+                                        <button
+                                            type="button"
+                                            onClick={() => handleRemoveFile(index)}
+                                            className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors"
+                                        >
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </motion.div>
+                                ))}
+                            </div>
                         </div>
                     )}
 
@@ -179,7 +218,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                             variant="ghost"
                             onClick={handleSkip}
                             disabled={selectedFiles.length > 0}
-                            className=" text-muted-foreground hover: text-foreground"
+                            className="text-muted-foreground hover:text-foreground"
                         >
                             Skip
                         </Button>

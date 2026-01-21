@@ -202,6 +202,7 @@ export const commissionsApi = {
             disbursedAmount
             disbursedDate
             cashbackAmount
+            grossCommissionAmount
             commissionAmount
             commissionType
             commissionRate
@@ -250,7 +251,9 @@ export const commissionsApi = {
               ticketId
               aggregatorId
               disbursedAmount
+              disbursedDate
               cashbackAmount
+              grossCommissionAmount
               commissionAmount
               commissionType
               commissionRate
@@ -284,6 +287,7 @@ export const commissionsApi = {
             paymentProofUrl
             adminNotes
             remarks
+            grossCommissionAmount
             commissionAmount
             disbursedAmount
             cashbackAmount

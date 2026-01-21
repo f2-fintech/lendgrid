@@ -48,6 +48,24 @@ export function createPublicFilePath(file: File, folder: string = "uploads") {
   return `/${folder}/${time}-${cleanName}`;
 }
 
+export const uploadToS3 = async (file: File, folder: string): Promise<string> => {
+  const formData = new FormData();
+  formData.append("document", file);
+  formData.append("folder", folder);
+
+  const response = await fetch(`${process.env.NEXT_PUBLIC_WEB_URL}/upload-to-s3`, {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to upload image");
+  }
+
+  const result = await response.json();
+  return result.data; // S3 public URL
+};
+
 /**
  * Format date for display with relative time
  * @param dateString - ISO date string

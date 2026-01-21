@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Upload, X, FileText, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 import { Button } from '@/components/ui/button';
@@ -49,10 +49,10 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 5 * 1024 * 1024) {
       toast({
         title: 'File Too Large',
-        description: 'File must be less than 10MB',
+        description: 'File must be less than 5MB',
         variant: 'destructive',
       });
       return;
@@ -98,6 +98,12 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
         pancard: files.pancard.file,
         passportSizePhoto: files.passportSizePhoto.file,
       });
+
+      // Cleanup previews
+      Object.values(files).forEach((f) => {
+        if (f.preview) URL.revokeObjectURL(f.preview);
+      });
+
       toast({
         title: 'Success',
         description: 'Documents uploaded successfully',
@@ -115,12 +121,28 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
   };
 
   const handleSkip = () => {
+    // Cleanup previews before skipping
+    Object.values(files).forEach((f) => {
+      if (f.preview) URL.revokeObjectURL(f.preview);
+    });
     if (onSkip) {
       onSkip();
     } else {
       nextStep();
     }
   };
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(files).forEach((f) => {
+        if (f.preview) URL.revokeObjectURL(f.preview);
+      });
+    };
+  }, []);
+
+  // Check if at least one file is selected
+  const hasAnyFile = Object.values(files).some((f) => f.file !== null);
 
   const FileUploadBox = ({
     label,
@@ -130,60 +152,73 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
     label: string;
     field: keyof typeof files;
     required?: boolean;
-  }) => (
-    <div className="space-y-2">
-      <Label className=" text-foreground">
-        {label}
-        {required && <span className="text-red-400">*</span>}
-      </Label>
+  }) => {
+    const fileData = files[field];
+    const isPdf = fileData.file?.type === 'application/pdf';
 
-      {!files[field].preview ? (
-        <div
-          className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
-          onClick={() => document.getElementById(field)?.click()}
-        >
-          <Upload className="w-8 h-8 mx-auto mb-2  text-muted-foreground" />
-          <p className="text-sm  text-muted-foreground">Click to upload</p>
-          <input
-            id={field}
-            type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-            onChange={(e) => handleFileChange(e, field)}
-            className="hidden"
-          />
-        </div>
-      ) : (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="relative bg-background/50 rounded-lg p-4"
-        >
-          {files[field].file?.type.startsWith('image/') ? (
-            <img
-              src={files[field].preview}
-              alt={label}
-              className="w-full h-40 object-cover rounded-lg"
-            />
-          ) : (
-            <div className="flex items-center justify-center h-40">
-              <ImageIcon className="w-12 h-12  text-muted-foreground" />
-            </div>
-          )}
-          <p className="text-sm  text-muted-foreground mt-2 truncate">
-            {files[field].file?.name}
-          </p>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleRemoveFile(field)}
-            className="absolute top-2 right-2 text-red-400 hover:text-red-300 hover:bg-red-400/10"
+    return (
+      <div className="space-y-2">
+        <Label className="text-foreground">
+          {label}
+          {required && <span className="text-red-400">*</span>}
+        </Label>
+
+        {!fileData.preview ? (
+          <div
+            className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
+            onClick={() => document.getElementById(field)?.click()}
           >
-            <X className="w-4 h-4" />
-          </Button>
-        </motion.div>
-      )}
-    </div>
-  );
+            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Click to upload</p>
+            <input
+              id={field}
+              type="file"
+              accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+              onChange={(e) => handleFileChange(e, field)}
+              className="hidden"
+            />
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="relative bg-background/50 border-2 border-border rounded-lg overflow-hidden"
+          >
+            {fileData.file?.type.startsWith('image/') ? (
+              <img
+                src={fileData.preview}
+                alt={label}
+                className="w-full h-40 object-contain bg-black/5"
+              />
+            ) : isPdf ? (
+              <div className="w-full h-40 flex flex-col items-center justify-center bg-black/5">
+                <FileText className="w-12 h-12 text-blue-400 mb-2" />
+                <p className="text-foreground text-sm">PDF Document</p>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center h-40 bg-black/5">
+                <FileText className="w-12 h-12 text-muted-foreground" />
+              </div>
+            )}
+
+            <div className="p-2 bg-background/80">
+              <p className="text-sm text-muted-foreground truncate">
+                {fileData.file?.name}
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleRemoveFile(field)}
+              className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </div>
+    );
+  };
 
   return (
     <motion.div
@@ -239,14 +274,14 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
             <Button
               variant="ghost"
               onClick={handleSkip}
-              className="text-muted-foreground hover: text-foreground"
+              className="text-muted-foreground hover:text-foreground"
             >
               Skip
             </Button>
 
             <Button
               onClick={handleUpload}
-              disabled={isLoading}
+              disabled={!hasAnyFile || isLoading}
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isLoading ? (
@@ -262,5 +297,5 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
         </div>
       </Card>
     </motion.div>
-  )
+  );
 };
