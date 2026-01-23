@@ -201,7 +201,10 @@ export function SignupForm() {
                 className="w-12 h-10 rounded-xl "
               />
             </div>
-            <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
+            <span
+              className="text-2xl font-bold gradient-text text-gold cursor-pointer"
+              onClick={() => router.push('/')}
+            >LendGrid</span>
           </motion.div>
           <CardDescription className="text-gray-400 text-base mt-2">
             Create your account to get started

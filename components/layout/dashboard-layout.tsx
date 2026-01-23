@@ -98,7 +98,7 @@ const navigationConfig = {
         { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
         { title: "Applications", url: navigationPaths.aggregator.applications, icon: FileText },
         { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
-        { title: "Profile", url: navigationPaths.aggregator.settings, icon: Settings },
+        { title: "Profile Settings", url: navigationPaths.aggregator.settings, icon: Settings },
         // ...(isOmsEnabled
         //   ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
         //   : [])

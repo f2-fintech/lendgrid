@@ -1,11 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Link from "next/link";
+import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
+
 import { Button } from "@/components/ui/button";
 import { navigationPaths } from "@/lib/navigation";
 
 export default function Navbar() {
+  const router = useRouter();
   return (
     <div className="fixed top-0 left-0 w-full z-50 px-6 py-4 backdrop-blur-lg bg-opacity-50  border-white/10 ">
       {<div className="max-w-7xl mx-auto flex items-center justify-between">
@@ -17,12 +20,15 @@ export default function Navbar() {
         >
           <div className="w-12 h-10 bg-gradient  rounded-xl flex items-center justify-center shadow-lg">
             <img
-              src="/logo.png" // Replace with your logo path
+              src="/logo.png"
               alt="LendGrid Logo"
               className="w-12 h-10 rounded-xl "
             />
           </div>
-          <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
+          <span
+            className="text-2xl font-bold gradient-text text-gold cursor-pointer"
+            onClick={() => router.push('/')}
+          >LendGrid</span>
         </motion.div>
         <div className="hidden md:flex items-center space-x-8">
           {["Features", "Solution", "Testimonials", "Contact"].map((item, index) => (

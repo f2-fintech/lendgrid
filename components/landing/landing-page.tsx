@@ -136,57 +136,12 @@ export function LandingPage() {
 
       {/* Navigation */}
       <nav className="fixed top-0 left-0 w-full z-50 px-6 py-4 backdrop-blur-lg bg-opacity-50  border-white/10 ">
-        {/* <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <motion.div
-            className="flex items-center space-x-2"
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <div className="w-12 h-10 bg-gradient  rounded-xl flex items-center justify-center shadow-lg">
-              <img
-                src="/logo.png" // Replace with your logo path
-                alt="LendGrid Logo"
-                className="w-12 h-10 rounded-xl "
-              />
-            </div>
-            <span className="text-2xl font-bold gradient-text text-accent">LendGrid</span>
-          </motion.div>
-          <div className="hidden md:flex items-center space-x-8">
-            {["Features", "Solution", "Testimonials", "Contact"].map((item, index) => (
-              <motion.a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="text-foreground hover:text-accent transition-colors duration-300 font-medium"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-              >
-                {item}
-              </motion.a>
-            ))}
-          </div>
-
-          <motion.div
-            className="flex items-center space-x-4"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <Link href={navigationPaths.login}>
-              <Button className="glass-button bg-gradient-to-r from-blue to-cyan-500 text-foreground hover:text-accent">Login</Button>
-            </Link>
-            <Link href={navigationPaths.signup}>
-              <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 hover:text-accent">Sign Up</Button>
-            </Link>
-          </motion.div>
-        </div> */}
         <Navbar />
       </nav>
 
       {/* Hero Section */}
-      <section className="relative px-6 py-20 text-center z-10">
-        <div className="max-w-6xl mx-auto">
+      <section className="relative px-6 py-10 text-center z-10">
+        <div className="max-w-6xl mx-auto pt-10 mt-20">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
             <h1 className="text-5xl md:text-7xl font-bold mb-6 gradient-text leading-tight">
               Grow your Loan Distribution.
@@ -205,8 +160,6 @@ export function LandingPage() {
             transition={{ duration: 0.8, delay: 0.2 }}
             className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
           >
-            {/* LINK 1: Aggregator Admin Pre-select */}
-            {/* 1. Join as Loan Aggregator -> Sets role=aggregator_admin */}
             <Link href={`${navigationPaths.login}?role=aggregator_admin`}>
               <Button className="btn-primary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 shadow-2xl  hover:text-accent">
                 Join as Loan Aggregator/Channel Partner
