@@ -3,12 +3,11 @@
 import { useEffect, useRef, useState, useMemo } from 'react'
 import { useTheme } from 'next-themes'
 import { motion } from 'framer-motion'
-import { DollarSign, TrendingUp, Calendar, Download, Search, Filter, Clock, CheckCircle, AlertCircle, XCircle } from 'lucide-react'
+import { TrendingUp, Calendar, Download, Eye, FileCheck, Search, Clock, CheckCircle, AlertCircle, XCircle, ClipboardList } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -431,32 +430,52 @@ export function AggregatorCommission() {
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
-  const MetricCard = ({ index, title, value, icon: Icon, color, subtitle, trend }: any) => (
+  const MetricCard = ({
+    index,
+    title,
+    amount,
+    count,
+    countLabel,
+    icon: Icon,
+    colorClass,
+  }: {
+    index: number
+    title: string
+    amount?: number | string
+    count?: number
+    countLabel?: string
+    icon: any
+    colorClass: string
+  }) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
-      <Card className="professional-card hover-lift hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">{title}</p>
-              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
-              {subtitle && (
-                <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
-              )}
-              {trend && (
-                <p className="text-sm text-success mt-1 flex items-center">
-                  <TrendingUp className="w-3 h-3 mr-1" />
-                  {trend}
-                </p>
-              )}
-            </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-opacity-20 ${color}`}>
-              <Icon className="w-6 h-6" />
-            </div>
+      <Card className={`professional-card hover-lift ${colorClass}`}>
+        <CardContent className="p-6 text-center space-y-2">
+          {/* Icon */}
+          <div className="mx-auto w-10 h-10 rounded-lg flex items-center justify-center bg-white/10">
+            <Icon className="w-5 h-5" />
           </div>
+
+          {/* Amount / Value */}
+          <p className="text-2xl font-bold text-foreground">
+            {amount ?? '-'}
+          </p>
+
+          {/* Count (labelled) */}
+          {(typeof count === 'number' || countLabel) && (
+            <p className="text-sm text-muted-foreground">
+              {typeof count === 'number' ? `${count} ` : ''}
+              {countLabel}
+            </p>
+          )}
+
+          {/* Title */}
+          <p className="text-sm font-medium text-foreground">
+            {title}
+          </p>
         </CardContent>
       </Card>
     </motion.div>
@@ -518,35 +537,51 @@ export function AggregatorCommission() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <MetricCard
             index={0}
-            title="Total Commission Earned"
-            value={formatCurrency(metrics.totalEarned)}
-            icon={DollarSign}
-            color="metric-card-accent"
-          // trend="+12.5% from last month"
+            title="Commission Transactions"
+            amount={formatCurrency(metrics.totalEarned)}
+            count={transactionsData?.total ?? 0}
+            countLabel="transactions"
+            icon={ClipboardList}
+            colorClass="metric-card-primary"
           />
+
           <MetricCard
             index={1}
-            title="Pending Payouts"
-            value={formatCurrency(metrics.pendingAmount)}
-            icon={Clock}
-            color="metric-card-warning"
-            subtitle="Awaiting payment"
+            title="Commission Paid"
+            amount={formatCurrency(metrics.paidAmount)}
+            count={
+              transactionsData?.data?.filter(
+                t => t.status === CommissionStatus.PAID
+              ).length ?? 0
+            }
+            countLabel="paid"
+            icon={CheckCircle}
+            colorClass="metric-card-success"
           />
+
           <MetricCard
             index={2}
-            title="Paid Amount"
-            value={formatCurrency(metrics.paidAmount)}
-            icon={CheckCircle}
-            color="metric-card-success"
-            subtitle="Successfully received"
+            title="Commission Pending"
+            amount={formatCurrency(metrics.pendingAmount)}
+            count={
+              transactionsData?.data?.filter(
+                t =>
+                  t.status === CommissionStatus.PENDING ||
+                  t.status === CommissionStatus.CALCULATED
+              ).length ?? 0
+            }
+            countLabel="pending"
+            icon={Clock}
+            colorClass="metric-card-warning"
           />
+
           <MetricCard
             index={3}
             title="Avg Commission Rate"
-            value={`${metrics.avgCommissionRate.toFixed(2)}%`}
+            amount={`${metrics.avgCommissionRate.toFixed(2)}%`}
+            countLabel="Across all lenders"
             icon={TrendingUp}
-            color="metric-card-primary"
-            subtitle="Across all lenders"
+            colorClass="metric-card-accent"
           />
         </div>
       )}
@@ -686,7 +721,7 @@ export function AggregatorCommission() {
                             <TableHead>Commission Amount</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Calculated Date</TableHead>
-                            <TableHead>Paid Date</TableHead>
+                            <TableHead>UTR / Paid Date</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -713,7 +748,36 @@ export function AggregatorCommission() {
                                   </Badge>
                                 </TableCell>
                                 <TableCell>{formatDate(commission.calculatedAt)}</TableCell>
-                                <TableCell>{formatDate(commission.paidAt)}</TableCell>
+                                <TableCell>
+                                  {commission.status === CommissionStatus.PAID && commission.utrNumber ? (
+                                    <div className="flex flex-col gap-1">
+                                      {/* UTR */}
+                                      <p className="text-foreground font-mono text-xs">
+                                        {commission.utrNumber.toUpperCase()}
+                                      </p>
+
+                                      {/* Paid Date */}
+                                      <p className="text-xs text-muted-foreground">
+                                        {formatDate(commission.paidAt)}
+                                      </p>
+
+                                      {/* Payment Proof */}
+                                      {commission.paymentProofUrl && (
+                                        <button
+                                          onClick={() => window.open(commission.paymentProofUrl, '_blank')}
+                                          className="inline-flex items-center gap-1 text-primary text-xs hover:underline"
+                                        >
+                                          <Eye className="w-3 h-3" />
+                                          View Proof
+                                        </button>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <p className="text-muted-foreground text-sm">
+                                      {formatDate(commission.paidAt)}
+                                    </p>
+                                  )}
+                                </TableCell>
                               </motion.tr>
                             )
                           })}

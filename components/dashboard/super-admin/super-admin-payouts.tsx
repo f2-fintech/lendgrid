@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-  FileText, Search, Eye, Clock, Upload, AlertCircle, DollarSign, FileCheck, ChevronDown, CheckCircle, XCircle, Ban,
-  AlertTriangle, Loader2, X, ImageIcon, User, Calendar, TrendingUp
+  FileText, Search, Eye, Clock, Upload, AlertCircle, FileCheck, ChevronDown, CheckCircle, XCircle, Ban,
+  AlertTriangle, Loader2, X, ImageIcon, User, Calendar, TrendingUp, IndianRupee
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -353,7 +353,7 @@ export function SuperAdminPayouts() {
           <MetricCard
             title="Total Amount"
             value={formatCurrency(metrics.totalAmount)}
-            icon={DollarSign}
+            icon={IndianRupee}
             color="bg-accent/20 text-accent"
             subtitle="Total commission"
           />
@@ -599,7 +599,7 @@ export function SuperAdminPayouts() {
 
                   <div className="flex items-start gap-3">
                     <div className="bg-green-500/10 p-2 rounded-lg mt-1">
-                      <DollarSign className="w-4 h-4 text-green-400" />
+                      <IndianRupee className="w-4 h-4 text-green-400" />
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-1">Provider</p>
@@ -622,7 +622,7 @@ export function SuperAdminPayouts() {
               {/* Financial Details Card */}
               <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
                 <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
-                  <DollarSign className="w-5 h-5" />
+                  <IndianRupee className="w-5 h-5" />
                   Financial Breakdown
                 </h3>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-4">

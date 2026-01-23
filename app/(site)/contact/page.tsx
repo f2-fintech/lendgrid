@@ -34,8 +34,7 @@ export default function ContactPage() {
             Contact <span className="text-cyan-400">LendGrid</span>
           </h1>
           <p className="text-gray-400 max-w-2xl mx-auto text-lg leading-relaxed">
-            We’d love to hear from you — whether you’re a lender, aggregator, or
-            partner exploring collaboration.
+            We’d love to hear from you — whether you’re a lender or aggregator exploring collaboration.
           </p>
         </motion.div>
       </section>
@@ -137,21 +136,21 @@ export default function ContactPage() {
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-cyan-300" />
                 <a
-                  href="mailto:hello@lendgrid.com"
+                  href="mailto:wecare@f2fintech.com"
                   className="hover:underline"
                 >
-                  hello@lendgrid.com
+                  wecare@f2fintech.com
                 </a>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="h-4 w-4 text-cyan-300" />
-                <a href="tel:+10000000000" className="hover:underline">
-                  +1 (000) 000-0000
+                <a href="tel:+918810600135" className="hover:underline">
+                  +91-8810600135
                 </a>
               </li>
               <li className="flex items-start gap-3">
                 <MapPin className="mt-0.5 h-4 w-4 text-cyan-300" />
-                <span>101 Market Street, Suite 500, San Francisco, CA</span>
+                <span>A-25, M-1 Arv Park, A-Block, Sector 63, Noida</span>
               </li>
             </ul>
 

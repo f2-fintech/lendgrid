@@ -2,16 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { TrendingUp, DollarSign, CreditCard, Download, Search, Calendar, ArrowRight, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 import { useTheme } from 'next-themes'
+import { useRouter } from 'next/navigation'
+import { TrendingUp, ClipboardList, IndianRupee, Banknote, FileText, Eye, Search, Calendar, ArrowRight, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProfileCompletionBanner } from '@/components/ui/progressbar'
 import { useAuth } from '@/lib/auth'
-import { useProfile } from '@/hooks/use-users'
-import { useAggregator } from '@/hooks/use-aggregators'
-import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -21,47 +19,78 @@ import { CardSkeleton, ChartSkeleton, TableSkeleton } from '@/components/ui/load
 import { TablePagination } from '@/components/ui/pagination'
 import { ExportButton } from '@/components/ui/button-to-export'
 import { exportRevenueReport } from '@/lib/exporter'
-import { useToast } from '@/hooks/use-toast'
 import { CommissionStatus } from '@/lib'
+import { navigationPaths } from '@/lib/navigation'
 
-const mockData = {
-  metrics: {
-    totalDisbursed: 0,
-    totalCommission: 0,
-    pendingPayouts: 0
-  },
-  chartData: [
-    { month: 'Jan', amount: 0 },
-    { month: 'Feb', amount: 0 },
-    { month: 'Mar', amount: 0 },
-    { month: 'Apr', amount: 0 },
-    { month: 'May', amount: 0 },
-    { month: 'Jun', amount: 0 }
-  ],
-  applications: []
-}
+import { useProfile } from '@/hooks/use-users'
+import { useAggregator } from '@/hooks/use-aggregators'
+import { useToast } from '@/hooks/use-toast'
+import { useCommissionTransactions } from '@/hooks/use-commissions'
+import { useApplicationCount } from '@/hooks/use-applications-rest'
+import { useDashboardTicketStats, useDisbursedTicketsByMonth } from '@/hooks/use-tickets-rest'
 
 export function AggregatorDashboard() {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [filterLender, setFilterLender] = useState('')
-  const [filterStatus, setFilterStatus] = useState('')
-
+  const [profileCompletePct, setProfileCompletePct] = useState<number>(100)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
-  const [isTableLoading, setIsTableLoading] = useState(true)
-  const [chartLoading, setChartLoading] = useState(true)
-  const [cardsLoading, setCardsLoading] = useState(true)
+  const [filterStatus, setFilterStatus] = useState<CommissionStatus | ''>('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [exporting, setExporting] = useState(false)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
 
   const { user } = useAuth('aggregator_admin')
   const { data: userData, isLoading: userLoading } = useProfile(true)
   const { data: aggData, isLoading: aggLoading } = useAggregator(user?.profileId, true)
+  const { count: totalApplicationsCount } = useApplicationCount(
+    undefined,
+    'aggregator_admin'
+  )
+  const {
+    count: disbursedCount,
+    amount: disbursedAmount,
+  } = useDashboardTicketStats(
+    { status: 'disbursed' },
+    'aggregator_admin'
+  )
+  const {
+    count: approvedCount,
+    amount: approvedAmount,
+  } = useDashboardTicketStats(
+    { status: 'approved' },
+    'aggregator_admin'
+  )
+  const {
+    count: rejectedCount,
+  } = useDashboardTicketStats(
+    { status: 'rejected' },
+    'aggregator_admin'
+  )
+
+  const { data: disbursedByMonth, isLoading: chartLoading } =
+    useDisbursedTicketsByMonth(
+      new Date().getFullYear(),
+      undefined,
+      'aggregator_admin'
+    )
+
   const router = useRouter()
   const { theme } = useTheme()
   const { toast } = useToast()
 
-  const [profileCompletePct, setProfileCompletePct] = useState<number>(100)
+  const {
+    data: commissionData,
+    isLoading: isCommissionLoading,
+    isError: isCommissionError,
+    error: commissionError,
+    refetch: refetchCommission,
+  } = useCommissionTransactions({
+    page,
+    limit: pageSize,
+    filters: {
+      aggregatorId: user?._id,
+      status: filterStatus || undefined,
+    },
+  })
 
   useEffect(() => {
     // calculate completeness when data loads
@@ -116,46 +145,54 @@ export function AggregatorDashboard() {
   }, [userData, aggData])
 
   useEffect(() => {
-    const t = setTimeout(() => {
-      setIsTableLoading(false)
-      setCardsLoading(false)
-      setChartLoading(false)
-    }, 1000)
-    return () => clearTimeout(t)
-  }, [])
-
-  useEffect(() => {
     setPage(1)
-  }, [searchTerm, filterStatus, filterLender])
-
-  const filteredRules = useMemo(() => {
-    return mockData.applications.filter((rule) => {
-      const matchesSearch =
-        rule?.provider?.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = !filterStatus || filterStatus === "all" || rule?.status === filterStatus
-      return matchesSearch && matchesStatus
-    })
   }, [searchTerm, filterStatus])
 
-  const total = filteredRules.length
-  const paginated = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filteredRules.slice(start, start + pageSize)
-  }, [filteredRules, page, pageSize])
+  const filteredCommissions = useMemo(() => {
+    if (!commissionData?.data) return []
 
-  const handlePageChange = async (newPage: number) => {
-    setIsTableLoading(true)
-    await new Promise((r) => setTimeout(r, 350))
+    return commissionData.data.filter(commission => {
+      const matchesSearch =
+        commission.ticketId.toString().includes(searchTerm) ||
+        (commission.provider || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (commission.productType || '').toLowerCase().includes(searchTerm.toLowerCase())
+
+      return matchesSearch
+    })
+  }, [commissionData, searchTerm])
+  const total = commissionData?.total || 0
+
+  const commissionSummary = useMemo(() => {
+    let total = 0
+    let paid = 0
+    let pending = 0
+
+    for (const tx of commissionData?.data ?? []) {
+      total += tx.commissionAmount
+
+      if (tx.status === CommissionStatus.PAID) {
+        paid += tx.commissionAmount
+      }
+
+      if (
+        tx.status === CommissionStatus.PENDING ||
+        tx.status === CommissionStatus.CALCULATED
+      ) {
+        pending += tx.commissionAmount
+      }
+    }
+
+    return { total, paid, pending }
+  }, [commissionData])
+
+  const handlePageChange = (newPage: number) => {
     setPage(newPage)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
-  const handlePageSizeChange = async (size: number) => {
-    setIsTableLoading(true)
-    await new Promise((r) => setTimeout(r, 350))
+
+  const handlePageSizeChange = (size: number) => {
     setPageSize(size)
     setPage(1)
-    setIsTableLoading(false)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
@@ -237,32 +274,53 @@ export function AggregatorDashboard() {
     }
   }
 
-  const MetricCard = ({ index, title, value, icon: Icon, trend, colorClass }: any) => (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: index * 0.1 }}
+  const MetricCard = ({
+    title,
+    count,
+    amount,
+    countLabel,
+    icon: Icon,
+    colorClass,
+    navigationPath,
+  }: {
+    title: string
+    count?: number
+    amount?: number
+    countLabel?: string
+    icon: any
+    colorClass: string
+    navigationPath: string
+  }) => (
+    <Card
+      className={`professional-card hover-lift cursor-pointer ${colorClass}`}
+      onClick={() => router.push(navigationPath)}
     >
-      <Card className={`professional-card hover-lift ${colorClass}`}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">{title}</p>
-              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
-              {trend && (
-                <p className="text-sm text-success mt-1 flex items-center">
-                  <TrendingUp className="w-4 h-4 mr-1" />
-                  {trend}
-                </p>
-              )}
-            </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-opacity-20`}>
-              <Icon className="w-6 h-6" />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    </motion.div>
+      <CardContent className="p-6 flex flex-col items-center text-center gap-2">
+        {/* Icon */}
+        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/10">
+          <Icon className="w-6 h-6" />
+        </div>
+
+        {/* Amount */}
+        {typeof amount === 'number' && (
+          <p className="text-xl font-bold text-foreground">
+            {formatCurrency(amount)}
+          </p>
+        )}
+
+        {/* Count */}
+        {typeof count === 'number' && (
+          <p className="text-sm text-muted-foreground">
+            {count} {countLabel ?? 'tickets'}
+          </p>
+        )}
+
+        {/* Title */}
+        <p className="text-sm font-medium text-foreground whitespace-nowrap">
+          {title}
+        </p>
+      </CardContent>
+    </Card>
   )
 
   const chartColors = {
@@ -271,6 +329,27 @@ export function AggregatorDashboard() {
     tooltipBg: theme === 'dark' ? '#1F2937' : '#ffffff',
     tooltipBorder: theme === 'dark' ? '#374151' : '#e5e7eb',
     tooltipText: theme === 'dark' ? '#F9FAFB' : '#111827'
+  }
+
+  const chartData = useMemo(() => {
+    return disbursedByMonth.map((item) => ({
+      month: item.month.slice(0, 3), // Jan, Feb
+      count: item.count,
+    }))
+  }, [disbursedByMonth])
+
+  {
+    isCommissionError && (
+      <div className="text-center py-12">
+        <AlertCircle className="w-10 h-10 text-red-400 mx-auto mb-3" />
+        <p className="text-muted-foreground">
+          {commissionError?.message || 'Failed to load commission data'}
+        </p>
+        <Button size="sm" onClick={() => refetchCommission()} className="mt-3">
+          Retry
+        </Button>
+      </div>
+    )
   }
 
   return (
@@ -299,37 +378,86 @@ export function AggregatorDashboard() {
       </div>
 
       {/* Metrics Cards */}
-      {cardsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {isCommissionLoading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <CardSkeleton headerLines={2} bodyHeight={20} />
+          <CardSkeleton headerLines={2} bodyHeight={20} />
+          <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Row 1 */}
           <MetricCard
-            index={0}
-            title="Total Disbursed Amount"
-            value={formatCurrency(mockData.metrics.totalDisbursed)}
-            icon={DollarSign}
-            // trend="+12.5% from last month"
+            title="Applications Submitted"
+            count={totalApplicationsCount}
+            icon={FileText}
+            colorClass="metric-card-primary"
+            navigationPath={navigationPaths.aggregator.applications}
+          />
+
+          <MetricCard
+            title="Approved Loans"
+            amount={approvedAmount}
+            count={approvedCount}
+            countLabel="approved"
+            icon={CheckCircle}
             colorClass="metric-card-success"
+            navigationPath={navigationPaths.aggregator.applications}
           />
+
           <MetricCard
-            index={1}
-            title="Total Commission Earned"
-            value={formatCurrency(mockData.metrics.totalCommission)}
-            icon={TrendingUp}
-            // trend="+8.2% from last month"
-            colorClass="metric-card-accent"
+            title="Disbursed Loans"
+            amount={disbursedAmount}
+            count={disbursedCount}
+            countLabel="disbursed"
+            icon={Banknote}
+            colorClass="metric-card-success"
+            navigationPath={navigationPaths.aggregator.applications}
           />
+
           <MetricCard
-            index={2}
-            title="Pending Payouts"
-            value={formatCurrency(mockData.metrics.pendingPayouts)}
-            icon={CreditCard}
-            // trend="2 payouts pending"
+            title="Rejected Applications"
+            count={rejectedCount}
+            countLabel="rejected"
+            icon={XCircle}
             colorClass="metric-card-warning"
+            navigationPath={navigationPaths.aggregator.applications}
+          />
+
+          {/* Row 2 */}
+          <MetricCard
+            title="Commission Transactions"
+            count={commissionData?.total ?? 0}
+            icon={ClipboardList}
+            colorClass="metric-card-primary"
+            navigationPath={navigationPaths.aggregator.commission}
+          />
+
+          <MetricCard
+            title="Commission Earned"
+            amount={commissionSummary.total}
+            icon={IndianRupee}
+            colorClass="metric-card-accent"
+            navigationPath={navigationPaths.aggregator.commission}
+          />
+
+          <MetricCard
+            title="Commission Paid"
+            amount={commissionSummary.paid}
+            icon={TrendingUp}
+            colorClass="metric-card-accent"
+            navigationPath={navigationPaths.aggregator.commission}
+          />
+
+          <MetricCard
+            title="Commission Pending"
+            amount={commissionSummary.pending}
+            icon={Clock}
+            colorClass="metric-card-warning"
+            navigationPath={navigationPaths.aggregator.commission}
           />
         </div>
       )}
@@ -348,10 +476,10 @@ export function AggregatorDashboard() {
           ) : (
             <div className="h-80 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={mockData.chartData}>
+                <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
                   <XAxis dataKey="month" stroke={chartColors.axis} />
-                  <YAxis stroke={chartColors.axis} />
+                  <YAxis stroke={chartColors.axis} allowDecimals={false} />
                   <Tooltip
                     cursor={false}
                     contentStyle={{
@@ -360,9 +488,9 @@ export function AggregatorDashboard() {
                       borderRadius: '8px',
                       color: chartColors.tooltipText
                     }}
-                    formatter={(value) => [formatCurrency(value as number), 'Amount']}
+                    formatter={(value) => [`${value} loans`, 'Disbursed']}
                   />
-                  <Bar dataKey="amount" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={40} />
+                  <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} barSize={40} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -413,9 +541,9 @@ export function AggregatorDashboard() {
           </CardHeader>
           <CardContent>
             <div ref={tableTopRef} />
-            {isTableLoading ? (
+            {isCommissionLoading ? (
               <TableSkeleton columns={6} rows={pageSize} />
-            ) : paginated.length === 0 ? (
+            ) : filteredCommissions.length === 0 ? (
               <div className="text-center py-12">
                 <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No commission transactions found</p>
@@ -434,11 +562,11 @@ export function AggregatorDashboard() {
                         <TableHead>Commission Amount</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Calculated Date</TableHead>
-                        <TableHead>Paid Date</TableHead>
+                        <TableHead>UTR / Paid Date</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginated.map((commission, index) => {
+                      {filteredCommissions.map((commission, index) => {
                         const StatusIcon = getStatusIcon(commission.status)
                         return (
                           <motion.tr
@@ -461,7 +589,36 @@ export function AggregatorDashboard() {
                               </Badge>
                             </TableCell>
                             <TableCell>{formatDate(commission.calculatedAt)}</TableCell>
-                            <TableCell>{formatDate(commission.paidAt)}</TableCell>
+                            <TableCell>
+                              {commission.status === CommissionStatus.PAID && commission.utrNumber ? (
+                                <div className="flex flex-col gap-1">
+                                  {/* UTR */}
+                                  <p className="text-foreground font-mono text-xs">
+                                    {commission.utrNumber.toUpperCase()}
+                                  </p>
+
+                                  {/* Paid Date */}
+                                  <p className="text-xs text-muted-foreground">
+                                    {formatDate(commission.paidAt)}
+                                  </p>
+
+                                  {/* Payment Proof */}
+                                  {commission.paymentProofUrl && (
+                                    <button
+                                      onClick={() => window.open(commission.paymentProofUrl, '_blank')}
+                                      className="inline-flex items-center gap-1 text-primary text-xs hover:underline"
+                                    >
+                                      <Eye className="w-3 h-3" />
+                                      View Proof
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-muted-foreground text-sm">
+                                  {formatDate(commission.paidAt)}
+                                </p>
+                              )}
+                            </TableCell>
                           </motion.tr>
                         )
                       })}
@@ -481,6 +638,21 @@ export function AggregatorDashboard() {
           </CardContent>
         </Card>
       </motion.div>
+
+      {/* <Card className="professional-card">
+        <CardHeader>
+          <CardTitle>Recent Activity</CardTitle>
+          <CardDescription>Latest updates on your commissions</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center gap-3 text-sm">
+            <CheckCircle className="w-4 h-4 text-green-400" />
+            <span>Commission paid for Ticket #65</span>
+            <span className="ml-auto text-xs text-muted-foreground">2 days ago</span>
+          </div>
+        </CardContent>
+      </Card> */}
+
     </div>
   )
 }

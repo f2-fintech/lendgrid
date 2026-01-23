@@ -175,16 +175,16 @@ export default function AboutPage() {
             Join a growing network of trusted aggregators and lenders. Scale
             your business with automation, insight, and speed.
           </p>
-          
+
           <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
             <Mail className="w-4 h-4" />
             <span>
               email us at{" "}
               <a
                 className="text-cyan-300 underline"
-                href="mailto:sales@lendgrid.com"
+                href="mailto:wecare@f2fintech.com"
               >
-                sales@lendgrid.com
+                wecare@f2fintech.com
               </a>
             </span>
           </div>

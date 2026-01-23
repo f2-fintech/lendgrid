@@ -1,5 +1,5 @@
 import useSWR from 'swr'
-import { apiFetch } from '@/lib/http-client'
+import { apiFetch, getCompanyId } from '@/lib/http-client'
 
 export interface JoinedTicketData {
     customer_application_id: number;
@@ -34,7 +34,6 @@ export interface Ticket {
     pages: number;
     errorMessage?: string;
 }
-
 
 /**
  * Hook for fetching tickets with SWR (stale-while-revalidate) strategy.
@@ -96,3 +95,115 @@ export const useGetTickets = (
         refetch: () => mutate(),
     };
 };
+
+/**
+ * Hook to fetch ticket count for a specific company/aggregator
+ */
+type TicketStatsResponse =
+    | number
+    | {
+        count: number
+        amount: number
+    }
+
+export function useDashboardTicketStats(
+    params: {
+        status?: string
+        userId?: number
+        date?: string
+        month?: string
+        year?: string
+        companyId?: number
+    },
+    userRole?: 'super_admin' | 'aggregator_admin'
+) {
+    const shouldFetch =
+        userRole === 'aggregator_admin' ||
+        (userRole === 'super_admin' && params.companyId)
+
+    const query = new URLSearchParams()
+
+    if (params.status) query.append('status', params.status)
+    if (params.userId) query.append('userId', String(params.userId))
+    if (params.date) query.append('date', params.date)
+    if (params.month) query.append('month', params.month)
+    if (params.year) query.append('year', params.year)
+
+    const key = shouldFetch ? `/dashboard/tickets/count?${query}` : null
+
+    const { data, error, isLoading } = useSWR(
+        key,
+        () => {
+            if (userRole === 'super_admin' && params.companyId) {
+                return apiFetch(`/dashboard/tickets/count?${query}`, {
+                    headers: { Companyid: String(params.companyId) },
+                })
+            }
+            // Aggregator → Companyid auto from buildHeaders()
+            return apiFetch(`/dashboard/tickets/count?${query}`)
+        },
+        {
+            revalidateOnFocus: false,
+            revalidateOnReconnect: false,
+        }
+    )
+
+    const result = data?.data
+
+    return {
+        count:
+            typeof result === 'number'
+                ? result
+                : result?.count ?? 0,
+
+        amount:
+            typeof result === 'object'
+                ? result.amount ?? 0
+                : 0,
+
+        isLoading,
+        error,
+    }
+}
+
+export function useDisbursedTicketsByMonth(
+    year: number,
+    companyId?: number,
+    userRole?: 'super_admin' | 'aggregator_admin'
+) {
+    const resolvedCompanyId =
+        userRole === 'super_admin'
+            ? companyId
+            : Number(getCompanyId()) || undefined
+
+    const shouldFetch =
+        userRole === 'aggregator_admin' ||
+        (userRole === 'super_admin' && resolvedCompanyId)
+
+    const key = shouldFetch
+        ? `/dashboard/disbursed-by-month-${year}-${resolvedCompanyId ?? 'self'}`
+        : null
+
+    const { data, error, isLoading } = useSWR(
+        key,
+        () => {
+            const query = new URLSearchParams({ year: String(year) })
+
+            if (resolvedCompanyId) {
+                query.append('companyId', String(resolvedCompanyId))
+            }
+
+            return apiFetch(
+                `/dashboard/tickets/done-counts-by-month?${query.toString()}`
+            )
+        },
+        { revalidateOnFocus: false }
+    )
+
+    return {
+        data: data?.data ?? [],
+        isLoading,
+        error,
+    }
+}
+

@@ -4,8 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
-    Search, Plus, MoreHorizontal, Eye, Edit, Trash2, FileText, Clock, CheckCircle, XCircle, AlertCircle, Phone, Mail,
-    Calendar, DollarSign, Building2, User, X, Landmark, Percent, Contact2Icon,
+    Search, Plus, Eye, Edit, Trash2, FileText, Clock, Phone, Mail,
+    Calendar, Building2, User, X,
     FileWarning,
     Upload,
     Send,
@@ -18,7 +18,11 @@ import {
     LucideTrash,
     LayoutGrid,
     List,
-    ArrowRight
+    ArrowRight,
+    IndianRupee,
+    CreditCard,
+    MapPin,
+    Briefcase
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -177,7 +181,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2 text-muted-foreground text-sm">
-                                <DollarSign className="w-4 h-4" />
+                                <IndianRupee className="w-4 h-4" />
                                 <span>Loan Amount</span>
                             </div>
                             <p className="text-foreground font-bold">{formatCurrency(application.applicationAmount)}</p>
@@ -742,7 +746,7 @@ export function AggregatorApplications() {
                 <Card className="professional-card">
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <div className={`h-12 rounded-lg flex items-center justify-center bg-background/50 text-blue`}>
+                            <div className={`h-12 rounded-lg flex items-center justify-center text-blue`}>
                                 <FileText className="w-6 h-6 mr-3" />
                                 <div>
                                     <CardTitle className="text-foreground mb-1">Fresh Applications</CardTitle>
@@ -865,70 +869,209 @@ export function AggregatorApplications() {
 
             {/* View Application Dialog */}
             <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-border  text-foreground max-w-3xl rounded-xl shadow-2xl">
+                <DialogContent
+                    className="bg-background border border-border text-foreground max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+                    onInteractOutside={(e) => e.preventDefault()}
+                    onEscapeKeyDown={(e) => e.preventDefault()}
+                >
                     {selectedApplication && (
                         <>
-                            <DialogHeader>
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        {/* <DialogTitle className="text-2xl font-bold  text-foreground bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-                      {selectedApplication.product.name}
-                    </DialogTitle> */}
-                                        <DialogDescription className=" text-muted-foreground pt-1">
-                                            Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{selectedApplication.applicationProvider}</span>
-                                        </DialogDescription>
-                                    </div>
+                            <DialogHeader className="border-b border-border/50 pb-4 flex justify-between items-center">
+                                <div>
+                                    <DialogTitle className="text-2xl font-bold text-foreground">
+                                        Application Details
+                                    </DialogTitle>
+                                    <DialogDescription className="text-muted-foreground text-sm">
+                                        Complete information about this loan application
+                                    </DialogDescription>
                                 </div>
+                                <button
+                                    className="p-2 rounded hover:bg-muted transition absolute right-6 top-6"
+                                    aria-label="Close"
+                                    onClick={() => setIsViewDialogOpen(false)}
+                                >
+                                    <X className="w-5 h-5 text-muted-foreground" />
+                                </button>
                             </DialogHeader>
 
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsViewDialogOpen(false)}
-                                className="absolute top-4 right-4  text-muted-foreground hover: text-foreground hover:bg-muted rounded-full"
-                            >
-                                <X className="w-5 h-5" />
-                            </Button>
-                            <Badge className={`mt-1 flex items-center gap-1 ${STATUS_STYLE[pretty(selectedApplication.loanStatus)]}`}>
-                                {getStatusIcon(selectedApplication.loanStatus)}
-                                {pretty(selectedApplication.loanStatus)}
-                            </Badge>
-
-                            <div className="py-4 space-y-6">
-                                {/* Key Details */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                    <InfoItem icon={User} color="text-yellow-400" label="Customer" value={selectedApplication.customerName} />
-                                    <InfoItem icon={DollarSign} color="text-green-400" label="Loan Amount" value={formatCurrency(selectedApplication.applicationAmount)} />
-                                    <InfoItem icon={Landmark} color="text-blue" label="Lender" value={selectedApplication.applicationProvider} />
-                                    {/* <InfoItem icon={Calendar} color="text-purple-400" label="Last Updated" value={new Date(selectedApplication.updatedAt).toLocaleDateString()} /> */}
+                            <div className="space-y-6 pt-4">
+                                {/* Status and Application Number Section */}
+                                <div className="flex gap-3 justify-between items-start flex-wrap">
+                                    <div className="flex flex-wrap gap-2">
+                                        <Badge
+                                            className={`${STATUS_STYLE[pretty(selectedApplication.loanStatus)]} border px-4 py-1.5 text-sm font-semibold`}
+                                        >
+                                            {pretty(selectedApplication.loanStatus)}
+                                        </Badge>
+                                        <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 text-sm font-semibold">
+                                            App #{selectedApplication.applicationNumber}
+                                        </Badge>
+                                        {selectedApplication.leadType && (
+                                            <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-4 py-1.5 text-sm font-semibold">
+                                                {selectedApplication.leadType}
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </div>
 
-                                {/* Loan & Commission */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-border">
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><DollarSign className="w-5 h-5" />Application Details</h3>
-                                        {/* <InfoLine icon={FileText} color="text-yellow-400" label="Product Name" value={selectedApplication.product.name} /> */}
-                                        {/* <InfoLine icon={FileText} color="text-blue" label="Loan Type" value={selectedApplication.product.productType.replace('_', ' ')} /> */}
-                                        {/* <InfoLine icon={Percent} color="text-green-400" label="Commission" value={`${selectedApplication.product.commissionPercent}%`} />
-                    <InfoLine icon={Percent} color="text-purple-400" label="Processing Fee" value={`${selectedApplication.product.processingFeePercent}%`} /> */}
-                                    </div>
+                                {/* Customer Information Card */}
+                                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                    <h3 className="text-lg font-semibold mb-4 text-primary flex items-center gap-2">
+                                        <User className="w-5 h-5" />
+                                        Customer Information
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        <div className="flex items-start gap-3">
+                                            <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
+                                                <User className="w-4 h-4 text-blue-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-muted-foreground mb-1">Full Name</p>
+                                                <p className="text-foreground font-semibold">{selectedApplication.customerName}</p>
+                                            </div>
+                                        </div>
 
-                                    {/* Customer & Documents */}
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><Contact2Icon className="w-5 h-5" />Contact & Documents</h3>
-                                        <InfoLine icon={Mail} color="text-blue" label="Email" value={selectedApplication.customerEmail} />
-                                        <InfoLine icon={Phone} color="text-green-400" label="Phone" value={selectedApplication.customerContact} />
-                                        <div className="pt-2">
-                                            <h4 className="font-semibold text-cyan-300 mb-2 flex items-center gap-2"><FileText className="w-5 h-5" />Documents</h4>
-                                            {(selectedApplication.documents || []).length > 0 ? (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {selectedApplication.documents.map((doc: string, index: number) => (
-                                                        <Badge key={index} variant="outline" className="border-border  text-foreground">{doc}</Badge>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-gray-500 italic">No documents submitted.</p>
-                                            )}
+                                        <div className="flex items-start gap-3">
+                                            <div className="bg-green-500/10 p-2 rounded-lg mt-1">
+                                                <Mail className="w-4 h-4 text-green-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-muted-foreground mb-1">Email Address</p>
+                                                <p className="text-foreground font-semibold break-all">{selectedApplication.customerEmail}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3">
+                                            <div className="bg-purple-500/10 p-2 rounded-lg mt-1">
+                                                <Phone className="w-4 h-4 text-purple-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-muted-foreground mb-1">Contact Number</p>
+                                                <p className="text-foreground font-semibold">{selectedApplication.customerContact}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3">
+                                            <div className="bg-amber-500/10 p-2 rounded-lg mt-1">
+                                                <CreditCard className="w-4 h-4 text-amber-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-muted-foreground mb-1">PAN Number</p>
+                                                <p className="text-foreground font-semibold font-mono">{selectedApplication.customerPAN}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3">
+                                            <div className="bg-cyan-500/10 p-2 rounded-lg mt-1">
+                                                <Briefcase className="w-4 h-4 text-cyan-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-muted-foreground mb-1">Designation</p>
+                                                <p className="text-foreground font-semibold capitalize">{selectedApplication.customerDesignation}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-start gap-3">
+                                            <div className="bg-orange-500/10 p-2 rounded-lg mt-1">
+                                                <MapPin className="w-4 h-4 text-orange-400" />
+                                            </div>
+                                            <div className="flex-1">
+                                                <p className="text-xs text-muted-foreground mb-1">Location</p>
+                                                <p className="text-foreground font-semibold capitalize">
+                                                    {selectedApplication.customerLocation}, {selectedApplication.customerState}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Loan Details Card */}
+                                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                    <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
+                                        <IndianRupee className="w-5 h-5" />
+                                        Loan Details
+                                    </h3>
+                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                        <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                                            <p className="text-xs text-muted-foreground mb-2">Loan Amount</p>
+                                            <p className="text-xl font-bold text-primary">{formatCurrency(selectedApplication.applicationAmount)}</p>
+                                        </div>
+
+                                        <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                            <p className="text-xs text-muted-foreground mb-2">Loan Type</p>
+                                            <p className="text-xl font-bold text-cyan-400 capitalize">{pretty(selectedApplication.loanType)}</p>
+                                        </div>
+
+                                        <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                            <p className="text-xs text-muted-foreground mb-2">Loan Category</p>
+                                            <p className="text-xl font-bold text-purple-400 capitalize">{selectedApplication.loanCategory}</p>
+                                        </div>
+
+                                        <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                            <p className="text-xs text-muted-foreground mb-2">Tenure</p>
+                                            <p className="text-xl font-bold text-amber-400">{selectedApplication.applicationTenure} Years</p>
+                                        </div>
+
+                                        <div className="bg-background/50 rounded-lg p-4 border border-border/50 md:col-span-2">
+                                            <p className="text-xs text-muted-foreground mb-2">Provider</p>
+                                            <p className="text-xl font-bold text-emerald-400">{selectedApplication.applicationProvider}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Application Timeline Card */}
+                                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                    <h3 className="text-lg font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+                                        <Clock className="w-5 h-5" />
+                                        Application Timeline
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg border border-border">
+                                            <Calendar className="w-5 h-5 text-primary" />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Application Date</p>
+                                                <p className="text-foreground font-semibold text-sm">
+                                                    {new Date(selectedApplication.applicationDate).toLocaleDateString('en-US', {
+                                                        year: 'numeric',
+                                                        month: 'short',
+                                                        day: 'numeric'
+                                                    })}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center gap-3 bg-background/50 p-4 rounded-lg border border-border/30">
+                                            <BadgeCheck className="w-5 h-5 text-green-400" />
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">Current Status</p>
+                                                <p className="text-foreground font-semibold text-sm capitalize">
+                                                    {pretty(selectedApplication.loanStatus)}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* System Information Card */}
+                                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                    <h3 className="text-lg font-semibold mb-4 text-amber-400 flex items-center gap-2">
+                                        <FileText className="w-5 h-5" />
+                                        System Information
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                                            <p className="text-xs text-muted-foreground mb-2">Application ID</p>
+                                            <p className="text-foreground font-semibold font-mono">{selectedApplication.applicationId}</p>
+                                        </div>
+
+                                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                                            <p className="text-xs text-muted-foreground mb-2">Customer ID</p>
+                                            <p className="text-foreground font-semibold font-mono">{selectedApplication.customerId}</p>
+                                        </div>
+
+                                        <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                                            <p className="text-xs text-muted-foreground mb-2">Company ID</p>
+                                            <p className="text-foreground font-semibold font-mono">{selectedApplication.companyId}</p>
                                         </div>
                                     </div>
                                 </div>

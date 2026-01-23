@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import {
   ArrowRight,
   TrendingUp,
@@ -132,7 +131,7 @@ export function LandingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
       <FloatingMathSymbols />
 
       {/* Navigation */}
@@ -151,14 +150,14 @@ export function LandingPage() {
                 className="w-12 h-10 rounded-xl "
               />
             </div>
-            <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
+            <span className="text-2xl font-bold gradient-text text-accent">LendGrid</span>
           </motion.div>
           <div className="hidden md:flex items-center space-x-8">
             {["Features", "Solution", "Testimonials", "Contact"].map((item, index) => (
               <motion.a
                 key={item}
                 href={`#${item.toLowerCase()}`}
-                className="text-gray-300 hover:text-gold transition-colors duration-300 font-medium"
+                className="text-foreground hover:text-accent transition-colors duration-300 font-medium"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -175,10 +174,10 @@ export function LandingPage() {
             transition={{ duration: 0.6 }}
           >
             <Link href={navigationPaths.login}>
-              <Button className="glass-button bg-gradient-to-r from-blue to-cyan-500 text-white hover:text-gold">Login</Button>
+              <Button className="glass-button bg-gradient-to-r from-blue to-cyan-500 text-foreground hover:text-accent">Login</Button>
             </Link>
             <Link href={navigationPaths.signup}>
-              <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">Sign Up</Button>
+              <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 hover:text-accent">Sign Up</Button>
             </Link>
           </motion.div>
         </div> */}
@@ -194,7 +193,7 @@ export function LandingPage() {
               <br />
               <span className="text-4xl md:text-6xl">Track, Earn, Repeat.</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-12 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-xl md:text-2xl text-foreground mb-12 max-w-4xl mx-auto leading-relaxed">
               Connect loan aggregators with premium lenders. Automate commission tracking, streamline payouts, and scale
               your financial services business with cutting-edge technology.
             </p>
@@ -209,7 +208,7 @@ export function LandingPage() {
             {/* LINK 1: Aggregator Admin Pre-select */}
             {/* 1. Join as Loan Aggregator -> Sets role=aggregator_admin */}
             <Link href={`${navigationPaths.login}?role=aggregator_admin`}>
-              <Button className="btn-primary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 shadow-2xl  hover:text-gold">
+              <Button className="btn-primary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 shadow-2xl  hover:text-accent">
                 Join as Loan Aggregator/Channel Partner
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -217,7 +216,7 @@ export function LandingPage() {
 
             {/* 2. List Your Lending Products -> Sets role=lender_admin............not required now */}
             {/* <Link href={`${navigationPaths.login}?role=lender_admin`}>
-              <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">
+              <Button className="btn-secondary px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 hover:text-accent">
                 List Your Lending Products
                 <Building2 className="ml-2 w-5 h-5" />
               </Button>
@@ -254,7 +253,7 @@ export function LandingPage() {
             </div>
 
             <motion.h3
-              className="text-2xl font-semibold mb-6 text-gold relative z-10"
+              className="text-2xl font-semibold mb-6 text-accent relative z-10"
               animate={{
                 textShadow: [
                   "0 0 10px rgba(255, 215, 0, 0.5)",
@@ -307,7 +306,7 @@ export function LandingPage() {
                   />
                   4%
                 </motion.div>
-                <p className="text-sm text-gray-300 font-medium group-hover:text-gold transition-colors">
+                <p className="text-sm text-foreground font-medium group-hover:text-accent transition-colors">
                   DSA Commission
                 </p>
               </motion.div>
@@ -322,7 +321,7 @@ export function LandingPage() {
                   repeat: Number.POSITIVE_INFINITY,
                 }}
               >
-                <Plus className="text-gold w-8 h-8 drop-shadow-lg" />
+                <Plus className="text-accent w-8 h-8 drop-shadow-lg" />
               </motion.div>
 
               <motion.div
@@ -331,7 +330,7 @@ export function LandingPage() {
                 transition={{ type: "spring", stiffness: 300 }}
               >
                 <motion.div
-                  className="w-20 h-20 bg-gradient-to-r from-blue to-cyan-500 rounded-2xl flex items-center justify-center text-white font-bold text-2xl mb-3 shadow-lg relative overflow-hidden"
+                  className="w-20 h-20 bg-gradient-to-r from-blue to-cyan-500 rounded-2xl flex items-center justify-center text-foreground font-bold text-2xl mb-3 shadow-lg relative overflow-hidden"
                   animate={{
                     boxShadow: [
                       "0 0 20px rgba(0, 122, 255, 0.3)",
@@ -363,13 +362,13 @@ export function LandingPage() {
                   />
                   1%
                 </motion.div>
-                <p className="text-sm text-gray-300 font-medium group-hover:text-blue transition-colors">
+                <p className="text-sm text-foreground font-medium group-hover:text-blue transition-colors">
                   Platform Fee
                 </p>
               </motion.div>
 
               <motion.div
-                className="text-gold text-3xl font-bold"
+                className="text-accent text-3xl font-bold"
                 animate={{
                   scale: [1, 1.3, 1],
                   opacity: [0.7, 1, 0.7],
@@ -388,7 +387,7 @@ export function LandingPage() {
                 transition={{ type: "spring", stiffness: 300 }}
               >
                 <motion.div
-                  className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center text-white font-bold text-2xl mb-3 shadow-lg relative overflow-hidden"
+                  className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center text-foreground font-bold text-2xl mb-3 shadow-lg relative overflow-hidden"
                   animate={{
                     boxShadow: [
                       "0 0 20px rgba(34, 197, 94, 0.3)",
@@ -420,7 +419,7 @@ export function LandingPage() {
                   />
                   5%
                 </motion.div>
-                <p className="text-sm text-gray-300 font-medium group-hover:text-green-400 transition-colors">
+                <p className="text-sm text-foreground font-medium group-hover:text-green-400 transition-colors">
                   Total Commission
                 </p>
               </motion.div>
@@ -458,7 +457,7 @@ export function LandingPage() {
               Why Choose LendGrid?
             </motion.h2>
             <motion.p
-              className="text-xl text-gray-300 max-w-3xl mx-auto"
+              className="text-xl text-foreground max-w-3xl mx-auto"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
@@ -477,9 +476,9 @@ export function LandingPage() {
             >
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-gradient-to-r from-gold to-yellow-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl cursor-pointer">
-                  <TrendingUp className="w-10 h-10 text-dark" />
+                  <TrendingUp className="w-10 h-10 text-accent-foreground" />
                 </div>
-                <h3 className="text-3xl font-bold text-gold mb-4">Aggregator Benefits</h3>
+                <h3 className="text-3xl font-bold text-accent mb-4">Aggregator Benefits</h3>
               </div>
 
               <div className="space-y-6">
@@ -506,14 +505,14 @@ export function LandingPage() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: index * 0.1 }}
                   >
-                    <Card className="enhanced-card hover:border-gold/30 transition-all duration-300">
+                    <Card className="enhanced-card hover:border-accent/30 transition-all duration-300">
                       <CardContent className="p-6 flex items-start space-x-4">
-                        <div className="w-14 h-14 bg-gold/20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <benefit.icon className="w-7 h-7 text-gold" />
+                        <div className="w-14 h-14 bg-accent/20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
+                          <benefit.icon className="w-7 h-7 text-accent" />
                         </div>
                         <div>
-                          <h4 className="text-lg font-semibold mb-2 text-white">{benefit.title}</h4>
-                          <p className="text-gray-300 leading-relaxed">{benefit.desc}</p>
+                          <h4 className="text-lg font-semibold mb-2 text-foreground">{benefit.title}</h4>
+                          <p className="text-foreground leading-relaxed">{benefit.desc}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -531,9 +530,9 @@ export function LandingPage() {
             >
               <div className="text-center mb-8">
                 <div className="w-20 h-20 bg-gradient-to-r from-blue to-cyan-500 rounded-3xl flex items-center justify-center mx-auto mb-4 shadow-2xl cursor-pointer">
-                  <Building2 className="w-10 h-10 text-white" />
+                  <Building2 className="w-10 h-10 text-foreground" />
                 </div>
-                <h3 className="text-3xl font-bold text-blue mb-4">Lender Benefits</h3>
+                <h3 className="text-3xl font-bold text-primary mb-4">Lender Benefits</h3>
               </div>
 
               <div className="space-y-6">
@@ -563,11 +562,11 @@ export function LandingPage() {
                     <Card className="enhanced-card hover:border-blue/30 transition-all duration-300">
                       <CardContent className="p-6 flex items-start space-x-4">
                         <div className="w-14 h-14 bg-blue/20 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-lg">
-                          <benefit.icon className="w-7 h-7 text-blue" />
+                          <benefit.icon className="w-7 h-7 text-primary" />
                         </div>
                         <div>
-                          <h4 className="text-lg font-semibold mb-2 text-white">{benefit.title}</h4>
-                          <p className="text-gray-300 leading-relaxed">{benefit.desc}</p>
+                          <h4 className="text-lg font-semibold mb-2 text-foreground">{benefit.title}</h4>
+                          <p className="text-foreground leading-relaxed">{benefit.desc}</p>
                         </div>
                       </CardContent>
                     </Card>
@@ -591,7 +590,7 @@ export function LandingPage() {
             Common Pain Points
           </motion.h2>
           <motion.p
-            className="text-xl text-gray-300 mb-12"
+            className="text-xl text-foreground mb-12"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -608,20 +607,20 @@ export function LandingPage() {
               <Card className="enhanced-card h-full hover:shadow-2xl hover:-translate-y-2 transform transition-all duration-300 border-l-4 border-gold/60">
                 <CardContent className="p-6">
                   <div className="flex items-start space-x-4">
-                    <div className="w-12 h-12 rounded-lg bg-gold/20 flex items-center justify-center text-gold">
+                    <div className="w-12 h-12 rounded-lg bg-gold/20 flex items-center justify-center text-accent">
                       <Users className="w-6 h-6" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-semibold text-gold mb-2 leading-tight">Borrowers</h3>
-                      <p className="text-gray-500 mb-3 leading-relaxed">Common issues borrowers face:
+                      <h3 className="text-xl font-semibold text-accent mb-2 leading-tight">Borrowers</h3>
+                      <p className="text-muted-foreground mb-3 leading-relaxed">Common issues borrowers face:
                         <br />
                         <br />
                       </p>
-                      <ul className="text-gray-300 space-y-2 text-sm text-left">
-                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Slow approvals</li>
-                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Difficult to compare lenders</li>
-                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Confusing interest rates</li>
-                        <li className="flex items-start"><span className="text-gold mr-2">●</span>Lack of transparency</li>
+                      <ul className="text-foreground space-y-2 text-sm text-left">
+                        <li className="flex items-start"><span className="text-accent mr-2">●</span>Slow approvals</li>
+                        <li className="flex items-start"><span className="text-accent mr-2">●</span>Difficult to compare lenders</li>
+                        <li className="flex items-start"><span className="text-accent mr-2">●</span>Confusing interest rates</li>
+                        <li className="flex items-start"><span className="text-accent mr-2">●</span>Lack of transparency</li>
                       </ul>
                     </div>
                   </div>
@@ -642,11 +641,11 @@ export function LandingPage() {
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-blue mb-2 leading-tight">Lenders</h3>
-                      <p className="text-gray-500 mb-3 leading-relaxed">Challenges lenders experience:
+                      <p className="text-muted-foreground mb-3 leading-relaxed">Challenges lenders experience:
                         <br />
                         <br />
                       </p>
-                      <ul className="text-gray-300 space-y-2 text-sm text-left">
+                      <ul className="text-foreground space-y-2 text-sm text-left">
                         <li className="flex items-start"><span className="text-blue mr-2">●</span>Incomplete applications</li>
                         <li className="flex items-start"><span className="text-blue mr-2">●</span>High drop-offs</li>
                         <li className="flex items-start"><span className="text-blue mr-2">●</span>Repeated follow-ups</li>
@@ -671,11 +670,11 @@ export function LandingPage() {
                     </div>
                     <div>
                       <h3 className="text-xl font-semibold text-green-400 mb-2 leading-tight">Aggregators</h3>
-                      <p className="text-gray-500 mb-3 leading-relaxed">Aggregators often report:
+                      <p className="text-muted-foreground mb-3 leading-relaxed">Aggregators often report:
                         <br />
                         <br />
                       </p>
-                      <ul className="text-gray-300 space-y-2 text-sm text-left">
+                      <ul className="text-foreground space-y-2 text-sm text-left">
                         <li className="flex items-start"><span className="text-green-400 mr-2">●</span>No real time loan updates</li>
                         <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Unclear commission terms</li>
                         <li className="flex items-start"><span className="text-green-400 mr-2">●</span>Slow lender responses</li>
@@ -702,7 +701,7 @@ export function LandingPage() {
             How LendGrid Solves It
           </motion.h2>
           <motion.p
-            className="text-xl text-gray-300 mb-12"
+            className="text-xl text-foreground mb-12"
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.2 }}
@@ -713,10 +712,10 @@ export function LandingPage() {
           <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-6">
             <Card className="enhanced-card">
               <CardContent className="p-6 flex items-start space-x-4">
-                <Percent className="w-6 h-6 text-gold mt-1" />
+                <Percent className="w-6 h-6 text-accent mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">All loans on one platform</h4>
-                  <p className="text-gray-300 text-sm">Browse and compare products across multiple lenders</p>
+                  <h4 className="font-semibold text-foreground">All loans on one platform</h4>
+                  <p className="text-foreground text-sm">Browse and compare products across multiple lenders</p>
                 </div>
               </CardContent>
             </Card>
@@ -725,8 +724,8 @@ export function LandingPage() {
               <CardContent className="p-6 flex items-start space-x-4">
                 <TrendingUp className="w-6 h-6 text-blue mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">Track your loan live</h4>
-                  <p className="text-gray-300 text-sm">Real-time status updates from application to disbursal</p>
+                  <h4 className="font-semibold text-foreground">Track your loan live</h4>
+                  <p className="text-foreground text-sm">Real-time status updates from application to disbursal</p>
                 </div>
               </CardContent>
             </Card>
@@ -735,18 +734,18 @@ export function LandingPage() {
               <CardContent className="p-6 flex items-start space-x-4">
                 <CreditCard className="w-6 h-6 text-green-400 mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">Lowest interest rates</h4>
-                  <p className="text-gray-300 text-sm">Compare rates and pick the best fit for your needs</p>
+                  <h4 className="font-semibold text-foreground">Lowest interest rates</h4>
+                  <p className="text-foreground text-sm">Compare rates and pick the best fit for your needs</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="enhanced-card">
               <CardContent className="p-6 flex items-start space-x-4">
-                <Calculator className="w-6 h-6 text-gold mt-1" />
+                <Calculator className="w-6 h-6 text-accent mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">Instant eligibility check</h4>
-                  <p className="text-gray-300 text-sm">Quick pre-checks to save time and reduce drop-offs</p>
+                  <h4 className="font-semibold text-foreground">Instant eligibility check</h4>
+                  <p className="text-foreground text-sm">Quick pre-checks to save time and reduce drop-offs</p>
                 </div>
               </CardContent>
             </Card>
@@ -755,8 +754,8 @@ export function LandingPage() {
               <CardContent className="p-6 flex items-start space-x-4">
                 <Users className="w-6 h-6 text-blue mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">Expert guidance</h4>
-                  <p className="text-gray-300 text-sm">Help at every step from product selection to disbursal</p>
+                  <h4 className="font-semibold text-foreground">Expert guidance</h4>
+                  <p className="text-foreground text-sm">Help at every step from product selection to disbursal</p>
                 </div>
               </CardContent>
             </Card>
@@ -765,18 +764,18 @@ export function LandingPage() {
               <CardContent className="p-6 flex items-start space-x-4">
                 <Zap className="w-6 h-6 text-green-400 mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">100% paperless process</h4>
-                  <p className="text-gray-300 text-sm">Fast, secure e-docs and e-sign workflows</p>
+                  <h4 className="font-semibold text-foreground">100% paperless process</h4>
+                  <p className="text-foreground text-sm">Fast, secure e-docs and e-sign workflows</p>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="enhanced-card">
               <CardContent className="p-6 flex items-start space-x-4">
-                <Building2 className="w-6 h-6 text-gold mt-1" />
+                <Building2 className="w-6 h-6 text-accent mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">50+ lenders</h4>
-                  <p className="text-gray-300 text-sm">Access a large network of banks, NBFCs and fintech lenders</p>
+                  <h4 className="font-semibold text-foreground">50+ lenders</h4>
+                  <p className="text-foreground text-sm">Access a large network of banks, NBFCs and fintech lenders</p>
                 </div>
               </CardContent>
             </Card>
@@ -785,8 +784,8 @@ export function LandingPage() {
               <CardContent className="p-6 flex items-start space-x-4">
                 <Shield className="w-6 h-6 text-blue mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-white">Safe, simple & transparent</h4>
-                  <p className="text-gray-300 text-sm">Secure transactions with clear terms and easy UX</p>
+                  <h4 className="font-semibold text-foreground">Safe, simple & transparent</h4>
+                  <p className="text-foreground text-sm">Secure transactions with clear terms and easy UX</p>
                 </div>
               </CardContent>
             </Card>
@@ -807,12 +806,12 @@ export function LandingPage() {
               What Our Partners Say
             </motion.h2>
             <motion.p
-              className="text-xl text-gray-300"
+              className="text-xl text-foreground"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              Success stories from aggregators and lenders using LendGrid
+              Success stories from Aggregators using LendGrid
             </motion.p>
           </div>
 
@@ -828,10 +827,10 @@ export function LandingPage() {
                   <CardContent className="p-8">
                     <div className="flex items-center mb-6">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="w-5 h-5 text-gold fill-current" />
+                        <Star key={i} className="w-5 h-5 text-accent fill-current" />
                       ))}
                     </div>
-                    <p className="text-gray-300 mb-8 italic text-lg leading-relaxed">"{testimonial.review}"</p>
+                    <p className="text-foreground mb-8 italic text-lg leading-relaxed">"{testimonial.review}"</p>
                     <div className="flex items-center space-x-4">
                       <Image
                         src={testimonial.image || "/placeholder.svg"}
@@ -841,9 +840,9 @@ export function LandingPage() {
                         className="rounded-full border-2 border-gold/30"
                       />
                       <div>
-                        <h4 className="font-semibold text-white text-lg">{testimonial.name}</h4>
-                        <p className="text-sm text-gray-400">{testimonial.role}</p>
-                        <p className="text-sm text-gold font-medium">{testimonial.company}</p>
+                        <h4 className="font-semibold text-foreground text-lg">{testimonial.name}</h4>
+                        <p className="text-sm text-muted-foreground">{testimonial.role}</p>
+                        <p className="text-sm text-accent font-medium">{testimonial.company}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -869,12 +868,12 @@ export function LandingPage() {
               Ready to Get Started?
             </motion.h2>
             <motion.p
-              className="text-xl text-gray-300"
+              className="text-xl text-foreground"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.2 }}
             >
-              Join thousands of aggregators and lenders already using LendGrid
+              Join thousands of Aggregators already using LendGrid
             </motion.p>
           </div>
 
@@ -888,20 +887,20 @@ export function LandingPage() {
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                   <div className="grid md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">Full Name</label>
+                      <label className="block text-sm font-medium mb-2 text-foreground">Full Name</label>
                       <Input
                         {...register("name", { required: "Name is required" })}
-                        className="glass-input text-black placeholder-gray-400"
+                        className="bg-background border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg h-12 transition-all"
                         placeholder="Enter your full name"
                       />
                       {errors.name && <p className="text-red-400 text-sm mt-1">{errors.name.message as string}</p>}
                     </div>
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">Email Address</label>
+                      <label className="block text-sm font-medium mb-2 text-foreground">Email Address</label>
                       <Input
                         type="email"
                         {...register("email", { required: "Email is required" })}
-                        className="glass-input text-black placeholder-gray-400"
+                        className="bg-background border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg h-12 transition-all"
                         placeholder="Enter your email"
                       />
                       {errors.email && <p className="text-red-400 text-sm mt-1">{errors.email.message as string}</p>}
@@ -909,8 +908,8 @@ export function LandingPage() {
                   </div>
 
                   <div className="grid md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">Role</label>
+                    {/* <div>
+                      <label className="block text-sm font-medium mb-2 text-foreground">Role</label>
                       <Select>
                         <SelectTrigger className="glass-input text-gray-600">
                           <SelectValue placeholder="Select your role" />
@@ -924,30 +923,33 @@ export function LandingPage() {
                           </SelectItem>
                         </SelectContent>
                       </Select>
-                    </div>
+                    </div> */}
                     <div>
-                      <label className="block text-sm font-medium mb-2 text-gray-300">Company Name</label>
+                      <label className="block text-sm font-medium mb-2 text-foreground">Company Name</label>
                       <Input
                         {...register("company", { required: "Company name is required" })}
-                        className="glass-input text-black placeholder-gray-400"
+                        className="bg-background border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg h-12 transition-all"
                         placeholder="Enter company name"
+                      />
+                      {errors.company && <p className="text-red-400 text-sm mt-1">{errors.company.message as string}</p>}
+                    </div>
+
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-semibold mb-2 text-foreground">Message</label>
+                      <Textarea
+                        {...register("message")}
+                        className="bg-background border-2 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-lg min-h-[140px] transition-all resize-none"
+                        placeholder="Tell us about your requirements..."
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-sm font-medium mb-2 text-gray-300">Message</label>
-                    <Textarea
-                      {...register("message")}
-                      className="glass-input text-black placeholder-gray-400 min-h-[120px]"
-                      placeholder="Tell us about your requirements..."
-                    />
+                  <div className="md:col-span-2 pt-4">
+                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                      Submit Request
+                      <ArrowRight className="ml-2 w-5 h-5" />
+                    </Button>
                   </div>
-
-                  <Button type="submit" className="w-full btn-primary text-lg py-4 rounded-xl  hover:text-gold">
-                    Submit Request
-                    <ArrowRight className="ml-2 w-5 h-5" />
-                  </Button>
                 </form>
               </CardContent>
             </Card>
@@ -955,89 +957,7 @@ export function LandingPage() {
         </div>
       </section>
 
-      {/* Footer */}
-      {/* <footer className="px-6 py-10 glass-card border-t border-white/10 relative z-10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
-            <div>
-              <div className="flex items-center space-x-2 mb-4">
-                <div className="w-10 h-10 bg-gradient rounded-xl flex items-center justify-center shadow-lg">
-                  <img
-                    src="/logo.png" // Replace with your logo path
-                    alt="LendGrid Logo"
-                    className="w-12 h-10 rounded-xl "
-                  />
-                </div>
-                <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
-              </div>
-              <p className="text-gray-400 leading-relaxed">
-                Empowering the future of loan distribution with technology and innovation.
-              </p>
-            </div>
-
-            {[
-              {
-                title: "Platform",
-                links: ["For Aggregators", "For Lenders"],
-              },
-              {
-                title: "Company",
-                links: ["About Us", "Contact"],
-              },
-              {
-                title: "Legal",
-                links: ["Privacy Policy", "Terms of Service", "Compliance", "Security"],
-              },
-            ].map((section, index) => (
-              <div key={index}>
-                <h4 className="font-semibold mb-4 text-white text-lg">{section.title}</h4>
-                <ul className="space-y-3 text-gray-400">
-                  {section.links.map((link, linkIndex) => {
-                    // Special handling for platform role links
-                    if (link === 'For Aggregators' || link === 'For Lenders') {
-                      const roleKey = link === 'For Aggregators' ? 'aggregator' : 'lender'
-                      // Directly navigate to login with role query param
-                      return (
-                        <li key={linkIndex}>
-                          <Link
-                            href={`${navigationPaths.login}?role=${roleKey === 'aggregator' ? 'aggregator_admin' : 'lender_admin'}`}
-                            className="hover:text-gold transition-colors duration-300 hover:underline cursor-pointer"
-                          >
-                            {link}
-                          </Link>
-                        </li>
-                      )
-                    }
-
-                    const path =
-                      `/` +
-                      link
-                        .toLowerCase()
-                        .replace(/\s+/g, "-") // Replace spaces with hyphens
-                        .replace(/[^a-z-]/g, "") // Remove special characters
-
-                    return (
-                      <li key={linkIndex}>
-                        <Link href={path}>
-                          <span className="hover:text-gold transition-colors duration-300 hover:underline cursor-pointer">
-                            {link}
-                          </span>
-                        </Link>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
-
-          <div className="border-t border-white/10 pt-8 text-center text-gray-400">
-            <p>&copy; 2025 LendGrid. All rights reserved. Built for the future of financial services.</p>
-          </div>
-        </div>
-      </footer> */}
       <Footer />
-
     </div>
   )
 }

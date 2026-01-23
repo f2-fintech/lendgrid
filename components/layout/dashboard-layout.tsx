@@ -96,7 +96,7 @@ const navigationConfig = {
       title: "Management",
       items: [
         { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
-        { title: "Applications", url: navigationPaths.aggregator.applications, icon: CreditCard },
+        { title: "Applications", url: navigationPaths.aggregator.applications, icon: FileText },
         { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
         { title: "Profile", url: navigationPaths.aggregator.settings, icon: Settings },
         // ...(isOmsEnabled
@@ -111,7 +111,7 @@ const navigationConfig = {
       items: [
         { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
         { title: "Products", url: navigationPaths.aggregatorMember.products, icon: CreditCard },
-        { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: CreditCard },
+        { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: FileText },
       ]
     }
   ],

@@ -76,19 +76,28 @@ export function useApplicationsRest({
 /**
  * Hook to fetch application count for a specific company/aggregator
  */
-export function useApplicationCount(companyId: number | undefined) {
-    const key = companyId ? `/application/count-${companyId}` : null
+export function useApplicationCount(
+    companyId: number | undefined,
+    userRole?: 'super_admin' | 'aggregator_admin'
+) {
+    const key = userRole === 'super_admin' && companyId ? `/application/count-${companyId}` : '/application/count'
 
     const { data, error, isLoading } = useSWR<{
         success: boolean
         data: number
     }>(
         key,
-        () => apiFetch('/application/count', {
-            headers: {
-                'Companyid': companyId!.toString(),
-            },
-        }),
+        () => {
+            if (userRole === 'super_admin' && companyId) {
+                return apiFetch('/application/count', {
+                    headers: {
+                        'Companyid': companyId!.toString(),
+                    },
+                })
+            }
+            // AGGREGATOR: auto Companyid from buildHeaders()
+            return apiFetch('/application/count')
+        },
         {
             revalidateOnFocus: false,
             revalidateOnReconnect: false,

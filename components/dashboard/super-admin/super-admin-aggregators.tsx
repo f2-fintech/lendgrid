@@ -45,7 +45,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { useApplicationCount } from '@/hooks/use-applications-rest'
 
 const ApplicationCountCell = ({ companyId }: { companyId?: number }) => {
-  const { count, isLoading } = useApplicationCount(companyId)
+  const { count, isLoading } = useApplicationCount(companyId, 'super_admin')
 
   if (isLoading) return <p className="text-muted-foreground animate-pulse text-xs">Loading...</p>
 
@@ -270,14 +270,13 @@ export function SuperAdminAggregators() {
 
       {/* Metrics Cards */}
       {!isTableLoading && !aggregators.length ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 ">
-          <CardSkeleton headerLines={2} bodyHeight={20} />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <MetricCard
             title="Total Aggregators"
             value={metrics.totalAggregators}
@@ -298,13 +297,6 @@ export function SuperAdminAggregators() {
             icon={AlertCircle}
             color="bg-orange-500/20 text-orange-400"
             subtitle="Awaiting review"
-          />
-          <MetricCard
-            title="Avg Conversion Rate"
-            value={`0%`}
-            icon={TrendingUp}
-            color="bg-accent/20 text-accent"
-            subtitle="Platform average"
           />
         </div>
       )}

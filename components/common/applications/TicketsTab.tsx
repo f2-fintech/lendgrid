@@ -3,8 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import {
-    Search, ClipboardList, Eye, Edit, Trash2, Clock, CheckCircle, XCircle, AlertCircle, Phone, Mail,
-    Calendar, DollarSign, Building2, User, X, Landmark, Percent, Contact2Icon,
+    Search, ClipboardList, Eye, Trash2, Clock, CheckCircle, AlertCircle, Phone, Mail,
+    Calendar, Building2, User, X,
     FileWarning,
     Send,
     PauseCircle,
@@ -16,7 +16,11 @@ import {
     LucideTrash,
     LayoutGrid,
     List,
-    ArrowRight
+    ArrowRight,
+    IndianRupee,
+    FileText,
+    TrendingUp,
+    MapPin
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -61,18 +65,18 @@ import { TicketHistoryData, useGetTicketHistory } from '@/hooks/use-ticket-histo
 export const pretty = (v: string) => v?.toLowerCase()?.replace(/_/g, " ");
 
 export const STATUS_STYLE: Record<string, string> = {
-    "under credit review": "bg-amber-500/15 text-amber-300 border-amber-500/25",
-    operations: "bg-sky-600/15 text-sky-400 border-sky-500/40",
-    "pendency in file": "bg-red-500/15 text-red-300 border-red-500/25",
-    "file send to banker": "bg-indigo-500/15 text-indigo-300 border-indigo-500/25",
-    hold: "bg-yellow-500/15 text-yellow-300 border-yellow-500/25",
-    "to be approved": "bg-green-500/15 text-green-300 border-green-500/25",
-    "to be disbursed": "bg-purple-500/15 text-purple-300 border-purple-500/25",
-    approved: "bg-lime-500/15 text-lime-300 border-lime-500/25",
-    disbursed: "bg-cyan-500/15 text-cyan-300 border-cyan-500/25",
-    rejected: "bg-red-600/15 text-red-400 border-red-600/25",
-    drop: "bg-orange-500/15 text-orange-300 border-orange-500/25",
-    submitted: "bg-blue  text-foreground border-blue-500/25"
+    "under credit review": "bg-amber-500/20 text-amber-300 border-amber-500/30",
+    operations: "bg-sky-600/20 text-sky-400 border-sky-500/40",
+    "pendency in file": "bg-red-500/20 text-red-300 border-red-500/30",
+    "file send to banker": "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
+    hold: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
+    "to be approved": "bg-green-500/20 text-green-300 border-green-500/30",
+    "to be disbursed": "bg-purple-500/20 text-purple-300 border-purple-500/30",
+    approved: "bg-lime-500/20 text-lime-300 border-lime-500/30",
+    disbursed: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
+    rejected: "bg-red-600/20 text-red-400 border-red-600/30",
+    drop: "bg-orange-500/20 text-orange-300 border-orange-500/30",
+    submitted: "bg-blue-500/20 text-blue-400 border-blue-500/30"
 };
 
 export const STATUS_META: Record<string, { icon: JSX.Element }> = {
@@ -191,7 +195,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                     >
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2  text-muted-foreground text-sm">
-                                <DollarSign className="w-4 h-4" />
+                                <IndianRupee className="w-4 h-4" />
                                 <span>Loan Amount</span>
                             </div>
                             <p className=" text-foreground font-bold">{formatCurrency(application.applicationAmount)}</p>
@@ -642,29 +646,29 @@ export function TicketsTab() {
             {
                 title: 'Total Tickets',
                 value: total.toString(),
-                change: '+12%',
+                // change: '+12%',
                 icon: ClipboardList,
                 color: 'text-blue'
             },
             {
                 title: 'Under Credit Review',
                 value: underReview.toString(),
-                change: '+5%',
+                // change: '+5%',
                 icon: Clock,
                 color: 'text-yellow-400'
             },
             {
                 title: 'Approved',
                 value: approved.toString(),
-                change: '+18%',
+                // change: '+18%',
                 icon: CheckCircle,
                 color: 'text-green-400'
             },
             {
                 title: 'Disbursed',
                 value: disbursed.toString(),
-                change: '+22%',
-                icon: DollarSign,
+                // change: '+22%',
+                icon: IndianRupee,
                 color: 'text-purple-400'
             }
         ]
@@ -730,27 +734,6 @@ export function TicketsTab() {
 
     return (
         <div className="space-y-6">
-            {/* Header */}
-            {/* <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
-            >
-                <div>
-                    <h1 className="text-3xl font-bold  text-foreground"> Loan Applications </h1>
-                    <p className=" text-muted-foreground mt-1">Manage and track all loan </p>
-                </div>
-
-                <Button
-                    onClick={() => setIsMultiStepFormOpen(true)}
-                    className="bg-gradient-to-r from-blue to-cyan-500 hover:to-blue-700"
-                >
-                    <Plus className="w-4 h-4 mr-2" />
-                    New Application
-                </Button>
-            </motion.div> */}
-
             {/* Stats Cards */}
             {isTableLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -774,7 +757,7 @@ export function TicketsTab() {
                                         <div>
                                             <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
                                             <p className="text-2xl font-bold text-foreground mt-2">{stat.value}</p>
-                                            <p className="text-success text-sm mt-1">{stat.change} from last month</p>
+                                            {/* <p className="text-success text-sm mt-1">{stat.change} from last month</p> */}
                                         </div>
                                         <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-background/50 ${stat.color}`}>
                                             <stat.icon className="w-6 h-6" />
@@ -852,7 +835,7 @@ export function TicketsTab() {
                 <Card className="professional-card">
                     <CardHeader>
                         <div className="flex items-center justify-between">
-                            <div className={`h-12 rounded-lg flex items-center justify-center bg-background/50 text-blue`}>
+                            <div className={`h-12 rounded-lg flex items-center justify-center text-blue`}>
                                 <ClipboardList className="w-6 h-6 mr-3" />
                                 <div>
                                     <CardTitle className=" text-foreground mb-1">Tickets Overview</CardTitle>
@@ -964,77 +947,313 @@ export function TicketsTab() {
                 </Card>
             </motion.div>
 
-            {/* View Application Dialog */}
+            {/* View Ticket Dialog */}
             <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-                <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-border  text-foreground max-w-3xl rounded-xl shadow-2xl">
+                <DialogContent
+                    className="bg-background border border-border text-foreground max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl"
+                    onInteractOutside={(e) => e.preventDefault()}
+                    onEscapeKeyDown={(e) => e.preventDefault()}
+                >
+                    <DialogHeader className="border-b border-border/50 pb-4 flex justify-between items-center">
+                        <div>
+                            <DialogTitle className="text-2xl font-bold text-foreground">
+                                Ticket Details
+                            </DialogTitle>
+                            <DialogDescription className="text-muted-foreground text-sm">
+                                Complete information about this ticket
+                            </DialogDescription>
+                        </div>
+                        <button
+                            className="p-2 rounded hover:bg-muted transition absolute right-6 top-6"
+                            aria-label="Close"
+                            onClick={() => setIsViewDialogOpen(false)}
+                        >
+                            <X className="w-5 h-5 text-muted-foreground" />
+                        </button>
+                    </DialogHeader>
+
                     {selectedApplication && (
-                        <>
-                            <DialogHeader>
-                                <div className="flex items-start justify-between gap-4">
-                                    <div>
-                                        {/* <DialogTitle className="text-2xl font-bold  text-foreground bg-clip-text bg-gradient-to-r from-blue-400 to-cyan-300">
-                      {selectedApplication.product.name}
-                    </DialogTitle> */}
-                                        <DialogDescription className=" text-muted-foreground pt-1">
-                                            Detailed overview of the loan product from <span className="font-semibold text-cyan-300">{selectedApplication.applicationProvider}</span>
-                                        </DialogDescription>
+                        <div className="space-y-6 pt-4">
+                            {/* Status and Ticket ID Section */}
+                            <div className="flex gap-3 justify-between items-start flex-wrap">
+                                <div className="flex flex-wrap gap-2">
+                                    <Badge
+                                        className={`${STATUS_STYLE[pretty(selectedApplication.ticketStatus)]} border px-4 py-1.5 text-sm font-semibold`}
+                                    >
+                                        {pretty(selectedApplication.ticketStatus)}
+                                    </Badge>
+                                    <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 text-sm font-semibold">
+                                        Ticket #F2FIN-{selectedApplication.ticketId}
+                                    </Badge>
+                                    {selectedApplication.leadType && (
+                                        <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-4 py-1.5 text-sm font-semibold">
+                                            {selectedApplication.leadType}
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Customer Information Card */}
+                            <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                <h3 className="text-lg font-semibold mb-4 text-primary flex items-center gap-2">
+                                    <User className="w-5 h-5" />
+                                    Customer Information
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
+                                            <User className="w-4 h-4 text-blue-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-muted-foreground mb-1">Full Name</p>
+                                            <p className="text-foreground font-semibold">{selectedApplication.customerName}</p>
+                                        </div>
                                     </div>
-                                </div>
-                            </DialogHeader>
 
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setIsViewDialogOpen(false)}
-                                className="absolute top-4 right-4  text-muted-foreground hover: text-foreground hover:bg-muted rounded-full"
-                            >
-                                <X className="w-5 h-5" />
-                            </Button>
-                            <Badge className={`mt-1 flex items-center gap-1 ${STATUS_STYLE[pretty(selectedApplication.ticketStatus)]}`}>
-                                {getStatusIcon(selectedApplication.ticketStatus)}
-                                {pretty(selectedApplication.ticketStatus)}
-                            </Badge>
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-green-500/10 p-2 rounded-lg mt-1">
+                                            <Mail className="w-4 h-4 text-green-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-muted-foreground mb-1">Email Address</p>
+                                            <p className="text-foreground font-semibold break-all">{selectedApplication.customerEmail}</p>
+                                        </div>
+                                    </div>
 
-                            <div className="py-4 space-y-6">
-                                {/* Key Details */}
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                                    <InfoItem icon={User} color="text-yellow-400" label="Customer" value={selectedApplication.customerName} />
-                                    <InfoItem icon={DollarSign} color="text-green-400" label="Loan Amount" value={formatCurrency(selectedApplication.applicationAmount)} />
-                                    <InfoItem icon={Landmark} color="text-blue" label="Lender" value={selectedApplication.applicationProvider} />
-                                    {/* <InfoItem icon={Calendar} color="text-purple-400" label="Last Updated" value={new Date(selectedApplication.updatedAt).toLocaleDateString()} /> */}
-                                </div>
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-purple-500/10 p-2 rounded-lg mt-1">
+                                            <Phone className="w-4 h-4 text-purple-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-muted-foreground mb-1">Contact Number</p>
+                                            <p className="text-foreground font-semibold">{selectedApplication.customerContact}</p>
+                                        </div>
+                                    </div>
 
-                                {/* Loan & Commission */}
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
-                                    {/* <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><DollarSign className="w-5 h-5" />Application Details</h3>
-                                        <InfoLine icon={ClipboardList} color="text-yellow-400" label="Product Name" value={selectedApplication.product.name} />
-                                        <InfoLine icon={ClipboardList} color="text-blue" label="Loan Type" value={selectedApplication.product.productType.replace('_', ' ')} />
-                                         <InfoLine icon={Percent} color="text-green-400" label="Commission" value={`${selectedApplication.product.commissionPercent}%`} />
-                    <InfoLine icon={Percent} color="text-purple-400" label="Processing Fee" value={`${selectedApplication.product.processingFeePercent}%`} />
-                                    </div> */}
-
-                                    {/* Customer & Documents */}
-                                    <div className="space-y-4">
-                                        <h3 className="font-semibold text-lg text-cyan-300 mb-2 flex items-center gap-2"><Contact2Icon className="w-5 h-5" />Contact & Documents</h3>
-                                        <InfoLine icon={Mail} color="text-blue" label="Email" value={selectedApplication.customerEmail} />
-                                        <InfoLine icon={Phone} color="text-green-400" label="Phone" value={selectedApplication.customerContact} />
-                                        <div className="pt-2">
-                                            <h4 className="font-semibold text-cyan-300 mb-2 flex items-center gap-2"><ClipboardList className="w-5 h-5" />Documents</h4>
-                                            {(selectedApplication.documents || []).length > 0 ? (
-                                                <div className="flex flex-wrap gap-2">
-                                                    {selectedApplication.documents.map((doc: string, index: number) => (
-                                                        <Badge key={index} variant="outline" className="border-border  text-foreground">{doc}</Badge>
-                                                    ))}
-                                                </div>
-                                            ) : (
-                                                <p className="text-gray-500 italic">No documents submitted.</p>
-                                            )}
+                                    <div className="flex items-start gap-3">
+                                        <div className="bg-orange-500/10 p-2 rounded-lg mt-1">
+                                            <MapPin className="w-4 h-4 text-orange-400" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-xs text-muted-foreground mb-1">Location</p>
+                                            <p className="text-foreground font-semibold capitalize">
+                                                {selectedApplication.customerLocation}, {selectedApplication.customerState}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </>
+
+                            {/* Loan Details Card */}
+                            <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                <h3 className="text-lg font-semibold mb-4 text-green-400 flex items-center gap-2">
+                                    <IndianRupee className="w-5 h-5" />
+                                    Loan Details
+                                </h3>
+                                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                                    <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                                        <p className="text-xs text-muted-foreground mb-2">Application Amount</p>
+                                        <p className="text-xl font-bold text-primary">{formatCurrency(selectedApplication.applicationAmount)}</p>
+                                    </div>
+
+                                    <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Loan Type</p>
+                                        <p className="text-xl font-bold text-cyan-400 capitalize">{pretty(selectedApplication.loanType)}</p>
+                                    </div>
+
+                                    <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Loan Category</p>
+                                        <p className="text-xl font-bold text-purple-400 capitalize">{selectedApplication.loanCategory}</p>
+                                    </div>
+
+                                    <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Tenure</p>
+                                        <p className="text-xl font-bold text-amber-400">{selectedApplication.applicationTenure} Years</p>
+                                    </div>
+
+                                    <div className="bg-background/50 rounded-lg p-4 border border-border/50 md:col-span-2">
+                                        <p className="text-xs text-muted-foreground mb-2">Provider</p>
+                                        <p className="text-xl font-bold text-emerald-400">{selectedApplication.applicationProvider}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Approval & Disbursement Details Card */}
+                            {(selectedApplication.approvedAmount || selectedApplication.disbursedAmount || selectedApplication.approvedAt || selectedApplication.disbursedAt) && (
+                                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                    <h3 className="text-lg font-semibold mb-4 text-emerald-400 flex items-center gap-2">
+                                        <BadgeCheck className="w-5 h-5" />
+                                        Approval & Disbursement Details
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                        {selectedApplication.approvedAt && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-green-500/10 p-2 rounded-lg mt-1">
+                                                    <Calendar className="w-4 h-4 text-green-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-muted-foreground mb-1">Approved Date</p>
+                                                    <p className="text-foreground font-semibold">
+                                                        {new Date(selectedApplication.approvedAt).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {selectedApplication.approvedAmount && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-lime-500/10 p-2 rounded-lg mt-1">
+                                                    <IndianRupee className="w-4 h-4 text-lime-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-muted-foreground mb-1">Approved Amount</p>
+                                                    <p className="text-foreground font-semibold">{formatCurrency(selectedApplication.approvedAmount)}</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {selectedApplication.approvedCashbackAmount && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-yellow-500/10 p-2 rounded-lg mt-1">
+                                                    <TrendingUp className="w-4 h-4 text-yellow-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-muted-foreground mb-1">Approved Cashback</p>
+                                                    <p className="text-foreground font-semibold">{formatCurrency(selectedApplication.approvedCashbackAmount)}</p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {selectedApplication.disbursedAt && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-cyan-500/10 p-2 rounded-lg mt-1">
+                                                    <Calendar className="w-4 h-4 text-cyan-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-muted-foreground mb-1">Disbursed Date</p>
+                                                    <p className="text-foreground font-semibold">
+                                                        {new Date(selectedApplication.disbursedAt).toLocaleDateString('en-US', {
+                                                            year: 'numeric',
+                                                            month: 'short',
+                                                            day: 'numeric'
+                                                        })}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {selectedApplication.disbursedAmount && (
+                                            <div className="flex items-start gap-3">
+                                                <div className="bg-emerald-500/10 p-2 rounded-lg mt-1">
+                                                    <IndianRupee className="w-4 h-4 text-emerald-400" />
+                                                </div>
+                                                <div className="flex-1">
+                                                    <p className="text-xs text-muted-foreground mb-1">Disbursed Amount</p>
+                                                    <p className="text-foreground font-semibold">{formatCurrency(selectedApplication.disbursedAmount)}</p>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Ticket Timeline Card */}
+                            <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                <h3 className="text-lg font-semibold mb-4 text-cyan-400 flex items-center gap-2">
+                                    <Clock className="w-5 h-5" />
+                                    Ticket Timeline
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="flex items-center gap-3 bg-muted/50 p-4 rounded-lg border border-border">
+                                        <Calendar className="w-5 h-5 text-primary" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Created At</p>
+                                            <p className="text-foreground font-semibold text-sm">
+                                                {new Date(selectedApplication.createdAt).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric',
+                                                    hour: '2-digit',
+                                                    minute: '2-digit'
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 bg-background/50 p-4 rounded-lg border border-border/30">
+                                        <Calendar className="w-5 h-5 text-green-400" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Application Date</p>
+                                            <p className="text-foreground font-semibold text-sm">
+                                                {new Date(selectedApplication.applicationDate).toLocaleDateString('en-US', {
+                                                    year: 'numeric',
+                                                    month: 'short',
+                                                    day: 'numeric'
+                                                })}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 bg-background/50 p-4 rounded-lg border border-border/30">
+                                        <BadgeCheck className="w-5 h-5 text-amber-400" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Ticket Status</p>
+                                            <p className="text-foreground font-semibold text-sm capitalize">
+                                                {pretty(selectedApplication.ticketStatus)}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-3 bg-background/50 p-4 rounded-lg border border-border/30">
+                                        <FileText className="w-5 h-5 text-purple-400" />
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Loan Status</p>
+                                            <p className="text-foreground font-semibold text-sm capitalize">
+                                                {pretty(selectedApplication.loanStatus)}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* System Information Card */}
+                            <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                <h3 className="text-lg font-semibold mb-4 text-amber-400 flex items-center gap-2">
+                                    <FileText className="w-5 h-5" />
+                                    System Information
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Ticket ID</p>
+                                        <p className="text-foreground font-semibold font-mono">F2FIN-{selectedApplication.ticketId}</p>
+                                    </div>
+
+                                    <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Application ID</p>
+                                        <p className="text-foreground font-semibold font-mono">{selectedApplication.applicationId}</p>
+                                    </div>
+
+                                    <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Customer ID</p>
+                                        <p className="text-foreground font-semibold font-mono">{selectedApplication.customerId}</p>
+                                    </div>
+
+                                    <div className="bg-muted/30 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">User ID</p>
+                                        <p className="text-foreground font-semibold font-mono">{selectedApplication.user_id}</p>
+                                    </div>
+
+                                    <div className="bg-muted/30 rounded-lg p-4 border border-border/50 md:col-span-2">
+                                        <p className="text-xs text-muted-foreground mb-2">Company ID</p>
+                                        <p className="text-foreground font-semibold font-mono">{selectedApplication.companyId}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     )}
                 </DialogContent>
             </Dialog>
