@@ -20,6 +20,7 @@ import { Step4Form } from './Step4Form';
 import { Step1FormData, Step4FormData } from './validation';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyId } from '@/lib/http-client';
+import { decodeJwt, getCookie } from '@/lib/utils';
 
 interface MultiStepFormDialogProps {
     open: boolean;
@@ -59,6 +60,10 @@ export const MultiStepFormContent: React.FC<{
     const [completedSteps, setCompletedSteps] = useState<number[]>([]);
     const [skippedSteps, setSkippedSteps] = useState<number[]>([])
     const [showStep0, setShowStep0] = useState(true);
+
+    const token = getCookie("token")
+    const decoded = decodeJwt(token)
+    const isOmsEnabled = decoded?.isOmsEnabled ?? false
 
     const companyId =
         typeof window !== 'undefined'
@@ -262,11 +267,26 @@ export const MultiStepFormContent: React.FC<{
                     provider,
                     loan_type: formData.loanType,
                     loan_category: formData.loanCategory,
+                    lead_type: formData.leadType,
+                    is_picked: isOmsEnabled ? 0 : 1
                 };
 
                 const applicationId = await createApplication(applicationData);
                 await createLoanTracking(applicationId);
                 appNumbers.push(appNumber);
+
+                // Create ticket only if OMS is NOT enabled
+                if (!isOmsEnabled) {
+                    await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/create-ticket`, {
+                        method: 'POST',
+                        headers: commonHeaders,
+                        body: JSON.stringify({
+                            customer_application_id: applicationId,
+                            user_id: companyId,
+                            status: "operations",
+                        }),
+                    });
+                }
             }
 
             setApplicationNumber(appNumbers[0]);

@@ -118,7 +118,7 @@ export function AddAggregatorDialog({
                 role: "AGGREGATOR_ADMIN",
                 // Aggregator Profile Fields
                 companyName: data.companyName,
-                // isOmsEnabled: data.isOmsEnabled,
+                isOmsEnabled: true,
             };
 
             const res = await registerMutation.mutateAsync(payload);

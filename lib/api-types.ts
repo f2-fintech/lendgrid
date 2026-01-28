@@ -64,14 +64,15 @@ export enum Status {
 }
 
 export enum ApplicationStatus {
-  UNDER_CREDIT_REVIEW = 'under_credit_review',
+  UNDER_CREDIT_REVIEW = 'under credit review',
   OPERATIONS = 'operations',
-  PENDENCY_IN_FILE = 'pendency_in_file',
-  FILE_SEND_TO_BANKER = 'file_send_to_banker',
-  TO_BE_APPROVED = 'to_be_approved',
+  PENDENCY_IN_FILE = 'pendency in file',
+  FILE_SEND_TO_BANKER = 'file send to banker',
+  TO_BE_APPROVED = 'to be approved',
+  TO_BE_DISBURSED = 'to be disbursed',
   APPROVED = 'approved',
-  TO_BE_DISBURSED = 'to_be_disbursed',
   DISBURSED = 'disbursed',
+  CARRY_FORWARD = 'carry forward',
   REJECTED = 'rejected',
   DROP = 'drop',
   HOLD = 'hold',

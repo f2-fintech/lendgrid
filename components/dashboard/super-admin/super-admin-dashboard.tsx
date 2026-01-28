@@ -62,12 +62,6 @@ export function SuperAdminDashboard() {
     limit: 5
   })
 
-  // Fetch all applications count
-  const { data: allAppsData } = useApplicationsRest({
-    page: 1,
-    limit: 1
-  })
-
   // Fetch commission transactions
   const { data: commissionsData, isLoading: commissionsLoading } = useCommissionTransactions({
     page: 1,
@@ -84,7 +78,7 @@ export function SuperAdminDashboard() {
   // Calculate metrics
   const metrics = useMemo(() => {
     const aggregators = aggregatorsData?.results || []
-    const totalApplications = allAppsData?.count || 0
+    const totalApplications = applicationsData?.count || 0
 
     let totalCommissionEarned = 0
     let totalCommissionPaid = 0
@@ -117,7 +111,7 @@ export function SuperAdminDashboard() {
         ? (rulesData.data.reduce((sum, r) => sum + r.commissionRate, 0) / rulesData.data.length).toFixed(2)
         : '0'
     }
-  }, [aggregatorsData, allAppsData, commissionsData, rulesData])
+  }, [aggregatorsData, applicationsData, commissionsData, rulesData])
 
   const chartData = useMemo(() => {
     return disbursedByMonth.map((item) => ({

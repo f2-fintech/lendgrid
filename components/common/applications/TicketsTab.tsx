@@ -52,12 +52,14 @@ import {
     SelectValue
 } from '@/components/ui/select'
 
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { CardSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import { TablePagination } from '@/components/ui/pagination'
 import { useAuth } from '@/lib/auth'
 import { ApplicationStatus } from '@/lib'
-import { cn, formatDateIndian } from '@/lib/utils'
+import { cn, decodeJwt, formatDateIndian, getCookie } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { useGetTickets } from '@/hooks/use-tickets-rest'
 import { TicketHistoryData, useGetTicketHistory } from '@/hooks/use-ticket-histories-rest'
@@ -122,9 +124,10 @@ interface ApplicationCardProps {
     onDelete: () => void;
     onStatusClick: () => void;
     formatCurrency: (amount: number) => string;
+    isOmsEnabled: boolean;
 }
 
-const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatCurrency }: ApplicationCardProps) => {
+const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationCardProps) => {
     // State to toggle between details and history
     const [showHistory, setShowHistory] = useState(false);
 
@@ -222,13 +225,20 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                         {/* CARD ACTIONS SECTION - Status Badge & Action Buttons */}
                         <div className="space-y-3 pt-4 border-t border-border">
                             {/* Status Badge - Clickable with hover effect */}
-                            <div
-                                //onClick={onStatusClick}
-                                className={`w-full cursor-pointer rounded-lg transition-all duration-200 hover:scale-[1.02] ${STATUS_STYLE[pretty(application.ticketStatus)]} p-3 flex items-center justify-center gap-2`}
-                            >
-                                {getStatusIcon(application.ticketStatus)}
-                                <span className="capitalize font-medium">{pretty(application.ticketStatus)}</span>
-                            </div>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <div
+                                        onClick={isOmsEnabled ? undefined : onStatusClick}
+                                        className={`w-full ${isOmsEnabled ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'} rounded-lg transition-all duration-200 ${!isOmsEnabled && 'hover:scale-[1.02]'} ${STATUS_STYLE[pretty(application.ticketStatus)]} p-3 flex items-center justify-center gap-2`}
+                                    >
+                                        {getStatusIcon(application.ticketStatus)}
+                                        <span className="capitalize font-medium">{pretty(application.ticketStatus)}</span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {isOmsEnabled ? "Status managed by OMS" : "Click here to change status"}
+                                </TooltipContent>
+                            </Tooltip>
 
                             {/* Action Buttons - View, Delete & History */}
                             <div className="grid grid-cols-2 gap-2 ">
@@ -368,9 +378,10 @@ interface ApplicationTableRowProps {
     onDelete: () => void;
     onStatusClick: () => void;
     formatCurrency: (amount: number) => string;
+    isOmsEnabled: boolean;
 }
 
-const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusClick, formatCurrency }: ApplicationTableRowProps) => {
+const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationTableRowProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Fetch ticket history only when expanded
@@ -429,16 +440,24 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                     </div>
                 </TableCell>
                 <TableCell>
-                    <Badge
-                        // onClick={onStatusClick}
-                        className={cn(
-                            "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border",
-                            STATUS_STYLE[pretty(application.ticketStatus)]
-                        )}
-                    >
-                        {getStatusIcon(application.ticketStatus)}
-                        <span className="capitalize">{pretty(application.ticketStatus)}</span>
-                    </Badge>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Badge
+                                onClick={isOmsEnabled ? undefined : onStatusClick}
+                                className={cn(
+                                    "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border",
+                                    STATUS_STYLE[pretty(application.ticketStatus)],
+                                    isOmsEnabled ? "cursor-not-allowed opacity-80" : "cursor-pointer"
+                                )}
+                            >
+                                {getStatusIcon(application.ticketStatus)}
+                                <span className="capitalize">{pretty(application.ticketStatus)}</span>
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                            {isOmsEnabled ? "Status managed by OMS" : "Click here to change status"}
+                        </TooltipContent>
+                    </Tooltip>
                 </TableCell>
                 <TableCell className="text-center">
                     <div className="inline-flex items-center gap-1.5 bg-background/60 border-border rounded-lg px-2 py-1">
@@ -569,9 +588,10 @@ interface ApplicationsGridProps {
     onDelete: (id: number) => void;
     onStatusClick: (app: any) => void;
     formatCurrency: (amount: number) => string;
+    isOmsEnabled: boolean;
 }
 
-const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusClick, formatCurrency }: ApplicationsGridProps) => {
+const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -601,6 +621,7 @@ const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusCl
                     onDelete={() => onDelete(ticket.ticketId)}
                     onStatusClick={() => onStatusClick(ticket)}
                     formatCurrency={formatCurrency}
+                    isOmsEnabled={isOmsEnabled}
                 />
             ))}
         </div>
@@ -608,9 +629,6 @@ const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusCl
 };
 
 export function TicketsTab() {
-    const { user } = useAuth('aggregator_admin')
-    const { toast } = useToast()
-
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('')
@@ -623,10 +641,27 @@ export function TicketsTab() {
     const [pageSize, setPageSize] = useState(10)
     const tableTopRef = useRef<HTMLDivElement | null>(null)
 
+    // For status update popup
+    const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
+    const [statusComment, setStatusComment] = useState("");
+    const [oldStatus, setOldStatus] = useState("");
+    const [newStatus, setNewStatus] = useState("");
+    const [approvedAmount, setApprovedAmount] = useState<number | undefined>();
+    const [disbursedAmount, setDisbursedAmount] = useState<number | undefined>();
+    const [approvedDate, setApprovedDate] = useState<string | undefined>();
+    const [disbursedDate, setDisbursedDate] = useState<string | undefined>();
+
+    const { user } = useAuth('aggregator_admin')
+    const { toast } = useToast()
+    const token = getCookie("token")
+    const decoded = decodeJwt(token)
+    const isOmsEnabled = decoded?.isOmsEnabled ?? false
+
     // Fetch tickets New (REST + SWR), using f2fintech-admin-server api
     const {
         value: ticketsData,
-        swrLoading: isTableLoading
+        swrLoading: isTableLoading,
+        refetch
     } = useGetTickets(
         '/get-all-tickets',
         page,
@@ -720,6 +755,66 @@ export function TicketsTab() {
         // }
     }
 
+    const handleStatusUpdate = async () => {
+        try {
+            if (!selectedApplication) return;
+
+            const payload: any = {
+                id: selectedApplication.tickedId,
+                status: newStatus,
+                // action: `${user?.username} changed Application Status from ${pretty(oldStatus)} to ${pretty(newStatus)}`,
+                // comment: statusComment
+            };
+
+            if (newStatus === ApplicationStatus.APPROVED) {
+                payload.approved_amount = approvedAmount;
+                payload.approved_at = approvedDate ? new Date(approvedDate) : undefined;
+            }
+            if (newStatus === ApplicationStatus.DISBURSED) {
+                payload.disbursed_amount = disbursedAmount;
+                payload.disbursed_at = disbursedDate ? new Date(disbursedDate) : undefined;
+            }
+            console.log(payload, 'this is paylod of disburse')
+            // Create ticket only if OMS is NOT enabled
+            await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/update-ticket/${selectedApplication.ticketId}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'companyid': selectedApplication.companyId,
+                },
+                body: JSON.stringify(payload),
+            });
+
+
+
+            toast({
+                title: "Status Updated",
+                description: "Application status updated successfully."
+            });
+
+            setIsStatusDialogOpen(false);
+            refetch();
+        } catch (error: any) {
+            toast({
+                title: "Error",
+                description: error.message || "Failed to update status",
+                variant: "destructive"
+            });
+        }
+    };
+
+    const handleStatusClick = (application: any) => {
+        setSelectedApplication(application);
+        setOldStatus(application.status);
+        setNewStatus(application.status);
+        setStatusComment("");
+        setApprovedAmount(application.approvedAmount);
+        setDisbursedAmount(application.disbursedAmount);
+        setApprovedDate(application.approvedDate ? new Date(application.approvedDate).toISOString().split('T')[0] : undefined);
+        setDisbursedDate(application.disbursedDate ? new Date(application.disbursedDate).toISOString().split('T')[0] : undefined);
+        setIsStatusDialogOpen(true);
+    };
+
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
             style: 'currency',
@@ -727,10 +822,6 @@ export function TicketsTab() {
             minimumFractionDigits: 0
         }).format(amount)
     }
-
-    const handleStatusClick = (application: any) => {
-        setSelectedApplication(application);
-    };
 
     return (
         <div className="space-y-6">
@@ -915,6 +1006,7 @@ export function TicketsTab() {
                                                     onDelete={() => handleDelete(ticket.ticketId)}
                                                     onStatusClick={() => handleStatusClick(ticket)}
                                                     formatCurrency={formatCurrency}
+                                                    isOmsEnabled={isOmsEnabled}
                                                 />
                                             ))}
                                         </TableBody>
@@ -933,6 +1025,7 @@ export function TicketsTab() {
                                 onDelete={handleDelete}
                                 onStatusClick={handleStatusClick}
                                 formatCurrency={formatCurrency}
+                                isOmsEnabled={isOmsEnabled}
                             />
                         )}
                         <TablePagination
@@ -1255,6 +1348,135 @@ export function TicketsTab() {
                             </div>
                         </div>
                     )}
+                </DialogContent>
+            </Dialog>
+
+            {/* Status Change Dialog */}
+            <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
+                <DialogContent className="bg-background border-border max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className=" text-foreground">Update Application Status</DialogTitle>
+                        <DialogDescription className=" text-muted-foreground">
+                            Choose a new status and enter a comment.
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {/* Status Select */}
+                    <div className="space-y-4">
+                        <div>
+                            <Label className=" text-foreground">Select Status</Label>
+
+                            <Select value={newStatus} onValueChange={setNewStatus}>
+                                <SelectTrigger className="bg-card border border-border  text-foreground">
+                                    <SelectValue placeholder="Select status" />
+                                </SelectTrigger>
+
+                                <SelectContent className="bg-background border-border  text-foreground">
+                                    {Object.values(ApplicationStatus).map((status) => {
+                                        const key = pretty(status);
+                                        return (
+                                            <SelectItem key={status} value={status}>
+                                                <div className="flex items-center gap-2">
+                                                    {/* Dot */}
+                                                    <span
+                                                        className="w-3 h-3 rounded-full inline-block"
+                                                        style={{
+                                                            backgroundColor: STATUS_STYLE[key]?.split(" ")[0]?.replace("bg-", "").replace("/20", "")
+                                                        }}
+                                                    />
+                                                    {/* Icon */}
+                                                    {STATUS_META[key]?.icon}
+                                                    {/* Label */}
+                                                    {key}
+                                                </div>
+                                            </SelectItem>
+                                        );
+                                    })}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        {/* Conditional Amount & Date Fields */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {newStatus === ApplicationStatus.APPROVED && (
+                                <>
+                                    <div>
+                                        <Label className=" text-foreground">Approved Amount</Label>
+                                        <Input
+                                            type="number"
+                                            value={approvedAmount || ''}
+                                            onChange={(e) => setApprovedAmount(Number(e.target.value))}
+                                            className="bg-card border-border  text-foreground mt-2"
+                                            placeholder="Enter approved amount"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className=" text-foreground">Approved Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={approvedDate || ''}
+                                            onChange={(e) => setApprovedDate(e.target.value)}
+                                            className="bg-card border-border  text-foreground mt-2"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                            {newStatus === ApplicationStatus.DISBURSED && (
+                                <>
+                                    <div>
+                                        <Label className=" text-foreground">Disbursed Amount</Label>
+                                        <Input
+                                            type="number"
+                                            value={disbursedAmount || ''}
+                                            onChange={(e) => setDisbursedAmount(Number(e.target.value))}
+                                            className="bg-card border-border  text-foreground mt-2"
+                                            placeholder="Enter disbursed amount"
+                                        />
+                                    </div>
+                                    <div>
+                                        <Label className=" text-foreground">Disbursed Date</Label>
+                                        <Input
+                                            type="date"
+                                            value={disbursedDate || ''}
+                                            onChange={(e) => setDisbursedDate(e.target.value)}
+                                            className="bg-card border-border  text-foreground mt-2"
+                                        />
+                                    </div>
+                                </>
+                            )}
+                        </div>
+
+                        {/* Comment */}
+                        <div>
+                            <Label className=" text-foreground">Comment (required*)</Label>
+                            <Textarea
+                                value={statusComment}
+                                rows={4}
+                                onChange={(e) => setStatusComment(e.target.value)}
+                                className="bg-card border-border  text-foreground mt-2"
+                                placeholder="Why is the status being changed?"
+                            />
+                        </div>
+                    </div>
+
+                    {/* Footer */}
+                    <div className="flex justify-end gap-3 pt-4">
+                        <Button
+                            variant="outline"
+                            onClick={() => setIsStatusDialogOpen(false)}
+                            className="border-border  text-foreground hover:bg-card"
+                        >
+                            Cancel
+                        </Button>
+
+                        <Button
+                            disabled={!statusComment}
+                            onClick={handleStatusUpdate}
+                            className="bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground disabled:opacity-40"
+                        >
+                            Save
+                        </Button>
+                    </div>
                 </DialogContent>
             </Dialog>
         </div>

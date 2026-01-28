@@ -64,7 +64,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useCreateApplication, useUpdateApplication } from '@/hooks/use-applications'
 import { ApplicationStatus } from '@/lib'
 import { useApplicationsRest } from '@/hooks/use-applications-rest'
-import { cn } from '@/lib/utils'
+import { cn, decodeJwt, getCookie } from '@/lib/utils'
 
 export const pretty = (v: string) => v?.toLowerCase()?.replace(/_/g, " ");
 
@@ -124,11 +124,11 @@ interface ApplicationCardProps {
     application: any;
     onView: () => void;
     onDelete: () => void;
-    onStatusClick: () => void;
     formatCurrency: (amount: number) => string;
+    isOmsEnabled: boolean;
 }
 
-const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatCurrency }: ApplicationCardProps) => {
+const ApplicationCard = ({ application, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationCardProps) => {
     // State to toggle between details and history
     const [showHistory, setShowHistory] = useState(false);
 
@@ -217,13 +217,19 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                         {/* CARD ACTIONS SECTION - Status Badge & Action Buttons */}
                         <div className="space-y-3 pt-4 border-t border-border">
                             {/* Status Badge - Clickable with hover effect */}
-                            <div
-                                //onClick={onStatusClick}
-                                className={`w-full cursor-pointer rounded-lg transition-all duration-200 hover:scale-[1.02] ${STATUS_STYLE[pretty(application.loanStatus)]} p-3 flex items-center justify-center gap-2`}
-                            >
-                                {getStatusIcon(application.loanStatus)}
-                                <span className="capitalize font-medium">{pretty(application.loanStatus)}</span>
-                            </div>
+                            <Tooltip>
+                                <TooltipTrigger>
+                                    <div
+                                        className={`w-full ${isOmsEnabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} rounded-lg transition-all duration-200 ${!isOmsEnabled && 'hover:scale-[1.02]'} ${STATUS_STYLE[pretty(application.loanStatus)]} p-3 flex items-center justify-center gap-2`}
+                                    >
+                                        {getStatusIcon(application.loanStatus)}
+                                        <span className="capitalize font-medium">{pretty(application.loanStatus)}</span>
+                                    </div>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                    {isOmsEnabled ? "Status managed by OMS" : ""}
+                                </TooltipContent>
+                            </Tooltip>
 
                             {/* Action Buttons - View, Delete & History */}
                             <div className="grid grid-cols-2 gap-2 ">
@@ -247,7 +253,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                   Delete
                 </Button> */}
 
-                                <Button
+                                {/* <Button
                                     onClick={() => setShowHistory(true)}
                                     variant="outline"
                                     size="sm"
@@ -255,7 +261,7 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                 >
                                     <Clock className="w-4 h-4 mr-1" />
                                     History
-                                </Button>
+                                </Button> */}
                             </div>
                         </div>
                     </motion.div>
@@ -363,11 +369,11 @@ interface ApplicationTableRowProps {
     index: number;
     onView: () => void;
     onDelete: () => void;
-    onStatusClick: () => void;
     formatCurrency: (amount: number) => string;
+    isOmsEnabled: boolean;
 }
 
-const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusClick, formatCurrency }: ApplicationTableRowProps) => {
+const ApplicationTableRow = ({ application, index, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationTableRowProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
@@ -411,18 +417,20 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                     </div>
                 </TableCell>
                 <TableCell>
-                    {/* <Tooltip>
-            <TooltipTrigger> */}
-                    <Badge
-                        // onClick={onStatusClick}
-                        className={cn(
-                            "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border",
-                            STATUS_STYLE[pretty(application.loanStatus)]
-                        )}
-                    >
-                        {getStatusIcon(application.loanStatus)}
-                        <span className="capitalize">{pretty(application.loanStatus)}</span>
-                    </Badge>
+                    <Tooltip>
+                        <TooltipTrigger>
+                            <Badge
+                                className={cn(
+                                    `inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${isOmsEnabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`,
+                                    STATUS_STYLE[pretty(application.loanStatus)]
+                                )}
+                            >
+                                {getStatusIcon(application.loanStatus)}
+                                <span className="capitalize">{pretty(application.loanStatus)}</span>
+                            </Badge>
+                        </TooltipTrigger>
+                        <TooltipContent>Status Managed By OMS</TooltipContent>
+                    </Tooltip>
                 </TableCell>
                 <TableCell className=" text-muted-foreground">
                     {application.applicationDate}
@@ -460,11 +468,11 @@ interface ApplicationsGridProps {
     isLoading: boolean;
     onView: (app: any) => void;
     onDelete: (id: string) => void;
-    onStatusClick: (app: any) => void;
     formatCurrency: (amount: number) => string;
+    isOmsEnabled: boolean;
 }
 
-const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, onStatusClick, formatCurrency }: ApplicationsGridProps) => {
+const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -492,8 +500,8 @@ const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, onStatusC
                     application={application}
                     onView={() => onView(application)}
                     onDelete={() => onDelete(application.applicationId)}
-                    onStatusClick={() => onStatusClick(application)}
                     formatCurrency={formatCurrency}
+                    isOmsEnabled={isOmsEnabled}
                 />
             ))}
         </div>
@@ -501,9 +509,6 @@ const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, onStatusC
 };
 
 export function AggregatorApplications() {
-    const { user } = useAuth('aggregator_admin')
-    const { toast } = useToast()
-
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
     const [searchTerm, setSearchTerm] = useState('')
     const [filterLender, setFilterLender] = useState('')
@@ -514,15 +519,11 @@ export function AggregatorApplications() {
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
-    // For status update popup
-    const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false);
-    const [statusComment, setStatusComment] = useState("");
-    const [oldStatus, setOldStatus] = useState("");
-    const [newStatus, setNewStatus] = useState("");
-    const [approvedAmount, setApprovedAmount] = useState<number | undefined>();
-    const [disbursedAmount, setDisbursedAmount] = useState<number | undefined>();
-    const [approvedDate, setApprovedDate] = useState<string | undefined>();
-    const [disbursedDate, setDisbursedDate] = useState<string | undefined>();
+    const { user } = useAuth('aggregator_admin')
+    const { toast } = useToast()
+    const token = getCookie("token")
+    const decoded = decodeJwt(token)
+    const isOmsEnabled = decoded?.isOmsEnabled ?? false
 
     const [form, setForm] = useState({
         customerName: '',
@@ -644,47 +645,6 @@ export function AggregatorApplications() {
         // }
     }
 
-    const handleStatusUpdate = async () => {
-        try {
-            if (!selectedApplication) return;
-
-            // const payload: any = {
-            //   id: selectedApplication._id,
-            //   status: newStatus?.toUpperCase(),
-            //   action: `${user?.username} changed Application Status from ${pretty(oldStatus)} to ${pretty(newStatus)}`,
-            //   comment: statusComment
-            // };
-
-            // if (newStatus === ApplicationStatus.APPROVED) {
-            //   payload.approvedAmount = approvedAmount;
-            //   payload.approvedDate = approvedDate ? new Date(approvedDate) : undefined;
-            // }
-            // if (newStatus === ApplicationStatus.DISBURSED) {
-            //   payload.disbursedAmount = disbursedAmount;
-            //   payload.disbursedDate = disbursedDate ? new Date(disbursedDate) : undefined;
-            // }
-
-            // console.log("STATUS UPDATE PAYLOAD", payload);
-            // await updateApplicationMutation.mutateAsync({
-            //   id: selectedApplication._id,
-            //   payload
-            // });
-
-            // toast({
-            //   title: "Status Updated",
-            //   description: "Application status updated successfully."
-            // });
-
-            // setIsStatusDialogOpen(false);
-            // refetch();
-        } catch (error: any) {
-            toast({
-                title: "Error",
-                description: error.message || "Failed to update status",
-                variant: "destructive"
-            });
-        }
-    };
 
     const formatCurrency = (amount: number) => {
         return new Intl.NumberFormat('en-IN', {
@@ -693,18 +653,6 @@ export function AggregatorApplications() {
             minimumFractionDigits: 0
         }).format(amount)
     }
-
-    const handleStatusClick = (application: any) => {
-        setSelectedApplication(application);
-        setOldStatus(application.status);
-        setNewStatus(application.status);
-        setStatusComment("");
-        setApprovedAmount(application.approvedAmount);
-        setDisbursedAmount(application.disbursedAmount);
-        setApprovedDate(application.approvedDate ? new Date(application.approvedDate).toISOString().split('T')[0] : undefined);
-        setDisbursedDate(application.disbursedDate ? new Date(application.disbursedDate).toISOString().split('T')[0] : undefined);
-        setIsStatusDialogOpen(true);
-    };
 
     return (
         <div className="space-y-6">
@@ -749,7 +697,7 @@ export function AggregatorApplications() {
                             <div className={`h-12 rounded-lg flex items-center justify-center text-blue`}>
                                 <FileText className="w-6 h-6 mr-3" />
                                 <div>
-                                    <CardTitle className="text-foreground mb-1">Fresh Applications</CardTitle>
+                                    <CardTitle className="text-foreground mb-1"> {isOmsEnabled ? 'Fresh Applications' : 'Loan Applications'}</CardTitle>
                                     <CardDescription className="text-muted-foreground">
                                         Track and manage loan applications
                                     </CardDescription>
@@ -759,7 +707,7 @@ export function AggregatorApplications() {
                             <div className="flex items-center gap-3 bg-background/50 rounded-lg p-1">
                                 <Button
                                     onClick={() => router.push('/aggregator/applications/new')}
-                                    className="bg-gradient-to-r from-blue to-cyan-500 hover:from-blue-600 hover:to-cyan-700"
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
                                 >
                                     <Plus className="w-4 h-4 mr-2" />
                                     Create New Application
@@ -833,8 +781,8 @@ export function AggregatorApplications() {
                                                         setIsViewDialogOpen(true)
                                                     }}
                                                     onDelete={() => handleDelete(application.applicationId)}
-                                                    onStatusClick={() => handleStatusClick(application)}
                                                     formatCurrency={formatCurrency}
+                                                    isOmsEnabled={isOmsEnabled}
                                                 />
                                             ))}
                                         </TableBody>
@@ -851,8 +799,8 @@ export function AggregatorApplications() {
                                     setIsViewDialogOpen(true);
                                 }}
                                 onDelete={handleDelete}
-                                onStatusClick={handleStatusClick}
                                 formatCurrency={formatCurrency}
+                                isOmsEnabled={isOmsEnabled}
                             />
                         )}
                         <TablePagination
@@ -1078,135 +1026,6 @@ export function AggregatorApplications() {
                             </div>
                         </>
                     )}
-                </DialogContent>
-            </Dialog>
-
-            {/* Status Change Dialog, not using now */}
-            <Dialog open={isStatusDialogOpen} onOpenChange={setIsStatusDialogOpen}>
-                <DialogContent className="bg-background border-border max-w-md">
-                    <DialogHeader>
-                        <DialogTitle className=" text-foreground">Update Application Status</DialogTitle>
-                        <DialogDescription className=" text-muted-foreground">
-                            Choose a new status and enter a comment.
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    {/* Status Select */}
-                    <div className="space-y-4">
-                        <div>
-                            <Label className=" text-foreground">Select Status</Label>
-
-                            <Select value={newStatus} onValueChange={setNewStatus}>
-                                <SelectTrigger className="bg-card border border-border  text-foreground">
-                                    <SelectValue placeholder="Select status" />
-                                </SelectTrigger>
-
-                                <SelectContent className="bg-background border-border  text-foreground">
-                                    {Object.values(ApplicationStatus).map((status) => {
-                                        const key = pretty(status);
-                                        return (
-                                            <SelectItem key={status} value={status}>
-                                                <div className="flex items-center gap-2">
-                                                    {/* Dot */}
-                                                    <span
-                                                        className="w-3 h-3 rounded-full inline-block"
-                                                        style={{
-                                                            backgroundColor: STATUS_STYLE[key]?.split(" ")[0]?.replace("bg-", "").replace("/20", "")
-                                                        }}
-                                                    />
-                                                    {/* Icon */}
-                                                    {STATUS_META[key]?.icon}
-                                                    {/* Label */}
-                                                    {key}
-                                                </div>
-                                            </SelectItem>
-                                        );
-                                    })}
-                                </SelectContent>
-                            </Select>
-                        </div>
-
-                        {/* Conditional Amount & Date Fields */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {newStatus === ApplicationStatus.APPROVED && (
-                                <>
-                                    <div>
-                                        <Label className=" text-foreground">Approved Amount</Label>
-                                        <Input
-                                            type="number"
-                                            value={approvedAmount || ''}
-                                            onChange={(e) => setApprovedAmount(Number(e.target.value))}
-                                            className="bg-card border-border  text-foreground mt-2"
-                                            placeholder="Enter approved amount"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label className=" text-foreground">Approved Date</Label>
-                                        <Input
-                                            type="date"
-                                            value={approvedDate || ''}
-                                            onChange={(e) => setApprovedDate(e.target.value)}
-                                            className="bg-card border-border  text-foreground mt-2"
-                                        />
-                                    </div>
-                                </>
-                            )}
-                            {newStatus === ApplicationStatus.DISBURSED && (
-                                <>
-                                    <div>
-                                        <Label className=" text-foreground">Disbursed Amount</Label>
-                                        <Input
-                                            type="number"
-                                            value={disbursedAmount || ''}
-                                            onChange={(e) => setDisbursedAmount(Number(e.target.value))}
-                                            className="bg-card border-border  text-foreground mt-2"
-                                            placeholder="Enter disbursed amount"
-                                        />
-                                    </div>
-                                    <div>
-                                        <Label className=" text-foreground">Disbursed Date</Label>
-                                        <Input
-                                            type="date"
-                                            value={disbursedDate || ''}
-                                            onChange={(e) => setDisbursedDate(e.target.value)}
-                                            className="bg-card border-border  text-foreground mt-2"
-                                        />
-                                    </div>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Comment */}
-                        <div>
-                            <Label className=" text-foreground">Comment (required*)</Label>
-                            <Textarea
-                                value={statusComment}
-                                rows={4}
-                                onChange={(e) => setStatusComment(e.target.value)}
-                                className="bg-card border-border  text-foreground mt-2"
-                                placeholder="Why is the status being changed?"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="flex justify-end gap-3 pt-4">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsStatusDialogOpen(false)}
-                            className="border-border  text-foreground hover:bg-card"
-                        >
-                            Cancel
-                        </Button>
-
-                        <Button
-                            disabled={!statusComment}
-                            onClick={handleStatusUpdate}
-                            className="bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground disabled:opacity-40"
-                        >
-                            Save
-                        </Button>
-                    </div>
                 </DialogContent>
             </Dialog>
         </div>

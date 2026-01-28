@@ -16,7 +16,8 @@ import {
   X,
   Check,
   Trash2,
-  Clock
+  Clock,
+  User2
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -71,9 +72,10 @@ const navigationConfig = {
       title: "Management",
       items: [
         { title: "Dashboard", url: navigationPaths.superAdmin.dashboard, icon: LayoutDashboard },
-        { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: Users },
+        { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: User2 },
         { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
         { title: "Commission Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
+        { title: "F2fintech Employees", url: navigationPaths.superAdmin.f2fintechEmployees, icon: Users }
         // { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
         // { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
       ]

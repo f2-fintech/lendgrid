@@ -209,6 +209,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                 amount,
                 loanType,
                 loanCategory,
+                leadType,
                 tenure,
                 providers: selectedProviders,
                 providerAmounts,

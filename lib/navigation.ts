@@ -17,7 +17,8 @@ export const navigationPaths = {
     aggregatorsProfile: '/super-admin/aggregators/profile',
     commission: '/super-admin/commission',
     payouts: '/super-admin/payouts',
-    settings: '/super-admin/settings'
+    settings: '/super-admin/settings',
+    f2fintechEmployees: '/super-admin/f2fintech-employees'
   },
 
   // Aggregator routes

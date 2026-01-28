@@ -108,6 +108,7 @@ export function SignupForm() {
         password: data.password,
         role: 'AGGREGATOR_ADMIN',
         companyName: data.companyName,  // to allow backend to auto-create profile of aggregator
+        isOmsEnabled: false,
       };
 
       const registerUserResponse = await registerMutation.mutateAsync(payload);
