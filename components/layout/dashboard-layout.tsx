@@ -193,14 +193,25 @@ function AppSidebar({
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href={navigationPaths.home}>
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg">
+                <div className="flex items-center gap-3">
+                  {/* Light mode logo */}
                   <img
-                    src="/logo.png"
-                    alt="LendGrid Logo"
-                    className="w-12 h-10 rounded-xl"
+                    src="/f2Fintechlogo.png"
+                    alt="F2Fintech Logo"
+                    className="block dark:hidden w-12 h-12 object-contain"
                   />
+
+                  {/* Dark mode logo */}
+                  <img
+                    src="/f2Fintechlogo.png"
+                    alt="F2Fintech Logo"
+                    className="hidden dark:block w-12 h-12 object-contain"
+                  />
+
+                  <span className="text-2xl font-bold tracking-wide text-primary">
+                    LendGrid
+                  </span>
                 </div>
-                <span className="text-2xl font-bold text-accent">LendGrid</span>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -299,7 +310,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   } = useNotifications({
     page: 1,
     limit: 10,
-    pollingInterval: 10000,   // Poll every 10 seconds
+    pollingInterval: 1000000,   // Poll every 10 minutes
   })
 
   useEffect(() => {

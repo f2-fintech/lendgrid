@@ -153,6 +153,7 @@ export type AggregatorProfile = {
   companyId?: number
   rank?: ApplicableFor
   businessType?: BusinessType
+  isOmsEnabled?: boolean
   yearOfEstablishment?: string
   registeredAddress?: string
   city?: string

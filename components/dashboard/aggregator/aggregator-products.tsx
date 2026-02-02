@@ -56,8 +56,6 @@ const LENDER_LOGOS: Record<string, string> = {
 
 }
 
-const PLACEHOLDER_LOGO = "/placeholder-logo.png" // or whatever you have
-
 function getLenderLogoSrc(name?: string | null): string | null {
   if (!name) return null
   const key = normalizeLenderName(name)

@@ -137,27 +137,28 @@ export function LoginForm() {
       <Card className="enhanced-card">
         <CardHeader className="text-center pb-8">
           <motion.div
-            className="flex items-center justify-center mb-6"
-            initial={{ scale: 0.8 }}
+            className="flex flex-col items-center gap-3 mb-4"
+            initial={{ scale: 0.9 }}
             animate={{ scale: 1 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
           >
-            <Link
-              href={navigationPaths.home}
-              className="text-gold font-medium"
-            >
-              <div className="w-12 h-12 rounded-2xl bg-gradient items-center justify-center shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-700 to-black-900 flex items-center justify-center shadow-lg">
                 <img
-                  src="/logo.png"
-                  alt="LendGrid Logo"
-                  className="w-12 h-10 rounded-xl "
+                  src="/f2Fintechlogo.png"
+                  alt="LendGrid"
+                  className="w-12 h-12 object-contain"
                 />
               </div>
-              <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>
-            </Link>
+              <h1 className="text-3xl font-bold tracking-tight text-primary">
+                LendGrid
+              </h1>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Secure access to your dashboard
+            </p>
           </motion.div>
           <CardDescription className="text-gray-400 text-base mt-2">
-            Welcome Back
+            {/* Welcome Back */}
           </CardDescription>
         </CardHeader>
 
@@ -192,7 +193,7 @@ export function LoginForm() {
               </Select>
               <input type="hidden" {...register("role")} />
               {errors.role && (
-                <p className="text-red-400 text-sm mt-1">{errors.role.message}</p>
+                <p className="text-destructive text-xs mt-1 font-medium">{errors.role.message}</p>
               )}
             </div> */}
 
@@ -204,11 +205,19 @@ export function LoginForm() {
                 id="email"
                 type="email"
                 {...register('email')}
-                className="glass-input text-black placeholder-gray-500 h-11"
+                className="
+  h-11 rounded-xl
+  bg-background
+  border border-border
+  text-foreground
+  placeholder:text-muted-foreground
+  focus-visible:ring-2 focus-visible:ring-primary
+  focus-visible:ring-offset-0
+"
                 placeholder="Enter your email"
                 disabled={isLoading}
               />
-              {errors.email && (<p className="text-red-400 text-sm mt-1">{errors.email.message}</p>)}
+              {errors.email && (<p className="text-destructive text-sm mt-1 font-medium">{errors.email.message}</p>)}
             </div>
 
             {/* Password */}
@@ -219,7 +228,15 @@ export function LoginForm() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   {...register('password')}
-                  className="glass-input text-black placeholder-gray-500 pr-11 h-11"
+                  className="
+  h-11 rounded-xl
+  bg-background
+  border border-border
+  text-foreground
+  placeholder:text-muted-foreground
+  focus-visible:ring-2 focus-visible:ring-primary
+  focus-visible:ring-offset-0
+"
                   placeholder="Enter your password"
                   disabled={isLoading}
                 />
@@ -227,7 +244,12 @@ export function LoginForm() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-black hover:bg-transparent"
+                  className="
+  absolute right-0 top-0 h-full px-3
+  text-muted-foreground
+  hover:text-foreground
+  hover:bg-transparent
+"
                   onClick={() => setShowPassword(!showPassword)}
                   disabled={isLoading}
                   tabIndex={-1}
@@ -243,24 +265,31 @@ export function LoginForm() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full btn-primary h-12 text-gold font-semibold rounded-xl mt-2"
+              className="
+  w-full h-12 mt-2 rounded-xl
+  bg-primary text-primary-foreground text-sm
+  font-semibold
+  hover:bg-primary/90
+  transition-all duration-200
+  shadow-lg shadow-primary/30
+"
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="w-5 h-5 mr-2 animate-spin text-gold " />
+                  <Loader2 className="w-5 h-5 mr-2 animate-spin text-accent" />
                   Signing in...
                 </>
               ) : (
                 <>
                   Sign In
-                  <ArrowRight className="w-5 h-5 ml-2 text-gold" />
+                  <ArrowRight className="w-5 h-5 ml-2 text-accent" />
                 </>
               )}
             </Button>
           </form>
 
           {/* Sign Up Link: UPDATED TO PASS ROLE */}
-          <div className="text-center pt-6 mt-6 border-t border-white/10">
+          <div className="text-center pt-6 mt-6 border-t border-border">
             <p className="text-gray-400 text-sm">
               Don't have an account?{' '}
               <Link

@@ -46,7 +46,7 @@ export function NotificationBar() {
     page,
     limit: 20,
     filters: getFilters(),
-    pollingInterval: 10000,
+    pollingInterval: 1000000,
   })
 
   const getPriorityColor = (priority: string) => {

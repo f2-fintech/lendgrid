@@ -107,8 +107,8 @@ export function ForgotPasswordForm() {
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient flex items-center justify-center shadow-2xl">
               <img
-                src="/logo.png" // Replace with your logo path
-                alt="LendGrid Logo"
+                src="/f2Fintechlogo.png"
+                alt="F2Fintech Logo"
                 className="w-12 h-10 rounded-xl "
               />
             </div>

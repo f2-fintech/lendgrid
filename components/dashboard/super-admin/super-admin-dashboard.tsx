@@ -103,6 +103,7 @@ export function SuperAdminDashboard() {
     return {
       totalAggregators: aggregatorsData?.count || 0,
       activeAggregators: aggregators.filter(a => a.user?.status === 'ACTIVE').length,
+      inActiveAggregators: aggregators.filter(a => a.user?.status === 'INACTIVE').length,
       totalApplications,
       totalCommissionEarned,
       totalCommissionPaid,
@@ -185,19 +186,46 @@ export function SuperAdminDashboard() {
       </motion.div>
 
       {/* Top Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
+          onClick={() => router.push(navigationPaths.superAdmin.aggregators)}
+          className="cursor-pointer"
         >
-          <Card className="professional-card hover-lift bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+          <Card className="professional-card hover-lift bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20 transition-all hover:border-purple-500/40">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-medium text-muted-foreground">Active Aggregators</p>
-                <Users className="w-5 h-5 text-purple-400" />
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-purple-400" />
+                  <ArrowUpRight className="w-4 h-4 text-purple-400" />
+                </div>
               </div>
               <p className="text-3xl font-bold text-foreground">{metrics.activeAggregators}</p>
+              <p className="text-sm text-muted-foreground mt-2">of {metrics.totalAggregators} total</p>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+          onClick={() => router.push(`${navigationPaths.superAdmin.aggregators}?status=inactive`)}
+          className="cursor-pointer"
+        >
+          <Card className="professional-card hover-lift bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border-orange-500/20 transition-all hover:border-orange-500/40">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-sm font-medium text-muted-foreground">Inactive Aggregators</p>
+                <div className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-orange-400" />
+                  <ArrowUpRight className="w-4 h-4 text-orange-400" />
+                </div>
+              </div>
+              <p className="text-3xl font-bold text-foreground">{metrics.inActiveAggregators}</p>
               <p className="text-sm text-muted-foreground mt-2">of {metrics.totalAggregators} total</p>
             </CardContent>
           </Card>

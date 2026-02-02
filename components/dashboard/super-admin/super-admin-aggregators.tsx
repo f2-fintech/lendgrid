@@ -29,7 +29,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
@@ -38,7 +37,7 @@ import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 
 import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
 import { AddTeamMemberDialog } from './dialogs/AddTeamMemberDialog'
-import { useAggregators } from '@/hooks/use-aggregators'
+import { useAggregators, useUpdateAggregatorProfile } from '@/hooks/use-aggregators'
 import { useUpdateUser } from '@/hooks/use-users'
 import { AggregatorProfile } from '@/lib'
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -64,6 +63,7 @@ export function SuperAdminAggregators() {
 
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
+  const [isOmsDialogOpen, setIsOmsDialogOpen] = useState(false)
   const [isAddTeamMemberDialogOpen, setIsAddTeamMemberDialogOpen] = useState(false)
   const [selectedAggregatorForTeam, setSelectedAggregatorForTeam] = useState<AggregatorProfile | null>(null)
 
@@ -75,6 +75,7 @@ export function SuperAdminAggregators() {
   const [pageSize, setPageSize] = useState(10)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
   const { mutate: updateUserStatus } = useUpdateUser()
+  const updateAggHook = useUpdateAggregatorProfile()
   const { toast } = useToast()
 
   const {
@@ -87,12 +88,19 @@ export function SuperAdminAggregators() {
 
   const aggregators = data?.results || []
   const total = data?.count || 0
+  const isInactiveView = filterStatus === 'INACTIVE'
 
-  const metrics = useMemo(() => ({
-    totalAggregators: total,
-    activeAggregators: aggregators.filter(a => a.user?.status === 'ACTIVE').length,
-    pendingApprovals: aggregators.filter(a => a.user?.status === 'PENDING_APPROVAL').length,
-  }), [aggregators, total])
+  const metrics = useMemo(() => {
+    const allAggregators = aggregators // All aggregators
+    const activeOnly = allAggregators.filter(a => a.user?.status === 'ACTIVE')
+    const inactiveOnly = allAggregators.filter(a => a.user?.status === 'INACTIVE')
+
+    return {
+      totalAggregators: allAggregators.length,
+      activeAggregators: activeOnly.length,
+      inactiveAggregators: inactiveOnly.length,
+    }
+  }, [aggregators])
 
   useEffect(() => {
     setPage(1)
@@ -135,7 +143,11 @@ export function SuperAdminAggregators() {
       const matchesSearch =
         username.toLowerCase().includes(searchTerm.toLowerCase()) ||
         email.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = !filterStatus || filterStatus === "all" || aggregator.user?.status === filterStatus
+
+      // Default to showing only ACTIVE aggregators
+      const statusToFilter = filterStatus || 'ACTIVE'
+      const matchesStatus = statusToFilter === "all" || aggregator.user?.status === statusToFilter
+
       return matchesSearch && matchesStatus
     })
   }, [aggregators, searchTerm, filterStatus])
@@ -159,7 +171,7 @@ export function SuperAdminAggregators() {
   // Robust lastLogin extraction: handles string entries or objects with createdAt/lastLogin
   const rawLastLogin = selectedAggregator?.user?.loginHistory?.at(-1)
   const lastLogin = rawLastLogin
-    ? (typeof rawLastLogin === 'string' ? rawLastLogin : (rawLastLogin.createdAt || rawLastLogin.lastLogin || null))
+    ? (typeof rawLastLogin === 'string' ? rawLastLogin : (rawLastLogin?.createdAt || null))
     : null
 
   const handleApprove = (userId: string | undefined) => {
@@ -185,6 +197,29 @@ export function SuperAdminAggregators() {
     )
   }
 
+  const handleRestore = (userId: string | undefined) => {
+    if (!userId) return
+    updateUserStatus(
+      { id: userId, status: 'ACTIVE' },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Success',
+            description: 'Aggregator restored successfully.',
+          })
+          refetch()
+        },
+        onError: (error: Error) => {
+          toast({
+            title: 'Error',
+            description: error.message || 'Failed to restore aggregator.',
+            variant: 'destructive',
+          })
+        },
+      }
+    )
+  }
+
   const handleReject = (userId: string | undefined) => {
     if (!userId) return
     updateUserStatus(
@@ -193,14 +228,14 @@ export function SuperAdminAggregators() {
         onSuccess: () => {
           toast({
             title: 'Success',
-            description: 'Aggregator rejected successfully.',
+            description: 'Aggregator deleted successfully.',
           })
           refetch()
         },
         onError: (error: Error) => {
           toast({
             title: 'Error',
-            description: error.message || 'Failed to reject aggregator.',
+            description: error.message || 'Failed to delete aggregator.',
             variant: 'destructive',
           })
         },
@@ -257,48 +292,91 @@ export function SuperAdminAggregators() {
       >
         <div>
           <h1 className="text-3xl font-bold text-foreground">Aggregator Management</h1>
-          <p className="text-muted-foreground mt-1">Manage and monitor all registered aggregators</p>
+          <p className="text-muted-foreground mt-1">
+            {isInactiveView
+              ? 'View and restore inactive aggregators'
+              : 'Manage and monitor active aggregators'
+            }
+          </p>
         </div>
-        <Button
-          className="bg-primary hover:bg-primary/90 text-primary-foreground"
-          onClick={() => setIsAddDialogOpen(true)}
-        >
-          <Plus className="w-4 h-4 mr-2" />
-          Add New Aggregator
-        </Button>
+
+        <div className="flex gap-3">
+          <Button
+            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            onClick={() => setIsAddDialogOpen(true)}
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Add New Aggregator
+          </Button>
+
+          <Button
+            className={
+              isInactiveView
+                ? 'bg-green-500 hover:bg-green-600 text-white'
+                : 'bg-red-500 hover:bg-red-600 text-white'
+            }
+            onClick={() => setFilterStatus(isInactiveView ? '' : 'INACTIVE')}
+          >
+            {isInactiveView ? (
+              <>
+                <CheckCircle className="w-4 h-4 mr-2" />
+                Active Aggregators
+                {metrics.activeAggregators > 0 && (
+                  <Badge className="ml-2 bg-white/20 text-white border-none">
+                    {metrics.activeAggregators}
+                  </Badge>
+                )}
+              </>
+            ) : (
+              <>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Inactive Aggregators
+                {metrics.inactiveAggregators > 0 && (
+                  <Badge className="ml-2 bg-white/20 text-white border-none">
+                    {metrics.inactiveAggregators}
+                  </Badge>
+                )}
+              </>
+            )}
+          </Button>
+        </div>
       </motion.div>
 
       {/* Metrics Cards */}
-      {!isTableLoading && !aggregators.length ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <MetricCard
-            title="Total Aggregators"
-            value={metrics.totalAggregators}
-            icon={Users}
-            color="bg-blue/20 text-blue"
-            subtitle="Registered partners"
-          />
-          <MetricCard
-            title="Active Aggregators"
-            value={metrics.activeAggregators}
-            icon={CheckCircle}
-            color="metric-card-success"
-            subtitle="Currently operational"
-          />
-          <MetricCard
-            title="Pending Approvals"
-            value={metrics.pendingApprovals}
-            icon={AlertCircle}
-            color="bg-orange-500/20 text-orange-400"
-            subtitle="Awaiting review"
-          />
-        </div>
+      {!isInactiveView && (
+        <>
+          {!isTableLoading && !aggregators.length ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <CardSkeleton headerLines={2} bodyHeight={20} />
+              <CardSkeleton headerLines={2} bodyHeight={20} />
+              <CardSkeleton headerLines={2} bodyHeight={20} />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <MetricCard
+                title="Total Aggregators"
+                value={metrics.totalAggregators}
+                icon={Users}
+                color="bg-blue/20 text-blue"
+                subtitle="Registered partners"
+              />
+              <MetricCard
+                title="Active Aggregators"
+                value={metrics.activeAggregators}
+                icon={CheckCircle}
+                color="metric-card-success"
+                subtitle="Currently operational"
+              />
+              <MetricCard
+                title="Deleted Aggregators"
+                value={metrics.inactiveAggregators}
+                icon={AlertCircle}
+                color="bg-red-500/20 text-red-400"
+                subtitle="Awaiting review"
+              />
+            </div>
+          )}
+        </>
       )}
 
       {/* Aggregators Table */}
@@ -311,9 +389,14 @@ export function SuperAdminAggregators() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-foreground">All Aggregators</CardTitle>
+                <CardTitle className="text-foreground">
+                  {isInactiveView
+                    ? 'Inactive Aggregators'
+                    : 'Active Aggregators'
+                  }
+                </CardTitle>
                 <CardDescription className="text-muted-foreground mt-1">
-                  Complete list of registered aggregators and their performance
+                  Complete list of  {isInactiveView ? 'inactive aggregators' : 'active aggregators and their performance'}
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-4">
@@ -326,18 +409,6 @@ export function SuperAdminAggregators() {
                     className="pl-10 bg-background border-border text-foreground w-64"
                   />
                 </div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-32 bg-background border-border text-foreground">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-popover border-border text-popover-foreground">
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="ACTIVE">Active</SelectItem>
-                    <SelectItem value="INACTIVE">Inactive</SelectItem>
-                    <SelectItem value="SUSPENDED">Suspended</SelectItem>
-                    <SelectItem value="PENDING_APPROVAL">Pending Approval</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </div>
           </CardHeader>
@@ -350,12 +421,12 @@ export function SuperAdminAggregators() {
                 <div className="min-w-full">
                   <div className="grid grid-cols-7 gap-2 py-4 px-4 bg-muted/50 rounded-t-lg font-medium text-muted-foreground text-sm">
                     <div>Aggregator</div>
-                    <div>Status</div>
-                    <div>KYC Status</div>
                     <div>Total Applications</div>
                     <div>Total Commission</div>
                     <div>Join Date</div>
-                    <div>Actions</div>
+                    <div>Status</div>
+                    <div>OMS Status</div>
+                    <div className="text-center">Actions</div>
                   </div>
                   <div className="space-y-1">
                     {paginatedAggregators.map((aggregator, index) => (
@@ -370,22 +441,17 @@ export function SuperAdminAggregators() {
                           <p className="text-foreground font-medium">{aggregator.companyName}</p>
                           <p className="text-sm text-muted-foreground truncate">{aggregator.user?.email}</p>
                         </div>
-                        <div>
-                          <Badge className={getStatusColor(aggregator.user?.status)}>
-                            {aggregator.user?.status}
-                          </Badge>
-                        </div>
-                        <div>
-                          <Badge className={getKycStatusColor(aggregator.kycStatus || 'UNKNOWN')}>
-                            {aggregator.kycStatus || 'UNKNOWN'}
-                          </Badge>
-                        </div>
                         <ApplicationCountCell companyId={aggregator.companyId} />
                         <div className="text-foreground">
                           {(aggregator.totalCommissionEarned || 0) > 0 ? formatCurrency(aggregator.totalCommissionEarned || 0) : '₹0'}
                         </div>
                         <div className="text-foreground">
                           {aggregator.createdAt ? new Date(aggregator.createdAt).toLocaleDateString() : '-'}
+                        </div>
+                        <div>
+                          <Badge className={getStatusColor(aggregator.user?.status)}>
+                            {aggregator.user?.status}
+                          </Badge>
                         </div>
                         {/* <div className="flex items-center gap-2">
                             <span className="text-foreground font-medium">
@@ -407,75 +473,112 @@ export function SuperAdminAggregators() {
                             )}
                           </div> */}
                         <div>
-                          <div className="flex items-center">
+                          {aggregator.isOmsEnabled ? (
                             <Tooltip>
                               <TooltipTrigger>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
+                                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/20 border border-green-500/30">
+                                  <CheckCircle className="w-5 h-5 text-green-400" />
+                                </div>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>OMS Enabled</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <button
                                   onClick={() => {
                                     setSelectedAggregator(aggregator)
-                                    setIsViewDialogOpen(true)
+                                    setIsOmsDialogOpen(true)
                                   }}
-                                  className="text-primary hover:text-foreground hover:bg-muted"
+                                  className="flex items-center justify-center w-10 h-10 rounded-lg bg-orange-500/20 border border-orange-500/30 hover:bg-orange-500/30 transition-all"
                                 >
-                                  <Eye className="w-4 h-4" />
-                                </Button>
+                                  <XCircle className="w-5 h-5 text-orange-400" />
+                                </button>
                               </TooltipTrigger>
                               <TooltipContent>
-                                <p>View Profile</p>
+                                <p>Click to Enable OMS</p>
                               </TooltipContent>
                             </Tooltip>
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  asChild
-                                  className="text-accent hover:text-foreground hover:bg-muted"
-                                >
-                                  <Link href={`/super-admin/aggregators/profile/${aggregator?._id}`}>
-                                    <Edit className="w-4 h-4" />
-                                  </Link>
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Edit Aggregator</p>
-                              </TooltipContent>
-                            </Tooltip>
-                            {/* <Tooltip>
-                              <TooltipTrigger>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-violet-400 hover:text-foreground hover:bg-muted"
-                                  onClick={() => {
-                                    setSelectedAggregatorForTeam(aggregator)
-                                    setIsAddTeamMemberDialogOpen(true)
-                                  }}
-                                >
-                                  <UserCheck className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Add Team Member</p>
-                              </TooltipContent>
-                            </Tooltip> */}
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="text-red-300 hover:text-foreground hover:bg-red-600/20 rounded-lg"
-                                  onClick={() => handleReject(aggregator.user?._id)}
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>Delete Aggregator</p>
-                              </TooltipContent>
-                            </Tooltip>
+                          )}
+                        </div>
+                        <div>
+                          <div className="flex items-center justify-center gap-2">
+                            {aggregator.user?.status === 'INACTIVE' ? (
+                              // Restore button for inactive aggregators
+                              <Tooltip>
+                                <TooltipTrigger>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-green-400 hover:text-foreground hover:bg-green-600/20 rounded-lg"
+                                    onClick={() => handleRestore(aggregator.user?._id)}
+                                  >
+                                    <CheckCircle className="w-4 h-4" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>Restore Aggregator</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              // Normal actions for active aggregators
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => {
+                                        setSelectedAggregator(aggregator)
+                                        setIsViewDialogOpen(true)
+                                      }}
+                                      className="text-primary hover:text-foreground hover:bg-muted"
+                                    >
+                                      <Eye className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>View Profile</p>
+                                  </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      asChild
+                                      className="text-accent hover:text-foreground hover:bg-muted"
+                                    >
+                                      <Link href={`/super-admin/aggregators/profile/${aggregator?._id}`}>
+                                        <Edit className="w-4 h-4" />
+                                      </Link>
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Edit Aggregator</p>
+                                  </TooltipContent>
+                                </Tooltip>
+
+                                <Tooltip>
+                                  <TooltipTrigger>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="text-red-300 hover:text-foreground hover:bg-red-600/20 rounded-lg"
+                                      onClick={() => handleReject(aggregator.user?._id)}
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>
+                                    <p>Delete Aggregator</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
                           </div>
                         </div>
                       </motion.div>
@@ -484,6 +587,18 @@ export function SuperAdminAggregators() {
                 </div>
               )}
             </div>
+
+            {!isTableLoading && filterStatus === 'INACTIVE' && paginatedAggregators.length === 0 && (
+              <div className="text-center py-12">
+                <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  No Inactive Aggregators
+                </h3>
+                <p className="text-muted-foreground">
+                  All aggregators are currently active
+                </p>
+              </div>
+            )}
 
             {!isTableLoading && (
               <TablePagination
@@ -650,7 +765,7 @@ export function SuperAdminAggregators() {
 
                   <div className="bg-background/50 rounded-lg p-4 border border-border/50">
                     <p className="text-xs text-muted-foreground mb-2">Approved</p>
-                    <p className="text-2xl font-bold text-green-400">{selectedAggregator.approvedApplications || 0}</p>
+                    <p className="text-2xl font-bold text-green-400">{selectedAggregator.totalApplicationsApproved || 0}</p>
                   </div>
 
                   <div className="bg-background/50 rounded-lg p-4 border border-border/50">
@@ -739,6 +854,82 @@ export function SuperAdminAggregators() {
         onClose={() => setIsAddDialogOpen(false)}
         refetch={refetch}
       />
+
+      {/* Enable OMS Confirmation Dialog */}
+      <Dialog open={isOmsDialogOpen} onOpenChange={setIsOmsDialogOpen}>
+        <DialogContent className="bg-background border border-border text-foreground max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-foreground">
+              Enable OMS
+            </DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Are you sure you want to enable OMS for <span className="font-semibold text-foreground">{selectedAggregator?.companyName}</span>?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex gap-3 mt-6">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => setIsOmsDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 bg-primary hover:bg-primary/90"
+              disabled={updateAggHook.isPending}
+              onClick={async () => {
+                if (selectedAggregator?._id) {
+                  updateAggHook.mutate(
+                    { id: selectedAggregator._id, isOmsEnabled: true },
+                    {
+                      onSuccess: async () => {
+                        try {
+                          // Create Company in OMS
+                          const companyRes = await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/companies`, {
+                            method: "POST",
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'companyid': String(selectedAggregator.companyId),
+                            },
+                            body: JSON.stringify({
+                              name: selectedAggregator.companyName,
+                              email: selectedAggregator.user?.email,
+                              contactNumber: selectedAggregator.user?.contact,
+                              companyId: selectedAggregator.companyId,
+                            }),
+                          });
+
+                          if (!companyRes.ok) {
+                            throw new Error("Company creation in OMS failed");
+                          }
+
+                          toast({
+                            title: 'Success',
+                            description: 'OMS Enabled Successfully',
+                          })
+
+                          setIsOmsDialogOpen(false)
+                          setSelectedAggregator(null)
+                          refetch()
+                        } catch (error) {
+                          toast({
+                            title: 'Error',
+                            description: error instanceof Error ? error.message : 'Failed to enable OMS',
+                            variant: 'destructive',
+                          })
+                        }
+                      },
+                    }
+                  )
+                }
+              }}
+            >
+              {updateAggHook.isPending ? 'Enabling...' : 'Yes, Enable'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* <AddTeamMemberDialog
         isOpen={isAddTeamMemberDialogOpen}

@@ -15,6 +15,7 @@ export const aggregatorProfileApi = {
   create: (payload: {
     userId: string
     companyName: string
+    isOmsEnabled?: boolean
     businessType?: BusinessType
     registeredAddress?: string
     city?: string
@@ -79,6 +80,7 @@ export const aggregatorProfileApi = {
               userId
               companyName
               companyId
+              isOmsEnabled
               rank
               businessType
               yearOfEstablishment,
@@ -133,6 +135,7 @@ export const aggregatorProfileApi = {
           userId
           companyName
           companyId
+          isOmsEnabled
           rank
           businessType
           yearOfEstablishment
@@ -212,6 +215,7 @@ export const aggregatorProfileApi = {
             userId
             companyName
             companyId
+            isOmsEnabled
             rank
             businessType
             city
@@ -283,6 +287,7 @@ export const aggregatorProfileApi = {
             results {
               _id
               companyName
+              isOmsEnabled
               city
               state
               kycStatus
@@ -303,6 +308,7 @@ export const aggregatorProfileApi = {
   update: (payload: {
     id: string
     companyName?: string
+    isOmsEnabled?: boolean
     businessType?: BusinessType
     registeredAddress?: string
     city?: string

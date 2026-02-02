@@ -97,6 +97,7 @@ export function useCreateAggregatorProfile() {
     mutationFn: (payload: {
       userId: string
       companyName: string
+      isOmsEnabled?: boolean
       businessType?: BusinessType
       registeredAddress?: string
       city?: string
@@ -151,6 +152,7 @@ export function useUpdateAggregatorProfile() {
     mutationFn: (payload: {
       id: string
       companyName?: string
+      isOmsEnabled?: boolean
       businessType?: BusinessType
       registeredAddress?: string
       city?: string

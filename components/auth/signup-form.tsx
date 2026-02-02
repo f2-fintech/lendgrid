@@ -197,13 +197,13 @@ export function SignupForm() {
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient items-center justify-center shadow-2xl">
               <img
-                src="/logo.png"
-                alt="LendGrid Logo"
-                className="w-12 h-10 rounded-xl "
+                src="/f2Fintechlogo.png"
+                alt="F2Fintech Logo"
+                className="w-12 h-12 rounded-xl "
               />
             </div>
             <span
-              className="text-2xl font-bold gradient-text text-gold cursor-pointer"
+              className="text-2xl font-bold gradient-text text-primary cursor-pointer"
               onClick={() => router.push('/')}
             >LendGrid</span>
           </motion.div>
