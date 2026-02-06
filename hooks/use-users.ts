@@ -62,7 +62,7 @@ export function useLogin() {
     const { toast } = useToast()
 
     return useMutation({
-        mutationFn: (payload: { email: string; password: string }) => usersApi.login(payload),
+        mutationFn: (payload: { email: string; password: string; captchaToken: string }) => usersApi.login(payload),
         onSuccess: (data) => {
             if (data?.login?.success && data?.login?.access_token) {
                 // Store token in cookie

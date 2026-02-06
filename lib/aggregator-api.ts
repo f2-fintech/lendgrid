@@ -6,6 +6,7 @@ import type {
   KYCStatus,
   PaginatedResponse,
   CreateResponse,
+  AggregatorType,
 } from './api-types'
 
 export const aggregatorProfileApi = {
@@ -16,6 +17,7 @@ export const aggregatorProfileApi = {
     userId: string
     companyName: string
     isOmsEnabled?: boolean
+    aggregatorType?: AggregatorType
     businessType?: BusinessType
     registeredAddress?: string
     city?: string
@@ -80,10 +82,11 @@ export const aggregatorProfileApi = {
               userId
               companyName
               companyId
+              aggregatorType
               isOmsEnabled
               rank
               businessType
-              yearOfEstablishment,
+              yearOfEstablishment
               city
               state
               pincode
@@ -135,6 +138,7 @@ export const aggregatorProfileApi = {
           userId
           companyName
           companyId
+          aggregatorType
           isOmsEnabled
           rank
           businessType
@@ -215,6 +219,7 @@ export const aggregatorProfileApi = {
             userId
             companyName
             companyId
+            aggregatorType
             isOmsEnabled
             rank
             businessType
@@ -309,6 +314,7 @@ export const aggregatorProfileApi = {
     id: string
     companyName?: string
     isOmsEnabled?: boolean
+    aggregatorType?: AggregatorType
     businessType?: BusinessType
     registeredAddress?: string
     city?: string

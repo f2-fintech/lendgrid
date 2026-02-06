@@ -219,7 +219,7 @@ export function SuperAdminDashboard() {
           <Card className="professional-card hover-lift bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border-orange-500/20 transition-all hover:border-orange-500/40">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">Inactive Aggregators</p>
+                <p className="text-sm font-medium text-muted-foreground">Deleted Aggregators</p>
                 <div className="flex items-center gap-2">
                   <Users className="w-5 h-5 text-orange-400" />
                   <ArrowUpRight className="w-4 h-4 text-orange-400" />
@@ -303,7 +303,7 @@ export function SuperAdminDashboard() {
                 <div>
                   <CardTitle className="flex items-center gap-2 text-foreground">
                     <Users className="w-5 h-5 text-primary" />
-                    Active Aggregators
+                    Total Aggregators
                   </CardTitle>
                   <CardDescription className="mt-1 ml-7">Top performing aggregators</CardDescription>
                 </div>

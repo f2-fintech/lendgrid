@@ -4,11 +4,11 @@ export const usersApi = {
   /**
    * User login
    */
-  login: (payload: { email: string; password: string }) =>
+  login: (payload: { email: string; password: string; captchaToken: string }) =>
     gqlFetch<{ login: { success: boolean; message: string; access_token?: string } }>({
       query: `
-        mutation Login($email: String!, $password: String!) {
-          login(loginInput: { email: $email, password: $password }) {
+        mutation Login($email: String!, $password: String!, $captchaToken: String!) {
+          login(loginInput: { email: $email, password: $password, captchaToken: $captchaToken }) {
             success
             message
             access_token

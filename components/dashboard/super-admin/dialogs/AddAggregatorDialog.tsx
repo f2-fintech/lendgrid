@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
-import { number, z } from "zod";
+import { z } from "zod";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { zodResolver } from "@hookform/resolvers/zod";
 
 import {
@@ -12,11 +13,17 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Eye, EyeOff } from "lucide-react";
 
 import { useToast } from "@/hooks/use-toast";
 import { useRegister } from "@/hooks/use-users";
@@ -50,6 +57,10 @@ const schema = z
             .max(50, "Company name is too long")
             .trim()
             .toLowerCase(),
+
+        aggregatorType: z.enum(['SOURCER', 'CHANNEL_PARTNER'], {
+            required_error: 'Please select aggregator type',
+        }),
 
         password: z
             .string()
@@ -90,14 +101,18 @@ export function AddAggregatorDialog({
         register,
         handleSubmit,
         reset,
+        setValue,
+        watch,
         formState: { errors, isSubmitting },
     } = useForm<FormValues>({
         resolver: zodResolver(schema),
+        mode: "onBlur",
         defaultValues: {
             fullName: "",
             contact: "",
             email: "",
             companyName: "",
+            aggregatorType: "SOURCER",
             password: "",
             confirmPassword: ""
         },
@@ -118,6 +133,7 @@ export function AddAggregatorDialog({
                 role: "AGGREGATOR_ADMIN",
                 // Aggregator Profile Fields
                 companyName: data.companyName,
+                aggregatorType: data.aggregatorType,
                 isOmsEnabled: true,
             };
 
@@ -207,7 +223,33 @@ export function AddAggregatorDialog({
                                 placeholder="e.g., Acme Corporation"
                             />
                             {errors.companyName && (
-                                <p className="text-red-400 text-sm">{errors.companyName.message}</p>
+                                <p className="text-destructive text-sm">{errors.companyName.message}</p>
+                            )}
+                        </div>
+
+                        {/* Aggregator Type */}
+                        <div className="space-y-1">
+                            <Label htmlFor="aggregatorType" className="text-foreground font-medium">
+                                Aggregator Type
+                            </Label>
+                            <Select
+                                value={watch('aggregatorType') || 'SOURCER'}
+                                onValueChange={(value) => setValue('aggregatorType', value as 'SOURCER' | 'CHANNEL_PARTNER', { shouldValidate: true })}
+                            >
+                                <SelectTrigger className="h-11 rounded-xl bg-background border border-border text-foreground">
+                                    <SelectValue placeholder="Select aggregator type" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-card border-border">
+                                    <SelectItem value="SOURCER" className="text-foreground">
+                                        Sourcer
+                                    </SelectItem>
+                                    <SelectItem value="CHANNEL_PARTNER" className="text-foreground">
+                                        Channel Partner
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {errors.aggregatorType && (
+                                <p className="text-destructive text-sm mt-1">{errors.aggregatorType.message}</p>
                             )}
                         </div>
 
@@ -221,7 +263,7 @@ export function AddAggregatorDialog({
                                 placeholder="e.g., John Doe"
                             />
                             {errors.fullName && (
-                                <p className="text-red-400 text-sm">{errors.fullName.message}</p>
+                                <p className="text-destructive text-sm">{errors.fullName.message}</p>
                             )}
                         </div>
 
@@ -234,7 +276,7 @@ export function AddAggregatorDialog({
                                 className="bg-background border-border h-11"
                                 placeholder="e.g., 9876543210"
                             />
-                            {errors.contact && (<p className="text-red-400 text-sm mt-1">{errors.contact.message}</p>)}
+                            {errors.contact && (<p className="text-destructive text-sm mt-1">{errors.contact.message}</p>)}
                         </div>
 
                         {/* Email */}
@@ -248,7 +290,7 @@ export function AddAggregatorDialog({
                                 placeholder="e.g., john.doe@acme.com"
                             />
                             {errors.email && (
-                                <p className="text-red-400 text-sm">{errors.email.message}</p>
+                                <p className="text-destructive text-sm">{errors.email.message}</p>
                             )}
                         </div>
 
@@ -272,7 +314,7 @@ export function AddAggregatorDialog({
                                 </button>
                             </div>
                             {errors.password && (
-                                <p className="text-red-400 text-sm">{errors.password.message}</p>
+                                <p className="text-destructive text-sm">{errors.password.message}</p>
                             )}
                         </div>
 
@@ -296,7 +338,7 @@ export function AddAggregatorDialog({
                                 </button>
                             </div>
                             {errors.confirmPassword && (
-                                <p className="text-red-400 text-sm">{errors.confirmPassword.message}</p>
+                                <p className="text-destructive text-sm">{errors.confirmPassword.message}</p>
                             )}
                         </div>
                     </div>

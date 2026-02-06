@@ -30,6 +30,11 @@ export enum KYCStatus {
   REJECTED = 'REJECTED',
 }
 
+export enum AggregatorType {
+  SOURCER = 'SOURCER',
+  CHANNEL_PARTNER = 'CHANNEL_PARTNER',
+}
+
 export enum BusinessType {
   PROPRIETORSHIP = 'proprietorship',
   PARTNERSHIP = 'partnership',
@@ -151,6 +156,7 @@ export type AggregatorProfile = {
   userId: string
   companyName: string
   companyId?: number
+  aggregatorType?: AggregatorType
   rank?: ApplicableFor
   businessType?: BusinessType
   isOmsEnabled?: boolean

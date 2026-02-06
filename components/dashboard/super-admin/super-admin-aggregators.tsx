@@ -330,7 +330,7 @@ export function SuperAdminAggregators() {
             ) : (
               <>
                 <Trash2 className="w-4 h-4 mr-2" />
-                Inactive Aggregators
+                Deleted Aggregators
                 {metrics.inactiveAggregators > 0 && (
                   <Badge className="ml-2 bg-white/20 text-white border-none">
                     {metrics.inactiveAggregators}
@@ -391,12 +391,12 @@ export function SuperAdminAggregators() {
               <div>
                 <CardTitle className="text-foreground">
                   {isInactiveView
-                    ? 'Inactive Aggregators'
+                    ? 'Deleted Aggregators'
                     : 'Active Aggregators'
                   }
                 </CardTitle>
                 <CardDescription className="text-muted-foreground mt-1">
-                  Complete list of  {isInactiveView ? 'inactive aggregators' : 'active aggregators and their performance'}
+                  Complete list of  {isInactiveView ? 'deleted aggregators' : 'active aggregators and their performance'}
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-4">
@@ -506,7 +506,7 @@ export function SuperAdminAggregators() {
                         <div>
                           <div className="flex items-center justify-center gap-2">
                             {aggregator.user?.status === 'INACTIVE' ? (
-                              // Restore button for inactive aggregators
+                              // Restore button for deleted aggregators
                               <Tooltip>
                                 <TooltipTrigger>
                                   <Button
@@ -592,7 +592,7 @@ export function SuperAdminAggregators() {
               <div className="text-center py-12">
                 <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
-                  No Inactive Aggregators
+                  No Deleted Aggregators
                 </h3>
                 <p className="text-muted-foreground">
                   All aggregators are currently active
