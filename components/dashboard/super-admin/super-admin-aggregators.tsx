@@ -115,24 +115,24 @@ export function SuperAdminAggregators() {
   }
 
   const getStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-500/20 text-muted-foreground'
+    if (!status) return 'bg-muted/20 text-muted-foreground'
     switch (status.toUpperCase()) {
       case 'ACTIVE': return 'bg-green-500/20 text-green-400'
       case 'PENDING_APPROVAL': return 'bg-orange-500/20 text-orange-400'
       case 'SUSPENDED':
       case 'INACTIVE': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-muted-foreground'
+      default: return 'bg-muted/20 text-muted-foreground'
     }
   }
 
   const getKycStatusColor = (status?: string) => {
-    if (!status) return 'bg-gray-500/20 text-muted-foreground'
+    if (!status) return 'bg-muted/20 text-muted-foreground'
     switch (status) {
       case 'PENDING': return 'bg-yellow-500/20 text-yellow-400'
       case 'UNDER_REVIEW': return 'bg-orange-500/20 text-orange-400'
       case 'APPROVED': return 'bg-green-500/20 text-green-400'
       case 'REJECTED': return 'bg-red-500/20 text-red-400'
-      default: return 'bg-gray-500/20 text-muted-foreground'
+      default: return 'bg-muted/20 text-muted-foreground'
     }
   }
 
@@ -312,8 +312,8 @@ export function SuperAdminAggregators() {
           <Button
             className={
               isInactiveView
-                ? 'bg-green-500 hover:bg-green-600 text-white'
-                : 'bg-red-500 hover:bg-red-600 text-white'
+                ? 'bg-green-500 hover:bg-green-600 text-foreground'
+                : 'bg-red-500 hover:bg-red-600 text-foreground'
             }
             onClick={() => setFilterStatus(isInactiveView ? '' : 'INACTIVE')}
           >
@@ -322,7 +322,7 @@ export function SuperAdminAggregators() {
                 <CheckCircle className="w-4 h-4 mr-2" />
                 Active Aggregators
                 {metrics.activeAggregators > 0 && (
-                  <Badge className="ml-2 bg-white/20 text-white border-none">
+                  <Badge className="ml-2 bg-foreground/20 text-foreground border-none">
                     {metrics.activeAggregators}
                   </Badge>
                 )}
@@ -332,7 +332,7 @@ export function SuperAdminAggregators() {
                 <Trash2 className="w-4 h-4 mr-2" />
                 Deleted Aggregators
                 {metrics.inactiveAggregators > 0 && (
-                  <Badge className="ml-2 bg-white/20 text-white border-none">
+                  <Badge className="ml-2 bg-foreground/20 text-foreground border-none">
                     {metrics.inactiveAggregators}
                   </Badge>
                 )}
@@ -419,12 +419,13 @@ export function SuperAdminAggregators() {
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : (
                 <div className="min-w-full">
-                  <div className="grid grid-cols-7 gap-2 py-4 px-4 bg-muted/50 rounded-t-lg font-medium text-muted-foreground text-sm">
+                  <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-muted/50 rounded-t-lg font-medium text-muted-foreground text-sm">
                     <div>Aggregator</div>
+                    <div>Type</div>
                     <div>Total Applications</div>
                     <div>Total Commission</div>
                     <div>Join Date</div>
-                    <div>Status</div>
+                    <div>Account Status</div>
                     <div>OMS Status</div>
                     <div className="text-center">Actions</div>
                   </div>
@@ -435,11 +436,30 @@ export function SuperAdminAggregators() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="grid grid-cols-7 gap-2 py-4 px-4 bg-card/30 hover:bg-card/50 rounded border-b border-border items-center"
+                        className="grid grid-cols-8 gap-2 py-4 px-4 bg-card/30 hover:bg-card/50 rounded border-b border-border items-center"
                       >
+                        <div className="flex flex-col">
+                          <p className="text-foreground font-medium truncate max-w-[200px]" title={aggregator.companyName}>
+                            {aggregator.companyName}
+                          </p>
+                          <p className="text-[11px] text-muted-foreground truncate">{aggregator.user?.email}</p>
+                        </div>
                         <div>
-                          <p className="text-foreground font-medium">{aggregator.companyName}</p>
-                          <p className="text-sm text-muted-foreground truncate">{aggregator.user?.email}</p>
+                          {aggregator.aggregatorType === 'SOURCER' ? (
+                            <Badge className="bg-green-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-green-500/30 transition-all text-[10px] px-2 h-5 font-semibold">
+                              <UserCheck className="w-3 h-3 mr-1" />
+                              Sourcer
+                            </Badge>
+                          ) : aggregator.aggregatorType === 'CHANNEL_PARTNER' ? (
+                            <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30 hover:bg-orange-500/30 transition-all text-[10px] px-2 h-5 font-semibold">
+                              <Building className="w-3 h-3 mr-1" />
+                              Channel Partner
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-muted text-muted-foreground border border-border text-[10px] px-2 h-5">
+                              Not Set
+                            </Badge>
+                          )}
                         </div>
                         <ApplicationCountCell companyId={aggregator.companyId} />
                         <div className="text-foreground">
@@ -739,6 +759,30 @@ export function SuperAdminAggregators() {
                     </div>
                   </div>
 
+                  <div className="flex items-start gap-3">
+                    <div className="bg-cyan-500/10 p-2 rounded-lg mt-1">
+                      <UserCheck className="w-4 h-4 text-cyan-400" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Aggregator Type</p>
+                      {selectedAggregator.aggregatorType === 'SOURCER' ? (
+                        <Badge className="bg-green-500/20 text-emerald-400 border border-emerald-500/30">
+                          <UserCheck className="w-3 h-3 mr-1" />
+                          Sourcer
+                        </Badge>
+                      ) : selectedAggregator.aggregatorType === 'CHANNEL_PARTNER' ? (
+                        <Badge className="bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                          <Building className="w-3 h-3 mr-1" />
+                          Channel Partner
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-muted/50 text-muted-foreground border border-border">
+                          Not Set
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
                   <div className="flex items-start gap-3 md:col-span-2">
                     <div className="bg-pink-500/10 p-2 rounded-lg mt-1">
                       <MapPin className="w-4 h-4 text-pink-400" />
@@ -943,15 +987,15 @@ export function SuperAdminAggregators() {
 
       {/* Team Members Dialog */}
       {/* <Dialog open={isTeamMembersDialogOpen} onOpenChange={setIsTeamMembersDialogOpen}>
-        <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-border text-foreground max-w-3xl max-h-[85vh]">
+        <DialogContent className="bg-background border-border text-foreground max-w-3xl max-h-[85vh]">
           <DialogHeader>
             <div className="flex items-center justify-between">
               <div>
-                <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                <DialogTitle className="text-2xl font-bold text-accent">
                   Team Members
                 </DialogTitle>
                 <DialogDescription className="text-muted-foreground mt-1">
-                  <span className="font-semibold text-cyan-400">{selectedCompanyName}</span> - {selectedTeamMembers.length} member{selectedTeamMembers.length !== 1 ? 's' : ''}
+                  <span className="font-semibold text-accent">{selectedCompanyName}</span> - {selectedTeamMembers.length} member{selectedTeamMembers.length !== 1 ? 's' : ''}
                 </DialogDescription>
               </div>
               <Button
@@ -968,7 +1012,7 @@ export function SuperAdminAggregators() {
           <div className="space-y-4 mt-4 max-h-[60vh] overflow-y-auto pr-2">
             {selectedTeamMembers.length === 0 ? (
               <div className="text-center py-12">
-                <Users className="w-16 h-16 text-gray-600 mx-auto mb-3" />
+                <Users className="w-16 h-16 text-muted-foreground mx-auto mb-3" />
                 <p className="text-muted-foreground text-sm">No team members found</p>
               </div>
             ) : (
