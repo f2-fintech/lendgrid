@@ -92,25 +92,44 @@ export function LoginForm() {
 
   // Initialize Turnstile widget
   useEffect(() => {
+    const siteKey = process.env.NEXT_PUBLIC_CLOUDFLARE_SITE_KEY;
+
+    console.log('Turnstile initialization:', {
+      turnstileLoaded,
+      hasTurnstile: !!window.turnstile,
+      hasSiteKey: !!siteKey,
+      siteKeyPrefix: siteKey?.substring(0, 10) + '...'
+    });
+
     if (!turnstileLoaded || !window.turnstile || turnstileWidgetId.current) {
       return;
     }
 
     const container = document.getElementById('turnstile-container');
     if (!container) {
+      console.warn('Turnstile container not found');
+      return;
+    }
+
+    if (!siteKey) {
+      console.error('NEXT_PUBLIC_CLOUDFLARE_SITE_KEY is not defined!');
       return;
     }
 
     try {
+      console.log('Rendering Turnstile...');
       turnstileWidgetId.current = window.turnstile.render(container, {
-        sitekey: process.env.NEXT_PUBLIC_CLOUDFLARE_SITE_KEY,
+        sitekey: siteKey,
         callback: (token: string) => {
+          console.log('Turnstile success token received');
           setCaptchaToken(token);
         },
         'expired-callback': () => {
+          console.log('Turnstile token expired');
           setCaptchaToken(null);
         },
-        'error-callback': () => {
+        'error-callback': (error: any) => {
+          console.error('Turnstile error callback:', error);
           setCaptchaToken(null);
         },
         theme: 'dark',
@@ -325,8 +344,13 @@ export function LoginForm() {
 
       <Script
         src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-        strategy="lazyOnload"
+        strategy="afterInteractive"
         onReady={() => {
+          console.log('Turnstile script ready');
+          setTurnstileLoaded(true);
+        }}
+        onLoad={() => {
+          console.log('Turnstile script loaded');
           setTurnstileLoaded(true);
         }}
       />
