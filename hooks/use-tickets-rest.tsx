@@ -176,12 +176,14 @@ export function useDisbursedTicketsByMonth(
             ? companyId
             : Number(getCompanyId()) || undefined
 
+    // Super admin: always fetch (with or without companyId)
+    // Aggregator admin: only fetch if they have a companyId
     const shouldFetch =
-        userRole === 'aggregator_admin' ||
-        (userRole === 'super_admin' && resolvedCompanyId)
+        userRole === 'super_admin' ||
+        (userRole === 'aggregator_admin' && resolvedCompanyId)
 
     const key = shouldFetch
-        ? `/dashboard/disbursed-by-month-${year}-${resolvedCompanyId ?? 'self'}`
+        ? `/dashboard/disbursed-by-month-${year}-${resolvedCompanyId ?? 'all'}`
         : null
 
     const { data, error, isLoading } = useSWR(
@@ -189,6 +191,7 @@ export function useDisbursedTicketsByMonth(
         () => {
             const query = new URLSearchParams({ year: String(year) })
 
+            // Only add companyId to query if it exists
             if (resolvedCompanyId) {
                 query.append('companyId', String(resolvedCompanyId))
             }
@@ -206,4 +209,3 @@ export function useDisbursedTicketsByMonth(
         error,
     }
 }
-

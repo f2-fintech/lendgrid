@@ -409,6 +409,7 @@ export interface CommissionRule {
   minAmount: number;
   maxAmount: number;
   applicableFor: ApplicableFor;
+  aggregatorType: AggregatorType;
   status: RuleStatus;
   priority: number;
   description?: string;
@@ -480,6 +481,7 @@ export interface CreateCommissionRuleInput {
   minAmount: number;
   maxAmount: number;
   applicableFor: ApplicableFor;
+  aggregatorType: AggregatorType;
   priority?: number;
   description?: string;
   effectiveFrom?: Date;
@@ -513,6 +515,7 @@ export interface CommissionRuleFilterInput {
   productType?: string;
   status?: RuleStatus;
   applicableFor?: ApplicableFor;
+  aggregatorType?: AggregatorType;
 }
 
 export interface CommissionTransactionFilterInput {

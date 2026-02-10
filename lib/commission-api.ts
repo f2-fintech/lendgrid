@@ -38,6 +38,7 @@ export const commissionsApi = {
               minAmount
               maxAmount
               applicableFor
+              aggregatorType
               status
               priority
               description
@@ -81,6 +82,7 @@ export const commissionsApi = {
               minAmount
               maxAmount
               applicableFor
+              aggregatorType
               status
               priority
               description
@@ -116,6 +118,7 @@ export const commissionsApi = {
               minAmount
               maxAmount
               applicableFor
+              aggregatorType
               status
               priority
               description
@@ -147,6 +150,7 @@ export const commissionsApi = {
               minAmount
               maxAmount
               applicableFor
+              aggregatorType
               status
               priority
               description

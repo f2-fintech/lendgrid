@@ -21,7 +21,8 @@ import {
   DollarSign,
   Activity,
   Zap,
-  Crown
+  Crown,
+  Building2
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts'
 
@@ -30,19 +31,31 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CardSkeleton, ChartSkeleton } from '@/components/ui/loading-skeleton'
-import { CommissionStatus } from '@/lib'
+import { CommissionStatus, AggregatorType } from '@/lib'
 import { navigationPaths } from '@/lib/navigation'
 
 import { useAggregators } from '@/hooks/use-aggregators'
 import { useToast } from '@/hooks/use-toast'
 import { useCommissionTransactions, useCommissionRules } from '@/hooks/use-commissions'
-import { useApplicationsRest } from '@/hooks/use-applications-rest'
+import { useApplicationsRest, useApplicationCount } from '@/hooks/use-applications-rest'
 import { useDisbursedTicketsByMonth } from '@/hooks/use-tickets-rest'
+
+// Component to fetch and display application count for a specific aggregator
+const ApplicationCountCell = ({ companyId, color = 'text-green-400' }: { companyId?: number; color?: string }) => {
+  const { count, isLoading } = useApplicationCount(companyId, 'super_admin')
+
+  if (isLoading) return <span className="text-sm font-semibold animate-pulse">...</span>
+
+  return <span className={`text-sm font-semibold ${color}`}>{count}</span>
+}
 
 export function SuperAdminDashboard() {
   const router = useRouter()
   const { theme } = useTheme()
+  const [activeCommissionTab, setActiveCommissionTab] = useState<'sourcer' | 'channel_partner'>('sourcer')
+  const [activeAggregatorTab, setActiveAggregatorTab] = useState<'sourcer' | 'channel_partner'>('sourcer')
 
   // Fetch aggregators
   const { data: aggregatorsData, isLoading: aggregatorsLoading } = useAggregators({
@@ -50,10 +63,22 @@ export function SuperAdminDashboard() {
     limit: 5
   })
 
-  // Fetch commission rules
-  const { data: rulesData, isLoading: rulesLoading } = useCommissionRules({
+  // Fetch Sourcer commission rules
+  const { data: sourcerRulesData, isLoading: sourcerRulesLoading } = useCommissionRules({
     page: 1,
-    limit: 4
+    limit: 4,
+    filters: {
+      aggregatorType: AggregatorType.SOURCER
+    }
+  })
+
+  // Fetch Channel Partner commission rules
+  const { data: channelPartnerRulesData, isLoading: channelPartnerRulesLoading } = useCommissionRules({
+    page: 1,
+    limit: 4,
+    filters: {
+      aggregatorType: AggregatorType.CHANNEL_PARTNER
+    }
   })
 
   // Fetch recent applications
@@ -108,11 +133,17 @@ export function SuperAdminDashboard() {
       totalCommissionEarned,
       totalCommissionPaid,
       totalCommissionPending,
-      avgCommissionRate: rulesData?.data?.length
-        ? (rulesData.data.reduce((sum, r) => sum + r.commissionRate, 0) / rulesData.data.length).toFixed(2)
-        : '0'
+      avgCommissionRate: (() => {
+        const allRules = [
+          ...(sourcerRulesData?.data || []),
+          ...(channelPartnerRulesData?.data || [])
+        ]
+        return allRules.length
+          ? (allRules.reduce((sum, r) => sum + r.commissionRate, 0) / allRules.length).toFixed(2)
+          : '0'
+      })()
     }
-  }, [aggregatorsData, applicationsData, commissionsData, rulesData])
+  }, [aggregatorsData, applicationsData, commissionsData, sourcerRulesData, channelPartnerRulesData])
 
   const chartData = useMemo(() => {
     return disbursedByMonth.map((item) => ({
@@ -291,7 +322,7 @@ export function SuperAdminDashboard() {
 
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Aggregators List Card */}
+        {/* Aggregators List Card with Tabs */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -319,50 +350,145 @@ export function SuperAdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {aggregatorsLoading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse bg-muted/50 h-16 rounded-lg" />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {aggregatorsData?.results.slice(0, 5).map((agg, index) => (
-                    <motion.div
-                      key={agg._id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center gap-3 p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-primary/30 transition-all cursor-pointer"
-                      onClick={() => router.push(`/super-admin/aggregators/profile/${agg._id}`)}
-                    >
-                      <Avatar className="w-10 h-10 border-2 border-primary/20">
-                        <AvatarImage src={agg.user?.photoUrl} />
-                        <AvatarFallback className="bg-gradient-to-br from-blue-500 to-cyan-500 text-white">
-                          {agg.companyName?.charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{agg.companyName}</p>
-                        <p className="text-xs text-muted-foreground truncate">{agg.user?.email}</p>
-                      </div>
-                      <div className="text-right">
-                        <Badge className={getStatusColor(agg.user?.status)} variant="outline">
-                          {agg.user?.status}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {agg.totalApplicationsSubmitted || 0} apps
-                        </p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+              <Tabs value={activeAggregatorTab} onValueChange={(value) => setActiveAggregatorTab(value as 'sourcer' | 'channel_partner')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="sourcer" className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">
+                    <Users className="w-4 h-4 mr-2" />
+                    Sourcer
+                  </TabsTrigger>
+                  <TabsTrigger value="channel_partner" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Channel Partner
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Sourcer Tab Content */}
+                <TabsContent value="sourcer" className="mt-0">
+                  {aggregatorsLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="animate-pulse bg-muted/50 h-16 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {aggregatorsData?.results
+                        .filter(agg => agg.aggregatorType === AggregatorType.SOURCER)
+                        .slice(0, 5)
+                        .map((agg, index) => (
+                          <motion.div
+                            key={agg._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-green-400/30 shadow-sm transition-all cursor-pointer"
+                            onClick={() => router.push(`/super-admin/aggregators/profile/${agg._id}`)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <Avatar className="w-10 h-10 border-2 border-green-400/20 flex-shrink-0">
+                                <AvatarImage src={agg.user?.photoUrl} />
+                                <AvatarFallback className="bg-gradient-to-br from-green-500 to-emerald-500 text-white">
+                                  {agg.companyName?.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <p className="text-sm font-semibold text-foreground truncate">{agg.companyName}</p>
+                                  <Badge className={`${getStatusColor(agg.user?.status)} flex-shrink-0`} variant="outline">
+                                    {agg.user?.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate mb-2">{agg.user?.email}</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="flex flex-col">
+                                    <span className="text-xs text-muted-foreground">Applications</span>
+                                    <ApplicationCountCell companyId={agg.companyId} color="text-green-400" />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-xs text-muted-foreground">Commission</span>
+                                    <span className="text-sm font-semibold text-green-400">{formatCurrency(agg.totalCommissionEarned || 0)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      {aggregatorsData?.results.filter(agg => agg.aggregatorType === AggregatorType.SOURCER).length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No sourcer aggregators yet</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Channel Partner Tab Content */}
+                <TabsContent value="channel_partner" className="mt-0">
+                  {aggregatorsLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="animate-pulse bg-muted/50 h-16 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {aggregatorsData?.results
+                        .filter(agg => agg.aggregatorType === AggregatorType.CHANNEL_PARTNER)
+                        .slice(0, 5)
+                        .map((agg, index) => (
+                          <motion.div
+                            key={agg._id}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.1 }}
+                            className="p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-orange-400/30 shadow-sm transition-all cursor-pointer"
+                            onClick={() => router.push(`/super-admin/aggregators/profile/${agg._id}`)}
+                          >
+                            <div className="flex items-start gap-3">
+                              <Avatar className="w-10 h-10 border-2 border-orange-400/20 flex-shrink-0">
+                                <AvatarImage src={agg.user?.photoUrl} />
+                                <AvatarFallback className="bg-gradient-to-br from-orange-500 to-yellow-500 text-white">
+                                  {agg.companyName?.charAt(0).toUpperCase()}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center justify-between gap-2 mb-1">
+                                  <p className="text-sm font-semibold text-foreground truncate">{agg.companyName}</p>
+                                  <Badge className={`${getStatusColor(agg.user?.status)} flex-shrink-0`} variant="outline">
+                                    {agg.user?.status}
+                                  </Badge>
+                                </div>
+                                <p className="text-xs text-muted-foreground truncate mb-2">{agg.user?.email}</p>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <div className="flex flex-col">
+                                    <span className="text-xs text-muted-foreground">Applications</span>
+                                    <ApplicationCountCell companyId={agg.companyId} color="text-orange-400" />
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-xs text-muted-foreground">Commission</span>
+                                    <span className="text-sm font-semibold text-orange-400">{formatCurrency(agg.totalCommissionEarned || 0)}</span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      {aggregatorsData?.results.filter(agg => agg.aggregatorType === AggregatorType.CHANNEL_PARTNER).length === 0 && (
+                        <div className="text-center py-8 text-muted-foreground">
+                          <Building2 className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                          <p className="text-sm">No channel partner aggregators yet</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </motion.div>
 
-        {/* Commission Rules Card */}
+        {/* Commission Rules Card with Tabs */}
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
@@ -390,43 +516,110 @@ export function SuperAdminDashboard() {
               </div>
             </CardHeader>
             <CardContent>
-              {rulesLoading ? (
-                <div className="space-y-3">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="animate-pulse bg-muted/50 h-16 rounded-lg" />
-                  ))}
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {rulesData?.data?.slice(0, 4).map((rule, index) => (
-                    <motion.div
-                      key={rule.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.1 }}
-                      className="flex items-center justify-between p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-accent/30 transition-all"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-semibold text-foreground">{rule.ruleName}</p>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge variant="outline" className="text-xs">
-                            {rule.productType}
-                          </Badge>
-                          <span className="text-xs text-muted-foreground">
-                            {formatCurrency(rule.minAmount)} - {formatCurrency(rule.maxAmount)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold text-accent">{rule.commissionRate}%</p>
-                        <Badge className="bg-green-500/20 text-green-400 mt-1">
-                          {rule.status}
-                        </Badge>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-              )}
+              <Tabs value={activeCommissionTab} onValueChange={(value) => setActiveCommissionTab(value as 'sourcer' | 'channel_partner')} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 mb-4">
+                  <TabsTrigger value="sourcer" className="data-[state=active]:bg-green-500/20 data-[state=active]:text-green-400">
+                    <Users className="w-4 h-4 mr-2" />
+                    Sourcer
+                  </TabsTrigger>
+                  <TabsTrigger value="channel_partner" className="data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-400">
+                    <Building2 className="w-4 h-4 mr-2" />
+                    Channel Partner
+                  </TabsTrigger>
+                </TabsList>
+
+                {/* Sourcer Tab Content */}
+                <TabsContent value="sourcer" className="mt-0">
+                  {sourcerRulesLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="animate-pulse bg-muted/50 h-16 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : sourcerRulesData?.data?.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Banknote className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No sourcer commission rules yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {sourcerRulesData?.data?.slice(0, 4).map((rule, index) => (
+                        <motion.div
+                          key={rule.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center justify-between p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-green-400/30 transition-all"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-foreground">{rule.ruleName}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs border-green-500/30 text-green-400">
+                                {rule.productType}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatCurrency(rule.minAmount)} - {formatCurrency(rule.maxAmount)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-green-400">{rule.commissionRate}%</p>
+                            <Badge className="bg-green-500/20 text-green-400 mt-1">
+                              {rule.status}
+                            </Badge>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Channel Partner Tab Content */}
+                <TabsContent value="channel_partner" className="mt-0">
+                  {channelPartnerRulesLoading ? (
+                    <div className="space-y-3">
+                      {[...Array(3)].map((_, i) => (
+                        <div key={i} className="animate-pulse bg-muted/50 h-16 rounded-lg" />
+                      ))}
+                    </div>
+                  ) : channelPartnerRulesData?.data?.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Banknote className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-sm">No channel partner commission rules yet</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {channelPartnerRulesData?.data?.slice(0, 4).map((rule, index) => (
+                        <motion.div
+                          key={rule.id}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                          className="flex items-center justify-between p-3 rounded-lg bg-card/50 hover:bg-card border border-border/50 hover:border-orange-400/30 transition-all"
+                        >
+                          <div className="flex-1">
+                            <p className="text-sm font-semibold text-foreground">{rule.ruleName}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs border-orange-500/30 text-orange-400">
+                                {rule.productType}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">
+                                {formatCurrency(rule.minAmount)} - {formatCurrency(rule.maxAmount)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xl font-bold text-orange-400">{rule.commissionRate}%</p>
+                            <Badge className="bg-orange-500/20 text-orange-400 mt-1">
+                              {rule.status}
+                            </Badge>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </CardContent>
           </Card>
         </motion.div>
