@@ -17,8 +17,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CardSkeleton, ChartSkeleton, TableSkeleton } from '@/components/ui/loading-skeleton'
 import { TablePagination } from '@/components/ui/pagination'
-import { ExportButton } from '@/components/ui/button-to-export'
-import { exportRevenueReport } from '@/lib/exporter'
 import { CommissionStatus } from '@/lib'
 import { navigationPaths } from '@/lib/navigation'
 
@@ -27,6 +25,7 @@ import { useAggregator } from '@/hooks/use-aggregators'
 import { useToast } from '@/hooks/use-toast'
 import { useCommissionTransactions } from '@/hooks/use-commissions'
 import { useApplicationCount } from '@/hooks/use-applications-rest'
+import { getCookie, decodeJwt } from "@/lib/utils"
 import { useDashboardTicketStats, useDisbursedTicketsByMonth } from '@/hooks/use-tickets-rest'
 
 export function AggregatorDashboard() {
@@ -92,52 +91,78 @@ export function AggregatorDashboard() {
     },
   })
 
+  // compute profile completeness
   useEffect(() => {
-    // calculate completeness when data loads
     if (!userData && !aggData) return
 
-    const checks: boolean[] = []
-    // user fields
-    checks.push(Boolean(userData?.username))
-    checks.push(Boolean(userData?.email))
-    checks.push(Boolean(userData?.contact))
-    checks.push(Boolean(userData?.photoUrl))
-    checks.push(Boolean(userData?.status))
-    // business fields
-    checks.push(Boolean(aggData?.companyName))
-    checks.push(Boolean(aggData?.rank))
-    checks.push(Boolean(aggData?.businessType))
-    checks.push(Boolean(aggData?.yearOfEstablishment))
-    checks.push(Boolean(aggData?.registeredAddress))
-    checks.push(Boolean(aggData?.city))
-    checks.push(Boolean(aggData?.state))
-    checks.push(Boolean(aggData?.pincode))
-    checks.push(Boolean(aggData?.websiteUrl))
-    checks.push(Boolean(aggData?.gstNumber))
-    checks.push(Boolean(aggData?.panNumber))
-    checks.push(Boolean(aggData?.aadhaarNumber))
-    checks.push(Boolean(aggData?.cinNumber))
-    checks.push(Boolean(aggData?.tanNumber))
-    // banking
-    checks.push(Boolean(aggData?.bankName))
-    checks.push(Boolean(aggData?.accountNumber))
-    checks.push(Boolean(aggData?.ifscCode))
-    checks.push(Boolean(aggData?.accountHolderName))
-    // documents
-    const docs = (aggData as any)?.documents || {}
-    const documentsChecks = [
-      Boolean(docs?.aadhaarFront),
-      Boolean(docs?.aadhaarBack),
-      Boolean(docs?.panCard),
-      Boolean(docs?.gstCertificate),
-      Boolean(docs?.bankStatement),
-      Boolean(docs?.incorporationCertificate),
-      Boolean(docs?.bankStatement),
-      Boolean(docs?.cancelledCheque),
+    const token = getCookie("token")
+    const decoded = decodeJwt(token)
+    const aggregatorType = decoded?.aggregatorType
+    const isSourcer = aggregatorType === "SOURCER" // Check against string value stored in cookie
+
+    // groups checks
+    const profileChecks = [
+      Boolean(userData?.username),
+      Boolean(userData?.email),
+      Boolean(userData?.contact),
+      Boolean(userData?.photoUrl),
+      Boolean(userData?.status),
     ]
 
-    // include document checks so completeness matches settings page
-    const allChecks = [...checks, ...documentsChecks]
+    let businessChecks = []
+    let bankChecks: boolean[] = []
+    let documentsChecks: boolean[] = []
+
+    if (isSourcer) {
+      // SOURCER REQUIREMENTS: Basic info only
+      businessChecks = [
+        Boolean(aggData?.companyName),
+        Boolean(aggData?.aggregatorType),
+        Boolean(aggData?.rank),
+        Boolean(aggData?.businessType),
+      ]
+      // No bank or document checks for sourcer
+    } else {
+      // CHANNEL_PARTNER / DEFAULT REQUIREMENTS: Full checks
+      businessChecks = [
+        Boolean(aggData?.companyName),
+        Boolean(aggData?.aggregatorType),
+        Boolean(aggData?.rank),
+        Boolean(aggData?.businessType),
+        Boolean(aggData?.yearOfEstablishment),
+        Boolean(aggData?.registeredAddress),
+        Boolean(aggData?.city),
+        Boolean(aggData?.state),
+        Boolean(aggData?.pincode),
+        Boolean(aggData?.websiteUrl),
+        Boolean(aggData?.gstNumber),
+        Boolean(aggData?.panNumber),
+        Boolean(aggData?.aadhaarNumber),
+        Boolean(aggData?.cinNumber),
+        Boolean(aggData?.tanNumber),
+      ]
+
+      bankChecks = [
+        Boolean(aggData?.bankName),
+        Boolean(aggData?.accountNumber),
+        Boolean(aggData?.ifscCode),
+        Boolean(aggData?.accountHolderName),
+      ]
+
+      const docs = (aggData as any)?.documents || {}
+      documentsChecks = [
+        Boolean(docs?.aadhaarFront),
+        Boolean(docs?.aadhaarBack),
+        Boolean(docs?.panCard),
+        Boolean(docs?.gstCertificate),
+        Boolean(docs?.bankStatement),
+        Boolean(docs?.incorporationCertificate),
+        Boolean(docs?.cancelledCheque),
+        Boolean(docs?.addressProof),
+      ]
+    }
+
+    const allChecks = [...profileChecks, ...businessChecks, ...bankChecks, ...documentsChecks]
     const total = allChecks.length
     const filled = allChecks.filter(Boolean).length
     const pct = total > 0 ? Math.round((filled / total) * 100) : 100
@@ -194,28 +219,6 @@ export function AggregatorDashboard() {
     setPageSize(size)
     setPage(1)
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-  }
-
-  async function handleExport(format: "pdf" | "xlsx") {
-    try {
-      setExporting(true)
-      await exportRevenueReport({
-        format,
-        fileName: "revenue-report",
-        timeRange,
-        selectedMetric,
-        // chartElement: chartRef.current ?? undefined,
-        metrics: mockData.metrics,
-        // revenueData: mockData.revenueData,
-        // lenderRevenue: mockData.lenderRevenue,
-        // recentTransactions: mockData.recentTransactions,
-      })
-      toast({ title: "Export complete", description: `Saved ${format.toUpperCase()} report for ${timeRange}.` })
-    } catch (err: any) {
-      toast({ variant: "destructive", title: "Export failed", description: err?.message ?? "Something went wrong." })
-    } finally {
-      setExporting(false)
-    }
   }
 
   const formatCurrency = (amount: number) => {
@@ -332,7 +335,7 @@ export function AggregatorDashboard() {
   }
 
   const chartData = useMemo(() => {
-    return disbursedByMonth.map((item) => ({
+    return disbursedByMonth.map((item: any) => ({
       month: item.month.slice(0, 3), // Jan, Feb
       count: item.count,
     }))
@@ -371,9 +374,9 @@ export function AggregatorDashboard() {
         <div className="flex items-center space-x-4">
           <Button variant="outline" className="border-border">
             <Calendar className="w-4 h-4 mr-2" />
-            Last 30 days
+            {new Date().toLocaleDateString('en-US', { day: "numeric", month: 'long', year: 'numeric' })}
           </Button>
-          <ExportButton onExport={handleExport} disabled={exporting} />
+          {/* <ExportButton onExport={handleExport} disabled={exporting} /> */}
         </div>
       </div>
 
@@ -391,8 +394,9 @@ export function AggregatorDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Row 1 */}
           <MetricCard
-            title="Applications Submitted"
+            title="Submitted Applications"
             count={totalApplicationsCount}
+            countLabel="submitted"
             icon={FileText}
             colorClass="metric-card-primary"
             navigationPath={navigationPaths.aggregator.applications}
@@ -431,6 +435,7 @@ export function AggregatorDashboard() {
           <MetricCard
             title="Commission Transactions"
             count={commissionData?.total ?? 0}
+            countLabel="transactions"
             icon={ClipboardList}
             colorClass="metric-card-primary"
             navigationPath={navigationPaths.aggregator.commission}

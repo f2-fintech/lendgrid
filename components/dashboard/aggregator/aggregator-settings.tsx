@@ -33,6 +33,7 @@ import {
   AlertCircle,
   X,
   FileText,
+  UserCheck,
 } from "lucide-react"
 import { CardSkeleton } from "@/components/ui/loading-skeleton"
 import { useForm, FormProvider, useFormContext } from "react-hook-form"
@@ -46,8 +47,8 @@ import {
   useAggregator,
   useUpdateAggregatorProfile
 } from "@/hooks/use-aggregators"
-import { ApplicableFor, BusinessType, KYCStatus } from "@/lib"
-import { uploadToS3 } from "@/lib/utils"
+import { ApplicableFor, AggregatorType, BusinessType, KYCStatus } from "@/lib"
+import { uploadToS3, getCookie, decodeJwt } from "@/lib/utils"
 import { ProfileCompletionBanner } from "@/components/ui/progressbar"
 
 // VALIDATION SCHEMAS (Optional Fields with Format Validation)
@@ -64,6 +65,7 @@ const profileSchema = z.object({
 const businessSchema = z.object({
   id: z.string().optional(),
   companyName: z.string().optional().refine(val => !val || val.trim().length >= 2, "Company name must be at least 2 chars"),
+  aggregatorType: z.nativeEnum(AggregatorType).optional(),
   businessType: z.nativeEnum(BusinessType).optional(),
   rank: z.nativeEnum(ApplicableFor).optional(),
   yearOfEstablishment: z.string().optional().refine(val => !val || /^[0-9]{4}$/.test(val), "Must be YYYY format"),
@@ -421,10 +423,35 @@ function BusinessDetailsTab() {
                     </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Rank is assigned by Admin
+                    Assigned by Admin
                   </p>
                 </>
               )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-foreground font-medium">Aggregator Type *</Label>
+              <div className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-4 py-3">
+                <span className="text-muted-foreground">Assigned Type</span>
+                <Badge variant="outline" className="font-semibold flex items-center gap-1.5">
+                  {watch("business.aggregatorType") === AggregatorType.SOURCER ? (
+                    <>
+                      <UserCheck className="w-3.5 h-3.5" />
+                      <span>Sourcer</span>
+                    </>
+                  ) : watch("business.aggregatorType") === AggregatorType.CHANNEL_PARTNER ? (
+                    <>
+                      <Building className="w-3.5 h-3.5" />
+                      <span>Channel Partner</span>
+                    </>
+                  ) : (
+                    "N/A"
+                  )}
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Assigned by Admin
+              </p>
             </div>
 
             <div className="space-y-2">
@@ -1175,6 +1202,9 @@ export function AggregatorSettings() {
         business: {
           id: agg._id,
           companyName: agg.companyName || "",
+          aggregatorType: aggData.aggregatorType
+            ? (aggData.aggregatorType as AggregatorType)
+            : undefined,
           businessType: agg.businessType
             ? (agg.businessType.toLowerCase() as BusinessType)
             : undefined,
@@ -1225,6 +1255,11 @@ export function AggregatorSettings() {
   useEffect(() => {
     if (!userData && !aggData) return
 
+    const token = getCookie("token")
+    const decoded = decodeJwt(token)
+    const aggregatorType = decoded?.aggregatorType
+    const isSourcer = aggregatorType === "SOURCER" // Check against string value stored in cookie
+
     // groups checks
     const profileChecks = [
       Boolean(userData?.username),
@@ -1234,41 +1269,58 @@ export function AggregatorSettings() {
       Boolean(userData?.status),
     ]
 
-    const businessChecks = [
-      Boolean(aggData?.companyName),
-      Boolean(aggData?.rank),
-      Boolean(aggData?.businessType),
-      Boolean(aggData?.yearOfEstablishment),
-      Boolean(aggData?.registeredAddress),
-      Boolean(aggData?.city),
-      Boolean(aggData?.state),
-      Boolean(aggData?.pincode),
-      Boolean(aggData?.websiteUrl),
-      Boolean(aggData?.gstNumber),
-      Boolean(aggData?.panNumber),
-      Boolean(aggData?.aadhaarNumber),
-      Boolean(aggData?.cinNumber),
-      Boolean(aggData?.tanNumber),
-    ]
+    let businessChecks = []
+    let bankChecks: boolean[] = []
+    let documentsChecks: boolean[] = []
 
-    const bankChecks = [
-      Boolean(aggData?.bankName),
-      Boolean(aggData?.accountNumber),
-      Boolean(aggData?.ifscCode),
-      Boolean(aggData?.accountHolderName),
-    ]
+    if (isSourcer) {
+      // SOURCER REQUIREMENTS: Basic info only
+      businessChecks = [
+        Boolean(aggData?.companyName),
+        Boolean(aggData?.aggregatorType),
+        Boolean(aggData?.rank),
+        Boolean(aggData?.businessType),
+      ]
+      // No bank or document checks for sourcer
+    } else {
+      // CHANNEL_PARTNER / DEFAULT REQUIREMENTS: Full checks
+      businessChecks = [
+        Boolean(aggData?.companyName),
+        Boolean(aggData?.aggregatorType),
+        Boolean(aggData?.rank),
+        Boolean(aggData?.businessType),
+        Boolean(aggData?.yearOfEstablishment),
+        Boolean(aggData?.registeredAddress),
+        Boolean(aggData?.city),
+        Boolean(aggData?.state),
+        Boolean(aggData?.pincode),
+        Boolean(aggData?.websiteUrl),
+        Boolean(aggData?.gstNumber),
+        Boolean(aggData?.panNumber),
+        Boolean(aggData?.aadhaarNumber),
+        Boolean(aggData?.cinNumber),
+        Boolean(aggData?.tanNumber),
+      ]
 
-    const docs = (aggData as any)?.documents || {}
-    const documentsChecks = [
-      Boolean(docs?.aadhaarFront),
-      Boolean(docs?.aadhaarBack),
-      Boolean(docs?.panCard),
-      Boolean(docs?.gstCertificate),
-      Boolean(docs?.bankStatement),
-      Boolean(docs?.incorporationCertificate),
-      Boolean(docs?.bankStatement),
-      Boolean(docs?.cancelledCheque),
-    ]
+      bankChecks = [
+        Boolean(aggData?.bankName),
+        Boolean(aggData?.accountNumber),
+        Boolean(aggData?.ifscCode),
+        Boolean(aggData?.accountHolderName),
+      ]
+
+      const docs = (aggData as any)?.documents || {}
+      documentsChecks = [
+        Boolean(docs?.aadhaarFront),
+        Boolean(docs?.aadhaarBack),
+        Boolean(docs?.panCard),
+        Boolean(docs?.gstCertificate),
+        Boolean(docs?.bankStatement),
+        Boolean(docs?.incorporationCertificate),
+        Boolean(docs?.cancelledCheque),
+        Boolean(docs?.addressProof),
+      ]
+    }
 
     const allChecks = [...profileChecks, ...businessChecks, ...bankChecks, ...documentsChecks]
     const total = allChecks.length

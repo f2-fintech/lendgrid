@@ -735,7 +735,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                 </Alert>
             )}
 
-            {/* Metrics Cards */}
+            {/* Metrics Cards
             {isTableLoading ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <CardSkeleton headerLines={2} bodyHeight={20} />
@@ -766,7 +766,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                         subtitle="Platform average"
                     />
                 </div>
-            )}
+            )} */}
 
             {/* Commission Rules Table */}
             <motion.div

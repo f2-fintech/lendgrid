@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label'
 import { CreditCard, Loader2, ArrowLeft, Mail, CheckCircle } from 'lucide-react'
 import Link from 'next/link'
 import { navigationPaths } from '@/lib/navigation'
+import { ThemeLogo } from '@/components/theme-logo'
 
 const forgotPasswordSchema = z.object({
   email: z.string().email('Please enter a valid email address')
@@ -54,7 +55,7 @@ export function ForgotPasswordForm() {
       >
         <Card className="enhanced-card">
           <CardHeader className="text-center pb-6">
-            <motion.div 
+            <motion.div
               className="flex items-center justify-center mb-6"
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
@@ -99,17 +100,16 @@ export function ForgotPasswordForm() {
     >
       <Card className="enhanced-card">
         <CardHeader className="text-center pb-6">
-          <motion.div 
+          <motion.div
             className="flex items-center justify-center mb-6"
             initial={{ scale: 0.8 }}
             animate={{ scale: 1 }}
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="w-12 h-12 rounded-2xl bg-gradient flex items-center justify-center shadow-2xl">
-              <img
-                src="/f2Fintechlogo.png"
+              <ThemeLogo
                 alt="F2Fintech Logo"
-                className="w-12 h-10 rounded-xl "
+                className="w-12 h-10 rounded-xl"
               />
             </div>
             <span className="text-2xl font-bold gradient-text text-gold">LendGrid</span>

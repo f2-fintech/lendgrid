@@ -146,7 +146,7 @@ export function SuperAdminDashboard() {
   }, [aggregatorsData, applicationsData, commissionsData, sourcerRulesData, channelPartnerRulesData])
 
   const chartData = useMemo(() => {
-    return disbursedByMonth.map((item) => ({
+    return disbursedByMonth.map((item: any) => ({
       month: item.month.slice(0, 3),
       count: item.count,
     }))
@@ -212,7 +212,7 @@ export function SuperAdminDashboard() {
         </div>
         <Button variant="outline" className="border-border">
           <Calendar className="w-4 h-4 mr-2" />
-          {new Date().toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          {new Date().toLocaleDateString('en-US', { day: "numeric", month: 'long', year: 'numeric' })}
         </Button>
       </motion.div>
 

@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useMemo } from 'react'
 import { useTheme } from 'next-themes'
 import { motion } from 'framer-motion'
 import { TrendingUp, Calendar, Download, Eye, FileCheck, Search, Clock, CheckCircle, AlertCircle, XCircle, ClipboardList } from 'lucide-react'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
@@ -21,7 +21,7 @@ import { CommissionStatus } from '@/lib/api-types'
 import { ExportButton } from '@/components/ui/button-to-export'
 import { TablePagination } from '@/components/ui/pagination'
 import { useToast } from "@/hooks/use-toast"
-import { useCommissionTransactions } from '@/hooks/use-commissions'
+import { useCommissionTransactions, useCommissionTrendsByMonth } from '@/hooks/use-commissions'
 
 export function AggregatorCommission() {
   const { user } = useAuth('aggregator_admin')
@@ -109,36 +109,11 @@ export function AggregatorCommission() {
     }
   }, [transactionsData])
 
-  // Generate commission trends data by month
-  const commissionTrends = useMemo(() => {
-    if (!transactionsData?.data) return []
-
-    const monthlyData: Record<string, { earned: number; paid: number; pending: number }> = {}
-
-    transactionsData.data.forEach(transaction => {
-      const date = new Date(transaction.calculatedAt)
-      const monthKey = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
-
-      if (!monthlyData[monthKey]) {
-        monthlyData[monthKey] = { earned: 0, paid: 0, pending: 0 }
-      }
-
-      monthlyData[monthKey].earned += transaction.commissionAmount
-
-      if (transaction.status === CommissionStatus.PAID) {
-        monthlyData[monthKey].paid += transaction.commissionAmount
-      } else {
-        monthlyData[monthKey].pending += transaction.commissionAmount
-      }
-    })
-
-    return Object.entries(monthlyData)
-      .map(([month, data]) => ({
-        month: month.split(' ')[0],
-        ...data
-      }))
-      .slice(-6)
-  }, [transactionsData])
+  // Fetch commission trends data by month using the new hook
+  const { data: commissionTrends = [], isLoading: trendsLoading } = useCommissionTrendsByMonth(
+    new Date().getFullYear(),
+    user?._id
+  )
 
   const getStatusColor = (status: CommissionStatus) => {
     switch (status) {
@@ -611,7 +586,7 @@ export function AggregatorCommission() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {isLoading ? (
+                {isLoading || trendsLoading ? (
                   <ChartSkeleton height={354} />
                 ) : commissionTrends.length === 0 ? (
                   <div className="h-96 flex items-center justify-center text-muted-foreground">
@@ -621,23 +596,71 @@ export function AggregatorCommission() {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-96 w-full" ref={chartRef}>
+                  <div className="h-80 w-full" ref={chartRef}>
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={commissionTrends}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} />
-                        <XAxis dataKey="month" stroke={theme === 'dark' ? '#9CA3AF' : '#6b7280'} />
-                        <YAxis stroke={theme === 'dark' ? '#9CA3AF' : '#6b7280'} />
+                        <defs>
+                          <linearGradient id="colorEarned" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#FFD700" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#FFD700" stopOpacity={0.3} />
+                          </linearGradient>
+                          <linearGradient id="colorPaid" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#22c55e" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#22c55e" stopOpacity={0.3} />
+                          </linearGradient>
+                          <linearGradient id="colorPending" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#f97316" stopOpacity={0.8} />
+                            <stop offset="100%" stopColor="#f97316" stopOpacity={0.3} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke={theme === 'dark' ? '#374151' : '#e5e7eb'} opacity={0.3} />
+                        <XAxis
+                          dataKey="month"
+                          stroke={theme === 'dark' ? '#9CA3AF' : '#6b7280'}
+                          style={{ fontSize: '12px', fontWeight: 500 }}
+                        />
+                        <YAxis
+                          stroke={theme === 'dark' ? '#9CA3AF' : '#6b7280'}
+                          allowDecimals={false}
+                          style={{ fontSize: '12px', fontWeight: 500 }}
+                        />
                         <Tooltip
+                          cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }}
                           contentStyle={{
                             backgroundColor: theme === 'dark' ? '#1F2937' : '#ffffff',
                             border: `1px solid ${theme === 'dark' ? '#374151' : '#e5e7eb'}`,
                             borderRadius: '8px'
                           }}
-                          formatter={(value) => [formatCurrency(value as number), '']}
+                          formatter={(value, name) => {
+                            const labels: Record<string, string> = {
+                              earned: 'Total Earned',
+                              paid: 'Paid',
+                              pending: 'Pending'
+                            }
+                            return [formatCurrency(value as number), labels[name as string] || name]
+                          }}
                         />
-                        <Bar dataKey="earned" fill="#FFD700" name="Total Earned" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="paid" fill="#22c55e" name="Paid" radius={[2, 2, 0, 0]} />
-                        <Bar dataKey="pending" fill="#f97316" name="Pending" radius={[2, 2, 0, 0]} />
+                        <Legend
+                          verticalAlign="top"
+                          height={36}
+                          iconType="circle"
+                          formatter={(value) => {
+                            const labels: Record<string, string> = {
+                              earned: 'Total Earned',
+                              paid: 'Paid',
+                              pending: 'Pending'
+                            }
+                            return labels[value] || value
+                          }}
+                          wrapperStyle={{
+                            paddingBottom: '20px',
+                            fontSize: '14px',
+                            fontWeight: 500
+                          }}
+                        />
+                        <Bar dataKey="earned" fill="url(#colorEarned)" name="Total Earned" radius={[8, 8, 0, 0]} barSize={40} />
+                        <Bar dataKey="paid" fill="url(#colorPaid)" name="Paid" radius={[8, 8, 0, 0]} barSize={40} />
+                        <Bar dataKey="pending" fill="url(#colorPending)" name="Pending" radius={[8, 8, 0, 0]} barSize={40} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

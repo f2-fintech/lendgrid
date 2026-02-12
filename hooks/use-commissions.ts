@@ -204,3 +204,14 @@ export function useUpdateCommissionStatus() {
         },
     })
 }
+
+/**
+ * Fetch commission trends by month for a given year
+ */
+export function useCommissionTrendsByMonth(year: number, aggregatorId?: string) {
+    return useQuery({
+        queryKey: ['commission-trends', year, aggregatorId],
+        queryFn: () => commissionsApi.getCommissionTrendsByMonth(year, aggregatorId),
+        staleTime: 5 * 60 * 1000, // 5 minutes
+    })
+}

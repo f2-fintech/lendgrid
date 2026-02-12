@@ -112,7 +112,7 @@ export function AddAggregatorDialog({
             contact: "",
             email: "",
             companyName: "",
-            aggregatorType: "SOURCER",
+            aggregatorType: "CHANNEL_PARTNER",
             password: "",
             confirmPassword: ""
         },

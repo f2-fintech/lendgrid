@@ -65,9 +65,9 @@ export default function TurnstileMobilePage() {
 
     return (
         <div
+            className="bg-background"
             style={{
                 minHeight: "100vh",
-                background: "#0c0c0c",
                 display: "flex",
                 justifyContent: "center",
                 alignItems: "center",
@@ -80,10 +80,6 @@ export default function TurnstileMobilePage() {
             <meta name="robots" content="noindex, nofollow" />
 
             <div id="turnstile-mobile" />
-            <p style={{ color: "#aaa", fontSize: 12, margin: 0 }}>
-                Please complete verification
-            </p>
-
             <Script
                 src="https://challenges.cloudflare.com/turnstile/v0/api.js"
                 strategy="afterInteractive"

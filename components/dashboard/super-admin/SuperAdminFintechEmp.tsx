@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react'
 import { motion } from 'framer-motion'
 import {
     Search, Plus, Eye, Edit, Trash2, User, Clock, Phone, Mail,
@@ -44,6 +44,8 @@ import { useAuth } from '@/lib/auth'
 import { useToast } from '@/hooks/use-toast'
 import { cn } from '@/lib/utils'
 import { AddEmployeeDialog } from './dialogs/Addf2EmployeeDialog'
+import { useF2FintechEmployeesInfinite, type TransformedEmployee } from '@/hooks/use-f2fintech-employees'
+import { useF2FintechDesignations } from '@/hooks/use-f2fintech-designations'
 
 // Employee Status Configuration
 const STATUS_STYLE: Record<string, string> = {
@@ -84,12 +86,9 @@ const InfoItem = ({ icon: Icon, label, value, color }: {
 // EMPLOYEE CARD COMPONENT
 interface EmployeeCardProps {
     employee: any;
-    onView: () => void;
-    onEdit: () => void;
-    onDelete: () => void;
 }
 
-const EmployeeCard = ({ employee, onView, onEdit, onDelete }: EmployeeCardProps) => {
+const EmployeeCard = ({ employee }: EmployeeCardProps) => {
     return (
         <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
@@ -164,38 +163,6 @@ const EmployeeCard = ({ employee, onView, onEdit, onDelete }: EmployeeCardProps)
                     </div>
                 </div>
 
-                {/* Action Buttons */}
-                <div className="grid grid-cols-3 gap-2 pt-4 border-t border-border">
-                    <Button
-                        onClick={onView}
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-background/50 border-border text-foreground hover:text-foreground hover:bg-muted hover:border-blue-500/50 transition-all"
-                    >
-                        <Eye className="w-4 h-4 mr-1" />
-                        View
-                    </Button>
-
-                    <Button
-                        onClick={onEdit}
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-background/50 border-border text-amber-400 hover:text-foreground hover:bg-amber-600/20 hover:border-amber-500/50 transition-all"
-                    >
-                        <Edit className="w-4 h-4 mr-1" />
-                        Edit
-                    </Button>
-
-                    <Button
-                        onClick={onDelete}
-                        variant="outline"
-                        size="sm"
-                        className="w-full bg-background/50 border-border text-red-400 hover:text-foreground hover:bg-red-600/20 hover:border-red-500/50 transition-all"
-                    >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
-                    </Button>
-                </div>
             </div>
         </motion.div>
     );
@@ -205,12 +172,9 @@ const EmployeeCard = ({ employee, onView, onEdit, onDelete }: EmployeeCardProps)
 interface EmployeeTableRowProps {
     employee: any;
     index: number;
-    onView: () => void;
-    onEdit: () => void;
-    onDelete: () => void;
 }
 
-const EmployeeTableRow = ({ employee, index, onView, onEdit, onDelete }: EmployeeTableRowProps) => {
+const EmployeeTableRow = ({ employee, index }: EmployeeTableRowProps) => {
     return (
         <motion.tr
             initial={{ opacity: 0, x: -20 }}
@@ -257,34 +221,6 @@ const EmployeeTableRow = ({ employee, index, onView, onEdit, onDelete }: Employe
             <TableCell className="text-muted-foreground">
                 {employee.joinDate}
             </TableCell>
-            <TableCell className="text-center">
-                <div className="inline-flex items-center gap-1.5 bg-background/60 border-border rounded-lg px-2 py-1">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={onView} variant="ghost" size="sm" className="text-blue hover:text-foreground p-1">
-                                <Eye className="w-4 h-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>View Details</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={onEdit} variant="ghost" size="sm" className="text-amber-400 hover:text-foreground p-1">
-                                <Edit className="w-4 h-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Edit Employee</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <Button onClick={onDelete} variant="ghost" size="sm" className="text-red-400 hover:text-foreground p-1">
-                                <Trash2 className="w-4 h-4" />
-                            </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>Delete Employee</TooltipContent>
-                    </Tooltip>
-                </div>
-            </TableCell>
         </motion.tr>
     );
 };
@@ -293,12 +229,9 @@ const EmployeeTableRow = ({ employee, index, onView, onEdit, onDelete }: Employe
 interface EmployeesGridProps {
     employees: any[];
     isLoading: boolean;
-    onView: (emp: any) => void;
-    onEdit: (emp: any) => void;
-    onDelete: (id: string) => void;
 }
 
-const EmployeesGrid = ({ employees, isLoading, onView, onEdit, onDelete }: EmployeesGridProps) => {
+const EmployeesGrid = ({ employees, isLoading }: EmployeesGridProps) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -324,9 +257,6 @@ const EmployeesGrid = ({ employees, isLoading, onView, onEdit, onDelete }: Emplo
                 <EmployeeCard
                     key={employee.employeeId}
                     employee={employee}
-                    onView={() => onView(employee)}
-                    onEdit={() => onEdit(employee)}
-                    onDelete={() => onDelete(employee.employeeId)}
                 />
             ))}
         </div>
@@ -340,10 +270,11 @@ export function SuperAdminFintechEmployees() {
 
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
     const [searchTerm, setSearchTerm] = useState('')
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const [filterDepartment, setFilterDepartment] = useState('')
     const [filterStatus, setFilterStatus] = useState('')
 
-    const [selectedEmployee, setSelectedEmployee] = useState<any>(null)
+    const [selectedEmployee, setSelectedEmployee] = useState<TransformedEmployee | null>(null)
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
     const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
@@ -358,60 +289,77 @@ export function SuperAdminFintechEmployees() {
         joinDate: ''
     })
 
-    const [page, setPage] = useState(1)
-    const [pageSize, setPageSize] = useState(10)
     const tableTopRef = useRef<HTMLDivElement | null>(null)
 
-    // Mock data - Replace with actual API call
-    const [isLoading, setIsLoading] = useState(false)
-    const [employees, setEmployees] = useState([
-        {
-            employeeId: 'EMP001',
-            name: 'John Doe',
-            email: 'john.doe@f2fintech.com',
-            phone: '+91 9876543210',
-            role: 'Senior Developer',
-            department: 'Engineering',
-            status: 'active',
-            joinDate: '2023-01-15',
-            avatar: null,
-            address: '123 Tech Street, Bangalore',
-            emergencyContact: '+91 9876543211',
-            salary: 1200000,
-            panNumber: 'ABCDE1234F'
-        },
-        // Add more mock employees as needed
-    ])
-
-    const total = employees.length
-
-    // Client-side filtering
-    const filteredEmployees = useMemo(() => {
-        return employees.filter(emp => {
-            const matchesSearch = emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                emp.employeeId.toLowerCase().includes(searchTerm.toLowerCase())
-            const matchesDept = !filterDepartment || filterDepartment === 'all' || emp.department === filterDepartment
-            const matchesStatus = !filterStatus || filterStatus === 'all' || emp.status === filterStatus
-            return matchesSearch && matchesDept && matchesStatus
-        })
-    }, [employees, searchTerm, filterDepartment, filterStatus])
-
-    // Reset page when filters change
+    // Debounce search input (500ms delay)
     useEffect(() => {
-        setPage(1)
-    }, [searchTerm, filterDepartment, filterStatus])
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm)
+        }, 500)
 
-    const handlePageChange = async (newPage: number) => {
-        setPage(newPage)
-        tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
+        return () => clearTimeout(timer)
+    }, [searchTerm])
 
-    const handlePageSizeChange = async (size: number) => {
-        setPageSize(size)
-        setPage(1)
-        tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
-    }
+    // Fetch employees using infinite scroll
+    const {
+        data,
+        fetchNextPage,
+        hasNextPage,
+        isFetchingNextPage,
+        isLoading,
+        error,
+        refetch
+    } = useF2FintechEmployeesInfinite({
+        limit: 12,
+        search: debouncedSearch,
+        designation: filterDepartment && filterDepartment !== 'all' ? filterDepartment : '',
+    })
+
+    // Flatten all pages into single array
+    const allEmployees = useMemo(() => {
+        return data?.pages.flatMap(page => page.employees) ?? []
+    }, [data])
+
+    // Client-side status filtering (since API doesn't support it)
+    const filteredEmployees = useMemo(() => {
+        if (!filterStatus || filterStatus === 'all') return allEmployees
+        return allEmployees.filter(emp => emp.status === filterStatus)
+    }, [allEmployees, filterStatus])
+
+    // Show error toast if API fails
+    useEffect(() => {
+        if (error) {
+            toast({
+                title: 'Error',
+                description: error instanceof Error ? error.message : 'Failed to fetch employees',
+                variant: 'destructive',
+            })
+        }
+    }, [error, toast])
+
+    // Infinite scroll handler
+    const handleScroll = useCallback(() => {
+        if (typeof window === 'undefined') return
+
+        const scrollHeight = document.documentElement.scrollHeight
+        const scrollTop = document.documentElement.scrollTop
+        const clientHeight = document.documentElement.clientHeight
+
+        // Load more when user is 500px from bottom
+        if (scrollHeight - scrollTop - clientHeight < 500) {
+            if (hasNextPage && !isFetchingNextPage) {
+                fetchNextPage()
+            }
+        }
+    }, [hasNextPage, isFetchingNextPage, fetchNextPage])
+
+    // Attach scroll listener
+    useEffect(() => {
+        window.addEventListener('scroll', handleScroll)
+        return () => window.removeEventListener('scroll', handleScroll)
+    }, [handleScroll])
+
+
 
     const handleUpdateEmployee = async () => {
         try {
@@ -449,7 +397,10 @@ export function SuperAdminFintechEmployees() {
         }).format(amount)
     }
 
-    const departments = [...new Set(employees.map(e => e.department))]
+    // Extract unique departments/designations from employees
+    // Fetch designations from API
+    const { data: designations = [] } = useF2FintechDesignations()
+
     const statuses = ['active', 'inactive', 'on leave', 'suspended', 'probation']
 
     return (
@@ -472,28 +423,18 @@ export function SuperAdminFintechEmployees() {
                 </div>
                 <Select value={filterDepartment} onValueChange={setFilterDepartment}>
                     <SelectTrigger className="w-48 bg-background/50 border-border text-foreground">
-                        <SelectValue placeholder="All Departments" />
+                        <SelectValue placeholder="Select Designation" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="all">All Departments</SelectItem>
-                        {departments.map((dept, idx) => (
-                            <SelectItem key={idx} value={dept}>{dept}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-40 bg-background/50 border-border text-foreground">
-                        <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Status</SelectItem>
-                        {statuses.map((status, idx) => (
-                            <SelectItem key={idx} value={status} className="capitalize">
-                                {pretty(status)}
+                        <SelectItem value="all">All Designations</SelectItem>
+                        {designations.map((designation) => (
+                            <SelectItem key={designation._id} value={designation.title}>
+                                {designation.title}
                             </SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
+
             </motion.div>
 
             {/* Employees Table/Grid with View Toggle */}
@@ -515,15 +456,7 @@ export function SuperAdminFintechEmployees() {
                                 </div>
                             </div>
                             {/* VIEW TOGGLE BUTTONS */}
-                            <div className="flex items-center gap-3 bg-background/50 rounded-lg p-1">
-                                <Button
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                                    onClick={() => setIsCreateDialogOpen(true)}
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add New Employee
-                                </Button>
-
+                            <div className="flex items-center gap-2 border rounded-lg p-1 bg-muted/30">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button
@@ -567,7 +500,7 @@ export function SuperAdminFintechEmployees() {
                         {viewMode === 'table' ? (
                             <div className="overflow-x-auto professional-table">
                                 {isLoading ? (
-                                    <TableSkeleton columns={7} rows={pageSize} />
+                                    <TableSkeleton columns={7} rows={12} />
                                 ) : (
                                     <Table>
                                         <TableHeader>
@@ -578,25 +511,15 @@ export function SuperAdminFintechEmployees() {
                                                 <TableHead>Department</TableHead>
                                                 <TableHead>Status</TableHead>
                                                 <TableHead>Join Date</TableHead>
-                                                <TableHead className="text-center">Actions</TableHead>
+
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredEmployees.slice((page - 1) * pageSize, page * pageSize).map((employee, index) => (
+                                            {filteredEmployees.map((employee, index) => (
                                                 <EmployeeTableRow
                                                     key={employee.employeeId}
                                                     employee={employee}
                                                     index={index}
-                                                    onView={() => {
-                                                        setSelectedEmployee(employee)
-                                                        setIsViewDialogOpen(true)
-                                                    }}
-                                                    onEdit={() => {
-                                                        setSelectedEmployee(employee)
-                                                        setForm(employee)
-                                                        setIsEditDialogOpen(true)
-                                                    }}
-                                                    onDelete={() => handleDelete(employee.employeeId)}
                                                 />
                                             ))}
                                         </TableBody>
@@ -606,28 +529,27 @@ export function SuperAdminFintechEmployees() {
                         ) : (
                             // GRID VIEW
                             <EmployeesGrid
-                                employees={filteredEmployees.slice((page - 1) * pageSize, page * pageSize)}
+                                employees={filteredEmployees}
                                 isLoading={isLoading}
-                                onView={(emp) => {
-                                    setSelectedEmployee(emp);
-                                    setIsViewDialogOpen(true);
-                                }}
-                                onEdit={(emp) => {
-                                    setSelectedEmployee(emp);
-                                    setForm(emp);
-                                    setIsEditDialogOpen(true);
-                                }}
-                                onDelete={handleDelete}
                             />
                         )}
-                        <TablePagination
-                            page={page}
-                            pageSize={pageSize}
-                            total={filteredEmployees.length}
-                            onPageChange={handlePageChange}
-                            onPageSizeChange={handlePageSizeChange}
-                            className="mt-4"
-                        />
+
+                        {/* Loading indicator for infinite scroll */}
+                        {isFetchingNextPage && (
+                            <div className="flex justify-center py-8">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary"></div>
+                                    <span>Loading more employees...</span>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* End of list indicator */}
+                        {!hasNextPage && filteredEmployees.length > 0 && (
+                            <div className="text-center py-8 text-muted-foreground">
+                                <p>You've reached the end of the list</p>
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
             </motion.div>
@@ -790,8 +712,8 @@ export function SuperAdminFintechEmployees() {
                 isOpen={isCreateDialogOpen}
                 onClose={() => setIsCreateDialogOpen(false)}
                 refetch={() => {
-                    // Add your refetch logic here when you implement API
-                    console.log('Refetch employees')
+                    // Refetch employees after creating new one
+                    refetch()
                 }}
             />
 

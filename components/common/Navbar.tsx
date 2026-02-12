@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { navigationPaths } from "@/lib/navigation";
+import { ThemeLogo } from "@/components/theme-logo";
 
 export default function Navbar() {
   const router = useRouter();
@@ -19,10 +20,9 @@ export default function Navbar() {
           transition={{ duration: 0.6 }}
         >
           <div className="w-12 h-10 bg-gradient  rounded-xl flex items-center justify-center shadow-lg">
-            <img
-              src="/f2Fintechlogo.png"
+            <ThemeLogo
               alt="F2Fintech Logo"
-              className="w-12 h-12 rounded-xl "
+              className="w-12 h-12 rounded-xl"
             />
           </div>
           <span
@@ -35,7 +35,7 @@ export default function Navbar() {
             <motion.a
               key={item}
               href={`#${item.toLowerCase()}`}
-              className="text-gray-300 hover:text-gold transition-colors duration-300 font-medium"
+              className="text-muted-foreground hover:text-gold transition-colors duration-300"
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: index * 0.1 }}
@@ -52,10 +52,10 @@ export default function Navbar() {
           transition={{ duration: 0.6 }}
         >
           <Link href={navigationPaths.login}>
-            <Button className="glass-button bg-gradient-to-r from-blue to-cyan-500 text-white hover:text-gold">Login</Button>
+            <Button className="glass-button bg-gradient-to-r from-blue to-cyan-500 text-foreground hover:text-gold">Login</Button>
           </Link>
           <Link href={navigationPaths.signup}>
-            <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 hover:text-gold">Sign Up</Button>
+            <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 text-foreground hover:text-gold">Sign Up</Button>
           </Link>
         </motion.div>
       </div>}

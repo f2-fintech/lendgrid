@@ -18,6 +18,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { navigationPaths } from '@/lib/navigation';
 import { decodeJwt, setCookie } from "@/lib/utils";
+import { ThemeLogo } from '@/components/theme-logo';
 
 // Validation Schema
 const loginSchema = z.object({
@@ -223,8 +224,7 @@ export function LoginForm() {
           >
             <div className="flex items-center gap-3">
               <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center shadow-lg">
-                <img
-                  src="/f2Fintechlogo.png"
+                <ThemeLogo
                   alt="LendGrid"
                   className="w-12 h-12 object-contain"
                 />

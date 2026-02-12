@@ -206,10 +206,20 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
 
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2  text-muted-foreground text-sm">
-                                <ClipboardList className="w-4 h-4" />
+                                <FileText className="w-4 h-4" />
                                 <span>Product Type</span>
                             </div>
-                            <p className=" text-foreground text-sm">{application.loanCategory || 'N/A'}</p>
+                            <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                                {application.loanCategory || 'N/A'}
+                            </Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2  text-muted-foreground text-sm">
+                                <Phone className="w-4 h-4" />
+                                <span>Contact</span>
+                            </div>
+                            <p className=" text-foreground text-sm font-medium">{application.customerContact || 'N/A'}</p>
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -222,33 +232,45 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                             </div>
                         </div>
 
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2  text-muted-foreground text-sm">
+                                <MapPin className="w-4 h-4" />
+                                <span>Location</span>
+                            </div>
+                            <div className="text-right">
+                                <p className=" text-foreground text-sm font-medium truncate max-w-[180px]" title={`${application.customerLocation}, ${application.customerState}`}>
+                                    {application.customerLocation}, {application.customerState}
+                                </p>
+                            </div>
+                        </div>
+
                         {/* CARD ACTIONS SECTION - Status Badge & Action Buttons */}
-                        <div className="space-y-3 pt-4 border-t border-border">
-                            {/* Status Badge - Clickable with hover effect */}
+                        <div className="space-y-2 pt-4 border-t border-border">
+                            {/* Status Badge - Full Width */}
                             <Tooltip>
-                                <TooltipTrigger>
+                                <TooltipTrigger className="w-full">
                                     <div
                                         onClick={isOmsEnabled ? undefined : onStatusClick}
-                                        className={`w-full ${isOmsEnabled ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'} rounded-lg transition-all duration-200 ${!isOmsEnabled && 'hover:scale-[1.02]'} ${STATUS_STYLE[pretty(application.ticketStatus)]} p-3 flex items-center justify-center gap-2`}
+                                        className={`w-full ${isOmsEnabled ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'} rounded-lg transition-all duration-200 ${!isOmsEnabled && 'hover:scale-[1.01]'} ${STATUS_STYLE[pretty(application.ticketStatus)]} p-3 flex items-center justify-center gap-2`}
                                     >
                                         {getStatusIcon(application.ticketStatus)}
-                                        <span className="capitalize font-medium">{pretty(application.ticketStatus)}</span>
+                                        <span className="capitalize font-semibold text-sm">{pretty(application.ticketStatus)}</span>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    {isOmsEnabled ? "Status managed by OMS" : "Click here to change status"}
+                                    {isOmsEnabled ? "Status managed by OMS" : "Click to change status"}
                                 </TooltipContent>
                             </Tooltip>
 
-                            {/* Action Buttons - View, Delete & History */}
-                            <div className="grid grid-cols-2 gap-2 ">
+                            {/* Action Buttons - 50/50 Split */}
+                            <div className="grid grid-cols-2 gap-2">
                                 <Button
                                     onClick={onView}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-background/50 border-border  text-foreground hover: text-foreground hover:bg-muted hover:border-blue-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-foreground hover:text-foreground hover:bg-blue-500/10 hover:border-blue-500/50 transition-all"
                                 >
-                                    <Eye className="w-4 h-4 mr-1" />
+                                    <Eye className="w-4 h-4 mr-1.5" />
                                     View
                                 </Button>
 
@@ -266,9 +288,9 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                     onClick={() => setShowHistory(true)}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-background/50 border-border text-cyan-400 hover: text-foreground hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-cyan-400 hover:text-foreground hover:bg-cyan-600/10 hover:border-cyan-500/50 transition-all"
                                 >
-                                    <Clock className="w-4 h-4 mr-1" />
+                                    <Clock className="w-4 h-4 mr-1.5" />
                                     History
                                 </Button>
                             </div>
@@ -434,9 +456,27 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                         <p className=" text-foreground font-medium">{formatCurrency(application.applicationAmount)}</p>
                     </div>
                 </TableCell>
+                <TableCell className="hidden lg:table-cell">
+                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                        <FileText className="w-3 h-3 mr-1" />
+                        {application.loanCategory || 'N/A'}
+                    </Badge>
+                </TableCell>
+                <TableCell className="hidden md:table-cell">
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Phone className="w-3 h-3" />
+                        <span className="text-foreground">{application.customerContact || 'N/A'}</span>
+                    </div>
+                </TableCell>
                 <TableCell>
                     <div>
                         <p className=" text-foreground font-medium">{application.applicationProvider}</p>
+                    </div>
+                </TableCell>
+                <TableCell className="hidden xl:table-cell">
+                    <div className="flex items-center gap-1.5 text-sm truncate max-w-[150px]" title={`${application.customerLocation}, ${application.customerState}`}>
+                        <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        <span className="truncate text-foreground">{application.customerLocation}, {application.customerState}</span>
                     </div>
                 </TableCell>
                 <TableCell>
@@ -506,7 +546,7 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                     transition={{ duration: 0.3 }}
                     className="border-border bg-background/50"
                 >
-                    <TableCell colSpan={7} className="p-0">
+                    <TableCell colSpan={10} className="p-0">
                         <motion.div
                             initial={{ y: -20 }}
                             animate={{ y: 0 }}
@@ -785,8 +825,6 @@ export function TicketsTab() {
                 body: JSON.stringify(payload),
             });
 
-
-
             toast({
                 title: "Status Updated",
                 description: "Application status updated successfully."
@@ -983,12 +1021,15 @@ export function TicketsTab() {
                                     <TableSkeleton columns={6} rows={pageSize} />
                                 ) : (
                                     <Table>
-                                        <TableHeader>
+                                        <TableHeader className="bg-muted border-b-2 border-border">
                                             <TableRow>
                                                 <TableHead>Ticket ID</TableHead>
                                                 <TableHead>Customer</TableHead>
                                                 <TableHead>Loan Amount</TableHead>
+                                                <TableHead className="hidden lg:table-cell">Product Type</TableHead>
+                                                <TableHead className="hidden md:table-cell">Contact</TableHead>
                                                 <TableHead>Lender</TableHead>
+                                                <TableHead className="hidden xl:table-cell">Location</TableHead>
                                                 <TableHead>Status</TableHead>
                                                 <TableHead className="text-center">Actions</TableHead>
                                             </TableRow>

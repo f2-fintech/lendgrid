@@ -192,7 +192,17 @@ const ApplicationCard = ({ application, onView, onDelete, formatCurrency, isOmsE
                                 <FileText className="w-4 h-4" />
                                 <span>Product Type</span>
                             </div>
-                            <p className="text-foreground text-sm">{application.loanType.replace('_', ' ')}</p>
+                            <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                                {application.loanType?.replace('_', ' ') || 'N/A'}
+                            </Badge>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                                <Phone className="w-4 h-4" />
+                                <span>Contact</span>
+                            </div>
+                            <p className="text-foreground text-sm font-medium">{application.customerContact || 'N/A'}</p>
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -207,40 +217,44 @@ const ApplicationCard = ({ application, onView, onDelete, formatCurrency, isOmsE
                         </div>
 
                         <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2  text-muted-foreground text-sm">
-                                <Calendar className="w-4 h-4" />
-                                <span>Created</span>
+                            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+                                <MapPin className="w-4 h-4" />
+                                <span>Location</span>
                             </div>
-                            <p className=" text-foreground text-sm">{application.applicationDate}</p>
+                            <div className="text-right">
+                                <p className="text-foreground text-sm font-medium truncate max-w-[180px]" title={`${application.customerLocation}, ${application.customerState}`}>
+                                    {application.customerLocation}, {application.customerState}
+                                </p>
+                            </div>
                         </div>
 
                         {/* CARD ACTIONS SECTION - Status Badge & Action Buttons */}
-                        <div className="space-y-3 pt-4 border-t border-border">
-                            {/* Status Badge - Clickable with hover effect */}
+                        <div className="space-y-2 pt-4 border-t border-border">
+                            {/* Status Badge - Full Width */}
                             <Tooltip>
-                                <TooltipTrigger>
+                                <TooltipTrigger className="w-full">
                                     <div
-                                        className={`w-full ${isOmsEnabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'} rounded-lg transition-all duration-200 ${!isOmsEnabled && 'hover:scale-[1.02]'} ${STATUS_STYLE[pretty(application.loanStatus)]} p-3 flex items-center justify-center gap-2`}
+                                        className={`w-full ${isOmsEnabled ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'} rounded-lg transition-all duration-200 ${!isOmsEnabled && 'hover:scale-[1.01]'} ${STATUS_STYLE[pretty(application.loanStatus)]} p-3 flex items-center justify-center gap-2`}
                                     >
                                         {getStatusIcon(application.loanStatus)}
-                                        <span className="capitalize font-medium">{pretty(application.loanStatus)}</span>
+                                        <span className="capitalize font-semibold text-sm">{pretty(application.loanStatus)}</span>
                                     </div>
                                 </TooltipTrigger>
                                 <TooltipContent>
-                                    {isOmsEnabled ? "Status managed by OMS" : ""}
+                                    {isOmsEnabled ? "Status managed by OMS" : "Click to view details"}
                                 </TooltipContent>
                             </Tooltip>
 
-                            {/* Action Buttons - View, Delete & History */}
-                            <div className="grid grid-cols-2 gap-2 ">
+                            {/* Action Buttons - 50/50 Split */}
+                            <div className="grid grid-cols-1 gap-2">
                                 <Button
                                     onClick={onView}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-background/50 border-border  text-foreground hover: text-foreground hover:bg-muted hover:border-blue-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-foreground hover:text-foreground hover:bg-blue-500/10 hover:border-blue-500/50 transition-all"
                                 >
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    View
+                                    <Eye className="w-4 h-4 mr-1.5" />
+                                    View Details
                                 </Button>
 
                                 {/* <Button
@@ -407,13 +421,37 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, formatCurre
                 <TableCell>
                     <div>
                         <p className=" text-foreground font-medium">{formatCurrency(application.applicationAmount)}</p>
-                        {/* <p className=" text-muted-foreground text-sm">{application.}</p> */}
+                    </div>
+                </TableCell>
+
+                {/* Product Type Column */}
+                <TableCell className="hidden lg:table-cell">
+                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                        <FileText className="w-3 h-3 mr-1" />
+                        {application.loanType?.replace('_', ' ') || 'N/A'}
+                    </Badge>
+                </TableCell>
+
+                {/* Contact Column */}
+                <TableCell className="hidden md:table-cell">
+                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                        <Phone className="w-3 h-3" />
+                        <span className="text-foreground">{application.customerContact || 'N/A'}</span>
                     </div>
                 </TableCell>
                 <TableCell>
                     <div>
                         <p className=" text-foreground font-medium">{application.applicationProvider}</p>
-                        {/* <p className=" text-foreground font-medium">{application.lender.lenderType}</p> */}
+                    </div>
+                </TableCell>
+
+                {/* Location Column */}
+                <TableCell className="hidden xl:table-cell">
+                    <div className="flex items-center gap-1.5 text-sm truncate max-w-[150px]" title={`${application.customerLocation}, ${application.customerState}`}>
+                        <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                        <span className="truncate text-foreground">
+                            {application.customerLocation}, {application.customerState}
+                        </span>
                     </div>
                 </TableCell>
                 <TableCell>
@@ -759,12 +797,15 @@ export function AggregatorApplications() {
                                     <TableSkeleton columns={6} rows={pageSize} />
                                 ) : (
                                     <Table>
-                                        <TableHeader>
+                                        <TableHeader className="bg-muted border-b-2 border-border">
                                             <TableRow>
                                                 <TableHead>Application Number</TableHead>
                                                 <TableHead>Customer</TableHead>
                                                 <TableHead>Loan Amount</TableHead>
+                                                <TableHead className="hidden lg:table-cell">Product Type</TableHead>
+                                                <TableHead className="hidden md:table-cell">Contact</TableHead>
                                                 <TableHead>Lender</TableHead>
+                                                <TableHead className="hidden xl:table-cell">Location</TableHead>
                                                 <TableHead>Status</TableHead>
                                                 <TableHead>Created</TableHead>
                                                 <TableHead className="text-center">Actions</TableHead>

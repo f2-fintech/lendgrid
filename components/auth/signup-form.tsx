@@ -18,6 +18,7 @@ import { useRegister, useLogin } from '@/hooks/use-users';
 import { navigationPaths } from '@/lib/navigation';
 import { decodeJwt, setCookie } from "@/lib/utils";
 import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { ThemeLogo } from '@/components/theme-logo';
 
 // --- ROLE MAPPING UTILITY ---
 const mapLoginRoleToSignupType = (loginRole: string | null): 'aggregator' | 'lender' | undefined => {
@@ -269,8 +270,7 @@ export function SignupForm() {
             transition={{ duration: 0.6, delay: 0.2 }}
           >
             <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center shadow-lg">
-              <img
-                src="/f2Fintechlogo.png"
+              <ThemeLogo
                 alt="F2Fintech Logo"
                 className="w-12 h-12 rounded-xl object-contain"
               />

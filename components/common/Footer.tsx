@@ -6,6 +6,7 @@ import { navigationPaths } from "@/lib/navigation";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { GlassCard } from "@/components/brand/glass-card";
+import { ThemeLogo } from "@/components/theme-logo";
 
 
 export default function Footer() {
@@ -16,8 +17,7 @@ export default function Footer() {
           <div>
             <div className="flex items-center space-x-2 mb-4">
               <div className="w-10 h-10 bg-gradient rounded-xl flex items-center justify-center shadow-lg">
-                <img
-                  src="/f2Fintechlogo.png"
+                <ThemeLogo
                   alt="F2Fintech Logo"
                   className="w-12 h-12 rounded-xl"
                 />

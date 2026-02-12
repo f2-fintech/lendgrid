@@ -52,6 +52,7 @@ import { ThemeToggle } from '@/components/theme-toggle'
 import { Badge } from '@/components/ui/badge'
 import { navigationPaths } from '@/lib/navigation'
 import { getCookie, decodeJwt } from "@/lib/utils"
+import { ThemeLogo } from '@/components/theme-logo'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -194,18 +195,9 @@ function AppSidebar({
             <SidebarMenuButton size="lg" asChild>
               <Link href={navigationPaths.home}>
                 <div className="flex items-center gap-3">
-                  {/* Light mode logo */}
-                  <img
-                    src="/f2Fintechlogo.png"
+                  <ThemeLogo
                     alt="F2Fintech Logo"
-                    className="block dark:hidden w-12 h-12 object-contain"
-                  />
-
-                  {/* Dark mode logo */}
-                  <img
-                    src="/f2Fintechlogo.png"
-                    alt="F2Fintech Logo"
-                    className="hidden dark:block w-12 h-12 object-contain"
+                    className="w-12 h-12 object-contain"
                   />
 
                   <span className="text-2xl font-bold tracking-wide text-primary">

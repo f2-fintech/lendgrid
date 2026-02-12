@@ -304,4 +304,29 @@ export const commissionsApi = {
     `,
       variables: { id, input },
     }).then(res => res.updateCommissionStatus),
+
+  /**
+   * Get commission trends by month for a given year
+   */
+  getCommissionTrendsByMonth: (year: number, aggregatorId?: string) =>
+    gqlFetch<{
+      getCommissionTrendsByMonth: Array<{
+        month: string
+        earned: number
+        paid: number
+        pending: number
+      }>
+    }>({
+      query: `
+        query GetCommissionTrendsByMonth($year: Int!, $aggregatorId: ID) {
+          getCommissionTrendsByMonth(year: $year, aggregatorId: $aggregatorId) {
+            month
+            earned
+            paid
+            pending
+          }
+        }
+      `,
+      variables: { year, aggregatorId },
+    }).then(res => res.getCommissionTrendsByMonth),
 }
