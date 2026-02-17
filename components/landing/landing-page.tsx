@@ -135,9 +135,7 @@ export function LandingPage() {
       <FloatingMathSymbols />
 
       {/* Navigation */}
-      <nav className="fixed top-0 left-0 w-full z-50 px-6 py-4 backdrop-blur-lg bg-opacity-50  border-white/10 ">
-        <Navbar />
-      </nav>
+      <Navbar />
 
       {/* Hero Section */}
       <section className="relative px-6 py-10 text-center z-10">
@@ -161,7 +159,9 @@ export function LandingPage() {
             className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
           >
             <Link href={`${navigationPaths.login}?role=aggregator_admin`}>
-              <Button className="glass-button px-8 py-4 text-lg rounded-xl bg-gradient-to-r from-blue to-cyan-500 text-white shadow-2xl hover:text-gold">
+              <Button
+                className="bg-primary rounded-2xl px-6 py-4 font-bold text-lg text-white hover:opacity-90 shadow-2xl transition-all"
+              >
                 Join as Loan Aggregator/Channel Partner
                 <ArrowRight className="ml-2 w-5 h-5" />
               </Button>
@@ -898,7 +898,8 @@ export function LandingPage() {
                   </div>
 
                   <div className="md:col-span-2 pt-4">
-                    <Button type="submit" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground text-lg py-6 rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <Button type="submit"
+                      className="w-full bg-primary rounded-2xl px-6 py-4 font-bold text-lg text-foreground hover:opacity-90 hover:bg-primary/90 shadow-2xl transition-all">
                       Submit Request
                       <ArrowRight className="ml-2 w-5 h-5" />
                     </Button>

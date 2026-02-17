@@ -843,13 +843,13 @@ export function TicketsTab() {
 
     const handleStatusClick = (application: any) => {
         setSelectedApplication(application);
-        setOldStatus(application.status);
-        setNewStatus(application.status);
+        setOldStatus(application.ticketStatus);
+        setNewStatus(application.ticketStatus);
         setStatusComment("");
         setApprovedAmount(application.approvedAmount);
         setDisbursedAmount(application.disbursedAmount);
-        setApprovedDate(application.approvedDate ? new Date(application.approvedDate).toISOString().split('T')[0] : undefined);
-        setDisbursedDate(application.disbursedDate ? new Date(application.disbursedDate).toISOString().split('T')[0] : undefined);
+        setApprovedDate(application.approvedAt ? new Date(application.approvedAt).toISOString().split('T')[0] : undefined);
+        setDisbursedDate(application.disbursedAt ? new Date(application.disbursedAt).toISOString().split('T')[0] : undefined);
         setIsStatusDialogOpen(true);
     };
 

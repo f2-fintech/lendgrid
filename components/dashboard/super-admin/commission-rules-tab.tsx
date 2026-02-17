@@ -389,7 +389,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                             <Info className={`w-4 h-4 ${aggregatorTypeColor}`} />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-base">Basic Information</CardTitle>
+                                            <CardTitle className="text-foreground text-lg">Basic Information</CardTitle>
                                             <CardDescription className="text-xs">Define the rule name and target product</CardDescription>
                                         </div>
                                     </div>
@@ -476,7 +476,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                             <Percent className="w-4 h-4 text-blue-400" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-base">Commission Configuration</CardTitle>
+                                            <CardTitle className="text-foreground text-lg">Commission Configuration</CardTitle>
                                             <CardDescription className="text-xs">Set commission type and rate</CardDescription>
                                         </div>
                                     </div>
@@ -555,7 +555,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                             <CreditCard className="w-4 h-4 text-purple-400" />
                                         </div>
                                         <div>
-                                            <CardTitle className="text-base">Applicable Amount Range</CardTitle>
+                                            <CardTitle className="text-foreground text-lg">Applicable Amount Range</CardTitle>
                                             <CardDescription className="text-xs">Define minimum and maximum loan amounts</CardDescription>
                                         </div>
                                     </div>

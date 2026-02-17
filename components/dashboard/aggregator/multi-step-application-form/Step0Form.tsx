@@ -1,10 +1,13 @@
 import React, { useState, useEffect } from 'react';
+import { Controller, useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import {
     IndianRupee,
     Clock,
     Building2,
     Edit,
     ArrowRight,
+    AlertCircle,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -58,39 +61,59 @@ const tenureOptions = {
 };
 
 const leadTypeOptions = [
-    'null',
-    'notion',
-    'dialler',
-    'field visit',
-    'sourcer',
-    'channel partner',
-    'ref from customer',
-    'left employee follow up',
+    { value: 'null', label: 'Null' },
+    { value: 'notion', label: 'Notion' },
+    { value: 'dialler', label: 'Dialler' },
+    { value: 'field visit', label: 'Field Visit' },
+    { value: 'sourcer', label: 'Sourcer' },
+    { value: 'channel partner', label: 'Channel Partner' },
+    { value: 'ref from customer', label: 'Ref from Customer' },
+    { value: 'left employee follow up', label: 'Left Employee Follow Up' },
 ];
 
 export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => {
+    const [amountDialogOpen, setAmountDialogOpen] = useState(false);
+    const [editingProvider, setEditingProvider] = useState<string | null>(null);
+
     const { formData, setFormData, nextStep } = useFormContext();
     const { toast } = useToast();
 
-    const [amount, setAmount] = useState(formData.amount || '');
-    const [loanType, setLoanType] = useState(formData.loanType || '');
-    const [loanCategory, setLoanCategory] = useState(formData.loanCategory || '');
-    const [tenure, setTenure] = useState(formData.tenure || '');
-    const [leadType, setLeadType] = useState(formData.leadType || 'null');
-    const [selectedProviders, setSelectedProviders] = useState<string[]>(
-        formData.providers || []
-    );
-    const [providerAmounts, setProviderAmounts] = useState<
-        { provider: string; amount: string }[]
-    >(formData.providerAmounts || []);
-    const [amountDialogOpen, setAmountDialogOpen] = useState(false);
-    const [editingProvider, setEditingProvider] = useState<string | null>(null);
-    const [errors, setErrors] = useState({
-        amount: '',
-        loanType: '',
-        tenure: '',
-        providers: '',
+    // React Hook Form setup with Zod validation
+    const {
+        control,
+        handleSubmit: handleFormSubmit,
+        watch,
+        setValue,
+        formState: { errors },
+    } = useForm<Step0FormData>({
+        resolver: zodResolver(step0Schema),
+        defaultValues: {
+            amount: formData.amount || '',
+            loanType: formData.loanType || '',
+            loanCategory: formData.loanCategory || '',
+            tenure: formData.tenure || '',
+            leadType: formData.leadType || 'null',
+            providers: formData.providers || [],
+            providerAmounts: formData.providerAmounts || [],
+            hasRunningLoans: formData.hasRunningLoans || '',
+            whichLoan: formData.whichLoan || '',
+            runningLoanAmount: formData.runningLoanAmount || '',
+            caseType: formData.caseType || '',
+        },
     });
+
+    // Watch form values for reactive updates
+    const amount = watch('amount');
+    const loanType = watch('loanType');
+    const loanCategory = watch('loanCategory');
+    const tenure = watch('tenure');
+    const leadType = watch('leadType');
+    const selectedProviders = watch('providers');
+    const providerAmounts = watch('providerAmounts');
+    const hasRunningLoans = watch('hasRunningLoans');
+    const whichLoan = watch('whichLoan');
+    const runningLoanAmount = watch('runningLoanAmount');
+    const caseType = watch('caseType');
 
     // Determine loan category based on loan type
     const getLoanCategory = (type: string): string => {
@@ -110,45 +133,10 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
     // Handle loan type change
     const handleLoanTypeChange = (value: string) => {
-        setLoanType(value);
+        setValue('loanType', value);
         const category = getLoanCategory(value);
-        setLoanCategory(category);
-        setTenure(''); // Reset tenure when loan type changes
-        validateLoanType(value);
-    };
-
-    // Validation functions
-    const validateAmount = (value: string) => {
-        let error = '';
-        if (!value) {
-            error = 'Amount is required';
-        } else if (isNaN(Number(value))) {
-            error = 'Amount must be a number';
-        } else if (Number(value) < 50000 || Number(value) > 100000000) {
-            error = 'Amount must be between 50,000 and 10,00,00,000';
-        } else if (Number(value) % 5 !== 0) {
-            error = 'Amount must be divisible by 5';
-        }
-        setErrors((prev) => ({ ...prev, amount: error }));
-        return !error;
-    };
-
-    const validateLoanType = (value: string) => {
-        const error = !value ? 'Loan type is required' : '';
-        setErrors((prev) => ({ ...prev, loanType: error }));
-        return !error;
-    };
-
-    const validateTenure = (value: string) => {
-        const error = !value ? 'Tenure is required' : '';
-        setErrors((prev) => ({ ...prev, tenure: error }));
-        return !error;
-    };
-
-    const validateProviders = (values: string[]) => {
-        const error = values.length === 0 ? 'At least one provider must be selected' : '';
-        setErrors((prev) => ({ ...prev, providers: error }));
-        return !error;
+        setValue('loanCategory', category);
+        setValue('tenure', ''); // Reset tenure when loan type changes
     };
 
     // Handle provider selection
@@ -157,71 +145,31 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
             ? selectedProviders.filter((p) => p !== provider)
             : [...selectedProviders, provider];
 
-        setSelectedProviders(newProviders);
-        validateProviders(newProviders);
+        setValue('providers', newProviders);
 
         // Initialize amount for newly selected provider
         if (!selectedProviders.includes(provider)) {
-            setProviderAmounts((prev) => [
-                ...prev,
+            setValue('providerAmounts', [
+                ...providerAmounts,
                 { provider, amount: amount || '' },
             ]);
         } else {
             // Remove amount for deselected provider
-            setProviderAmounts((prev) => prev.filter((pa) => pa.provider !== provider));
+            setValue('providerAmounts', providerAmounts.filter((pa) => pa.provider !== provider));
         }
     };
 
     // Update provider amount
     const updateProviderAmount = (provider: string, newAmount: string) => {
-        setProviderAmounts((prev) =>
-            prev.map((pa) => (pa.provider === provider ? { ...pa, amount: newAmount } : pa))
+        setValue('providerAmounts',
+            providerAmounts.map((pa) => (pa.provider === provider ? { ...pa, amount: newAmount } : pa))
         );
     };
 
-    // Validate all provider amounts
-    const validateAllProviderAmounts = () => {
-        for (const pa of providerAmounts) {
-            if (!pa.amount) return false;
-            if (isNaN(Number(pa.amount))) return false;
-            if (Number(pa.amount) < 50000 || Number(pa.amount) > 100000000) return false;
-            if (Number(pa.amount) % 5 !== 0) return false;
-        }
-        return true;
-    };
-
-    // Handle form submission
-    const handleSubmit = () => {
-        const isAmountValid = validateAmount(amount);
-        const isLoanTypeValid = validateLoanType(loanType);
-        const isTenureValid = validateTenure(tenure);
-        const areProvidersValid = validateProviders(selectedProviders);
-        const areAmountsValid = validateAllProviderAmounts();
-
-        if (
-            isAmountValid &&
-            isLoanTypeValid &&
-            isTenureValid &&
-            areProvidersValid &&
-            areAmountsValid
-        ) {
-            setFormData({
-                amount,
-                loanType,
-                loanCategory,
-                leadType,
-                tenure,
-                providers: selectedProviders,
-                providerAmounts,
-            });
-            onSubmit();
-        } else {
-            toast({
-                title: 'Validation Error',
-                description: 'Please fill all required fields correctly',
-                variant: 'destructive',
-            });
-        }
+    // Handle form submission with React Hook Form
+    const onFormSubmit = (data: Step0FormData) => {
+        setFormData(data);
+        onSubmit();
     };
 
     return (
@@ -238,136 +186,308 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                 </h2>
             </div>
 
-            <div className="space-y-4">
+            <form onSubmit={handleFormSubmit(onFormSubmit)} className="space-y-4">
                 {/* Loan Amount */}
                 <div>
                     <Label className="text-foreground">Loan Amount*</Label>
                     <div className="relative mt-2">
                         <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                            type="number"
+                            type="text"
                             value={amount}
-                            onChange={(e) => {
-                                setAmount(e.target.value);
-                                validateAmount(e.target.value);
-                            }}
-                            onBlur={() => validateAmount(amount)}
-                            className="bg-card border-border text-foreground pl-10"
-                            placeholder="Base loan amount (can customize per provider)"
+                            onChange={(e) => setValue('amount', e.target.value)}
+                            className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
+                            placeholder="Enter amount"
                         />
                     </div>
                     {errors.amount && (
-                        <p className="text-red-400 text-sm mt-1">{errors.amount}</p>
+                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.amount.message}
+                        </p>
                     )}
                 </div>
 
                 {/* Loan Type */}
                 <div>
                     <Label className="text-foreground">Loan Type*</Label>
-                    <Select value={loanType} onValueChange={handleLoanTypeChange}>
-                        <SelectTrigger className="bg-card border-border text-foreground mt-2">
-                            <div className="flex items-center">
-                                <Building2 className="w-4 h-4 mr-2" />
-                                <SelectValue placeholder="Choose loan type" />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border-border">
-                            <div className="px-2 py-1 text-xs font-semibold text-primary select-none">
-                                Secured Loans
-                            </div>
-                            {loanTypes.secured.map((loan) => (
-                                <SelectItem
-                                    key={loan.value}
-                                    value={loan.value}
-                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                >
-                                    {loan.label}
-                                </SelectItem>
-                            ))}
-                            <div className="px-2 py-1 text-xs font-semibold text-primary mt-2 select-none">
-                                Unsecured Loans
-                            </div>
-                            {loanTypes.unsecured.map((loan) => (
-                                <SelectItem
-                                    key={loan.value}
-                                    value={loan.value}
-                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                >
-                                    {loan.label}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Controller
+                        control={control}
+                        name="loanType"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={(value) => {
+                                field.onChange(value);
+                                handleLoanTypeChange(value);
+                            }}>
+                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                    <div className="flex items-center">
+                                        <Building2 className="w-4 h-4 mr-2" />
+                                        <SelectValue placeholder="Choose loan type" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                    <div className="px-2 py-1 text-xs font-semibold text-primary select-none">
+                                        Secured Loans
+                                    </div>
+                                    {loanTypes.secured.map((loan) => (
+                                        <SelectItem
+                                            key={loan.value}
+                                            value={loan.value}
+                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                        >
+                                            {loan.label}
+                                        </SelectItem>
+                                    ))}
+                                    <div className="px-2 py-1 text-xs font-semibold text-primary mt-2 select-none">
+                                        Unsecured Loans
+                                    </div>
+                                    {loanTypes.unsecured.map((loan) => (
+                                        <SelectItem
+                                            key={loan.value}
+                                            value={loan.value}
+                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                        >
+                                            {loan.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
                     {errors.loanType && (
-                        <p className="text-red-400 text-sm mt-1">{errors.loanType}</p>
+                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.loanType.message}
+                        </p>
                     )}
                 </div>
 
                 {/* Tenure */}
                 <div>
-                    <Label className="text-foreground">
-                        {loanCategory
-                            ? `Tenure (${loanCategory === 'secured' ? 'Long Term' : 'Short Term'})*`
-                            : 'Select Tenure*'}
-                    </Label>
-                    <Select
-                        value={tenure}
-                        onValueChange={(value) => {
-                            setTenure(value);
-                            validateTenure(value);
-                        }}
-                        disabled={!loanCategory}
-                    >
-                        <SelectTrigger className="bg-card border-border text-foreground mt-2">
-                            <div className="flex items-center">
-                                <Clock className="w-4 h-4 mr-2" />
-                                <SelectValue
-                                    placeholder={
-                                        loanCategory ? 'Choose tenure' : 'Select loan type first'
-                                    }
-                                />
-                            </div>
-                        </SelectTrigger>
-                        <SelectContent className="bg-background border-border">
-                            {(loanCategory ? tenureOptions[loanCategory] : []).map((option) => (
-                                <SelectItem
-                                    key={option}
-                                    value={option}
-                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                >
-                                    {option}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                    <Label className="text-foreground">Loan Tenure*</Label>
+                    <Controller
+                        control={control}
+                        name="tenure"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange} disabled={!loanCategory}>
+                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                    <div className="flex items-center">
+                                        <Clock className="w-4 h-4 mr-2" />
+                                        <SelectValue
+                                            placeholder={
+                                                loanCategory ? 'Choose tenure' : 'Select loan type first'
+                                            }
+                                        />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                    {(loanCategory ? tenureOptions[loanCategory] : []).map((option) => (
+                                        <SelectItem
+                                            key={option}
+                                            value={option}
+                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                        >
+                                            {option}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
                     {errors.tenure && (
-                        <p className="text-red-400 text-sm mt-1">{errors.tenure}</p>
+                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.tenure.message}
+                        </p>
                     )}
                 </div>
 
                 {/* Lead Type (Optional) */}
                 <div>
                     <Label className="text-foreground">Lead Type (Optional)</Label>
-                    <Select
-                        value={leadType}
-                        onValueChange={(value) => setLeadType(value)}
-                    >
-                        <SelectTrigger className="bg-card border-border text-foreground mt-2">
-                            <SelectValue />
-                        </SelectTrigger>
+                    <Controller
+                        control={control}
+                        name="leadType"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                    <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                    {leadTypeOptions.map((leadType) => (
+                                        <SelectItem
+                                            key={leadType.label}
+                                            value={leadType.value}
+                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                        >
+                                            {leadType.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                </div>
 
-                        <SelectContent className="bg-background border-border">
-                            {leadTypeOptions.map((type) => (
-                                <SelectItem
-                                    key={type}
-                                    value={type}
-                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                >
-                                    {type}
-                                </SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
+                {/* Running Customer Loans */}
+                <div>
+                    <Label className="text-foreground">Running Customer Loans*</Label>
+                    <Controller
+                        control={control}
+                        name="hasRunningLoans"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={(value) => {
+                                field.onChange(value);
+                                // Clear conditional fields when switching to "no"
+                                if (value === 'no') {
+                                    setValue('whichLoan', '');
+                                    setValue('runningLoanAmount', '');
+                                }
+                            }}>
+                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                    <div className="flex items-center">
+                                        <Building2 className="w-4 h-4 mr-2" />
+                                        <SelectValue placeholder="Select option" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                    <SelectItem
+                                        value="yes"
+                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                    >
+                                        Yes
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="no"
+                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                    >
+                                        No
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {errors.hasRunningLoans && (
+                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.hasRunningLoans.message}
+                        </p>
+                    )}
+                </div>
+
+                {/* Conditional Fields - Which Loan and Loan Amount */}
+                {hasRunningLoans === 'yes' && (
+                    <>
+                        {/* Which Loan Field */}
+                        <div>
+                            <Label className="text-foreground">Which Loan*</Label>
+                            <Controller
+                                control={control}
+                                name="whichLoan"
+                                render={({ field }) => (
+                                    <Select value={field.value} onValueChange={field.onChange}>
+                                        <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                            <div className="flex items-center">
+                                                <Building2 className="w-4 h-4 mr-2" />
+                                                <SelectValue placeholder="Choose loan type" />
+                                            </div>
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                                            <div className="px-2 py-1 text-xs font-semibold text-primary select-none">
+                                                Secured Loans
+                                            </div>
+                                            {loanTypes.secured.map((loan) => (
+                                                <SelectItem
+                                                    key={loan.value}
+                                                    value={loan.value}
+                                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                                >
+                                                    {loan.label}
+                                                </SelectItem>
+                                            ))}
+                                            <div className="px-2 py-1 text-xs font-semibold text-primary mt-2 select-none">
+                                                Unsecured Loans
+                                            </div>
+                                            {loanTypes.unsecured.map((loan) => (
+                                                <SelectItem
+                                                    key={loan.value}
+                                                    value={loan.value}
+                                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                                >
+                                                    {loan.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {errors.whichLoan && (
+                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {errors.whichLoan.message}
+                                </p>
+                            )}
+                        </div>
+                        {/* Running Loan Amount Field */}
+                        <div>
+                            <Label className="text-foreground">Running Loan Amount*</Label>
+                            <div className="relative mt-2">
+                                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <Input
+                                    type="text"
+                                    value={runningLoanAmount}
+                                    onChange={(e) => setValue('runningLoanAmount', e.target.value)}
+                                    className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
+                                    placeholder="Enter running loan amount"
+                                />
+                            </div>
+                            {errors.runningLoanAmount && (
+                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                    <AlertCircle className="w-3 h-3" />
+                                    {errors.runningLoanAmount.message}
+                                </p>
+                            )}
+                        </div>
+                    </>
+                )}
+
+                {/* Case Type */}
+                <div>
+                    <Label className="text-foreground">Case Type*</Label>
+                    <Controller
+                        control={control}
+                        name="caseType"
+                        render={({ field }) => (
+                            <Select value={field.value} onValueChange={field.onChange}>
+                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                    <div className="flex items-center">
+                                        <Building2 className="w-4 h-4 mr-2" />
+                                        <SelectValue placeholder="Select case type" />
+                                    </div>
+                                </SelectTrigger>
+                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                    <SelectItem
+                                        value="top_up"
+                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                    >
+                                        Top Up
+                                    </SelectItem>
+                                    <SelectItem
+                                        value="fresh"
+                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                    >
+                                        Fresh
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        )}
+                    />
+                    {errors.caseType && (
+                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                            <AlertCircle className="w-3 h-3" />
+                            {errors.caseType.message}
+                        </p>
+                    )}
                 </div>
 
                 {/* Providers */}
@@ -385,7 +505,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         ))}
                     </div>
                     {errors.providers && (
-                        <p className="text-red-400 text-sm mt-1">{errors.providers}</p>
+                        <p className="text-red-400 text-sm mt-1">{errors.providers.message}</p>
                     )}
                 </div>
 
@@ -430,20 +550,13 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
                 {/* Submit Button */}
                 <Button
-                    onClick={handleSubmit}
-                    disabled={
-                        !amount ||
-                        !loanType ||
-                        !tenure ||
-                        selectedProviders.length === 0 ||
-                        !validateAllProviderAmounts()
-                    }
+                    type="submit"
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Let's Get Started
                     <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
-            </div>
+            </form>
 
             {/* Amount Edit Dialog */}
             <Dialog open={amountDialogOpen} onOpenChange={setAmountDialogOpen}>

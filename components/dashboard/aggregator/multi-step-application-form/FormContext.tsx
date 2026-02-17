@@ -15,6 +15,10 @@ interface FormContextType {
         leadType: string;
         providers: string[];
         providerAmounts: { provider: string; amount: string }[];
+        hasRunningLoans: string;
+        whichLoan: string;
+        runningLoanAmount: string;
+        caseType: string;
     };
     setFormData: (data: any) => void;
     nextStep: () => void;
@@ -45,6 +49,10 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         leadType: 'null',
         providers: [] as string[],
         providerAmounts: [] as { provider: string; amount: string }[],
+        hasRunningLoans: '',
+        whichLoan: '',
+        runningLoanAmount: '',
+        caseType: '',
     });
 
     const nextStep = useCallback(() => {
@@ -67,6 +75,10 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
             leadType: 'null',
             providers: [],
             providerAmounts: [],
+            hasRunningLoans: '',
+            whichLoan: '',
+            runningLoanAmount: '',
+            caseType: '',
         });
     }, []);
 

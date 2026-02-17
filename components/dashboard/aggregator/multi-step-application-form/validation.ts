@@ -13,7 +13,11 @@ export const step0Schema = z.object({
 
     loanType: z.string().min(1, 'Loan type is required'),
 
+    loanCategory: z.string().optional(),
+
     tenure: z.string().min(1, 'Tenure is required'),
+
+    leadType: z.string().optional(),
 
     providers: z.array(z.string()).min(1, 'At least one provider must be selected'),
 
@@ -23,6 +27,40 @@ export const step0Schema = z.object({
             amount: z.string(),
         })
     ),
+
+    hasRunningLoans: z.string().min(1, 'Please specify if you have running loans'),
+    whichLoan: z.string().optional(),
+    runningLoanAmount: z.string().optional(),
+    caseType: z.string().min(1, 'Case type is required'),
+}).superRefine((data, ctx) => {
+    if (data.hasRunningLoans === 'yes') {
+        if (!data.whichLoan || data.whichLoan.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Please specify which loan you have',
+                path: ['whichLoan'],
+            });
+        }
+        if (!data.runningLoanAmount || data.runningLoanAmount.trim() === '') {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Running loan amount is required',
+                path: ['runningLoanAmount'],
+            });
+        } else if (isNaN(Number(data.runningLoanAmount))) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Running loan amount must be a number',
+                path: ['runningLoanAmount'],
+            });
+        } else if (Number(data.runningLoanAmount) <= 0) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Running loan amount must be greater than 0',
+                path: ['runningLoanAmount'],
+            });
+        }
+    }
 });
 
 export type Step0FormData = z.infer<typeof step0Schema>;

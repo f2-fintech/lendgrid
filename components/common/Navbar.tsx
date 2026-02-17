@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
@@ -11,54 +10,56 @@ import { ThemeLogo } from "@/components/theme-logo";
 export default function Navbar() {
   const router = useRouter();
   return (
-    <div className="fixed top-0 left-0 w-full z-50 px-6 py-4 backdrop-blur-lg bg-opacity-50  border-white/10 ">
-      {<div className="max-w-7xl mx-auto flex items-center justify-between">
-        <motion.div
-          className="flex items-center space-x-2"
-          initial={{ opacity: 0, x: -20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
+    <div className="fixed top-5 inset-x-0 z-50 mx-auto w-[95%] max-w-7xl">
+      <nav
+        className="flex items-center justify-between rounded-2xl px-6 pl-3 py-1 shadow-[0_8px_30px_rgba(0,0,0,0.12)] dark:shadow-[0_8px_40px_rgba(0,0,0,0.8)] ring-1 ring-black/5 dark:ring-white/10 backdrop-blur-xl"
+        style={{ backgroundColor: 'hsl(var(--navbar-bg) / 0.9)' }}
+      >
+        <div
+          className="flex items-center gap-1 cursor-pointer"
+          onClick={() => router.push('/')}
         >
-          <div className="w-12 h-10 bg-gradient  rounded-xl flex items-center justify-center shadow-lg">
-            <ThemeLogo
-              alt="F2Fintech Logo"
-              className="w-12 h-12 rounded-xl"
-            />
-          </div>
-          <span
-            className="text-2xl font-bold gradient-text text-primary cursor-pointer"
-            onClick={() => router.push('/')}
-          >LendGrid</span>
-        </motion.div>
-        <div className="hidden md:flex items-center space-x-8">
-          {["Features", "Solution", "Testimonials", "Contact"].map((item, index) => (
-            <motion.a
+          <ThemeLogo
+            alt="F2Fintech Logo"
+            className="w-16 h-16"
+          />
+          <span className="text-2xl font-bold tracking-wide cursor-pointer" style={{ color: '#3b82f6' }}>
+            LendGrid
+          </span>
+        </div>
+
+        <div className="hidden md:flex items-center gap-8">
+          {["Features", "Solution", "Testimonials", "Contact"].map((item) => (
+            <Link
               key={item}
               href={`#${item.toLowerCase()}`}
-              className="text-muted-foreground hover:text-gold transition-colors duration-300"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: index * 0.1 }}
+              className="text-lg font-semibold text-foreground/90 hover:text-primary transition-colors"
             >
               {item}
-            </motion.a>
+            </Link>
           ))}
         </div>
 
-        <motion.div
-          className="flex items-center space-x-4"
-          initial={{ opacity: 0, x: 20 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.6 }}
-        >
+        <div className="flex items-center gap-3">
           <Link href={navigationPaths.login}>
-            <Button className="glass-button bg-gradient-to-r from-blue to-cyan-500 text-foreground hover:text-gold">Login</Button>
+            <Button
+              variant="outline"
+              className="rounded-2xl px-4 py-2 font-semibold text-base border-2 hover:bg-blue-fixed/10 transition-all"
+              style={{ borderColor: '#3b82f6', color: '#3b82f6' }}
+            >
+              Login
+            </Button>
           </Link>
           <Link href={navigationPaths.signup}>
-            <Button className="btn-primary bg-gradient-to-r from-blue to-cyan-500 text-foreground hover:text-gold">Sign Up</Button>
+            <Button
+              className="rounded-2xl px-4 py-2 font-bold text-base text-white hover:opacity-90 shadow-md transition-all"
+              style={{ backgroundColor: '#3b82f6' }}
+            >
+              Sign Up
+            </Button>
           </Link>
-        </motion.div>
-      </div>}
+        </div>
+      </nav>
     </div>
   );
 }

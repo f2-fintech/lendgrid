@@ -16,6 +16,9 @@ body,
     --background: 0 0% 100%;
     --foreground: 222 47% 11%;
 
+    /* Navbar specific */
+    --navbar-bg: 0 0% 100%;
+
     /* Cards - Subtle elevation */
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
@@ -78,6 +81,9 @@ body,
     /* Dark Mode - Deep Professional Theme */
     --background: 222 47% 11%;
     --foreground: 210 40% 98%;
+
+    /* Navbar specific */
+    --navbar-bg: 220 26% 24%;
 
     /* Cards - Elevated Dark */
     --card: 217 33% 17%;

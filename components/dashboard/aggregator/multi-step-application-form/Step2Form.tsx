@@ -213,7 +213,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     )}
 
                     {/* Action Buttons */}
-                    <div className="flex justify-between items-center pt-4">
+                    <div className="w-full flex justify-end items-center gap-3 pt-4">
                         <Button
                             variant="ghost"
                             onClick={handleSkip}

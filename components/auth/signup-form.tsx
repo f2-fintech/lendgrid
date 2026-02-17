@@ -202,13 +202,27 @@ export function SignupForm() {
         return;
       }
 
+      // Auto-login without captcha (already verified during signup)
       const loginResponse = await loginMutation.mutateAsync({
         email: data.email,
         password: data.password,
-        captchaToken
+        captchaToken: '' // Empty token signals auto-login
       });
 
-      const token = (loginResponse as any)?.login?.access_token;
+      const loginResult = (loginResponse as any)?.login;
+
+      // Check if login was successful
+      if (!loginResult?.success) {
+        toast({
+          title: "Login failed after registration",
+          description: loginResult?.message || "Unable to login. Please try logging in manually.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const token = loginResult?.access_token;
       if (token) {
         setCookie("token", token, 1);
         const decoded = decodeJwt(token);
@@ -235,6 +249,7 @@ export function SignupForm() {
       console.error("Signup error:", error);
 
       const errorMessage =
+        error?.message ||
         error?.response?.data?.message ||
         "Unable to create account. Please try again.";
 

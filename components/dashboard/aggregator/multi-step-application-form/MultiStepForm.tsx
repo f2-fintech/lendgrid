@@ -268,6 +268,10 @@ export const MultiStepFormContent: React.FC<{
                     loan_type: formData.loanType,
                     loan_category: formData.loanCategory,
                     lead_type: formData.leadType,
+                    has_running_loans: formData.hasRunningLoans === 'yes',
+                    which_loan: formData.hasRunningLoans === 'yes' ? formData.whichLoan : null,
+                    running_loan_amount: formData.hasRunningLoans === 'yes' ? Number(formData.runningLoanAmount) : null,
+                    case_type: formData.caseType,
                     is_picked: isOmsEnabled ? 0 : 1
                 };
 

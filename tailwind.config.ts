@@ -24,6 +24,13 @@ const config: Config = {
         gold: '#d4a547',
         blue: 'hsl(var(--primary))',
 
+        // Fixed blue color that doesn't change with theme
+        'blue-fixed': {
+          DEFAULT: '#2563eb',
+          hover: '#1d4ed8',
+          light: '#3b82f6',
+        },
+
         // Theme colors
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
