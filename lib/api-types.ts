@@ -188,6 +188,9 @@ export type AggregatorProfile = {
   totalCommissionEarned?: number
   totalPaidOut?: number
   pendingPayout?: number
+  // Commission config
+  fixedCommissionPercent?: number
+  lenderCommissions?: LenderCommission[]
   deletedAt?: string
   createdAt: string
   updatedAt: string
@@ -195,6 +198,11 @@ export type AggregatorProfile = {
   user?: User
   kycApprovedByUser?: User
   teamMemberUsers?: User[]
+}
+
+export type LenderCommission = {
+  lenderName: string
+  commissionPercent: number
 }
 
 export type LenderProfile = {
@@ -433,44 +441,36 @@ export interface CommissionTransaction {
   id: string;
   ticketId: number;
   aggregatorId: string;
-  ruleId: string;
+  companyId: number;
   disbursedAmount: number;
   disbursedDate: string;
   cashbackAmount: number;
-  grossCommissionAmount: number;
-  commissionAmount: number;
+  grossCommission: number;
+  commissionAfterCashback: number;
   commissionType: CommissionType;
   commissionRate: number;
+  commissionRateSource?: string;
+  tdsRate: number;
+  tdsAmount: number;
+  finalCommission: number;
+  caseType?: string;
+  loanType?: string;
+  loanCategory?: string;
+  aggregatorType?: string;
   status: CommissionStatus;
-  aggregatorRank?: ApplicableFor;
-  provider: string;
-  productType: string;
+  aggregatorRank?: string;
+  provider?: string;
   calculatedAt: string;
   approvedAt?: string;
   paidAt?: string;
-  utrNumber?: string
-  paymentProofUrl?: string
+  utrNumber?: string;
+  paymentProofUrl?: string;
+  adminNotes?: string;
   remarks?: string;
   createdAt: string;
   updatedAt: string;
-  aggregator?: {
-    id: string;
-    username: string;
-    email: string;
-  };
-  rule?: {
-    id: string;
-    ruleName: string;
-    commissionType: CommissionType;
-  };
-  approvedBy?: {
-    id: string;
-    username: string;
-  };
-  paidBy?: {
-    id: string;
-    username: string;
-  };
+  approvedBy?: string;
+  paidBy?: string;
 }
 
 export interface CreateCommissionRuleInput {
@@ -521,7 +521,7 @@ export interface CommissionRuleFilterInput {
 export interface CommissionTransactionFilterInput {
   aggregatorId?: string;
   status?: CommissionStatus;
-  productType?: string;
+  loanType?: string;
 }
 
 export interface PaginatedCommissionRules {

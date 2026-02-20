@@ -276,7 +276,7 @@ export function SuperAdminPayouts() {
         ['PENDING', 'CALCULATED', 'APPROVED'].includes(t.status)
       ).length,
       completedPayouts: transactionsData.data.filter(t => t.status === 'PAID').length,
-      totalAmount: transactionsData.data.reduce((sum, t) => sum + t.commissionAmount, 0)
+      totalAmount: transactionsData.data.reduce((sum, t) => sum + t.finalCommission, 0)
     }
   }, [transactionsData])
 
@@ -333,14 +333,14 @@ export function SuperAdminPayouts() {
             title="Total Payouts"
             value={metrics.totalPayouts}
             icon={FileText}
-            color="bg-primary/20 text-primary"
+            color="metric-card-primary"
             subtitle="All time"
           />
           <MetricCard
             title="Pending Payouts"
             value={metrics.pendingPayouts}
             icon={Clock}
-            color="bg-orange-500/20 text-orange-400"
+            color="metric-card-warning"
             subtitle="Awaiting processing"
           />
           <MetricCard
@@ -354,7 +354,7 @@ export function SuperAdminPayouts() {
             title="Total Amount"
             value={formatCurrency(metrics.totalAmount)}
             icon={IndianRupee}
-            color="bg-accent/20 text-accent"
+            color="metric-card-primary"
             subtitle="Total commission"
           />
         </div>
@@ -396,7 +396,6 @@ export function SuperAdminPayouts() {
                     <SelectItem value="CALCULATED">Calculated</SelectItem>
                     <SelectItem value="REJECTED">Rejected</SelectItem>
                     <SelectItem value="CANCELLED">Cancelled</SelectItem>
-                    <SelectItem value="DISPUTED">Disputed</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -435,10 +434,10 @@ export function SuperAdminPayouts() {
                           className="border-border hover:bg-card/50"
                         >
                           <TableCell>
-                            <p className="text-foreground font-medium">#{payout.ticketId}</p>
+                            <p className="text-foreground font-medium">F2FIN-{payout.ticketId}</p>
                           </TableCell>
                           <TableCell>
-                            <p className="text-foreground">{payout.productType}</p>
+                            <p className="text-foreground">{payout.loanType}</p>
                           </TableCell>
                           <TableCell>
                             {formatCurrency(payout.disbursedAmount)}
@@ -447,7 +446,7 @@ export function SuperAdminPayouts() {
                             {formatCurrency(payout.cashbackAmount)}
                           </TableCell>
                           <TableCell className="font-semibold">
-                            {formatCurrency(payout.commissionAmount)}
+                            {formatCurrency(payout.finalCommission)}
                           </TableCell>
                           <TableCell>
                             <Tooltip>
@@ -565,7 +564,7 @@ export function SuperAdminPayouts() {
                     {selectedPayout.status}
                   </Badge>
                   <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 text-sm font-semibold">
-                    Ticket #{selectedPayout.ticketId}
+                    F2FIN-{selectedPayout.ticketId}
                   </Badge>
                 </div>
               </div>
@@ -583,7 +582,7 @@ export function SuperAdminPayouts() {
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-1">Product Type</p>
-                      <p className="text-foreground font-semibold">{selectedPayout.productType}</p>
+                      <p className="text-foreground font-semibold">{selectedPayout.loanType}</p>
                     </div>
                   </div>
 
@@ -638,12 +637,12 @@ export function SuperAdminPayouts() {
 
                   <div className="bg-background/50 rounded-lg p-4 border border-border/50">
                     <p className="text-xs text-muted-foreground mb-2">Gross Commission</p>
-                    <p className="text-xl font-bold text-purple-400">{formatCurrency(selectedPayout.grossCommissionAmount)}</p>
+                    <p className="text-xl font-bold text-purple-400">{formatCurrency(selectedPayout.grossCommission)}</p>
                   </div>
 
                   <div className="bg-background/50 rounded-lg p-4 border border-border/50 md:col-span-2">
                     <p className="text-xs text-muted-foreground mb-2">Net Commission Amount</p>
-                    <p className="text-2xl font-bold text-green-400">{formatCurrency(selectedPayout.commissionAmount)}</p>
+                    <p className="text-2xl font-bold text-green-400">{formatCurrency(selectedPayout.finalCommission)}</p>
                   </div>
 
                   <div className="bg-background/50 rounded-lg p-4 border border-border/50">
@@ -812,7 +811,7 @@ export function SuperAdminPayouts() {
                 <div className="flex justify-between items-center">
                   <div>
                     <p className="text-xs text-muted-foreground">Ticket ID</p>
-                    <p className="text-foreground font-semibold text-sm">#{selectedPayout.ticketId}</p>
+                    <p className="text-foreground font-semibold text-sm">F2FIN-{selectedPayout.ticketId}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Current Status</p>
@@ -822,7 +821,7 @@ export function SuperAdminPayouts() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Commission</p>
-                    <p className="text-foreground font-semibold text-sm">{formatCurrency(selectedPayout.commissionAmount)}</p>
+                    <p className="text-foreground font-semibold text-sm">{formatCurrency(selectedPayout.finalCommission)}</p>
                   </div>
                 </div>
               </div>

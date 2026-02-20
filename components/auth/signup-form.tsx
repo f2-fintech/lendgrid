@@ -13,12 +13,13 @@ import { Eye, EyeOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
+import { ThemeLogo } from '@/components/theme-logo';
 import { useToast } from '@/hooks/use-toast';
 import { useRegister, useLogin } from '@/hooks/use-users';
 import { navigationPaths } from '@/lib/navigation';
 import { decodeJwt, setCookie } from "@/lib/utils";
-import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
-import { ThemeLogo } from '@/components/theme-logo';
+import { buildHeaders } from "@/lib/http-client";
 
 // --- ROLE MAPPING UTILITY ---
 const mapLoginRoleToSignupType = (loginRole: string | null): 'aggregator' | 'lender' | undefined => {
@@ -58,7 +59,8 @@ const signupSchema = z.object({
     .regex(/[a-z]/, "Password Must Contain At Least 1 Lowercase Letter")
     .regex(/[0-9]/, "Password Must Contain At Least 1 Number")
     .regex(/[^\w]/, "Password Must Contain At Least 1 Special Character")
-    .max(30, "Password cannot be more than 30 characters"),
+    .max(20, "Password cannot be more than 20 characters")
+    .trim(),
 
   confirmPassword: z.string()
 }).refine((data) => data.password === data.confirmPassword, {
@@ -162,8 +164,9 @@ export function SignupForm() {
       });
       return;
     }
-
     setIsLoading(true);
+    const DEFAULT_BASE_URL_REST =
+      process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:3010/api/v1";
 
     try {
       const roleMap: Record<string, "AGGREGATOR_ADMIN" | "LENDER_ADMIN"> = {
@@ -179,7 +182,8 @@ export function SignupForm() {
         role: 'AGGREGATOR_ADMIN',
         aggregatorType: 'CHANNEL_PARTNER',  // to allow backend to auto-create profile of aggregator
         companyName: data.companyName,        // to allow backend to auto-create profile of aggregator
-        isOmsEnabled: false,
+        isOmsEnabled: true,
+        fixedCommissionPercent: 0.75,
         captchaToken
       };
 
@@ -200,6 +204,41 @@ export function SignupForm() {
         setCaptchaToken(null);
         setIsLoading(false);
         return;
+      }
+
+      const { companyId } = result;
+      if (!companyId) {
+        throw new Error("Aggregator profile not created");
+      }
+
+      // Create Company (REST Api) - Non-blocking
+      try {
+        const companyRes = await fetch(`${DEFAULT_BASE_URL_REST}/companies`, {
+          method: "POST",
+          headers: buildHeaders(),
+          body: JSON.stringify({
+            name: data.companyName,
+            email: data.email,
+            contactNumber: data.contact,
+            companyId,
+          }),
+        });
+
+        if (!companyRes.ok) {
+          console.warn("Company creation failed:", await companyRes.text());
+          toast({
+            title: "Company Sync Warning",
+            description: "Account created but company profile sync failed. Please contact support.",
+            variant: "destructive",
+          });
+        }
+      } catch (companyError) {
+        console.error("Company creation error:", companyError);
+        toast({
+          title: "Company Sync Skipped",
+          description: "Secondary server unavailable. Account created locally.",
+          variant: "destructive", // Using destructive to catch attention
+        });
       }
 
       // Auto-login without captcha (already verified during signup)

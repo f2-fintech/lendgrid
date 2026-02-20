@@ -887,13 +887,13 @@ export function AggregatorApplications() {
                                 {/* Status and Application Number Section */}
                                 <div className="flex gap-3 justify-between items-start flex-wrap">
                                     <div className="flex flex-wrap gap-2">
+                                        <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 text-sm font-semibold">
+                                            {selectedApplication.applicationNumber}
+                                        </Badge>
                                         <Badge
                                             className={`${STATUS_STYLE[pretty(selectedApplication.loanStatus)]} border px-4 py-1.5 text-sm font-semibold`}
                                         >
                                             {pretty(selectedApplication.loanStatus)}
-                                        </Badge>
-                                        <Badge className="bg-primary/20 text-primary border border-primary/30 px-4 py-1.5 text-sm font-semibold">
-                                            App #{selectedApplication.applicationNumber}
                                         </Badge>
                                         {selectedApplication.leadType && (
                                             <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 px-4 py-1.5 text-sm font-semibold">
@@ -1042,7 +1042,7 @@ export function AggregatorApplications() {
                                 </div>
 
                                 {/* System Information Card */}
-                                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                {/* <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
                                     <h3 className="text-lg font-semibold mb-4 text-amber-400 flex items-center gap-2">
                                         <FileText className="w-5 h-5" />
                                         System Information
@@ -1063,7 +1063,7 @@ export function AggregatorApplications() {
                                             <p className="text-foreground font-semibold font-mono">{selectedApplication.companyId}</p>
                                         </div>
                                     </div>
-                                </div>
+                                </div> */}
                             </div>
                         </>
                     )}

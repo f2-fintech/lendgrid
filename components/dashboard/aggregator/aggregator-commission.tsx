@@ -90,13 +90,13 @@ export function AggregatorCommission() {
 
     const transactions = transactionsData.data
 
-    const totalEarned = transactions.reduce((sum, t) => sum + t.commissionAmount, 0)
+    const totalEarned = transactions.reduce((sum, t) => sum + t.finalCommission, 0)
     const pendingAmount = transactions
       .filter(t => t.status === CommissionStatus.CALCULATED || t.status === CommissionStatus.PENDING)
-      .reduce((sum, t) => sum + t.commissionAmount, 0)
+      .reduce((sum, t) => sum + t.finalCommission, 0)
     const paidAmount = transactions
       .filter(t => t.status === CommissionStatus.PAID)
-      .reduce((sum, t) => sum + t.commissionAmount, 0)
+      .reduce((sum, t) => sum + t.finalCommission, 0)
     const avgRate = transactions.length > 0
       ? transactions.reduce((sum, t) => sum + t.commissionRate, 0) / transactions.length
       : 0
@@ -171,12 +171,12 @@ export function AggregatorCommission() {
       'Ticket ID': transaction.ticketId,
       'Transaction ID': transaction.id,
       'Lender/Provider': transaction.provider || 'N/A',
-      'Loan Type': transaction.productType || 'N/A',
+      'Loan Type': transaction.loanType || 'N/A',
       'Aggregator Rank': transaction.aggregatorRank || 'N/A',
       'Loan Amount (₹)': transaction.disbursedAmount,
       'Commission Rate (%)': transaction.commissionRate,
       'Commission Type': transaction.commissionType,
-      'Commission Amount (₹)': transaction.commissionAmount,
+      'Commission Amount (₹)': transaction.finalCommission,
       'Status': getStatusLabel(transaction.status),
       'Calculated Date': formatDate(transaction.calculatedAt),
       'Approved Date': formatDate(transaction.approvedAt),
@@ -280,10 +280,10 @@ export function AggregatorCommission() {
       index + 1,
       transaction.ticketId,
       transaction.provider || 'N/A',
-      transaction.productType || 'N/A',
+      transaction.loanType || 'N/A',
       formatCurrency(transaction.disbursedAmount),
       `${transaction.commissionRate}%`,
-      formatCurrency(transaction.commissionAmount),
+      formatCurrency(transaction.finalCommission),
       getStatusLabel(transaction.status),
       formatDate(transaction.calculatedAt),
       formatDate(transaction.paidAt),
@@ -388,7 +388,7 @@ export function AggregatorCommission() {
       const matchesSearch =
         commission.ticketId.toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
         (commission.provider || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (commission.productType || '').toLowerCase().includes(searchTerm.toLowerCase())
+        (commission.loanType || '').toLowerCase().includes(searchTerm.toLowerCase())
 
       return matchesSearch
     })
@@ -758,12 +758,12 @@ export function AggregatorCommission() {
                                 transition={{ duration: 0.3, delay: index * 0.05 }}
                                 className="border-border hover:bg-card/50"
                               >
-                                <TableCell className="font-medium">#{commission.ticketId}</TableCell>
+                                <TableCell className="font-medium">F2FIN-{commission.ticketId}</TableCell>
                                 <TableCell>{commission.provider || 'N/A'}</TableCell>
-                                <TableCell>{commission.productType || 'N/A'}</TableCell>
+                                <TableCell>{commission.loanType || 'N/A'}</TableCell>
                                 <TableCell>{formatCurrency(commission.disbursedAmount)}</TableCell>
                                 <TableCell className="text-accent">{commission.commissionRate}%</TableCell>
-                                <TableCell className="text-success font-semibold">{formatCurrency(commission.commissionAmount)}</TableCell>
+                                <TableCell className="text-success font-semibold">{formatCurrency(commission.finalCommission)}</TableCell>
                                 <TableCell>
                                   <Badge className={getStatusColor(commission.status)}>
                                     <StatusIcon className="w-3 h-3 mr-1" />

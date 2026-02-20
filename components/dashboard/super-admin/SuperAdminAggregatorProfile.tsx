@@ -34,6 +34,9 @@ import {
     X,
     FileText,
     UserCheck,
+    Percent,
+    Plus,
+    Trash2,
 } from "lucide-react"
 import { CardSkeleton } from "@/components/ui/loading-skeleton"
 import { useForm, FormProvider, useFormContext } from "react-hook-form"
@@ -82,6 +85,11 @@ const businessSchema = z.object({
     aadhaarNumber: z.string().optional().refine(val => !val || /^[0-9]{12}$/.test(val), "Aadhaar must be 12 digits"),
     tanNumber: z.string().optional(),
     cinNumber: z.string().optional(),
+    fixedCommissionPercent: z.number().min(0).max(100).optional(),
+    lenderCommissions: z.array(z.object({
+        lenderName: z.string(),
+        commissionPercent: z.number().min(0).max(100),
+    })).optional(),
 })
 
 const bankAndKycSchema = z.object({
@@ -338,6 +346,12 @@ function BusinessDetailsTab() {
     const { register, setValue, trigger, watch, formState: { errors } } = useFormContext<RootForm>()
     const businessType = watch("business.businessType")
     const rank = watch("business.rank")
+    const aggregatorType = watch("business.aggregatorType")
+    const lenderCommissions = watch("business.lenderCommissions") || []
+
+    // Local state for adding new lender commission entries
+    const [newLenderName, setNewLenderName] = useState("")
+    const [newLenderPercent, setNewLenderPercent] = useState("")
 
     return (
         <div className="space-y-6">
@@ -555,6 +569,129 @@ function BusinessDetailsTab() {
                             {errors.business?.pincode && <p className="text-red-400 text-sm">{errors.business.pincode.message}</p>}
                         </div>
                     </div>
+                </CardContent>
+            </Card>
+
+            {/* Commission Configuration */}
+            <Card className="bg-background/50 border-border">
+                <CardHeader>
+                    <CardTitle className="text-foreground flex items-center gap-2">
+                        <Percent className="w-5 h-5" />
+                        Commission Configuration
+                    </CardTitle>
+                    <CardDescription className="text-muted-foreground">
+                        Fixed and lender-wise commission rates for this aggregator
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    {/* Fixed Commission Rate */}
+                    <div className="space-y-2">
+                        <Label htmlFor="fixedCommissionPercent" className="text-foreground">Fixed Commission Rate (%)</Label>
+                        <Input
+                            id="fixedCommissionPercent"
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            max="100"
+                            {...register("business.fixedCommissionPercent", {
+                                valueAsNumber: true,
+                                onBlur: () => trigger("business.fixedCommissionPercent")
+                            })}
+                            className="bg-card border-border text-foreground max-w-xs"
+                            placeholder="e.g. 1.5"
+                        />
+                        {errors.business?.fixedCommissionPercent && <p className="text-red-400 text-sm">{errors.business.fixedCommissionPercent.message}</p>}
+                    </div>
+
+                    {/* Lender-wise Commissions — only if Channel Partner */}
+                    {aggregatorType === 'CHANNEL_PARTNER' && (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <Label className="text-foreground font-medium">Lender-wise Commission Overrides</Label>
+                            </div>
+
+                            {/* Existing lender commissions */}
+                            {lenderCommissions.length > 0 && (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {lenderCommissions.map((lc, idx) => (
+                                        <div
+                                            key={`${lc.lenderName}-${idx}`}
+                                            className="flex items-center gap-2 bg-card/50 border border-border rounded-lg px-3 py-2"
+                                        >
+                                            <span className="text-sm text-foreground flex-1 truncate" title={lc.lenderName}>
+                                                {lc.lenderName}
+                                            </span>
+                                            <Input
+                                                type="number"
+                                                step="0.01"
+                                                min="0"
+                                                max="100"
+                                                value={lc.commissionPercent}
+                                                onChange={(e) => {
+                                                    const updated = [...lenderCommissions]
+                                                    updated[idx] = { ...updated[idx], commissionPercent: parseFloat(e.target.value) || 0 }
+                                                    setValue("business.lenderCommissions", updated, { shouldDirty: true })
+                                                }}
+                                                className="bg-card border-border text-foreground w-24 h-8 text-sm"
+                                            />
+                                            <span className="text-muted-foreground text-sm">%</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setValue("business.lenderCommissions", lenderCommissions.filter((_, i) => i !== idx), { shouldDirty: true })}
+                                                className="p-1 rounded hover:bg-red-500/20 text-red-400 transition-colors"
+                                            >
+                                                <Trash2 className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Add new lender commission */}
+                            <div className="flex items-end gap-2">
+                                <div className="flex-1 space-y-1">
+                                    <Label className="text-muted-foreground text-xs">Lender Name</Label>
+                                    <Input
+                                        value={newLenderName}
+                                        onChange={(e) => setNewLenderName(e.target.value)}
+                                        className="bg-card border-border text-foreground h-9"
+                                        placeholder="e.g. ABFL, Axis, HDFC"
+                                    />
+                                </div>
+                                <div className="w-28 space-y-1">
+                                    <Label className="text-muted-foreground text-xs">Rate (%)</Label>
+                                    <Input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        max="100"
+                                        value={newLenderPercent}
+                                        onChange={(e) => setNewLenderPercent(e.target.value)}
+                                        className="bg-card border-border text-foreground h-9"
+                                        placeholder="1.5"
+                                    />
+                                </div>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-9 border-border text-foreground hover:bg-card"
+                                    disabled={!newLenderName.trim() || !newLenderPercent}
+                                    onClick={() => {
+                                        if (!newLenderName.trim() || !newLenderPercent) return
+                                        setValue("business.lenderCommissions", [
+                                            ...lenderCommissions,
+                                            { lenderName: newLenderName.trim(), commissionPercent: parseFloat(newLenderPercent) || 0 },
+                                        ], { shouldDirty: true })
+                                        setNewLenderName("")
+                                        setNewLenderPercent("")
+                                    }}
+                                >
+                                    <Plus className="w-4 h-4 mr-1" /> Add
+                                </Button>
+                            </div>
+                        </div>
+                    )}
                 </CardContent>
             </Card>
 
@@ -1204,6 +1341,8 @@ export function AggregatorProfilePage({ id }: { id: string }) {
                     aadhaarNumber: aggData.aadhaarNumber || "",
                     cinNumber: aggData.cinNumber || "",
                     tanNumber: aggData.tanNumber || "",
+                    fixedCommissionPercent: aggData.fixedCommissionPercent ?? undefined,
+                    lenderCommissions: aggData.lenderCommissions || [],
                 },
                 bankAndKyc: {
                     accountHolderName: aggData.accountHolderName || "",
@@ -1325,6 +1464,10 @@ export function AggregatorProfilePage({ id }: { id: string }) {
                 aadhaarNumber: values.business.aadhaarNumber,
                 cinNumber: values.business.cinNumber,
                 tanNumber: values.business.tanNumber,
+                fixedCommissionPercent: values.business.fixedCommissionPercent,
+                lenderCommissions: values.business.lenderCommissions?.length
+                    ? values.business.lenderCommissions
+                    : undefined,
                 bankName: values.bankAndKyc.bankName,
                 accountNumber: values.bankAndKyc.accountNumber,
                 ifscCode: values.bankAndKyc.ifscCode,

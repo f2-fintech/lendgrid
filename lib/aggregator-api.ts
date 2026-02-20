@@ -96,6 +96,11 @@ export const aggregatorProfileApi = {
               totalCommissionEarned
               totalDisbursedAmount
               pendingPayout
+              fixedCommissionPercent
+              lenderCommissions {
+                lenderName
+                commissionPercent
+              }
               createdAt
               createdBy
               teamMemberUsers {
@@ -176,6 +181,11 @@ export const aggregatorProfileApi = {
           totalCommissionEarned
           totalPaidOut
           pendingPayout
+          fixedCommissionPercent
+          lenderCommissions {
+            lenderName
+            commissionPercent
+          }
           createdAt
           updatedAt
           user {
@@ -337,6 +347,8 @@ export const aggregatorProfileApi = {
     totalCommissionEarned?: number
     totalPaidOut?: number
     pendingPayout?: number
+    fixedCommissionPercent?: number
+    lenderCommissions?: { lenderName: string; commissionPercent: number }[]
     updatedBy?: string
   }) =>
     gqlFetch<{ updateAggregatorProfile: AggregatorProfile }>({

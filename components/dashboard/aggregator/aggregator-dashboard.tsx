@@ -180,7 +180,7 @@ export function AggregatorDashboard() {
       const matchesSearch =
         commission.ticketId.toString().includes(searchTerm) ||
         (commission.provider || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (commission.productType || '').toLowerCase().includes(searchTerm.toLowerCase())
+        (commission.loanType || '').toLowerCase().includes(searchTerm.toLowerCase())
 
       return matchesSearch
     })
@@ -193,17 +193,17 @@ export function AggregatorDashboard() {
     let pending = 0
 
     for (const tx of commissionData?.data ?? []) {
-      total += tx.commissionAmount
+      total += tx.finalCommission
 
       if (tx.status === CommissionStatus.PAID) {
-        paid += tx.commissionAmount
+        paid += tx.finalCommission
       }
 
       if (
         tx.status === CommissionStatus.PENDING ||
         tx.status === CommissionStatus.CALCULATED
       ) {
-        pending += tx.commissionAmount
+        pending += tx.finalCommission
       }
     }
 
@@ -583,10 +583,10 @@ export function AggregatorDashboard() {
                           >
                             <TableCell className="font-medium">#{commission.ticketId}</TableCell>
                             <TableCell>{commission.provider || 'N/A'}</TableCell>
-                            <TableCell>{commission.productType || 'N/A'}</TableCell>
+                            <TableCell>{commission.loanType || 'N/A'}</TableCell>
                             <TableCell>{formatCurrency(commission.disbursedAmount)}</TableCell>
                             <TableCell className="text-accent">{commission.commissionRate}%</TableCell>
-                            <TableCell className="text-success font-semibold">{formatCurrency(commission.commissionAmount)}</TableCell>
+                            <TableCell className="text-success font-semibold">{formatCurrency(commission.finalCommission)}</TableCell>
                             <TableCell>
                               <Badge className={getStatusColor(commission.status)}>
                                 <StatusIcon className="w-3 h-3 mr-1" />

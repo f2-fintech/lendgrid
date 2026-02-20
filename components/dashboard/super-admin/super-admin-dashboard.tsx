@@ -115,13 +115,13 @@ export function SuperAdminDashboard() {
 
     commissionsData?.data?.forEach(tx => {
       if (tx.status === CommissionStatus.PAID) {
-        totalCommissionPaid += tx.commissionAmount
+        totalCommissionPaid += tx.finalCommission
       }
       if (
         tx.status === CommissionStatus.PENDING ||
         tx.status === CommissionStatus.CALCULATED
       ) {
-        totalCommissionPending += tx.commissionAmount
+        totalCommissionPending += tx.finalCommission
       }
     })
 
@@ -743,11 +743,11 @@ export function SuperAdminDashboard() {
                         <div className="flex items-center gap-2 mt-1">
                           <p className="text-xs text-muted-foreground">{comm.aggregatorName || 'N/A'}</p>
                           <span className="text-xs text-muted-foreground">•</span>
-                          <p className="text-xs text-muted-foreground">{comm.productType}</p>
+                          <p className="text-xs text-muted-foreground">{comm.loanType}</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-green-400">{formatCurrency(comm.commissionAmount)}</p>
+                        <p className="text-sm font-bold text-green-400">{formatCurrency(comm.finalCommission)}</p>
                         <Badge className={`${getCommissionStatusColor(comm.status)} text-xs mt-1`}>
                           {comm.status}
                         </Badge>

@@ -13,6 +13,7 @@ interface Step2FormProps {
     onSubmit: (files: File[]) => Promise<void>;
     isLoading: boolean;
     onSkip?: () => void;
+    onBack: () => void;
 }
 
 interface FileWithPreview {
@@ -20,7 +21,7 @@ interface FileWithPreview {
     preview: string;
 }
 
-export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSkip }) => {
+export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSkip, onBack }) => {
     const { nextStep } = useFormContext();
     const { toast } = useToast();
     const [selectedFiles, setSelectedFiles] = useState<FileWithPreview[]>([]);
@@ -213,30 +214,39 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     )}
 
                     {/* Action Buttons */}
-                    <div className="w-full flex justify-end items-center gap-3 pt-4">
+                    <div className="w-full flex justify-between items-center pt-4">
                         <Button
-                            variant="ghost"
-                            onClick={handleSkip}
-                            disabled={selectedFiles.length > 0}
-                            className="text-muted-foreground hover:text-foreground"
+                            variant="outline"
+                            onClick={onBack}
+                            className="border-border text-foreground hover:bg-muted"
                         >
-                            Skip
+                            Back
                         </Button>
+                        <div className="flex gap-3">
+                            <Button
+                                variant="ghost"
+                                onClick={handleSkip}
+                                disabled={selectedFiles.length > 0}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                Skip
+                            </Button>
 
-                        <Button
-                            onClick={handleUpload}
-                            disabled={selectedFiles.length === 0 || isLoading}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-                        >
-                            {isLoading ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Uploading...
-                                </>
-                            ) : (
-                                'Upload'
-                            )}
-                        </Button>
+                            <Button
+                                onClick={handleUpload}
+                                disabled={selectedFiles.length === 0 || isLoading}
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                            >
+                                {isLoading ? (
+                                    <>
+                                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        Uploading...
+                                    </>
+                                ) : (
+                                    'Upload'
+                                )}
+                            </Button>
+                        </div>
                     </div>
                 </div>
             </Card>

@@ -202,17 +202,24 @@ export const commissionsApi = {
             id
             ticketId
             aggregatorId
-            ruleId
+            companyId
             disbursedAmount
             disbursedDate
             cashbackAmount
-            grossCommissionAmount
-            commissionAmount
+            grossCommission
+            commissionAfterCashback
             commissionType
             commissionRate
+            commissionRateSource
+            tdsRate
+            tdsAmount
+            finalCommission
+            caseType
+            loanType
+            loanCategory
+            aggregatorType
             status
             aggregatorRank
-            productType
             provider
             calculatedAt
             approvedAt
@@ -254,16 +261,25 @@ export const commissionsApi = {
               id
               ticketId
               aggregatorId
+              companyId
               disbursedAmount
               disbursedDate
               cashbackAmount
-              grossCommissionAmount
-              commissionAmount
+              grossCommission
+              commissionAfterCashback
               commissionType
               commissionRate
+              commissionRateSource
+              tdsRate
+              tdsAmount
+              finalCommission
+              caseType
+              loanType
+              loanCategory
+              aggregatorType
               status
-              productType
               aggregatorRank
+              provider
               calculatedAt
               createdAt
             }
@@ -291,8 +307,9 @@ export const commissionsApi = {
             paymentProofUrl
             adminNotes
             remarks
-            grossCommissionAmount
-            commissionAmount
+            grossCommission
+            commissionAfterCashback
+            finalCommission
             disbursedAmount
             cashbackAmount
             approvedAt

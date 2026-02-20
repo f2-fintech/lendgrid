@@ -53,6 +53,7 @@ export const MultiStepFormContent: React.FC<{
         formData,
         setFormData,
         nextStep,
+        prevStep,
     } = useFormContext();
 
     const { toast } = useToast();
@@ -60,6 +61,11 @@ export const MultiStepFormContent: React.FC<{
     const [completedSteps, setCompletedSteps] = useState<number[]>([]);
     const [skippedSteps, setSkippedSteps] = useState<number[]>([])
     const [showStep0, setShowStep0] = useState(true);
+
+    // Scroll to top on step change
+    useEffect(() => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [activeStep, showStep0]);
 
     const token = getCookie("token")
     const decoded = decodeJwt(token)
@@ -308,6 +314,7 @@ export const MultiStepFormContent: React.FC<{
                 description: error.message || 'Failed to submit basic details',
                 variant: 'destructive',
             });
+            throw error; // Re-throw to prevent moving to next step
         } finally {
             setIsLoading(false);
         }
@@ -421,7 +428,7 @@ export const MultiStepFormContent: React.FC<{
     return (
         <div className="relative flex gap-6 min-h-[600px]">
             {/* Left Side - Form Content */}
-            <div className="flex-1 pr-4 overflow-y-auto max-h-[calc(90vh-100px)] scrollbar-hide">
+            <div className="flex-1 pr-4">
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={showStep0 ? 'step0' : activeStep}
@@ -447,6 +454,7 @@ export const MultiStepFormContent: React.FC<{
                                             );
                                             nextStep();
                                         }}
+                                        onBack={prevStep}
                                     />
                                 )}
                                 {activeStep === 2 && (

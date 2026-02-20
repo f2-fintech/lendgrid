@@ -22,7 +22,8 @@ import {
   Calendar,
   X,
   Trash2,
-  UserCheck
+  UserCheck,
+  Percent
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -168,11 +169,9 @@ export function SuperAdminAggregators() {
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
-  // Robust lastLogin extraction: handles string entries or objects with createdAt/lastLogin
+  // Robust lastLogin extraction: handles string entries
   const rawLastLogin = selectedAggregator?.user?.loginHistory?.at(-1)
-  const lastLogin = rawLastLogin
-    ? (typeof rawLastLogin === 'string' ? rawLastLogin : (rawLastLogin?.createdAt || null))
-    : null
+  const lastLogin = typeof rawLastLogin === 'string' ? rawLastLogin : null
 
   const handleApprove = (userId: string | undefined) => {
     if (!userId) return
@@ -259,7 +258,7 @@ export function SuperAdminAggregators() {
                 <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
               )}
             </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-opacity-20`}>
+            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
               <Icon className="w-6 h-6" />
             </div>
           </div>
@@ -301,13 +300,15 @@ export function SuperAdminAggregators() {
         </div>
 
         <div className="flex gap-3">
-          <Button
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
-            onClick={() => setIsAddDialogOpen(true)}
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add New Aggregator
-          </Button>
+          {!isInactiveView && (
+            <Button
+              className="bg-primary hover:bg-primary/90 text-primary-foreground"
+              onClick={() => setIsAddDialogOpen(true)}
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add New Aggregator
+            </Button>
+          )}
 
           <Button
             className={
@@ -357,22 +358,22 @@ export function SuperAdminAggregators() {
                 title="Total Aggregators"
                 value={metrics.totalAggregators}
                 icon={Users}
-                color="bg-blue/20 text-blue"
-                subtitle="Registered partners"
+                color="metric-card-primary"
+                subtitle="All Registered Aggregators"
               />
               <MetricCard
                 title="Active Aggregators"
                 value={metrics.activeAggregators}
                 icon={CheckCircle}
                 color="metric-card-success"
-                subtitle="Currently operational"
+                subtitle="Currently operational Aggregators"
               />
               <MetricCard
                 title="Deleted Aggregators"
                 value={metrics.inactiveAggregators}
                 icon={AlertCircle}
-                color="bg-red-500/20 text-red-400"
-                subtitle="Awaiting review"
+                color="metric-card-warning"
+                subtitle="Deleted Aggregators"
               />
             </div>
           )}
@@ -406,7 +407,7 @@ export function SuperAdminAggregators() {
                     placeholder="Search aggregators..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-background border-border text-foreground w-64"
+                    className="pl-10 bg-background border-border text-foreground w-full md:w-[360px] lg:w-[400px]"
                   />
                 </div>
               </div>
@@ -782,7 +783,6 @@ export function SuperAdminAggregators() {
                       )}
                     </div>
                   </div>
-
                   <div className="flex items-start gap-3 md:col-span-2">
                     <div className="bg-pink-500/10 p-2 rounded-lg mt-1">
                       <MapPin className="w-4 h-4 text-pink-400" />
@@ -829,6 +829,51 @@ export function SuperAdminAggregators() {
                   </div>
                 </div>
               </div>
+
+              {/* Commission Configuration — only if data exists */}
+              {(selectedAggregator.fixedCommissionPercent != null || (selectedAggregator.lenderCommissions && selectedAggregator.lenderCommissions.length > 0)) && (
+                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                  <h3 className="text-lg font-semibold mb-4 text-blue-400 flex items-center gap-2">
+                    <Percent className="w-5 h-5" />
+                    Commission Configuration
+                  </h3>
+
+                  {/* Fixed Commission Rate */}
+                  {selectedAggregator.fixedCommissionPercent != null && (
+                    <div className="bg-muted/50 rounded-lg p-4 border border-border mb-4 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">Fixed Commission Rate</p>
+                        <p className="text-2xl font-bold text-blue-400">{selectedAggregator.fixedCommissionPercent}%</p>
+                      </div>
+                      <div className="bg-blue-500/10 p-3 rounded-lg">
+                        <Percent className="w-6 h-6 text-blue-400" />
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Lender-wise Commissions — only for channel partners with data */}
+                  {selectedAggregator.lenderCommissions && selectedAggregator.lenderCommissions.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-foreground mb-3">Lender-wise Commission Overrides</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-1">
+                        {selectedAggregator.lenderCommissions.map((lc) => (
+                          <div
+                            key={lc.lenderName}
+                            className="flex items-center justify-between bg-background border border-border rounded-lg px-3 py-2"
+                          >
+                            <span className="text-sm text-foreground truncate mr-2" title={lc.lenderName}>
+                              {lc.lenderName}
+                            </span>
+                            <span className="text-sm font-semibold text-blue-400 whitespace-nowrap">
+                              {lc.commissionPercent}%
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Activity Timeline */}
               <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">

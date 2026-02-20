@@ -1,11 +1,13 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, subYears } from 'date-fns';
 import { motion } from 'framer-motion';
+
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -25,7 +27,7 @@ import {
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 
-import { step1Schema, Step1FormData } from './validation';
+import { step1Schema, Step1FormData, indianStates } from './validation';
 import { useFormContext } from './FormContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -42,6 +44,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
   const {
     register,
+    control,
     handleSubmit,
     formState: { errors, isDirty },
     setValue,
@@ -95,11 +98,11 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                 <SelectValue placeholder="Select" />
               </SelectTrigger>
               <SelectContent className="bg-popover border-border text-popover-foreground">
-                <SelectItem value="Mr" className="focus:bg-accent focus:text-accent-foreground" >Mr</SelectItem>
-                <SelectItem value="Mrs" className="focus:bg-accent focus:text-accent-foreground">Mrs</SelectItem>
-                <SelectItem value="Miss" className="focus:bg-accent focus:text-accent-foreground">Miss</SelectItem>
-                <SelectItem value="Dr" className="focus:bg-accent focus:text-accent-foreground">Dr</SelectItem>
-                <SelectItem value="Ca" className="focus:bg-accent focus:text-accent-foreground">Ca</SelectItem>
+                <SelectItem value="Mr" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">Mr</SelectItem>
+                <SelectItem value="Mrs" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">Mrs</SelectItem>
+                <SelectItem value="Miss" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">Miss</SelectItem>
+                <SelectItem value="Dr" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">Dr</SelectItem>
+                <SelectItem value="Ca" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">Ca</SelectItem>
               </SelectContent>
             </Select>
             {errors.title && (
@@ -246,11 +249,24 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           </div>
 
           <div>
-            <Label htmlFor="state" className=" text-foreground">State*</Label>
-            <Input
-              {...register('state')}
-              className="bg-card border-border  text-foreground mt-2"
-              placeholder="Enter state"
+            <Label htmlFor="state" className="text-foreground">State*</Label>
+            <Controller
+              control={control}
+              name="state"
+              render={({ field }) => (
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <SelectTrigger className="bg-card border-border text-foreground mt-2">
+                    <SelectValue placeholder="Select state" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border text-popover-foreground max-h-60">
+                    {indianStates.map((state) => (
+                      <SelectItem key={state} value={state} className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                        {state}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
             />
             {errors.state && (
               <p className="text-red-400 text-sm mt-1">{errors.state.message}</p>
@@ -271,19 +287,19 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
             <SelectContent className="bg-popover border-border text-popover-foreground">
               <SelectItem
                 value="salaried"
-                className="focus:bg-accent focus:text-accent-foreground"
+                className="focus:bg-accent focus:text-accent-foreground cursor-pointer"
               >
                 Salaried
               </SelectItem>
               <SelectItem
                 value="business"
-                className="focus:bg-accent focus:text-accent-foreground"
+                className="focus:bg-accent focus:text-accent-foreground cursor-pointer"
               >
                 Business
               </SelectItem>
               <SelectItem
                 value="professional"
-                className="focus:bg-accent focus:text-accent-foreground"
+                className="focus:bg-accent focus:text-accent-foreground cursor-pointer"
               >
                 Professional
               </SelectItem>
@@ -299,35 +315,22 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           <div>
             <Label className=" text-foreground">Date of Birth*</Label>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-              {/* Manual Input */}
-              <Input
-                type="date"
-                className="bg-card border-border  text-foreground"
-                max={format(new Date(), 'yyyy-MM-dd')}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value) {
-                    const parsedDate = new Date(value);
-                    setDate(parsedDate);
-                    setValue('dob', parsedDate, { shouldValidate: true });
-                  }
-                }}
-              />
-
-              {/* Calendar Picker */}
+            <div className="mt-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="bg-card border-border  text-foreground justify-start"
+                    className={cn(
+                      "w-full bg-card border-border text-foreground justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
                   >
                     <Calendar className="mr-2 h-4 w-4" />
                     {date ? format(date, 'PPP') : 'Pick from calendar'}
                   </Button>
                 </PopoverTrigger>
 
-                <PopoverContent className="w-auto p-0 bg-popover border-border">
+                <PopoverContent className="w-auto p-0 bg-popover border-border" align="start">
                   <CalendarComponent
                     mode="single"
                     selected={date}
@@ -337,11 +340,12 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                         setValue('dob', selectedDate, { shouldValidate: true });
                       }
                     }}
-                    captionLayout="dropdown-buttons"
+                    captionLayout="dropdown-months"
                     fromYear={1950}
                     toYear={new Date().getFullYear() - 20}
+                    defaultMonth={subYears(new Date(), 20)}
                     disabled={(date) =>
-                      date > new Date() || date < new Date('1950-01-01')
+                      date > subYears(new Date(), 20) || date < new Date('1950-01-01')
                     }
                     initialFocus
                     className="bg-popover text-popover-foreground"
@@ -355,13 +359,9 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
             )}
 
             <p className=" text-muted-foreground text-xs mt-1">
-              You must be at least 20 years old
+              Minimum age 20 required
             </p>
           </div>
-          {errors.dob && (
-            <p className="text-red-400 text-sm mt-1">{errors.dob.message}</p>
-          )}
-          <p className=" text-muted-foreground text-xs mt-1">Minimum age 20 required</p>
         </div>
 
         {/* Terms and Conditions */}

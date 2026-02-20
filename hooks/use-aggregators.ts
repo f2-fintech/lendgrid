@@ -177,6 +177,8 @@ export function useUpdateAggregatorProfile() {
       totalCommissionEarned?: number
       totalPaidOut?: number
       pendingPayout?: number
+      fixedCommissionPercent?: number
+      lenderCommissions?: { lenderName: string; commissionPercent: number }[]
       updatedBy?: string
     }) => aggregatorProfileApi.update(payload),
     onSuccess: (_, variables) => {

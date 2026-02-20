@@ -66,6 +66,16 @@ export const step0Schema = z.object({
 export type Step0FormData = z.infer<typeof step0Schema>;
 
 // Step 1: Basic Details
+// List of Indian States and UTs
+export const indianStates = [
+    "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana",
+    "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur",
+    "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu",
+    "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal",
+    "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu",
+    "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+] as const;
+
 export const step1Schema = z.object({
     title: z.enum(['Mr', 'Mrs', 'Miss', 'Dr', 'Ca'], {
         required_error: 'Title is required',
@@ -123,11 +133,10 @@ export const step1Schema = z.object({
         .max(30, 'City name must not exceed 30 characters')
         .regex(/^[a-zA-Z\s]+$/, 'City name should only contain letters'),
 
-    state: z
-        .string()
-        .min(2, 'State name must be at least 2 characters')
-        .max(30, 'State name must not exceed 30 characters')
-        .regex(/^[a-zA-Z\s]+$/, 'State name should only contain letters'),
+    state: z.enum(indianStates, {
+        required_error: "State is required",
+        invalid_type_error: "Select a valid state",
+    }),
 
     employment_type: z.enum(['salaried', 'business', 'professional'], {
         required_error: 'Employment type is required',

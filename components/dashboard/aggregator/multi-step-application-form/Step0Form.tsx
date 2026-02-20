@@ -29,6 +29,20 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+} from "@/components/ui/command"
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from "@/components/ui/popover"
+import { Check, ChevronsUpDown, X } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 import { step0Schema, Step0FormData } from './validation';
 import { useFormContext } from './FormContext';
@@ -490,20 +504,76 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                     )}
                 </div>
 
-                {/* Providers */}
+                {/* Providers Multi-Select Combobox */}
                 <div>
                     <Label className="text-foreground">Select Providers* (Multiple)</Label>
-                    <div className="mt-2 bg-card border border-border rounded-lg p-4 space-y-2">
-                        {providers.map((provider) => (
-                            <div key={provider} className="flex items-center space-x-2">
-                                <Checkbox
-                                    checked={selectedProviders.includes(provider)}
-                                    onCheckedChange={() => handleProviderToggle(provider)}
-                                />
-                                <Label className="text-foreground flex-1">{provider}</Label>
-                            </div>
-                        ))}
+                    <div className="mt-2">
+                        <Popover>
+                            <PopoverTrigger asChild>
+                                <Button
+                                    variant="outline"
+                                    role="combobox"
+                                    className="w-full justify-between bg-background border-border text-foreground hover:bg-muted"
+                                >
+                                    {selectedProviders.length > 0
+                                        ? `${selectedProviders.length} selected`
+                                        : "Select providers..."}
+                                    <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-full p-0 bg-popover border-border" align="start">
+                                <Command className="bg-popover text-popover-foreground">
+                                    <CommandInput placeholder="Search provider..." className="h-9" />
+                                    <CommandEmpty>No provider found.</CommandEmpty>
+                                    <CommandGroup className="max-h-64 overflow-y-auto">
+                                        {providers.map((provider) => (
+                                            <CommandItem
+                                                key={provider}
+                                                value={provider}
+                                                onSelect={() => handleProviderToggle(provider)}
+                                                className="cursor-pointer aria-selected:bg-muted aria-selected:text-foreground"
+                                            >
+                                                <div
+                                                    className={cn(
+                                                        "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary",
+                                                        selectedProviders.includes(provider)
+                                                            ? "bg-primary text-primary-foreground"
+                                                            : "opacity-50 [&_svg]:invisible"
+                                                    )}
+                                                >
+                                                    <Check className={cn("h-4 w-4")} />
+                                                </div>
+                                                {provider}
+                                            </CommandItem>
+                                        ))}
+                                    </CommandGroup>
+                                </Command>
+                            </PopoverContent>
+                        </Popover>
                     </div>
+
+                    {/* Selected Tags */}
+                    {selectedProviders.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mt-3">
+                            {selectedProviders.map((provider) => (
+                                <Badge
+                                    key={provider}
+                                    variant="secondary"
+                                    className="px-3 py-1 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1"
+                                >
+                                    {provider}
+                                    <X
+                                        className="h-3 w-3 cursor-pointer hover:text-red-500 transition-colors"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleProviderToggle(provider);
+                                        }}
+                                    />
+                                </Badge>
+                            ))}
+                        </div>
+                    )}
+
                     {errors.providers && (
                         <p className="text-red-400 text-sm mt-1">{errors.providers.message}</p>
                     )}
