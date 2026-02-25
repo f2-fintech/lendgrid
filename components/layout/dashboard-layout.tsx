@@ -25,6 +25,7 @@ import { formatDistanceToNow } from 'date-fns'
 
 import { useAuth, AppRole } from '@/lib/auth'
 import { useLogout } from '@/lib/logout'
+import { getEmployeeToken, getEmployeeRoleLabel, clearEmployeeToken, type DecodedEmployee } from '@/lib/employee-auth'
 import { useNotifications } from '@/hooks/use-notifications'
 import {
   Sidebar,
@@ -56,7 +57,7 @@ import { ThemeLogo } from '@/components/theme-logo'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  userRole?: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender'
+  userRole?: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee'
 }
 
 const navigationConfig = {
@@ -135,6 +136,15 @@ const navigationConfig = {
         { title: "Settings", url: navigationPaths.lender.settings, icon: Settings }
       ]
     }
+  ],
+  hrms_employee: [
+    {
+      title: "Workspace",
+      items: [
+        { title: "Dashboard", url: navigationPaths.f2fintechEmployee.dashboard, icon: LayoutDashboard },
+        { title: "Profile", url: navigationPaths.f2fintechEmployee.profile, icon: User2 },
+      ]
+    }
   ]
 }
 
@@ -143,7 +153,7 @@ function AppSidebar({
   user,
   isOmsEnabled
 }: {
-  userRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender',
+  userRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee',
   user?: any,
   isOmsEnabled?: boolean
 }) {
@@ -153,12 +163,18 @@ function AppSidebar({
 
   if (userRole === "aggregator") {
     navigation = navigationConfig.aggregator(isOmsEnabled!);
-  }
-  else {
+  } else {
     navigation = navigationConfig[userRole];
   }
 
-  const handleLogout = () => logout()
+  const handleLogout = () => {
+    if (userRole === 'hrms_employee') {
+      clearEmployeeToken()
+      router.replace('/login')
+    } else {
+      logout()
+    }
+  }
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
@@ -166,6 +182,7 @@ function AppSidebar({
       case 'aggregator': return 'Aggregator Admin'
       case 'aggregator_member': return 'Aggregator Member'
       case 'lender': return 'Lender Admin'
+      case 'hrms_employee': return getEmployeeRoleLabel(user?.rawRole ?? '3')
       default: return 'User'
     }
   }
@@ -283,12 +300,29 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const panelRef = useRef<HTMLDivElement | null>(null)
   const router = useRouter()
 
+  // Detect employee session first (employee_token cookie)
+  const employeeToken = getEmployeeToken()
+  const decodedEmployee: DecodedEmployee | null = employeeToken ? decodeJwt(employeeToken) as DecodedEmployee : null
+  const isEmployeeSession = decodedEmployee?.type === 'hrms_employee'
+
   const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'] as AppRole[])
-  const normalizedRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' =
-    role === 'super_admin' ? 'super_admin' : role === 'aggregator_admin' ? 'aggregator' : role === 'aggregator_member' ? 'aggregator_member' : 'lender'
+  const normalizedRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' =
+    isEmployeeSession ? 'hrms_employee'
+      : role === 'super_admin' ? 'super_admin'
+        : role === 'aggregator_admin' ? 'aggregator'
+          : role === 'aggregator_member' ? 'aggregator_member'
+            : 'lender'
   const token = getCookie("token")
   const decoded = decodeJwt(token)
   const isOmsEnabled = decoded?.isOmsEnabled ?? false
+
+  // Build employee user object for sidebar display
+  const employeeUser = isEmployeeSession && decodedEmployee ? {
+    username: `${decodedEmployee.first_name} ${decodedEmployee.last_name}`.trim(),
+    email: decodedEmployee.email,
+    profilePicture: decodedEmployee.image,
+    rawRole: decodedEmployee.role,  // role_priority: '1'|'2'|'3'
+  } : null
 
   // Use notifications hook with polling
   const {
@@ -371,7 +405,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     <SidebarProvider>
       <AppSidebar
         userRole={userRole ?? normalizedRole}
-        user={user}
+        user={isEmployeeSession ? employeeUser : user}
         isOmsEnabled={isOmsEnabled}
       />
 

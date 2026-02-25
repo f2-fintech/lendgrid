@@ -47,6 +47,12 @@ export const navigationPaths = {
     applications: '/lender/applications',
     payouts: '/lender/payouts',
     settings: '/lender/settings'
+  },
+
+  // F2Fintech Employee routes (role_priority 1/2/3)
+  f2fintechEmployee: {
+    dashboard: '/f2fintech-employee',
+    profile: '/f2fintech-employee/profile',
   }
 }
 

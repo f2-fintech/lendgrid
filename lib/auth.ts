@@ -21,6 +21,12 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 			const token = tokenMatch ? decodeURIComponent(tokenMatch.split('=')[1]) : null
 
 			if (!token) {
+				// If an employee_token is present, let DashboardLayout handle it — don't redirect
+				const hasEmployeeToken = cookieStr?.split('; ').some(c => c.startsWith('employee_token='))
+				if (hasEmployeeToken) {
+					setLoading(false)
+					return
+				}
 				router.replace(`/login?next=${encodeURIComponent(pathname)}`)
 				return
 			}

@@ -1,6 +1,49 @@
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { getCookie } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
+import { f2fintechEmployeesApi } from '@/lib/f2fintech-employees-api'
+
+// ============================================================================
+// EMPLOYEE LOGIN HOOK
+// ============================================================================
+
+/**
+ * React Query mutation hook for HRMS employee login.
+ *
+ * Calls the GraphQL `loginEmployee` mutation on lendgrid-server.
+ * Stores the JWT as `employee_token` cookie (separate from the user `token`).
+ *
+ * @example
+ * ```tsx
+ * const loginEmployee = useEmployeeLogin();
+ * const result = await loginEmployee.mutateAsync({ email, password });
+ * const { token, employee } = result.loginEmployee;
+ * ```
+ */
+export function useEmployeeLogin() {
+    const { toast } = useToast()
+
+    return useMutation({
+        mutationFn: (payload: { email: string; password: string }) =>
+            f2fintechEmployeesApi.login(payload),
+
+        onSuccess: (data) => {
+            const result = data?.loginEmployee
+            if (result?.success && result?.token) {
+                // Store employee token separately from user token to avoid conflicts
+                document.cookie = `employee_token=${encodeURIComponent(result.token)}; Path=/; Max-Age=${60 * 60 * 24 * 30}; SameSite=Lax`
+            }
+        },
+
+        onError: (error: Error) => {
+            toast({
+                title: 'Login Failed',
+                description: error.message || 'Unable to login. Please try again.',
+                variant: 'destructive',
+            })
+        },
+    })
+}
 
 // ============================================================================
 // TYPES & INTERFACES
