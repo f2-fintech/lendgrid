@@ -28,9 +28,18 @@ export function getCompanyId(): string | null {
  */
 export function getAuthToken(): string | null {
     if (typeof document === 'undefined') return null
+    // Try regular token first
     const value = `; ${document.cookie}`
     const parts = value.split(`; token=`)
-    if (parts.length === 2) return decodeURIComponent(parts.pop()!.split(';').shift() || '') || null
+    if (parts.length === 2) {
+        const t = decodeURIComponent(parts.pop()!.split(';').shift() || '') || null
+        if (t) return t
+    }
+    // Fall back to employee_token for employee-only sessions
+    const empParts = value.split(`; employee_token=`)
+    if (empParts.length === 2) {
+        return decodeURIComponent(empParts.pop()!.split(';').shift() || '') || null
+    }
     return null
 }
 

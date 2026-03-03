@@ -32,7 +32,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              productType
               commissionType
               commissionRate
               minAmount
@@ -76,7 +75,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              productType
               commissionType
               commissionRate
               minAmount
@@ -112,7 +110,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              productType
               commissionType
               commissionRate
               minAmount
@@ -144,7 +141,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              productType
               commissionType
               commissionRate
               minAmount

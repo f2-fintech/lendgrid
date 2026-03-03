@@ -143,6 +143,7 @@ const navigationConfig = {
       items: [
         { title: "Dashboard", url: navigationPaths.f2fintechEmployee.dashboard, icon: LayoutDashboard },
         { title: "Profile", url: navigationPaths.f2fintechEmployee.profile, icon: User2 },
+        { title: "Performance", url: navigationPaths.f2fintechEmployee.performance, icon: TrendingUp },
       ]
     }
   ]

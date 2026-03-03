@@ -53,6 +53,7 @@ export const navigationPaths = {
   f2fintechEmployee: {
     dashboard: '/f2fintech-employee',
     profile: '/f2fintech-employee/profile',
+    performance: '/f2fintech-employee/performance',
   }
 }
 
