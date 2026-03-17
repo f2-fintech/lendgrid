@@ -28,6 +28,10 @@ interface MultiStepFormDialogProps {
     apiBaseUrl: string;
     providers: string[];
     onSuccess?: () => void;
+    /** Guest/public mode props — set when no JWT is available */
+    guestCompanyId?: string;
+    aggregatorProfileId?: string;
+    guestIsOmsEnabled?: boolean;
 }
 
 const allSteps = [
@@ -43,7 +47,11 @@ export const MultiStepFormContent: React.FC<{
     providers: string[];
     onClose: () => void;
     onSuccess?: () => void;
-}> = ({ apiBaseUrl, providers, onClose, onSuccess }) => {
+    /** Guest/public mode — when set, skips JWT reads entirely */
+    guestCompanyId?: string;
+    aggregatorProfileId?: string;
+    guestIsOmsEnabled?: boolean;
+}> = ({ apiBaseUrl, providers, onClose, onSuccess, guestCompanyId, aggregatorProfileId, guestIsOmsEnabled }) => {
     const {
         activeStep,
         customerId,
@@ -69,12 +77,13 @@ export const MultiStepFormContent: React.FC<{
 
     const token = getCookie("token")
     const decoded = decodeJwt(token)
-    const isOmsEnabled = decoded?.isOmsEnabled ?? false
+    // Guest mode: use prop directly; authenticated mode: read from JWT
+    const isOmsEnabled = guestIsOmsEnabled ?? (decoded?.isOmsEnabled ?? false)
 
+    // Guest mode: use URL-sourced companyId; authenticated mode: read from JWT / localStorage
     const companyId =
-        typeof window !== 'undefined'
-            ? getCompanyId()
-            : null;
+        guestCompanyId ??
+        (typeof window !== 'undefined' ? getCompanyId() : null);
     const commonHeaders = {
         'Content-Type': 'application/json',
         ...(companyId ? { 'companyid': companyId } : {}),
@@ -274,11 +283,17 @@ export const MultiStepFormContent: React.FC<{
                     loan_type: formData.loanType,
                     loan_category: formData.loanCategory,
                     lead_type: formData.leadType,
-                    has_running_loans: formData.hasRunningLoans === 'yes',
-                    which_loan: formData.hasRunningLoans === 'yes' ? formData.whichLoan : null,
-                    running_loan_amount: formData.hasRunningLoans === 'yes' ? Number(formData.runningLoanAmount) : null,
+                    existing_loans: JSON.stringify(formData.existingLoans.map((l) => ({
+                        has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
+                        which_loan: l.whichLoan || null,
+                        loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
+                        running_emi: l.runningEmi ? Number(l.runningEmi) : null
+                    }))),
                     case_type: formData.caseType,
-                    is_picked: isOmsEnabled ? 0 : 1
+                    is_picked: isOmsEnabled ? 0 : 1,
+                    source: 'apna gold',
+                    // Guest mode: pass aggregator's MongoDB _id so the server can set aggregatorId without a JWT
+                    ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
                 };
 
                 const applicationId = await createApplication(applicationData);
@@ -570,6 +585,9 @@ export const MultiStepFormDialog: React.FC<MultiStepFormDialogProps> = ({
     apiBaseUrl,
     providers,
     onSuccess,
+    guestCompanyId,
+    aggregatorProfileId,
+    guestIsOmsEnabled,
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -585,6 +603,9 @@ export const MultiStepFormDialog: React.FC<MultiStepFormDialogProps> = ({
                         providers={providers}
                         onClose={() => onOpenChange(false)}
                         onSuccess={onSuccess}
+                        guestCompanyId={guestCompanyId}
+                        aggregatorProfileId={aggregatorProfileId}
+                        guestIsOmsEnabled={guestIsOmsEnabled}
                     />
                 </FormProvider>
             </DialogContent>

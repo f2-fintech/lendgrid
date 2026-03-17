@@ -160,7 +160,11 @@ export function LoginForm() {
       const role = decoded?.role;
       toast({ title: 'Login successful!', description: result.message || 'Welcome back to LendGrid' });
 
-      if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
+      const nextParam = searchParams.get('next');
+
+      if (nextParam) {
+        router.push(nextParam);
+      } else if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
         router.push(navigationPaths.aggregator.dashboard);
       } else if (role === "aggregator_member" || role === "AGGREGATOR_MEMBER") {
         router.push(navigationPaths.aggregatorMember.dashboard);

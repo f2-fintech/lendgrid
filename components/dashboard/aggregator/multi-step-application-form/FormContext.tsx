@@ -15,9 +15,7 @@ interface FormContextType {
         leadType: string;
         providers: string[];
         providerAmounts: { provider: string; amount: string }[];
-        hasRunningLoans: string;
-        whichLoan: string;
-        runningLoanAmount: string;
+        existingLoans: { hasRunningLoans: string; whichLoan: string; loanAmount: string; runningEmi: string }[];
         caseType: string;
     };
     setFormData: (data: any) => void;
@@ -49,9 +47,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         leadType: 'null',
         providers: [] as string[],
         providerAmounts: [] as { provider: string; amount: string }[],
-        hasRunningLoans: '',
-        whichLoan: '',
-        runningLoanAmount: '',
+        existingLoans: [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
         caseType: '',
     });
 
@@ -75,9 +71,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
             leadType: 'null',
             providers: [],
             providerAmounts: [],
-            hasRunningLoans: '',
-            whichLoan: '',
-            runningLoanAmount: '',
+            existingLoans: [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
             caseType: '',
         });
     }, []);

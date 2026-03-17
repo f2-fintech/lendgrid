@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
     IndianRupee,
@@ -8,6 +8,7 @@ import {
     Edit,
     ArrowRight,
     AlertCircle,
+    Plus,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -54,12 +55,6 @@ interface Step0FormProps {
 }
 
 const loanTypes = {
-    secured: [
-        { value: 'home loan', label: 'Home Loan' },
-        { value: 'lap', label: 'LAP (Loan Against Property)' },
-        { value: 'auto loan', label: 'Auto Loan' },
-        { value: 'machinery loan', label: 'Machinery Loan' },
-    ],
     unsecured: [
         { value: 'personal loan', label: 'Personal Loan' },
         { value: 'business loan', label: 'Business Loan' },
@@ -67,11 +62,17 @@ const loanTypes = {
         { value: 'education loan', label: 'Education Loan' },
         { value: 'just inquiry', label: 'Just Inquiry' },
     ],
+    secured: [
+        { value: 'home loan', label: 'Home Loan' },
+        { value: 'lap', label: 'LAP (Loan Against Property)' },
+        { value: 'auto loan', label: 'Auto Loan' },
+        { value: 'machinery loan', label: 'Machinery Loan' },
+    ],
 };
 
 const tenureOptions = {
-    secured: ['5 Years', '8 Years', '10 Years', '15 Years', '20 Years', '25 Years', '30 Years'],
     unsecured: ['1 Year', '2 Years', '3 Years', '4 Years', '5 Years', '6 Years', '7 Years', '8 Years'],
+    secured: ['5 Years', '8 Years', '10 Years', '15 Years', '20 Years', '25 Years', '30 Years'],
 };
 
 const leadTypeOptions = [
@@ -109,9 +110,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
             leadType: formData.leadType || 'null',
             providers: formData.providers || [],
             providerAmounts: formData.providerAmounts || [],
-            hasRunningLoans: formData.hasRunningLoans || '',
-            whichLoan: formData.whichLoan || '',
-            runningLoanAmount: formData.runningLoanAmount || '',
+            existingLoans: formData.existingLoans || [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
             caseType: formData.caseType || '',
         },
     });
@@ -124,10 +123,13 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
     const leadType = watch('leadType');
     const selectedProviders = watch('providers');
     const providerAmounts = watch('providerAmounts');
-    const hasRunningLoans = watch('hasRunningLoans');
-    const whichLoan = watch('whichLoan');
-    const runningLoanAmount = watch('runningLoanAmount');
+    const existingLoans = watch('existingLoans');
     const caseType = watch('caseType');
+
+    const { fields: loanFields, append: appendLoan, remove: removeLoan } = useFieldArray({
+        control,
+        name: "existingLoans"
+    });
 
     // Determine loan category based on loan type
     const getLoanCategory = (type: string): string => {
@@ -241,9 +243,9 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover border-border text-popover-foreground">
                                     <div className="px-2 py-1 text-xs font-semibold text-primary select-none">
-                                        Secured Loans
+                                        Unsecured Loans
                                     </div>
-                                    {loanTypes.secured.map((loan) => (
+                                    {loanTypes.unsecured.map((loan) => (
                                         <SelectItem
                                             key={loan.value}
                                             value={loan.value}
@@ -253,9 +255,9 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                         </SelectItem>
                                     ))}
                                     <div className="px-2 py-1 text-xs font-semibold text-primary mt-2 select-none">
-                                        Unsecured Loans
+                                        Secured Loans
                                     </div>
-                                    {loanTypes.unsecured.map((loan) => (
+                                    {loanTypes.secured.map((loan) => (
                                         <SelectItem
                                             key={loan.value}
                                             value={loan.value}
@@ -295,7 +297,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                     </div>
                                 </SelectTrigger>
                                 <SelectContent className="bg-popover border-border text-popover-foreground">
-                                    {(loanCategory ? tenureOptions[loanCategory] : []).map((option) => (
+                                    {(loanCategory ? tenureOptions[loanCategory as keyof typeof tenureOptions] : []).map((option: string) => (
                                         <SelectItem
                                             key={option}
                                             value={option}
@@ -343,127 +345,6 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                     />
                 </div>
 
-                {/* Running Customer Loans */}
-                <div>
-                    <Label className="text-foreground">Running Customer Loans*</Label>
-                    <Controller
-                        control={control}
-                        name="hasRunningLoans"
-                        render={({ field }) => (
-                            <Select value={field.value} onValueChange={(value) => {
-                                field.onChange(value);
-                                // Clear conditional fields when switching to "no"
-                                if (value === 'no') {
-                                    setValue('whichLoan', '');
-                                    setValue('runningLoanAmount', '');
-                                }
-                            }}>
-                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
-                                    <div className="flex items-center">
-                                        <Building2 className="w-4 h-4 mr-2" />
-                                        <SelectValue placeholder="Select option" />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover border-border text-popover-foreground">
-                                    <SelectItem
-                                        value="yes"
-                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                    >
-                                        Yes
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="no"
-                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                    >
-                                        No
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
-                    />
-                    {errors.hasRunningLoans && (
-                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            {errors.hasRunningLoans.message}
-                        </p>
-                    )}
-                </div>
-
-                {/* Conditional Fields - Which Loan and Loan Amount */}
-                {hasRunningLoans === 'yes' && (
-                    <>
-                        {/* Which Loan Field */}
-                        <div>
-                            <Label className="text-foreground">Which Loan*</Label>
-                            <Controller
-                                control={control}
-                                name="whichLoan"
-                                render={({ field }) => (
-                                    <Select value={field.value} onValueChange={field.onChange}>
-                                        <SelectTrigger className="bg-background border-border text-foreground mt-2">
-                                            <div className="flex items-center">
-                                                <Building2 className="w-4 h-4 mr-2" />
-                                                <SelectValue placeholder="Choose loan type" />
-                                            </div>
-                                        </SelectTrigger>
-                                        <SelectContent className="bg-popover border-border text-popover-foreground">
-                                            <div className="px-2 py-1 text-xs font-semibold text-primary select-none">
-                                                Secured Loans
-                                            </div>
-                                            {loanTypes.secured.map((loan) => (
-                                                <SelectItem
-                                                    key={loan.value}
-                                                    value={loan.value}
-                                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                                >
-                                                    {loan.label}
-                                                </SelectItem>
-                                            ))}
-                                            <div className="px-2 py-1 text-xs font-semibold text-primary mt-2 select-none">
-                                                Unsecured Loans
-                                            </div>
-                                            {loanTypes.unsecured.map((loan) => (
-                                                <SelectItem
-                                                    key={loan.value}
-                                                    value={loan.value}
-                                                    className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                                >
-                                                    {loan.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-                            />
-                            {errors.whichLoan && (
-                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    {errors.whichLoan.message}
-                                </p>
-                            )}
-                        </div>
-                        {/* Running Loan Amount Field */}
-                        <div>
-                            <Label className="text-foreground">Running Loan Amount*</Label>
-                            <div className="relative mt-2">
-                                <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                                <Input
-                                    type="text"
-                                    value={runningLoanAmount}
-                                    onChange={(e) => setValue('runningLoanAmount', e.target.value)}
-                                    className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
-                                    placeholder="Enter running loan amount"
-                                />
-                            </div>
-                            {errors.runningLoanAmount && (
-                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                    <AlertCircle className="w-3 h-3" />
-                                    {errors.runningLoanAmount.message}
-                                </p>
-                            )}
-                        </div>
-                    </>
-                )}
 
                 {/* Case Type */}
                 <div>
@@ -617,6 +498,191 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         </div>
                     </div>
                 )}
+
+                {/* Existing Loans Array */}
+                <div className="w-full max-w-2xl mx-auto space-y-4 mt-8 mb-4">
+                    <div className="flex items-center gap-2 mb-4">
+                        <Building2 className="w-5 h-5 text-primary" />
+                        <h3 className="text-lg font-semibold text-primary uppercase tracking-wide">
+                            Existing Loans
+                        </h3>
+                    </div>
+
+                    {loanFields.map((field, index) => {
+                        const loanErr = errors.existingLoans?.[index];
+                        const hasRunningLoans = existingLoans?.[index]?.hasRunningLoans;
+
+                        return (
+                            <div
+                                key={field.id}
+                                className="border border-border rounded-2xl p-6 mb-6 bg-card/10 shadow-sm relative transition-all duration-300 hover:bg-card/20 hover:border-primary/40 hover:-translate-y-1 hover:shadow-md"
+                            >
+                                <div className="flex justify-between items-center mb-6">
+                                    <div className="bg-primary px-2 py-2 rounded-lg shadow-md">
+                                        <span className="text-sm text-primary-foreground capitalize">
+                                            Loan Record #{index + 1}
+                                        </span>
+                                    </div>
+                                    {loanFields.length > 1 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => removeLoan(index)}
+                                            className="text-red-400 bg-red-400/10 hover:bg-red-400/20 p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                                        >
+                                            <X className="w-5 h-5" />
+                                        </button>
+                                    )}
+                                </div>
+
+                                <div className="space-y-6">
+                                    {/* Has Running Loans */}
+                                    <div>
+                                        <Label className="text-foreground">Existing Loans*</Label>
+                                        <Controller
+                                            control={control}
+                                            name={`existingLoans.${index}.hasRunningLoans`}
+                                            render={({ field: inputField }) => (
+                                                <Select value={inputField.value} onValueChange={(val) => {
+                                                    inputField.onChange(val);
+                                                    if (val === 'no') {
+                                                        setValue(`existingLoans.${index}.whichLoan`, '');
+                                                        setValue(`existingLoans.${index}.loanAmount`, '');
+                                                        setValue(`existingLoans.${index}.runningEmi`, '');
+                                                    }
+                                                }}>
+                                                    <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                                        <SelectValue placeholder="Select option" />
+                                                    </SelectTrigger>
+                                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                        <SelectItem value="yes" className="focus:bg-muted hover:bg-muted cursor-pointer">Yes</SelectItem>
+                                                        <SelectItem value="no" className="focus:bg-muted hover:bg-muted cursor-pointer">No</SelectItem>
+                                                    </SelectContent>
+                                                </Select>
+                                            )}
+                                        />
+                                        {loanErr?.hasRunningLoans && (
+                                            <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" />
+                                                {loanErr.hasRunningLoans.message}
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Conditional Internal Fields for This Loan */}
+                                    {hasRunningLoans === 'yes' && (
+                                        <>
+                                            {/* Which Loan */}
+                                            <div>
+                                                <Label className="text-foreground">Loan Type*</Label>
+                                                <Controller
+                                                    control={control}
+                                                    name={`existingLoans.${index}.whichLoan`}
+                                                    render={({ field: inputField }) => (
+                                                        <Select value={inputField.value} onValueChange={inputField.onChange}>
+                                                            <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                                                <SelectValue placeholder="Choose loan type" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                <div className="px-2 py-1 text-xs font-semibold text-primary select-none opacity-100 uppercase tracking-widest">
+                                                                    Unsecured
+                                                                </div>
+                                                                {loanTypes.unsecured.map((l) => (
+                                                                    <SelectItem key={l.value} value={l.value} className="focus:bg-muted hover:bg-muted cursor-pointer">
+                                                                        {l.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                                <div className="px-2 py-1 text-xs font-semibold text-primary mt-2 select-none opacity-100 uppercase tracking-widest">
+                                                                    Secured
+                                                                </div>
+                                                                {loanTypes.secured.map((l) => (
+                                                                    <SelectItem key={l.value} value={l.value} className="focus:bg-muted hover:bg-muted cursor-pointer">
+                                                                        {l.label}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {loanErr?.whichLoan && (
+                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        {loanErr.whichLoan.message}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Outstanding Amount & Running EMI grid */}
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                                <div>
+                                                    <Label className="text-foreground">Outstanding Amount*</Label>
+                                                    <div className="relative mt-2">
+                                                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                                                        <Controller
+                                                            control={control}
+                                                            name={`existingLoans.${index}.loanAmount`}
+                                                            render={({ field: inputField }) => (
+                                                                <Input
+                                                                    type="text"
+                                                                    value={inputField.value || ''}
+                                                                    onChange={inputField.onChange}
+                                                                    placeholder="0.00"
+                                                                    className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
+                                                                />
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    {loanErr?.loanAmount && (
+                                                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            {loanErr.loanAmount.message}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                <div>
+                                                    <Label className="text-foreground">Running EMI (Optional)</Label>
+                                                    <div className="relative mt-2">
+                                                        <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-primary" />
+                                                        <Controller
+                                                            control={control}
+                                                            name={`existingLoans.${index}.runningEmi`}
+                                                            render={({ field: inputField }) => (
+                                                                <Input
+                                                                    type="text"
+                                                                    value={inputField.value || ''}
+                                                                    onChange={inputField.onChange}
+                                                                    placeholder="0.00"
+                                                                    className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
+                                                                />
+                                                            )}
+                                                        />
+                                                    </div>
+                                                    {loanErr?.runningEmi && (
+                                                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            {loanErr.runningEmi.message}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+
+                    <div className="flex flex-start mt-4 pb-4">
+                        <Button
+                            type="button"
+                            onClick={() => appendLoan({ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' })}
+                            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all capitalize rounded-xl px-4 py-6 text-[14px] shadow-md hover:shadow-lg hover:-translate-y-0.5"
+                        >
+                            <Plus className="w-5 h-5 mr-2" />
+                            Add Another Loan Record
+                        </Button>
+                    </div>
+                </div>
 
                 {/* Submit Button */}
                 <Button

@@ -28,38 +28,62 @@ export const step0Schema = z.object({
         })
     ),
 
-    hasRunningLoans: z.string().min(1, 'Please specify if you have running loans'),
-    whichLoan: z.string().optional(),
-    runningLoanAmount: z.string().optional(),
+    existingLoans: z.array(
+        z.object({
+            hasRunningLoans: z.string().min(1, 'Required'),
+            whichLoan: z.string().optional(),
+            loanAmount: z.string().optional(),
+            runningEmi: z.string().optional(),
+        })
+    ).min(1),
     caseType: z.string().min(1, 'Case type is required'),
 }).superRefine((data, ctx) => {
-    if (data.hasRunningLoans === 'yes') {
-        if (!data.whichLoan || data.whichLoan.trim() === '') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Please specify which loan you have',
-                path: ['whichLoan'],
-            });
-        }
-        if (!data.runningLoanAmount || data.runningLoanAmount.trim() === '') {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Running loan amount is required',
-                path: ['runningLoanAmount'],
-            });
-        } else if (isNaN(Number(data.runningLoanAmount))) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Running loan amount must be a number',
-                path: ['runningLoanAmount'],
-            });
-        } else if (Number(data.runningLoanAmount) <= 0) {
-            ctx.addIssue({
-                code: z.ZodIssueCode.custom,
-                message: 'Running loan amount must be greater than 0',
-                path: ['runningLoanAmount'],
-            });
-        }
+    if (data.existingLoans) {
+        data.existingLoans.forEach((loan, index) => {
+            if (loan.hasRunningLoans === 'yes') {
+                if (!loan.whichLoan || loan.whichLoan.trim() === '') {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: 'Please specify which loan you have',
+                        path: ['existingLoans', index, 'whichLoan'],
+                    });
+                }
+                if (!loan.loanAmount || loan.loanAmount.trim() === '') {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: 'Running loan amount is required',
+                        path: ['existingLoans', index, 'loanAmount'],
+                    });
+                } else if (isNaN(Number(loan.loanAmount))) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: 'Running loan amount must be a number',
+                        path: ['existingLoans', index, 'loanAmount'],
+                    });
+                } else if (Number(loan.loanAmount) <= 0) {
+                    ctx.addIssue({
+                        code: z.ZodIssueCode.custom,
+                        message: 'Running loan amount must be greater than 0',
+                        path: ['existingLoans', index, 'loanAmount'],
+                    });
+                }
+                if (loan.runningEmi && loan.runningEmi.trim() !== '') {
+                    if (isNaN(Number(loan.runningEmi))) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: 'Running EMI must be a number',
+                            path: ['existingLoans', index, 'runningEmi'],
+                        });
+                    } else if (Number(loan.runningEmi) <= 0) {
+                        ctx.addIssue({
+                            code: z.ZodIssueCode.custom,
+                            message: 'Running EMI must be greater than 0',
+                            path: ['existingLoans', index, 'runningEmi'],
+                        });
+                    }
+                }
+            }
+        });
     }
 });
 

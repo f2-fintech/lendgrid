@@ -5,6 +5,7 @@ export default function NewApplicationPage() {
         <MultiStepFormPage
             apiBaseUrl={process.env.NEXT_PUBLIC_WEB_URL || ''}
             providers={[
+                'Let F2 Fintech decide your lender',
                 'ABFL',
                 'Axis',
                 'Bajaj Finance',
