@@ -34,6 +34,7 @@ interface MultiStepFormDialogProps {
     guestCompanyId?: string;
     aggregatorProfileId?: string;
     guestIsOmsEnabled?: boolean;
+    guestSource?: string;
 }
 
 const allSteps = [
@@ -53,7 +54,8 @@ export const MultiStepFormContent: React.FC<{
     guestCompanyId?: string;
     aggregatorProfileId?: string;
     guestIsOmsEnabled?: boolean;
-}> = ({ apiBaseUrl, providers, onClose, onSuccess, guestCompanyId, aggregatorProfileId, guestIsOmsEnabled }) => {
+    guestSource?: string;
+}> = ({ apiBaseUrl, providers, onClose, onSuccess, guestCompanyId, aggregatorProfileId, guestIsOmsEnabled, guestSource }) => {
     const {
         activeStep,
         customerId,
@@ -293,7 +295,7 @@ export const MultiStepFormContent: React.FC<{
                     }))),
                     case_type: formData.caseType,
                     is_picked: isOmsEnabled ? 0 : 1,
-                    source: 'apna gold',
+                    source: guestSource || 'apna gold',
                     // Guest mode: pass aggregator's MongoDB _id so the server can set aggregatorId without a JWT
                     ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
                 };
@@ -529,6 +531,7 @@ export const MultiStepFormDialog: React.FC<MultiStepFormDialogProps> = ({
     guestCompanyId,
     aggregatorProfileId,
     guestIsOmsEnabled,
+    guestSource,
 }) => {
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
@@ -547,6 +550,7 @@ export const MultiStepFormDialog: React.FC<MultiStepFormDialogProps> = ({
                         guestCompanyId={guestCompanyId}
                         aggregatorProfileId={aggregatorProfileId}
                         guestIsOmsEnabled={guestIsOmsEnabled}
+                        guestSource={guestSource}
                     />
                 </FormProvider>
             </DialogContent>

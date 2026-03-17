@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { Loader2, Building2 } from 'lucide-react';
 
 import { FormProvider } from '@/components/dashboard/aggregator/multi-step-application-form/FormContext';
@@ -36,9 +36,12 @@ const PROVIDERS = [
     'SBI', 'Shriram', 'SMFG', 'STANDARD Chartered Bank', 'Tata', 'YES Bank',
 ];
 
-export default function PublicApplyPage() {
-    const params = useParams();
-    const companyId = Number(params?.companyId);
+function ApplyPageContent() {
+    const searchParams = useSearchParams();
+    const companyIdStr = searchParams.get('company_id');
+    const companyId = companyIdStr ? Number(companyIdStr) : NaN;
+    const sourceParam = searchParams.get('source');
+    const source = sourceParam ? decodeURIComponent(sourceParam) : undefined;
 
     const [aggregator, setAggregator] = useState<AggregatorPublicInfo | null>(null);
     const [loading, setLoading] = useState(true);
@@ -146,9 +149,25 @@ export default function PublicApplyPage() {
                         guestCompanyId={String(aggregator.companyId)}
                         aggregatorProfileId={aggregator._id}
                         guestIsOmsEnabled={aggregator.isOmsEnabled}
+                        guestSource={source}
                     />
                 </FormProvider>
             </div>
         </div>
+    );
+}
+
+export default function PublicApplyPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-background flex items-center justify-center">
+                <div className="flex flex-col items-center gap-3 text-muted-foreground">
+                    <Loader2 className="w-10 h-10 animate-spin text-primary" />
+                    <p className="text-sm">Loading application form…</p>
+                </div>
+            </div>
+        }>
+            <ApplyPageContent />
+        </Suspense>
     );
 }

@@ -4,13 +4,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
-import { TrendingUp, ClipboardList, IndianRupee, Banknote, FileText, Eye, Search, Calendar, ArrowRight, AlertCircle, CheckCircle, Clock, XCircle } from 'lucide-react'
+import { TrendingUp, ClipboardList, IndianRupee, Banknote, FileText, Eye, Search, Calendar, ArrowRight, AlertCircle, CheckCircle, Clock, XCircle, Share2 } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProfileCompletionBanner } from '@/components/ui/progressbar'
 import { useAuth } from '@/lib/auth'
 import { Button } from '@/components/ui/button'
+import { Tooltip as UITooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -26,6 +27,7 @@ import { useToast } from '@/hooks/use-toast'
 import { useCommissionTransactions } from '@/hooks/use-commissions'
 import { useApplicationCount } from '@/hooks/use-applications-rest'
 import { getCookie, decodeJwt } from "@/lib/utils"
+import { getCompanyId } from "@/lib/http-client"
 import { useDashboardTicketStats, useDisbursedTicketsByMonth } from '@/hooks/use-tickets-rest'
 
 export function AggregatorDashboard() {
@@ -168,6 +170,33 @@ export function AggregatorDashboard() {
     const pct = total > 0 ? Math.round((filled / total) * 100) : 100
     setProfileCompletePct(pct)
   }, [userData, aggData])
+
+  const handleShare = async () => {
+    try {
+      const companyId = getCompanyId();
+      if (!companyId) {
+        toast({
+          title: "Error",
+          description: "Could not identify company. Please try logging in again.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const shareUrl = `${window.location.origin}/apply?company_id=${companyId}&source=`;
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link Copied!",
+        description: "Application link copied to clipboard.",
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to copy link.",
+        variant: "destructive"
+      });
+    }
+  };
 
   useEffect(() => {
     setPage(1)
@@ -371,8 +400,22 @@ export function AggregatorDashboard() {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your performance overview.</p>
         </div>
-        <div className="flex items-center space-x-4">
-          <Button variant="outline" className="border-border">
+        <div className="flex flex-wrap gap-2 items-center sm:space-x-4">
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={handleShare}
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all active:scale-95 px-6"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Share
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Click here to share application creation link</p>
+            </TooltipContent>
+          </UITooltip>
+          <Button variant="outline" className="border-border hidden sm:flex pointer-events-none">
             <Calendar className="w-4 h-4 mr-2" />
             {new Date().toLocaleDateString('en-US', { day: "numeric", month: 'long', year: 'numeric' })}
           </Button>
