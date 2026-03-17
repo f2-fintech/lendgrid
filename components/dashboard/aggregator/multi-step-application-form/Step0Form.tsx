@@ -111,7 +111,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
             providers: formData.providers || [],
             providerAmounts: formData.providerAmounts || [],
             existingLoans: formData.existingLoans || [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
-            caseType: formData.caseType || '',
+            caseType: formData.caseType || 'fresh',
         },
     });
 
@@ -124,7 +124,12 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
     const selectedProviders = watch('providers');
     const providerAmounts = watch('providerAmounts');
     const existingLoans = watch('existingLoans');
-    const caseType = watch('caseType');
+
+    const canAddAnotherLoan = existingLoans?.every(loan =>
+        loan.hasRunningLoans === 'yes' &&
+        loan.whichLoan &&
+        loan.loanAmount
+    );
 
     const { fields: loanFields, append: appendLoan, remove: removeLoan } = useFieldArray({
         control,
@@ -212,7 +217,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                             type="text"
                             value={amount}
                             onChange={(e) => setValue('amount', e.target.value)}
-                            className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
+                            className="bg-card border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
                             placeholder="Enter amount"
                         />
                     </div>
@@ -235,7 +240,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 field.onChange(value);
                                 handleLoanTypeChange(value);
                             }}>
-                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                <SelectTrigger className="bg-card border-border text-foreground mt-2">
                                     <div className="flex items-center">
                                         <Building2 className="w-4 h-4 mr-2" />
                                         <SelectValue placeholder="Choose loan type" />
@@ -249,7 +254,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                         <SelectItem
                                             key={loan.value}
                                             value={loan.value}
-                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                            className="focus:bg-accent focus:text-accent-foreground cursor-pointer"
                                         >
                                             {loan.label}
                                         </SelectItem>
@@ -261,7 +266,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                         <SelectItem
                                             key={loan.value}
                                             value={loan.value}
-                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                            className="focus:bg-accent focus:text-accent-foreground cursor-pointer"
                                         >
                                             {loan.label}
                                         </SelectItem>
@@ -286,7 +291,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         name="tenure"
                         render={({ field }) => (
                             <Select value={field.value} onValueChange={field.onChange} disabled={!loanCategory}>
-                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                <SelectTrigger className="bg-card border-border text-foreground mt-2">
                                     <div className="flex items-center">
                                         <Clock className="w-4 h-4 mr-2" />
                                         <SelectValue
@@ -301,7 +306,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                         <SelectItem
                                             key={option}
                                             value={option}
-                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
+                                            className="focus:bg-accent focus:text-accent-foreground cursor-pointer"
                                         >
                                             {option}
                                         </SelectItem>
@@ -318,73 +323,6 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                     )}
                 </div>
 
-                {/* Lead Type (Optional) */}
-                <div>
-                    <Label className="text-foreground">Lead Type (Optional)</Label>
-                    <Controller
-                        control={control}
-                        name="leadType"
-                        render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
-                                    <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover border-border text-popover-foreground">
-                                    {leadTypeOptions.map((leadType) => (
-                                        <SelectItem
-                                            key={leadType.label}
-                                            value={leadType.value}
-                                            className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                        >
-                                            {leadType.label}
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        )}
-                    />
-                </div>
-
-
-                {/* Case Type */}
-                <div>
-                    <Label className="text-foreground">Case Type*</Label>
-                    <Controller
-                        control={control}
-                        name="caseType"
-                        render={({ field }) => (
-                            <Select value={field.value} onValueChange={field.onChange}>
-                                <SelectTrigger className="bg-background border-border text-foreground mt-2">
-                                    <div className="flex items-center">
-                                        <Building2 className="w-4 h-4 mr-2" />
-                                        <SelectValue placeholder="Select case type" />
-                                    </div>
-                                </SelectTrigger>
-                                <SelectContent className="bg-popover border-border text-popover-foreground">
-                                    <SelectItem
-                                        value="top_up"
-                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                    >
-                                        Top Up
-                                    </SelectItem>
-                                    <SelectItem
-                                        value="fresh"
-                                        className="text-foreground focus:bg-muted hover:bg-muted cursor-pointer"
-                                    >
-                                        Fresh
-                                    </SelectItem>
-                                </SelectContent>
-                            </Select>
-                        )}
-                    />
-                    {errors.caseType && (
-                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                            <AlertCircle className="w-3 h-3" />
-                            {errors.caseType.message}
-                        </p>
-                    )}
-                </div>
-
                 {/* Providers Multi-Select Combobox */}
                 <div>
                     <Label className="text-foreground">Select Providers* (Multiple)</Label>
@@ -394,7 +332,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 <Button
                                     variant="outline"
                                     role="combobox"
-                                    className="w-full justify-between bg-background border-border text-foreground hover:bg-muted"
+                                    className="w-full justify-between bg-card border border-border text-foreground hover:bg-accent hover:text-accent-foreground font-normal"
                                 >
                                     {selectedProviders.length > 0
                                         ? `${selectedProviders.length} selected`
@@ -412,7 +350,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                                 key={provider}
                                                 value={provider}
                                                 onSelect={() => handleProviderToggle(provider)}
-                                                className="cursor-pointer aria-selected:bg-muted aria-selected:text-foreground"
+                                                className="cursor-pointer aria-selected:bg-accent aria-selected:text-accent-foreground"
                                             >
                                                 <div
                                                     className={cn(
@@ -433,40 +371,9 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         </Popover>
                     </div>
 
-                    {/* Selected Tags */}
+                    {/* Selected Providers with Custom Amounts */}
                     {selectedProviders.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                            {selectedProviders.map((provider) => (
-                                <Badge
-                                    key={provider}
-                                    variant="secondary"
-                                    className="px-3 py-1 text-sm bg-secondary text-secondary-foreground hover:bg-secondary/80 flex items-center gap-1"
-                                >
-                                    {provider}
-                                    <X
-                                        className="h-3 w-3 cursor-pointer hover:text-red-500 transition-colors"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleProviderToggle(provider);
-                                        }}
-                                    />
-                                </Badge>
-                            ))}
-                        </div>
-                    )}
-
-                    {errors.providers && (
-                        <p className="text-red-400 text-sm mt-1">{errors.providers.message}</p>
-                    )}
-                </div>
-
-                {/* Provider Amounts */}
-                {selectedProviders.length > 0 && (
-                    <div className="bg-card/50 border border-border rounded-lg p-4">
-                        <Label className="text-foreground mb-3 block">
-                            Customize Amounts per Provider
-                        </Label>
-                        <div className="space-y-2">
+                        <div className="mt-4 flex flex-col gap-2.5">
                             {selectedProviders.map((provider) => {
                                 const providerAmount =
                                     providerAmounts.find((pa) => pa.provider === provider)?.amount ||
@@ -474,30 +381,45 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                 return (
                                     <div
                                         key={provider}
-                                        className="flex items-center justify-between bg-background/50 p-3 rounded-lg"
+                                        className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card/60 p-3.5 rounded-xl border border-border/60 shadow-sm transition-all hover:bg-card hover:border-primary/30"
                                     >
-                                        <span className="text-foreground text-sm">{provider}</span>
-                                        <div className="flex items-center gap-2">
-                                            <Badge variant="outline" className="text-primary">
-                                                ₹{providerAmount || 'Not set'}
-                                            </Badge>
-                                            <Button
-                                                variant="ghost"
-                                                size="sm"
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
+                                                <Building2 className="w-4 h-4 text-primary" />
+                                            </div>
+                                            <span className="text-foreground font-semibold text-sm">{provider}</span>
+                                        </div>
+                                        <div className="flex items-center gap-2 self-end sm:self-auto">
+                                            <Badge
+                                                variant="secondary"
+                                                className="bg-primary/5 text-primary border border-primary/20 hover:bg-primary/10 transition-colors cursor-pointer px-3 py-1.5 flex items-center gap-1.5 rounded-lg shadow-sm"
                                                 onClick={() => {
                                                     setEditingProvider(provider);
                                                     setAmountDialogOpen(true);
                                                 }}
                                             >
-                                                <Edit className="w-4 h-4" />
+                                                <span>₹{providerAmount || 'Not set'}</span>
+                                                <Edit className="w-3.5 h-3.5 opacity-70" />
+                                            </Badge>
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg shrink-0"
+                                                onClick={() => handleProviderToggle(provider)}
+                                            >
+                                                <X className="w-4 h-4" />
                                             </Button>
                                         </div>
                                     </div>
                                 );
                             })}
                         </div>
-                    </div>
-                )}
+                    )}
+
+                    {errors.providers && (
+                        <p className="text-red-400 text-sm mt-2">{errors.providers.message}</p>
+                    )}
+                </div>
 
                 {/* Existing Loans Array */}
                 <div className="w-full max-w-2xl mx-auto space-y-4 mt-8 mb-4">
@@ -515,21 +437,19 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         return (
                             <div
                                 key={field.id}
-                                className="border border-border rounded-2xl p-6 mb-6 bg-card/10 shadow-sm relative transition-all duration-300 hover:bg-card/20 hover:border-primary/40 hover:-translate-y-1 hover:shadow-md"
+                                className="border border-border rounded-xl p-5 mb-4 bg-card shadow-sm relative"
                             >
-                                <div className="flex justify-between items-center mb-6">
-                                    <div className="bg-primary px-2 py-2 rounded-lg shadow-md">
-                                        <span className="text-sm text-primary-foreground capitalize">
-                                            Loan Record #{index + 1}
-                                        </span>
-                                    </div>
+                                <div className="flex justify-between items-center mb-5">
+                                    <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 rounded-md font-medium">
+                                        Loan Record #{index + 1}
+                                    </Badge>
                                     {loanFields.length > 1 && (
                                         <button
                                             type="button"
                                             onClick={() => removeLoan(index)}
-                                            className="text-red-400 bg-red-400/10 hover:bg-red-400/20 p-2 rounded-lg transition-all duration-200 hover:scale-105"
+                                            className="text-muted-foreground hover:text-destructive p-1 transition-colors"
                                         >
-                                            <X className="w-5 h-5" />
+                                            <X className="w-4 h-4" />
                                         </button>
                                     )}
                                 </div>
@@ -550,12 +470,12 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                                         setValue(`existingLoans.${index}.runningEmi`, '');
                                                     }
                                                 }}>
-                                                    <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                                    <SelectTrigger className="bg-card border-border text-foreground mt-2">
                                                         <SelectValue placeholder="Select option" />
                                                     </SelectTrigger>
                                                     <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                        <SelectItem value="yes" className="focus:bg-muted hover:bg-muted cursor-pointer">Yes</SelectItem>
-                                                        <SelectItem value="no" className="focus:bg-muted hover:bg-muted cursor-pointer">No</SelectItem>
+                                                        <SelectItem value="yes" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">Yes</SelectItem>
+                                                        <SelectItem value="no" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">No</SelectItem>
                                                     </SelectContent>
                                                 </Select>
                                             )}
@@ -579,7 +499,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                                     name={`existingLoans.${index}.whichLoan`}
                                                     render={({ field: inputField }) => (
                                                         <Select value={inputField.value} onValueChange={inputField.onChange}>
-                                                            <SelectTrigger className="bg-background border-border text-foreground mt-2">
+                                                            <SelectTrigger className="bg-card border-border text-foreground mt-2">
                                                                 <SelectValue placeholder="Choose loan type" />
                                                             </SelectTrigger>
                                                             <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -587,7 +507,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                                                     Unsecured
                                                                 </div>
                                                                 {loanTypes.unsecured.map((l) => (
-                                                                    <SelectItem key={l.value} value={l.value} className="focus:bg-muted hover:bg-muted cursor-pointer">
+                                                                    <SelectItem key={l.value} value={l.value} className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
                                                                         {l.label}
                                                                     </SelectItem>
                                                                 ))}
@@ -595,7 +515,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                                                     Secured
                                                                 </div>
                                                                 {loanTypes.secured.map((l) => (
-                                                                    <SelectItem key={l.value} value={l.value} className="focus:bg-muted hover:bg-muted cursor-pointer">
+                                                                    <SelectItem key={l.value} value={l.value} className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
                                                                         {l.label}
                                                                     </SelectItem>
                                                                 ))}
@@ -626,7 +546,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                                                     value={inputField.value || ''}
                                                                     onChange={inputField.onChange}
                                                                     placeholder="0.00"
-                                                                    className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
+                                                                    className="bg-card border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
                                                                 />
                                                             )}
                                                         />
@@ -652,7 +572,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                                                     value={inputField.value || ''}
                                                                     onChange={inputField.onChange}
                                                                     placeholder="0.00"
-                                                                    className="bg-background border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
+                                                                    className="bg-card border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
                                                                 />
                                                             )}
                                                         />
@@ -672,16 +592,20 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         );
                     })}
 
-                    <div className="flex flex-start mt-4 pb-4">
-                        <Button
-                            type="button"
-                            onClick={() => appendLoan({ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' })}
-                            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-all capitalize rounded-xl px-4 py-6 text-[14px] shadow-md hover:shadow-lg hover:-translate-y-0.5"
-                        >
-                            <Plus className="w-5 h-5 mr-2" />
-                            Add Another Loan Record
-                        </Button>
-                    </div>
+                    {canAddAnotherLoan && (
+                        <div className="flex flex-start mt-2 pb-4">
+                            <Button
+                                type="button"
+                                onClick={() => appendLoan({ hasRunningLoans: 'yes', whichLoan: '', loanAmount: '', runningEmi: '' })}
+                                variant="outline"
+                                size="sm"
+                                className="text-primary border-primary hover:bg-primary/10 transition-all rounded-lg text-sm px-4 shadow-sm"
+                            >
+                                <Plus className="w-4 h-4 mr-1.5" />
+                                Add Another Loan Record
+                            </Button>
+                        </div>
+                    )}
                 </div>
 
                 {/* Submit Button */}

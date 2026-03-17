@@ -7,6 +7,7 @@ import { Loader2, Building2 } from 'lucide-react';
 import { FormProvider } from '@/components/dashboard/aggregator/multi-step-application-form/FormContext';
 import { MultiStepFormContent } from '@/components/dashboard/aggregator/multi-step-application-form/MultiStepForm';
 import { ThemeLogo } from '@/components/theme-logo';
+import { ThemeToggle } from '@/components/theme-toggle';
 
 const GET_AGGREGATOR_BY_COMPANY_ID = `
   query GetAggregatorByCompanyId($companyId: Int!) {
@@ -106,23 +107,29 @@ export default function PublicApplyPage() {
             <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-50">
                 <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
                     {/* Left: LendGrid Branding */}
-                    <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-card border border-border flex items-center justify-center shadow-sm">
-                            <ThemeLogo alt="LendGrid" className="w-8 h-8 object-contain" />
+                    <div className="flex items-center gap-1.5 sm:gap-3">
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-card border border-border flex items-center justify-center shadow-sm shrink-0">
+                            <ThemeLogo alt="LendGrid" className="w-6 h-6 sm:w-8 sm:h-8 object-contain" />
                         </div>
-                        <span className="text-xl font-bold tracking-tight text-primary">LendGrid</span>
+                        <span className="text-base sm:text-xl font-bold tracking-tight text-primary">LendGrid</span>
                     </div>
 
-                    {/* Right: Partner Branding */}
-                    <div className="flex items-center gap-3 text-right">
-                        <div className="hidden sm:block">
-                            <p className="text-[11px] text-muted-foreground leading-none mb-1 uppercase tracking-wider font-semibold">Applying via partner</p>
-                            <p className="text-sm font-semibold text-foreground leading-tight">
-                                {aggregator.companyName}
-                            </p>
-                        </div>
-                        <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
-                            <Building2 className="w-5 h-5 text-primary" />
+                    {/* Right: Theme Toggle & Partner Branding */}
+                    <div className="flex items-center gap-2 sm:gap-4 text-right">
+                        <ThemeToggle />
+                        
+                        <div className="h-6 w-[1px] bg-border mx-1 hidden sm:block"></div>
+
+                        <div className="flex items-center gap-1.5 sm:gap-3">
+                            <div className="flex flex-col justify-center items-end">
+                                <p className="text-[8px] sm:text-[11px] text-muted-foreground leading-none mb-0.5 sm:mb-1 uppercase tracking-wider font-semibold">Partner</p>
+                                <p className="text-[10px] sm:text-sm font-semibold text-foreground leading-tight max-w-[80px] sm:max-w-[150px] truncate" title={aggregator.companyName}>
+                                    {aggregator.companyName}
+                                </p>
+                            </div>
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0 border border-primary/20">
+                                <Building2 className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                            </div>
                         </div>
                     </div>
                 </div>
