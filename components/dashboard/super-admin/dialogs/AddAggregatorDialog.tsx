@@ -281,7 +281,7 @@ export function AddAggregatorDialog({
             <DialogContent className="bg-background border-border text-foreground max-w-4xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-0">
                 {/* Dialog Header */}
                 <DialogHeader className="px-6 pt-6 pb-2">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                         <div>
                             <DialogTitle className="text-2xl font-bold text-foreground">
                                 Add New Aggregator
@@ -291,7 +291,7 @@ export function AddAggregatorDialog({
                             </DialogDescription>
                         </div>
                         {aggregatorType && (
-                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${isChannelPartner
+                            <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold mt-2 sm:mt-0 ${isChannelPartner
                                 ? 'bg-orange-500/15 text-orange-400 ring-1 ring-orange-500/30'
                                 : 'bg-green-500/15 text-green-400 ring-1 ring-green-500/30'
                                 }`}>
@@ -601,7 +601,7 @@ export function AddAggregatorDialog({
                     </Card>
 
                     {/* ─── Action Buttons ─── */}
-                    <div className="flex justify-end space-x-3 pt-4 border-t border-border">
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-border">
                         <Button
                             type="button"
                             variant="outline"
@@ -610,7 +610,7 @@ export function AddAggregatorDialog({
                                 onClose?.();
                             }}
                             disabled={isSubmitting}
-                            className="border-border hover:bg-muted px-6"
+                            className="border-border hover:bg-muted px-6 w-full sm:w-auto"
                         >
                             Cancel
                         </Button>
@@ -618,7 +618,7 @@ export function AddAggregatorDialog({
                         <Button
                             type="submit"
                             disabled={isSubmitting}
-                            className={`${isChannelPartner
+                            className={`w-full sm:w-auto ${isChannelPartner
                                 ? 'bg-orange-600 hover:bg-orange-700'
                                 : 'bg-green-600 hover:bg-green-700'
                                 } text-white px-6 shadow-lg`}

@@ -21,13 +21,13 @@ export const navigationPaths = {
     f2fintechEmployees: '/super-admin/f2fintech-employees'
   },
 
-  // Aggregator routes
   aggregator: {
     dashboard: '/aggregator',
     products: '/aggregator/products',
     commission: '/aggregator/commission',
     reports: '/aggregator/reports',
     applications: '/aggregator/applications',
+    training: '/aggregator/training',
     settings: '/aggregator/settings'
   },
 

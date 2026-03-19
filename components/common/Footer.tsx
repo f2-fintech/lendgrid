@@ -11,14 +11,14 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto">
         <div className="grid md:grid-cols-3 gap-8 mb-8">
           <div>
-            <div className="flex items-center space-x-2 mb-2">
-              <div className="w-15 h-15 rounded-xl flex items-center justify-center shadow-lg">
+            <div className="flex items-center space-x-2 mb-4 md:mb-2">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl flex items-center justify-center shadow-lg">
                 <ThemeLogo
                   alt="F2Fintech Logo"
-                  className="w-14 h-14"
+                  className="w-12 h-12 md:w-14 md:h-14"
                 />
               </div>
-              <span className="text-2xl font-bold gradient-text text-primary">LendGrid</span>
+              <span className="text-xl md:text-2xl font-bold gradient-text text-primary">LendGrid</span>
             </div>
             <p className="text-foreground/70 leading-relaxed">
               Empowering the future of loan distribution with technology and innovation.

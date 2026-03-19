@@ -295,7 +295,7 @@ export const MultiStepFormContent: React.FC<{
                     }))),
                     case_type: formData.caseType,
                     is_picked: isOmsEnabled ? 0 : 1,
-                    source: guestSource || 'apna gold',
+                    source: guestSource || 'lendgrid',
                     // Guest mode: pass aggregator's MongoDB _id so the server can set aggregatorId without a JWT
                     ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
                 };

@@ -85,8 +85,8 @@ export function ProfileCompletionBanner({
 		: (title || 'Profile Incomplete')
 
 	const displayDesc = isComplete
-		? (description || 'Congratulations! Your profile is fully set up. You can now access all features and submit loan applications.')
-		: (description || `Your aggregator profile is ${percent}% complete. Complete your profile to enable payouts and verification.`)
+		? (description || 'Congratulations! Your profile is fully set up.')
+		: (description || `Your aggregator profile is ${percent}% complete.`)
 
 	// Dynamic colors
 	const borderColor = isComplete ? 'border-green-600' : 'border-yellow-700'
@@ -101,7 +101,7 @@ export function ProfileCompletionBanner({
 
 	return (
 		<Card className={`${bgColor} ${borderColor} relative overflow-hidden ${isComplete ? 'rounded-2xl' : ''}`}>
-			<CardContent className="relative flex items-center justify-between gap-4">
+			<CardContent className="relative flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-4 sm:p-6">
 				{/* Animated background glow */}
 				<motion.div
 					className="absolute inset-0 pointer-events-none"
@@ -198,7 +198,7 @@ export function ProfileCompletionBanner({
 				</div>
 
 				{showAction && !isComplete && (
-					<Button className={`${buttonBorder} bg-transparent ${buttonText} mt-3`} onClick={onAction}>
+					<Button className={`${buttonBorder} bg-transparent ${buttonText} w-full sm:w-auto mt-3 sm:mt-0`} onClick={onAction}>
 						{actionLabel}
 						<ArrowRight className="w-4 h-4 ml-2" />
 					</Button>
@@ -211,7 +211,7 @@ export function ProfileCompletionBanner({
 						transition={{ delay: 0.2 }}
 					>
 						<Button
-							className="bg-gradient-to-r from-green-500 to-emerald-500 text-foreground hover:from-green-600 hover:to-emerald-600 mt-3"
+							className="bg-gradient-to-r from-green-500 to-emerald-500 text-foreground hover:from-green-600 hover:to-emerald-600 w-full sm:w-auto mt-3 sm:mt-0"
 							onClick={onAction}
 						>
 							View Dashboard

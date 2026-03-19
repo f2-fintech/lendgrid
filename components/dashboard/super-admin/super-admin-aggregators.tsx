@@ -242,24 +242,25 @@ export function SuperAdminAggregators() {
     )
   }
 
-  const MetricCard = ({ title, value, icon: Icon, color, subtitle }: any) => (
+  const MetricCard = ({ title, value, icon: Icon, color, subtitle, className }: any) => (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
+      className={className}
     >
       <Card className={`professional-card hover-lift ${color}`}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+        <CardContent className="p-4 sm:p-6">
+          <div className="flex items-start sm:items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">{title}</p>
-              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground mt-1 sm:mt-2">{value}</p>
               {subtitle && (
-                <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+                <p className="text-[10px] sm:text-sm text-muted-foreground mt-0.5 sm:mt-1">{subtitle}</p>
               )}
             </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
-              <Icon className="w-6 h-6" />
+            <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center flex-shrink-0 ml-2 ${color}`}>
+              <Icon className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
           </div>
         </CardContent>
@@ -287,11 +288,11 @@ export function SuperAdminAggregators() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-between"
+        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Aggregator Management</h1>
-          <p className="text-muted-foreground mt-1">
+        <div className="w-full md:w-auto">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Aggregator Management</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">
             {isInactiveView
               ? 'View and restore inactive aggregators'
               : 'Manage and monitor active aggregators'
@@ -299,7 +300,7 @@ export function SuperAdminAggregators() {
           </p>
         </div>
 
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-2 md:mt-0">
           {!isInactiveView && (
             <Button
               className="bg-primary hover:bg-primary/90 text-primary-foreground"
@@ -347,13 +348,13 @@ export function SuperAdminAggregators() {
       {!isInactiveView && (
         <>
           {!isTableLoading && !aggregators.length ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               <CardSkeleton headerLines={2} bodyHeight={20} />
               <CardSkeleton headerLines={2} bodyHeight={20} />
-              <CardSkeleton headerLines={2} bodyHeight={20} />
+              <CardSkeleton headerLines={2} bodyHeight={20} className="col-span-2 md:col-span-1 lg:col-span-1" />
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               <MetricCard
                 title="Total Aggregators"
                 value={metrics.totalAggregators}
@@ -374,6 +375,7 @@ export function SuperAdminAggregators() {
                 icon={AlertCircle}
                 color="metric-card-warning"
                 subtitle="Deleted Aggregators"
+                className="col-span-2 md:col-span-1 lg:col-span-1"
               />
             </div>
           )}
@@ -388,8 +390,8 @@ export function SuperAdminAggregators() {
       >
         <Card className="bg-card border-border">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="w-full md:w-auto">
                 <CardTitle className="text-foreground">
                   {isInactiveView
                     ? 'Deleted Aggregators'
@@ -400,8 +402,8 @@ export function SuperAdminAggregators() {
                   Complete list of  {isInactiveView ? 'deleted aggregators' : 'active aggregators and their performance'}
                 </CardDescription>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="relative">
+              <div className="flex items-center space-x-4 w-full md:w-auto">
+                <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Search aggregators..."
@@ -415,11 +417,11 @@ export function SuperAdminAggregators() {
           </CardHeader>
           <CardContent>
             <div ref={tableTopRef} />
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto pb-4">
               {isTableLoading ? (
                 <TableSkeleton columns={8} rows={pageSize} />
               ) : (
-                <div className="min-w-full">
+                <div className="min-w-[1000px]">
                   <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-muted/50 rounded-t-lg font-medium text-muted-foreground text-sm">
                     <div>Aggregator</div>
                     <div>Type</div>

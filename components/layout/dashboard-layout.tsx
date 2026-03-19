@@ -17,7 +17,8 @@ import {
   Check,
   Trash2,
   Clock,
-  User2
+  User2,
+  GraduationCap
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -42,6 +43,7 @@ import {
   SidebarProvider,
   SidebarRail,
   SidebarTrigger,
+  useSidebar,
 } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -102,6 +104,7 @@ const navigationConfig = {
         { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
         { title: "Applications", url: navigationPaths.aggregator.applications, icon: FileText },
         { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
+        { title: "Training & Resources", url: navigationPaths.aggregator.training, icon: GraduationCap },
         { title: "Profile Settings", url: navigationPaths.aggregator.settings, icon: Settings },
         // ...(isOmsEnabled
         //   ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
@@ -160,6 +163,7 @@ function AppSidebar({
 }) {
   const router = useRouter()
   const logout = useLogout()
+  const { setOpenMobile } = useSidebar()
   let navigation;
 
   if (userRole === "aggregator") {
@@ -211,7 +215,7 @@ function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href={navigationPaths.home}>
+              <Link href={navigationPaths.home} onClick={() => setOpenMobile(false)}>
                 <div className="flex items-center gap-3">
                   <ThemeLogo
                     alt="F2Fintech Logo"
@@ -237,7 +241,7 @@ function AppSidebar({
                 {group.items.map((item: { url: string; icon: React.ElementType; title: string }) => (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
-                      <Link href={item.url}>
+                      <Link href={item.url} onClick={() => setOpenMobile(false)}>
                         <item.icon className="w-4 h-4" />
                         <span>{item.title}</span>
                       </Link>
@@ -274,14 +278,14 @@ function AppSidebar({
                 align="end"
                 sideOffset={4}
               >
-                <DropdownMenuItem>
+                {/* <DropdownMenuItem>
                   <User className="w-4 h-4 mr-2" />
                   Profile
                 </DropdownMenuItem>
                 <DropdownMenuItem>
                   <Settings className="w-4 h-4 mr-2" />
                   Settings
-                </DropdownMenuItem>
+                </DropdownMenuItem> */}
                 <DropdownMenuItem onClick={handleLogout} className="text-destructive">
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout

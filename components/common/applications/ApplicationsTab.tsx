@@ -701,7 +701,7 @@ export function AggregatorApplications() {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="flex flex-col sm:flex-row gap-4"
             >
-                <div className="relative flex-1">
+                <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2  text-muted-foreground w-4 h-4" />
                     <Input
                         placeholder="Search applications..."
@@ -711,7 +711,7 @@ export function AggregatorApplications() {
                     />
                 </div>
                 <Select value={filterLender} onValueChange={setFilterLender}>
-                    <SelectTrigger className="w-40 bg-background/50 border-border text-foreground">
+                    <SelectTrigger className="w-full sm:w-40 bg-background/50 border-border text-foreground">
                         <SelectValue placeholder="All Lenders" />
                     </SelectTrigger>
                     <SelectContent>
@@ -731,7 +731,7 @@ export function AggregatorApplications() {
             >
                 <Card className="professional-card">
                     <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                             <div className={`h-12 rounded-lg flex items-center justify-center text-blue`}>
                                 <FileText className="w-6 h-6 mr-3" />
                                 <div>
@@ -742,13 +742,13 @@ export function AggregatorApplications() {
                                 </div>
                             </div>
                             {/* VIEW TOGGLE BUTTONS */}
-                            <div className="flex items-center gap-3 bg-background/50 rounded-lg p-1">
+                            <div className="flex items-center gap-2 sm:gap-3 bg-background/50 rounded-lg p-1 w-full sm:w-auto overflow-x-auto">
                                 <Button
                                     onClick={() => router.push('/aggregator/applications/new')}
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                                    className="bg-primary hover:bg-primary/90 text-primary-foreground whitespace-nowrap h-8 sm:h-10 px-3 sm:px-4 flex-1 sm:flex-none"
                                 >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Create New Application
+                                    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
+                                    <span className="text-xs sm:text-sm">Create Application</span>
                                 </Button>
 
                                 <Tooltip>

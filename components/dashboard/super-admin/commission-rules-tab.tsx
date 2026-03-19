@@ -334,328 +334,329 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
-                className="flex items-center justify-between"
+                className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
             >
-                <div>
-                    <div className="flex items-center gap-3">
-                        <h2 className="text-2xl font-bold text-foreground">{aggregatorTypeLabel} Commission Rules</h2>
-                        <Badge className={`${aggregatorTypeBgColor} ${aggregatorTypeColor} border`}>
+                <div className="w-full md:w-auto">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                        <h2 className="text-xl sm:text-2xl font-bold text-foreground">{aggregatorTypeLabel} Commission Rules</h2>
+                        {/* <Badge className={`${aggregatorTypeBgColor} ${aggregatorTypeColor} border`}>
                             {aggregatorTypeLabel}
-                        </Badge>
+                        </Badge> */}
                     </div>
-                    <p className="text-muted-foreground mt-1">Manage commission rules for {aggregatorTypeLabel.toLowerCase()} aggregators</p>
+                    <p className="text-muted-foreground mt-1 text-sm md:text-base">Manage commission rules for {aggregatorTypeLabel.toLowerCase()} aggregators</p>
                 </div>
-                <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogClose}>
-                    <DialogTrigger asChild>
-                        <Button
-                            className={`${aggregatorType === AggregatorType.SOURCER
-                                ? 'bg-green-600 hover:bg-green-700'
-                                : 'bg-orange-600 hover:bg-orange-700'} text-white shadow-lg`}
+                <div className="w-full md:w-auto">
+                    <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogClose}>
+                        <DialogTrigger asChild>
+                            <Button
+                                className={`w-full sm:w-auto ${aggregatorType === AggregatorType.SOURCER
+                                    ? 'bg-green-600 hover:bg-green-700'
+                                    : 'bg-orange-600 hover:bg-orange-700'} text-white shadow-lg`}
+                            >
+                                <Plus className="w-4 h-4 mr-2" />
+                                Create {aggregatorTypeLabel} Rule
+                            </Button>
+                        </DialogTrigger>
+                        <DialogContent
+                            className="bg-background border-border text-foreground max-w-3xl max-h-[90vh] overflow-y-auto"
+                            onInteractOutside={(e) => e.preventDefault()}
                         >
-                            <Plus className="w-4 h-4 mr-2" />
-                            Create {aggregatorTypeLabel} Rule
-                        </Button>
-                    </DialogTrigger>
-                    <DialogContent
-                        className="bg-background border-border text-foreground max-w-3xl max-h-[90vh] overflow-y-auto"
-                        onInteractOutside={(e) => e.preventDefault()}
-                    >
-                        <DialogHeader className="space-y-4 pb-6 border-b border-border">
-                            <div className="flex items-start justify-between">
-                                <div className="space-y-2">
-                                    <div className="flex items-center gap-3">
-                                        <DialogTitle className="text-2xl font-bold text-foreground">
-                                            {editingRule ? 'Edit Commission Rule' : 'Create Commission Rule'}
-                                        </DialogTitle>
+                            <DialogHeader className="space-y-4 pb-6 border-b border-border">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                    <div className="space-y-2">
+                                        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                                            <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground">
+                                                {editingRule ? 'Edit Commission Rule' : 'Create Commission Rule'}
+                                            </DialogTitle>
+                                        </div>
+                                        <DialogDescription className="text-sm text-muted-foreground">
+                                            {editingRule
+                                                ? 'Update the commission rule details and configuration'
+                                                : `Set up a new commission rule for ${aggregatorTypeLabel.toLowerCase()} loan products`}
+                                        </DialogDescription>
                                     </div>
-                                    <DialogDescription className="text-sm text-muted-foreground">
-                                        {editingRule
-                                            ? 'Update the commission rule details and configuration'
-                                            : `Set up a new commission rule for ${aggregatorTypeLabel.toLowerCase()} loan products`}
-                                    </DialogDescription>
+                                    <Badge className={`${aggregatorTypeBgColor} ${aggregatorTypeColor} border px-3 py-1 text-sm font-medium mt-2 sm:mt-0`}>
+                                        {aggregatorTypeLabel}
+                                    </Badge>
                                 </div>
-                                <Badge className={`${aggregatorTypeBgColor} ${aggregatorTypeColor} border px-3 py-1 text-sm font-medium`}>
-                                    {aggregatorTypeLabel}
-                                </Badge>
-                            </div>
-                        </DialogHeader>
+                            </DialogHeader>
 
-                        <form onSubmit={handleSubmit(handleCreateRule)} className="space-y-6 mt-6">
-                            {/* Basic Information Card */}
-                            <Card className="border-border bg-card/50">
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className={`w-8 h-8 rounded-lg ${aggregatorTypeBgColor} flex items-center justify-center`}>
-                                            <Info className={`w-4 h-4 ${aggregatorTypeColor}`} />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-foreground text-lg">Basic Information</CardTitle>
-                                            <CardDescription className="text-xs">Define the rule name and target product</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    {/* Rule Name */}
-                                    <div>
-                                        <Label htmlFor="ruleName" className="text-sm font-medium">
-                                            Rule Name <span className="text-red-400">*</span>
-                                        </Label>
-                                        <Input
-                                            id="ruleName"
-                                            {...register("ruleName")}
-                                            className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                            placeholder="e.g., Personal Loan - Gold Tier Commission"
-                                        />
-                                        {errors.ruleName && (
-                                            <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                <AlertCircle className="w-3 h-3" />
-                                                {errors.ruleName.message}
-                                            </p>
-                                        )}
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {/* Product Type */}
-                                        <div>
-                                            <Label htmlFor="productType" className="text-sm font-medium">
-                                                Product Type <span className="text-red-400">*</span>
-                                            </Label>
-                                            <Input
-                                                id="productType"
-                                                {...register("productType")}
-                                                className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                placeholder="e.g., Personal Loan"
-                                            />
-                                            {errors.productType && (
-                                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {errors.productType.message}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        {/* Applicable For */}
-                                        <div>
-                                            <Label htmlFor="applicableFor" className="text-sm font-medium">
-                                                Applicable For <span className="text-red-400">*</span>
-                                            </Label>
-                                            <Controller
-                                                control={control}
-                                                name="applicableFor"
-                                                render={({ field }) => (
-                                                    <Select value={field.value} onValueChange={field.onChange}>
-                                                        <SelectTrigger id="applicableFor" className="mt-1.5 bg-background border-border">
-                                                            <SelectValue placeholder="Select tier" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                            {Object.values(ApplicableFor).map((tier) => (
-                                                                <SelectItem key={tier} value={tier} className="cursor-pointer">
-                                                                    {getApplicableForLabel(tier)}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                )}
-                                            />
-                                            {errors.applicableFor && (
-                                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {errors.applicableFor.message}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            {/* Commission Configuration Card */}
-                            <Card className="border-border bg-card/50">
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                            <Percent className="w-4 h-4 text-blue-400" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-foreground text-lg">Commission Configuration</CardTitle>
-                                            <CardDescription className="text-xs">Set commission type and rate</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {/* Commission Type */}
-                                        <div>
-                                            <Label htmlFor="commissionType" className="text-sm font-medium">
-                                                Commission Type <span className="text-red-400">*</span>
-                                            </Label>
-                                            <Controller
-                                                control={control}
-                                                name="commissionType"
-                                                render={({ field }) => (
-                                                    <Select value={field.value} onValueChange={field.onChange}>
-                                                        <SelectTrigger id="commissionType" className="mt-1.5 bg-background border-border">
-                                                            <SelectValue placeholder="Select type" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                            <SelectItem className='cursor-pointer' value={CommissionType.PERCENTAGE}>
-                                                                Percentage (%)
-                                                            </SelectItem>
-                                                            <SelectItem className='cursor-pointer' value={CommissionType.FLAT}>
-                                                                Flat Amount (₹)
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
-                                                )}
-                                            />
-                                        </div>
-
-                                        {/* Commission Rate */}
-                                        <div>
-                                            <Label htmlFor="commissionRate" className="text-sm font-medium">
-                                                Commission Rate <span className="text-red-400">*</span>
-                                            </Label>
-                                            <div className="relative mt-1.5">
-                                                <Input
-                                                    id="commissionRate"
-                                                    type="number"
-                                                    step="0.01"
-                                                    {...register("commissionRate", { valueAsNumber: true })}
-                                                    className="bg-background border-border pr-10 focus:ring-2 focus:ring-primary/20"
-                                                    placeholder={commissionTypeWatch === CommissionType.PERCENTAGE ? "3.5" : "5000"}
-                                                />
-                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                                                    {commissionTypeWatch === CommissionType.PERCENTAGE ? '%' : '₹'}
-                                                </span>
+                            <form onSubmit={handleSubmit(handleCreateRule)} className="space-y-6 mt-6">
+                                {/* Basic Information Card */}
+                                <Card className="border-border bg-card/50">
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-lg ${aggregatorTypeBgColor} flex items-center justify-center`}>
+                                                <Info className={`w-4 h-4 ${aggregatorTypeColor}`} />
                                             </div>
-                                            {errors.commissionRate && (
-                                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {errors.commissionRate.message}
-                                                </p>
-                                            )}
+                                            <div>
+                                                <CardTitle className="text-foreground text-lg">Basic Information</CardTitle>
+                                                <CardDescription className="text-xs">Define the rule name and target product</CardDescription>
+                                            </div>
                                         </div>
-                                    </div>
-
-                                    <Alert className="bg-blue-500/10 border-blue-500/30">
-                                        <Info className="h-4 w-4 text-blue-400" />
-                                        <AlertDescription className="text-sm text-foreground">
-                                            {commissionTypeWatch === CommissionType.PERCENTAGE
-                                                ? '💡 Commission will be calculated as a percentage of the loan amount'
-                                                : '💡 Commission will be a fixed amount regardless of loan size'}
-                                        </AlertDescription>
-                                    </Alert>
-                                </CardContent>
-                            </Card>
-
-                            {/* Amount Range Card */}
-                            <Card className="border-border bg-card/50">
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
-                                            <CreditCard className="w-4 h-4 text-purple-400" />
-                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        {/* Rule Name */}
                                         <div>
-                                            <CardTitle className="text-foreground text-lg">Applicable Amount Range</CardTitle>
-                                            <CardDescription className="text-xs">Define minimum and maximum loan amounts</CardDescription>
-                                        </div>
-                                    </div>
-                                </CardHeader>
-                                <CardContent className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        {/* Min Amount */}
-                                        <div>
-                                            <Label htmlFor="minAmount" className="text-sm font-medium">
-                                                Min Amount (₹) <span className="text-red-400">*</span>
+                                            <Label htmlFor="ruleName" className="text-sm font-medium">
+                                                Rule Name <span className="text-red-400">*</span>
                                             </Label>
                                             <Input
-                                                id="minAmount"
-                                                type="number"
-                                                {...register("minAmount", { valueAsNumber: true })}
+                                                id="ruleName"
+                                                {...register("ruleName")}
                                                 className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                placeholder="100,000"
+                                                placeholder="e.g., Personal Loan - Gold Tier Commission"
                                             />
-                                            {errors.minAmount && (
+                                            {errors.ruleName && (
                                                 <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
                                                     <AlertCircle className="w-3 h-3" />
-                                                    {errors.minAmount.message}
+                                                    {errors.ruleName.message}
                                                 </p>
                                             )}
                                         </div>
 
-                                        {/* Max Amount */}
-                                        <div>
-                                            <Label htmlFor="maxAmount" className="text-sm font-medium">
-                                                Max Amount (₹) <span className="text-red-400">*</span>
-                                            </Label>
-                                            <Input
-                                                id="maxAmount"
-                                                type="number"
-                                                {...register("maxAmount", { valueAsNumber: true })}
-                                                className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                placeholder="10,00,000"
-                                            />
-                                            {errors.maxAmount && (
-                                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {errors.maxAmount.message}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {/* Product Type */}
+                                            <div>
+                                                <Label htmlFor="productType" className="text-sm font-medium">
+                                                    Product Type <span className="text-red-400">*</span>
+                                                </Label>
+                                                <Input
+                                                    id="productType"
+                                                    {...register("productType")}
+                                                    className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                                    placeholder="e.g., Personal Loan"
+                                                />
+                                                {errors.productType && (
+                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        {errors.productType.message}
+                                                    </p>
+                                                )}
+                                            </div>
 
-                            {/* Status Field - Only shown when editing */}
-                            {editingRule && (
+                                            {/* Applicable For */}
+                                            <div>
+                                                <Label htmlFor="applicableFor" className="text-sm font-medium">
+                                                    Applicable For <span className="text-red-400">*</span>
+                                                </Label>
+                                                <Controller
+                                                    control={control}
+                                                    name="applicableFor"
+                                                    render={({ field }) => (
+                                                        <Select value={field.value} onValueChange={field.onChange}>
+                                                            <SelectTrigger id="applicableFor" className="mt-1.5 bg-background border-border">
+                                                                <SelectValue placeholder="Select tier" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                {Object.values(ApplicableFor).map((tier) => (
+                                                                    <SelectItem key={tier} value={tier} className="cursor-pointer">
+                                                                        {getApplicableForLabel(tier)}
+                                                                    </SelectItem>
+                                                                ))}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.applicableFor && (
+                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        {errors.applicableFor.message}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Commission Configuration Card */}
                                 <Card className="border-border bg-card/50">
                                     <CardHeader className="pb-4">
                                         <div className="flex items-center gap-2">
                                             <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                                <Settings className="w-4 h-4 text-blue-400" />
+                                                <Percent className="w-4 h-4 text-blue-400" />
                                             </div>
                                             <div>
-                                                <CardTitle className="text-base">Rule Status</CardTitle>
-                                                <CardDescription className="text-xs">Activate or deactivate this commission rule</CardDescription>
+                                                <CardTitle className="text-foreground text-lg">Commission Configuration</CardTitle>
+                                                <CardDescription className="text-xs">Set commission type and rate</CardDescription>
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent>
-                                        <div>
-                                            <Label htmlFor="status" className="text-sm font-medium">
-                                                Status
-                                            </Label>
-                                            <Controller
-                                                control={control}
-                                                name="status"
-                                                render={({ field }) => (
-                                                    <Select value={field.value} onValueChange={field.onChange}>
-                                                        <SelectTrigger id="status" className="mt-1.5 bg-background border-border">
-                                                            <SelectValue placeholder="Select status" />
-                                                        </SelectTrigger>
-                                                        <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                            <SelectItem value={RuleStatus.ACTIVE} className="cursor-pointer">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="w-2 h-2 rounded-full bg-green-400"></div>
-                                                                    Active
-                                                                </div>
-                                                            </SelectItem>
-                                                            <SelectItem value={RuleStatus.INACTIVE} className="cursor-pointer">
-                                                                <div className="flex items-center gap-2">
-                                                                    <div className="w-2 h-2 rounded-full bg-gray-400"></div>
-                                                                    Inactive
-                                                                </div>
-                                                            </SelectItem>
-                                                        </SelectContent>
-                                                    </Select>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {/* Commission Type */}
+                                            <div>
+                                                <Label htmlFor="commissionType" className="text-sm font-medium">
+                                                    Commission Type <span className="text-red-400">*</span>
+                                                </Label>
+                                                <Controller
+                                                    control={control}
+                                                    name="commissionType"
+                                                    render={({ field }) => (
+                                                        <Select value={field.value} onValueChange={field.onChange}>
+                                                            <SelectTrigger id="commissionType" className="mt-1.5 bg-background border-border">
+                                                                <SelectValue placeholder="Select type" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                <SelectItem className='cursor-pointer' value={CommissionType.PERCENTAGE}>
+                                                                    Percentage (%)
+                                                                </SelectItem>
+                                                                <SelectItem className='cursor-pointer' value={CommissionType.FLAT}>
+                                                                    Flat Amount (₹)
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            {/* Commission Rate */}
+                                            <div>
+                                                <Label htmlFor="commissionRate" className="text-sm font-medium">
+                                                    Commission Rate <span className="text-red-400">*</span>
+                                                </Label>
+                                                <div className="relative mt-1.5">
+                                                    <Input
+                                                        id="commissionRate"
+                                                        type="number"
+                                                        step="0.01"
+                                                        {...register("commissionRate", { valueAsNumber: true })}
+                                                        className="bg-background border-border pr-10 focus:ring-2 focus:ring-primary/20"
+                                                        placeholder={commissionTypeWatch === CommissionType.PERCENTAGE ? "3.5" : "5000"}
+                                                    />
+                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                                                        {commissionTypeWatch === CommissionType.PERCENTAGE ? '%' : '₹'}
+                                                    </span>
+                                                </div>
+                                                {errors.commissionRate && (
+                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        {errors.commissionRate.message}
+                                                    </p>
                                                 )}
-                                            />
+                                            </div>
+                                        </div>
+
+                                        <Alert className="bg-blue-500/10 border-blue-500/30">
+                                            <Info className="h-4 w-4 text-blue-400" />
+                                            <AlertDescription className="text-sm text-foreground">
+                                                {commissionTypeWatch === CommissionType.PERCENTAGE
+                                                    ? '💡 Commission will be calculated as a percentage of the loan amount'
+                                                    : '💡 Commission will be a fixed amount regardless of loan size'}
+                                            </AlertDescription>
+                                        </Alert>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Amount Range Card */}
+                                <Card className="border-border bg-card/50">
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                                                <CreditCard className="w-4 h-4 text-purple-400" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-foreground text-lg">Applicable Amount Range</CardTitle>
+                                                <CardDescription className="text-xs">Define minimum and maximum loan amounts</CardDescription>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {/* Min Amount */}
+                                            <div>
+                                                <Label htmlFor="minAmount" className="text-sm font-medium">
+                                                    Min Amount (₹) <span className="text-red-400">*</span>
+                                                </Label>
+                                                <Input
+                                                    id="minAmount"
+                                                    type="number"
+                                                    {...register("minAmount", { valueAsNumber: true })}
+                                                    className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                                    placeholder="100,000"
+                                                />
+                                                {errors.minAmount && (
+                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        {errors.minAmount.message}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            {/* Max Amount */}
+                                            <div>
+                                                <Label htmlFor="maxAmount" className="text-sm font-medium">
+                                                    Max Amount (₹) <span className="text-red-400">*</span>
+                                                </Label>
+                                                <Input
+                                                    id="maxAmount"
+                                                    type="number"
+                                                    {...register("maxAmount", { valueAsNumber: true })}
+                                                    className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                                    placeholder="10,00,000"
+                                                />
+                                                {errors.maxAmount && (
+                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        {errors.maxAmount.message}
+                                                    </p>
+                                                )}
+                                            </div>
                                         </div>
                                     </CardContent>
                                 </Card>
-                            )}
 
-                            {/* Optional: Priority & Description */}
-                            {/* <Card className="border-border bg-card/50">
+                                {/* Status Field - Only shown when editing */}
+                                {editingRule && (
+                                    <Card className="border-border bg-card/50">
+                                        <CardHeader className="pb-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                                    <Settings className="w-4 h-4 text-blue-400" />
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-base">Rule Status</CardTitle>
+                                                    <CardDescription className="text-xs">Activate or deactivate this commission rule</CardDescription>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <div>
+                                                <Label htmlFor="status" className="text-sm font-medium">
+                                                    Status
+                                                </Label>
+                                                <Controller
+                                                    control={control}
+                                                    name="status"
+                                                    render={({ field }) => (
+                                                        <Select value={field.value} onValueChange={field.onChange}>
+                                                            <SelectTrigger id="status" className="mt-1.5 bg-background border-border">
+                                                                <SelectValue placeholder="Select status" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                <SelectItem value={RuleStatus.ACTIVE} className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-2 h-2 rounded-full bg-green-400"></div>
+                                                                        Active
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value={RuleStatus.INACTIVE} className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <div className="w-2 h-2 rounded-full bg-gray-400"></div>
+                                                                        Inactive
+                                                                    </div>
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                )}
+
+                                {/* Optional: Priority & Description */}
+                                {/* <Card className="border-border bg-card/50">
                                 <CardHeader className="pb-4">
                                     <div className="flex items-center gap-2">
                                         <div className="w-8 h-8 rounded-lg bg-amber-500/10 flex items-center justify-center">
@@ -696,33 +697,34 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                 </CardContent>
                             </Card> */}
 
-                            {/* Action Buttons */}
-                            <div className="flex justify-end space-x-3 pt-4 border-t border-border">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => handleDialogClose(false)}
-                                    disabled={isSubmitting}
-                                    className="border-border hover:bg-muted px-6"
-                                >
-                                    Cancel
-                                </Button>
+                                {/* Action Buttons */}
+                                <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-4 border-t border-border">
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        onClick={() => handleDialogClose(false)}
+                                        disabled={isSubmitting}
+                                        className="border-border hover:bg-muted px-6 w-full sm:w-auto"
+                                    >
+                                        Cancel
+                                    </Button>
 
-                                <Button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className={`${aggregatorType === AggregatorType.SOURCER
-                                        ? 'bg-green-600 hover:bg-green-700'
-                                        : 'bg-orange-600 hover:bg-orange-700'} text-white px-6 shadow-lg`}
-                                >
-                                    {isSubmitting
-                                        ? (editingRule ? "Updating..." : "Creating...")
-                                        : (editingRule ? "Update Rule" : `Create ${aggregatorTypeLabel} Rule`)}
-                                </Button>
-                            </div>
-                        </form>
-                    </DialogContent>
-                </Dialog>
+                                    <Button
+                                        type="submit"
+                                        disabled={isSubmitting}
+                                        className={`w-full sm:w-auto ${aggregatorType === AggregatorType.SOURCER
+                                            ? 'bg-green-600 hover:bg-green-700'
+                                            : 'bg-orange-600 hover:bg-orange-700'} text-white px-6 shadow-lg`}
+                                    >
+                                        {isSubmitting
+                                            ? (editingRule ? "Updating..." : "Creating...")
+                                            : (editingRule ? "Update Rule" : `Create ${aggregatorTypeLabel} Rule`)}
+                                    </Button>
+                                </div>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
             </motion.div>
 
             {/* Error Alert */}
@@ -776,16 +778,16 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
             >
                 <Card className="bg-card border-border">
                     <CardHeader>
-                        <div className="flex items-center justify-between">
-                            <div>
+                        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+                            <div className="w-full lg:w-auto">
                                 <CardTitle className="text-foreground">Commission Rules</CardTitle>
-                                <CardDescription className="text-muted-foreground">
+                                <CardDescription className="text-muted-foreground mt-1">
                                     Manage commission rates and rules for {aggregatorTypeLabel.toLowerCase()} loan products
                                 </CardDescription>
                             </div>
-                            <div className="flex items-center space-x-4">
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
                                 <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val as RuleStatus | '')}>
-                                    <SelectTrigger className="w-32 bg-background border-border text-foreground">
+                                    <SelectTrigger className="w-full sm:w-32 bg-background border-border text-foreground">
                                         <SelectValue placeholder="Status" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -796,7 +798,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                     </SelectContent>
                                 </Select>
                                 <Select value={filterApplicableFor} onValueChange={(val) => setFilterApplicableFor(val as ApplicableFor | '')}>
-                                    <SelectTrigger className="w-40 bg-background border-border text-foreground">
+                                    <SelectTrigger className="w-full sm:w-40 bg-background border-border text-foreground">
                                         <SelectValue placeholder="Rank" />
                                     </SelectTrigger>
                                     <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -812,11 +814,11 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                     </CardHeader>
                     <CardContent>
                         <div ref={tableTopRef} />
-                        <div className="overflow-x-auto professional-table">
+                        <div className="overflow-hidden professional-table pb-4 w-full">
                             {isTableLoading ? (
                                 <TableSkeleton columns={7} rows={pageSize} />
                             ) : rulesData?.data && rulesData.data.length > 0 ? (
-                                <Table>
+                                <Table className="min-w-[1000px]">
                                     <TableHeader>
                                         <TableRow>
                                             <TableHead>Rule Name</TableHead>

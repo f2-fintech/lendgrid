@@ -39,7 +39,7 @@ const sections = [
 
 export default function PrivacyPage() {
   return (
-    <main className="relative min-h-screen bg-gradient-to-b from-[#040d21] via-[#071227] to-[#081322] text-gray-100 antialiased pb-20">
+    <main className="relative min-h-screen bg-background text-foreground antialiased pb-20">
       {/* Hero Section */}
       <section className="pt-28 text-center px-6">
         <motion.h1
@@ -49,7 +49,7 @@ export default function PrivacyPage() {
         >
           Privacy <span className="text-cyan-400">Policy</span>
         </motion.h1>
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
           How we collect, use, and protect your information while keeping
           transparency at our core.
         </p>
@@ -58,12 +58,12 @@ export default function PrivacyPage() {
       {/* Sections */}
       <div className="mx-auto mt-10 max-w-4xl space-y-6 px-4">
         {sections.map((s, i) => (
-          <GlassCard key={i} className="p-6 bg-[#081327]/40 border border-gray-800">
+          <GlassCard key={i} className="p-6 bg-card/60 border border-border">
             <div className="flex items-start gap-3">
               <Shield className="h-5 w-5 text-cyan-300" />
               <div>
                 <h3 className="text-lg font-semibold">{s.title}</h3>
-                <p className="mt-2 text-sm text-gray-300">{s.content}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{s.content}</p>
               </div>
             </div>
           </GlassCard>

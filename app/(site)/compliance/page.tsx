@@ -14,24 +14,24 @@ const items = [
 
 export default function CompliancePage() {
   return (
-    <main className="relative min-h-screen bg-gradient-to-b from-[#040d21] via-[#071227] to-[#081322] text-gray-100 antialiased pb-20">
+    <main className="relative min-h-screen bg-background text-foreground antialiased pb-20">
       <section className="pt-28 text-center px-6">
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-5xl font-extrabold mb-3">
           Compliance <span className="text-cyan-400">Framework</span>
         </motion.h1>
-        <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+        <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
           Our compliance program is built on transparency, robust controls, and continuous improvement.
         </p>
       </section>
 
       <div className="mx-auto mt-10 grid max-w-6xl grid-cols-1 gap-6 px-4 md:grid-cols-2">
         {items.map((card, i) => (
-          <GlassCard key={i} className="p-6 bg-[#081327]/40 border border-gray-800">
+          <GlassCard key={i} className="p-6 bg-card/60 border border-border">
             <div className="flex items-start gap-3">
               {card.icon}
               <div>
                 <h3 className="text-lg font-semibold">{card.title}</h3>
-                <p className="mt-2 text-sm text-gray-300">{card.desc}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{card.desc}</p>
               </div>
             </div>
           </GlassCard>

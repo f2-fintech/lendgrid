@@ -201,23 +201,23 @@ export function SuperAdminDashboard() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between"
+        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-foreground flex items-center gap-3">
-            <Crown className="w-8 h-8 text-yellow-500" />
+        <div className="w-full md:w-auto">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground flex items-center gap-3">
+            <Crown className="w-7 h-7 md:w-8 md:h-8 text-yellow-500" />
             Super Admin Dashboard
           </h1>
-          <p className="text-muted-foreground mt-1">Real-time insights across the platform</p>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">Real-time insights across the platform</p>
         </div>
-        <Button variant="outline" className="border-border">
+        <Button variant="outline" className="border-border w-full md:w-auto">
           <Calendar className="w-4 h-4 mr-2" />
           {new Date().toLocaleDateString('en-US', { day: "numeric", month: 'long', year: 'numeric' })}
         </Button>
       </motion.div>
 
       {/* Top Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-2">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-2 md:gap-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -228,14 +228,14 @@ export function SuperAdminDashboard() {
           <Card className="professional-card hover-lift bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20 transition-all hover:border-purple-500/40">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">Active Aggregators</p>
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-purple-400" />
-                  <ArrowUpRight className="w-4 h-4 text-purple-400" />
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Active Aggregators</p>
+                <div className="flex items-center gap-1 sm:gap-2">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  <ArrowUpRight className="hidden sm:block w-4 h-4 text-purple-400" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-foreground">{metrics.activeAggregators}</p>
-              <p className="text-sm text-muted-foreground mt-2">of {metrics.totalAggregators} total</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{metrics.activeAggregators}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">of {metrics.totalAggregators} total</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -250,14 +250,14 @@ export function SuperAdminDashboard() {
           <Card className="professional-card hover-lift bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border-orange-500/20 transition-all hover:border-orange-500/40">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">Deleted Aggregators</p>
-                <div className="flex items-center gap-2">
-                  <Users className="w-5 h-5 text-orange-400" />
-                  <ArrowUpRight className="w-4 h-4 text-orange-400" />
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Deleted Aggregators</p>
+                <div className="flex items-center gap-1 sm:gap-2 text-orange-400">
+                  <Users className="w-4 h-4 sm:w-5 sm:h-5" />
+                  <ArrowUpRight className="hidden sm:block w-4 h-4" />
                 </div>
               </div>
-              <p className="text-3xl font-bold text-foreground">{metrics.inActiveAggregators}</p>
-              <p className="text-sm text-muted-foreground mt-2">of {metrics.totalAggregators} total</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{metrics.inActiveAggregators}</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2">of {metrics.totalAggregators} total</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -270,13 +270,13 @@ export function SuperAdminDashboard() {
           <Card className="professional-card hover-lift bg-gradient-to-br from-blue-500/10 to-cyan-500/10 border-blue-500/20">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">Fresh Applications</p>
-                <Activity className="w-5 h-5 text-blue-400" />
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground">Fresh Applications</p>
+                <Activity className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />
               </div>
-              <p className="text-3xl font-bold text-foreground">{metrics.totalApplications}</p>
-              <div className="flex items-center gap-1 mt-2 text-green-400 text-sm">
-                <ArrowUpRight className="w-4 h-4" />
-                <span>12% from last month</span>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{metrics.totalApplications}</p>
+              <div className="flex items-center gap-1 mt-1 sm:mt-2 text-green-400 text-xs sm:text-sm">
+                <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="truncate">12% from last month</span>
               </div>
             </CardContent>
           </Card>
@@ -290,13 +290,13 @@ export function SuperAdminDashboard() {
           <Card className="professional-card hover-lift bg-gradient-to-br from-green-500/10 to-emerald-500/10 border-green-500/20">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">Total Commission</p>
-                <DollarSign className="w-5 h-5 text-green-400" />
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Total Commission</p>
+                <DollarSign className="w-4 h-4 sm:w-5 sm:h-5 text-green-400" />
               </div>
-              <p className="text-3xl font-bold text-foreground">{formatCurrency(metrics.totalCommissionEarned)}</p>
-              <div className="flex items-center gap-1 mt-2 text-green-400 text-sm">
-                <ArrowUpRight className="w-4 h-4" />
-                <span>8% from last month</span>
+              <p className="text-xl sm:text-3xl font-bold text-foreground truncate">{formatCurrency(metrics.totalCommissionEarned)}</p>
+              <div className="flex items-center gap-1 mt-1 sm:mt-2 text-green-400 text-xs sm:text-sm">
+                <ArrowUpRight className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="truncate">8% from last month</span>
               </div>
             </CardContent>
           </Card>
@@ -310,11 +310,11 @@ export function SuperAdminDashboard() {
           <Card className="professional-card hover-lift bg-gradient-to-br from-orange-500/10 to-yellow-500/10 border-orange-500/20">
             <CardContent className="p-6">
               <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-muted-foreground">Avg Commission Rate</p>
-                <Percent className="w-5 h-5 text-orange-400" />
+                <p className="text-xs sm:text-sm font-medium text-muted-foreground truncate">Avg Commission Rate</p>
+                <Percent className="w-4 h-4 sm:w-5 sm:h-5 text-orange-400" />
               </div>
-              <p className="text-3xl font-bold text-foreground">{metrics.avgCommissionRate}%</p>
-              <p className="text-sm text-muted-foreground mt-2">across all products</p>
+              <p className="text-2xl sm:text-3xl font-bold text-foreground">{metrics.avgCommissionRate}%</p>
+              <p className="text-xs sm:text-sm text-muted-foreground mt-1 sm:mt-2 truncate">across all products</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -330,8 +330,8 @@ export function SuperAdminDashboard() {
         >
           <Card className="professional-card h-full">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="w-full sm:w-auto">
                   <CardTitle className="flex items-center gap-2 text-foreground">
                     <Users className="w-5 h-5 text-primary" />
                     Total Aggregators
@@ -342,7 +342,7 @@ export function SuperAdminDashboard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => router.push(navigationPaths.superAdmin.aggregators)}
-                  className="text-primary hover:text-primary/80"
+                  className="text-primary hover:text-primary/80 w-full sm:w-auto"
                 >
                   View All
                   <ArrowUpRight className="w-4 h-4 ml-1" />
@@ -496,8 +496,8 @@ export function SuperAdminDashboard() {
         >
           <Card className="professional-card h-full">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <div>
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="w-full sm:w-auto">
                   <CardTitle className="flex items-center gap-2 text-foreground">
                     <Banknote className="w-5 h-5 text-accent" />
                     Active Commission Rules
@@ -508,7 +508,7 @@ export function SuperAdminDashboard() {
                   variant="ghost"
                   size="sm"
                   onClick={() => router.push(navigationPaths.superAdmin.commission)}
-                  className="text-accent hover:text-accent/80"
+                  className="text-accent hover:text-accent/80 w-full sm:w-auto"
                 >
                   Manage
                   <ArrowUpRight className="w-4 h-4 ml-1" />

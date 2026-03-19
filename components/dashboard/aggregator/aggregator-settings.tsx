@@ -196,9 +196,9 @@ function ProfileAndContactTab() {
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Profile Photo Section */}
-        <div className="flex items-center space-x-6 pb-6 border-b border-border">
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6 pb-6 border-b border-border text-center sm:text-left">
           <div className="relative">
-            <Avatar className="w-24 h-24">
+            <Avatar className="w-20 h-20 sm:w-24 sm:h-24">
               <AvatarImage src={displayPhoto || undefined} alt="Profile" />
               <AvatarFallback className="bg-muted text-xl font-semibold">
                 {watch("profile.firstName")?.[0]}
@@ -228,7 +228,7 @@ function ProfileAndContactTab() {
           </div>
 
           {/* Upload Button */}
-          <div>
+          <div className="flex-1">
             <input
               ref={fileInputRef}
               type="file"
@@ -266,12 +266,12 @@ function ProfileAndContactTab() {
               {uploadButtonLabel}
             </Button>
 
-            <p className="text-muted-foreground text-sm mt-2">
+            <p className="text-muted-foreground text-xs sm:text-sm mt-2">
               JPG, PNG or GIF. Max size 2MB.
             </p>
           </div>
 
-          <div className="ml-auto">
+          <div className="w-full sm:w-auto flex justify-center sm:justify-end mt-2 sm:mt-0">
             <Badge className={`${getStatusColor(profileStatus)} px-4 py-1.5`}>
               {profileStatus || "N/A"}
             </Badge>
@@ -1453,7 +1453,7 @@ export function AggregatorSettings() {
 
   return (
     <FormProvider {...methods}>
-      <div className="min-h-screen bg-background p-6 space-y-6">
+      <div className="min-h-screen bg-background p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Profile completion banner */}
         {profileCompletePct <= 100 && (
           <ProfileCompletionBanner
@@ -1461,13 +1461,13 @@ export function AggregatorSettings() {
             showAction={profileCompletePct < 100}
           />
         )}
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex justify-between items-center">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Aggregator Settings</h1>
-            <p className="text-muted-foreground mt-1">Manage your profile, business details, and documents</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Aggregator Settings</h1>
+            <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your profile, business details, and documents</p>
           </div>
 
-          <Button className="bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700" onClick={async () => {
+          <Button className="w-full sm:w-auto bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700" onClick={async () => {
             const ok = await trigger()
             if (!ok) {
               toast({ title: "Validation failed", description: "Please check all required fields", variant: "destructive" })
@@ -1480,14 +1480,14 @@ export function AggregatorSettings() {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-6">
-          <TabsList className="bg-card border-border grid w-full grid-cols-3">
-            <TabsTrigger value="profile" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
+          <TabsList className="bg-card border-border flex flex-col sm:grid sm:grid-cols-3 w-full h-auto p-1 gap-1">
+            <TabsTrigger value="profile" className="w-full data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               <User className="w-5 h-5 mr-2" />Profile & Contact
             </TabsTrigger>
-            <TabsTrigger value="business" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
+            <TabsTrigger value="business" className="w-full data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               <Building2 className="w-5 h-5 mr-2" />Business Details
             </TabsTrigger>
-            <TabsTrigger value="banking" className="data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
+            <TabsTrigger value="banking" className="w-full data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               <FileCheck className="w-5 h-5 mr-2" />Banking & KYC
             </TabsTrigger>
           </TabsList>

@@ -872,7 +872,7 @@ export function TicketsTab() {
                     <CardSkeleton headerLines={2} bodyHeight={20} />
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
                     {stats.map((stat, index) => (
                         <motion.div
                             key={stat.title}
@@ -881,15 +881,15 @@ export function TicketsTab() {
                             transition={{ duration: 0.5, delay: index * 0.1 }}
                         >
                             <Card className="professional-card hover-lift hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
-                                <CardContent className="p-6">
-                                    <div className="flex items-center justify-between">
+                                <CardContent className="p-4 sm:p-6">
+                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">{stat.title}</p>
-                                            <p className="text-2xl font-bold text-foreground mt-2">{stat.value}</p>
+                                            <p className="text-xs sm:text-sm font-medium text-muted-foreground">{stat.title}</p>
+                                            <p className="text-lg sm:text-2xl font-bold text-foreground mt-1 sm:mt-2">{stat.value}</p>
                                             {/* <p className="text-success text-sm mt-1">{stat.change} from last month</p> */}
                                         </div>
-                                        <div className={`w-12 h-12 rounded-lg flex items-center justify-center bg-background/50 ${stat.color}`}>
-                                            <stat.icon className="w-6 h-6" />
+                                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center bg-background/50 ${stat.color}`}>
+                                            <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -906,7 +906,7 @@ export function TicketsTab() {
                 transition={{ duration: 0.6, delay: 0.4 }}
                 className="flex flex-col sm:flex-row gap-4"
             >
-                <div className="relative flex-1">
+                <div className="relative flex-1 w-full">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2  text-muted-foreground w-4 h-4" />
                     <Input
                         placeholder="Search ticketsData..."
@@ -916,7 +916,7 @@ export function TicketsTab() {
                     />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-40 bg-background/50 border-gray-800  text-foreground">
+                    <SelectTrigger className="w-full sm:w-40 bg-background/50 border-gray-800  text-foreground">
                         <SelectValue placeholder="All Status" />
                     </SelectTrigger>
                     <SelectContent className="bg-background border-border  text-foreground">
@@ -963,7 +963,7 @@ export function TicketsTab() {
             >
                 <Card className="professional-card">
                     <CardHeader>
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                             <div className={`h-12 rounded-lg flex items-center justify-center text-blue`}>
                                 <ClipboardList className="w-6 h-6 mr-3" />
                                 <div>
@@ -974,7 +974,7 @@ export function TicketsTab() {
                                 </div>
                             </div>
                             {/* VIEW TOGGLE BUTTONS */}
-                            <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1">
+                            <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 w-full sm:w-auto">
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Button

@@ -18,7 +18,7 @@ export default function ContactPage() {
   const [loading, setLoading] = useState(false);
 
   return (
-    <main className="relative min-h-screen bg-gradient-to-b from-[#040d21] via-[#071227] to-[#081322] text-gray-100 antialiased">
+    <main className="relative min-h-screen bg-background text-foreground antialiased">
       {/* HERO SECTION */}
       <section className="relative pt-28 pb-12 text-center overflow-hidden">
         <div className="absolute -left-56 -top-40 w-[520px] h-[520px] bg-gradient-to-br from-[#05366b] to-[#0ea5a1] opacity-10 rounded-full blur-3xl"></div>
@@ -48,7 +48,7 @@ export default function ContactPage() {
           transition={{ duration: 0.6, delay: 0.1 }}
           className="md:col-span-2"
         >
-          <GlassCard className="p-8 bg-[#081327]/50 border border-gray-800 backdrop-blur-xl shadow-xl">
+          <GlassCard className="p-8 bg-card/80 border border-border backdrop-blur-xl shadow-xl">
             <form className="grid grid-cols-1 gap-5 md:grid-cols-2">
               <div>
                 <Label htmlFor="name">Full name</Label>
@@ -57,7 +57,7 @@ export default function ContactPage() {
                   name="name"
                   placeholder="Jane Doe"
                   required
-                  className="mt-2 bg-white/5 border-gray-700"
+                  className="mt-2 bg-background/50 border-border"
                 />
               </div>
               <div>
@@ -68,7 +68,7 @@ export default function ContactPage() {
                   type="email"
                   placeholder="you@company.com"
                   required
-                  className="mt-2 bg-white/5 border-gray-700"
+                  className="mt-2 bg-background/50 border-border"
                 />
               </div>
               <div>
@@ -77,7 +77,7 @@ export default function ContactPage() {
                   id="company"
                   name="company"
                   placeholder="Acme Corp"
-                  className="mt-2 bg-white/5 border-gray-700"
+                  className="mt-2 bg-background/50 border-border"
                 />
               </div>
               <div>
@@ -86,7 +86,7 @@ export default function ContactPage() {
                   id="subject"
                   name="subject"
                   placeholder="Tell us how we can help"
-                  className="mt-2 bg-white/5 border-gray-700"
+                  className="mt-2 bg-background/50 border-border"
                 />
               </div>
               <div className="md:col-span-2">
@@ -97,7 +97,7 @@ export default function ContactPage() {
                   placeholder="Write your message..."
                   required
                   rows={6}
-                  className="mt-2 bg-white/5 border-gray-700"
+                  className="mt-2 bg-background/50 border-border"
                 />
               </div>
 
@@ -128,11 +128,11 @@ export default function ContactPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <GlassCard className="p-8 bg-[#081327]/40 border border-gray-800 backdrop-blur-md shadow-md">
-            <h3 className="text-lg font-semibold mb-4 text-white/90">
+          <GlassCard className="p-8 bg-card/60 border border-border backdrop-blur-md shadow-md">
+            <h3 className="text-lg font-semibold mb-4 text-foreground">
               Get in touch
             </h3>
-            <ul className="space-y-4 text-sm text-gray-300">
+            <ul className="space-y-4 text-sm text-muted-foreground">
               <li className="flex items-center gap-3">
                 <Mail className="h-4 w-4 text-cyan-300" />
                 <a
@@ -154,7 +154,7 @@ export default function ContactPage() {
               </li>
             </ul>
 
-            <div className="mt-6 pt-4 border-t border-gray-800 text-xs text-gray-500">
+            <div className="mt-6 pt-4 border-t border-border text-xs text-muted-foreground">
               <p>
                 We respond to most inquiries within{" "}
                 <span className="text-cyan-300 font-medium">24 hours</span>.

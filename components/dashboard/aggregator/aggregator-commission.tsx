@@ -428,27 +428,27 @@ export function AggregatorCommission() {
       transition={{ duration: 0.5, delay: index * 0.1 }}
     >
       <Card className={`professional-card hover-lift ${colorClass}`}>
-        <CardContent className="p-6 text-center space-y-2">
+        <CardContent className="p-4 sm:p-6 text-center space-y-2">
           {/* Icon */}
-          <div className="mx-auto w-10 h-10 rounded-lg flex items-center justify-center bg-white/10">
-            <Icon className="w-5 h-5" />
+          <div className="mx-auto w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center bg-white/10">
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
 
           {/* Amount / Value */}
-          <p className="text-2xl font-bold text-foreground">
+          <p className="text-xl sm:text-2xl font-bold text-foreground">
             {amount ?? '-'}
           </p>
 
           {/* Count (labelled) */}
           {(typeof count === 'number' || countLabel) && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               {typeof count === 'number' ? `${count} ` : ''}
               {countLabel}
             </p>
           )}
 
           {/* Title */}
-          <p className="text-sm font-medium text-foreground">
+          <p className="text-xs sm:text-sm font-medium text-foreground">
             {title}
           </p>
         </CardContent>
@@ -478,15 +478,15 @@ export function AggregatorCommission() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-between"
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4"
       >
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Commission Tracking</h1>
-          <p className=" text-muted-foreground mt-1">Monitor your earnings and payout status</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Commission Tracking</h1>
+          <p className=" text-sm sm:text-base text-muted-foreground mt-1">Monitor your earnings and payout status</p>
         </div>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-3">
           <Select value={dateRange} onValueChange={setDateRange}>
-            <SelectTrigger className="w-32 bg-card border-border text-foreground">
+            <SelectTrigger className="w-full sm:w-32 bg-card border-border text-foreground">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -496,20 +496,22 @@ export function AggregatorCommission() {
               <SelectItem value="1y">1 Year</SelectItem>
             </SelectContent>
           </Select>
-          <ExportButton onExport={handleExport} disabled={exporting || isLoading} />
+          <div className="w-full sm:w-auto">
+            <ExportButton onExport={handleExport} disabled={exporting || isLoading} />
+          </div>
         </div>
       </motion.div>
 
       {/* Metrics Cards */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <MetricCard
             index={0}
             title="Commission Transactions"
@@ -678,25 +680,25 @@ export function AggregatorCommission() {
           >
             <Card className="professional-card">
               <CardHeader>
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div>
                     <CardTitle className="text-foreground">Commission History</CardTitle>
                     <CardDescription className="text-muted-foreground">
                       Detailed record of all commission transactions
                     </CardDescription>
                   </div>
-                  <div className="flex items-center space-x-4">
-                    <div className="relative">
+                  <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
+                    <div className="relative w-full sm:w-auto">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                       <Input
                         placeholder="Search transactions..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 professional-input w-64"
+                        className="pl-10 professional-input w-full sm:w-64"
                       />
                     </div>
                     <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val as CommissionStatus | '')}>
-                      <SelectTrigger className="w-32 professional-input">
+                      <SelectTrigger className="w-full sm:w-32 professional-input">
                         <SelectValue placeholder="Status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -712,7 +714,7 @@ export function AggregatorCommission() {
                       placeholder="Product type..."
                       value={filterProductType}
                       onChange={(e) => setFilterProductType(e.target.value)}
-                      className="professional-input w-40"
+                      className="professional-input w-full sm:w-40"
                     />
                   </div>
                 </div>

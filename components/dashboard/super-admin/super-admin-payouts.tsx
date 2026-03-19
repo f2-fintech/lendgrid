@@ -50,7 +50,7 @@ export function SuperAdminPayouts() {
     page,
     limit: pageSize,
     filters: {
-      status: filterStatus && filterStatus !== 'all' ? filterStatus : undefined,
+      status: filterStatus && filterStatus !== 'all' ? (filterStatus as any) : undefined,
       productType: searchTerm || undefined,
     },
   })
@@ -216,7 +216,7 @@ export function SuperAdminPayouts() {
       await updateStatusMutation.mutateAsync({
         id: selectedPayout.id,
         input: {
-          status: newStatus,
+          status: newStatus as any,
           utrNumber: utrNumber || undefined,
           paymentProofUrl: uploadedPaymentProofUrl || undefined,
           adminNotes: adminNotes || undefined,
@@ -286,17 +286,17 @@ export function SuperAdminPayouts() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <Card className={`professional-card hover-lift ${color}`}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-between">
+      <Card className={`professional-card hover-lift ${color} h-full`}>
+        <CardContent className="p-4 sm:p-6 h-full flex flex-col justify-between">
+          <div className="flex items-start justify-between">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">{title}</p>
-              <p className="text-2xl font-bold text-foreground mt-2">{value}</p>
-              {subtitle && (<p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+              <p className="text-xs sm:text-sm font-medium text-muted-foreground">{title}</p>
+              <p className="text-xl sm:text-2xl font-bold text-foreground mt-1 sm:mt-2 line-clamp-1">{value}</p>
+              {subtitle && (<p className="text-xs sm:text-sm text-muted-foreground mt-1">{subtitle}</p>
               )}
             </div>
-            <div className={`w-12 h-12 rounded-lg flex items-center justify-center ${color}`}>
-              <Icon className="w-6 h-6" />
+            <div className={`w-8 h-8 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center ${color} shrink-0`}>
+              <Icon className="w-4 h-4 sm:w-6 sm:h-6" />
             </div>
           </div>
         </CardContent>
@@ -311,24 +311,24 @@ export function SuperAdminPayouts() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-between"
+        className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
       >
-        <div>
-          <h1 className="text-3xl font-bold text-foreground">Commission Payouts</h1>
-          <p className="text-muted-foreground mt-1">Manage commission payouts to aggregators</p>
+        <div className="w-full md:w-auto">
+          <h1 className="text-2xl md:text-3xl font-bold text-foreground">Commission Payouts</h1>
+          <p className="text-muted-foreground mt-1 text-sm md:text-base">Manage commission payouts to aggregators</p>
         </div>
       </motion.div>
 
       {/* Metrics Cards */}
       {isLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+          <CardSkeleton headerLines={1} bodyHeight={20} />
+          <CardSkeleton headerLines={1} bodyHeight={20} />
+          <CardSkeleton headerLines={1} bodyHeight={20} />
+          <CardSkeleton headerLines={1} bodyHeight={20} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <MetricCard
             title="Total Payouts"
             value={metrics.totalPayouts}
@@ -368,25 +368,25 @@ export function SuperAdminPayouts() {
       >
         <Card className="bg-card border-border">
           <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+              <div className="w-full lg:w-auto">
                 <CardTitle className="text-foreground">All Commission Transactions</CardTitle>
-                <CardDescription className="text-muted-foreground">
+                <CardDescription className="text-muted-foreground mt-1">
                   Track and manage commission transactions
                 </CardDescription>
               </div>
-              <div className="flex items-center space-x-4">
-                <div className="relative">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                <div className="relative w-full sm:w-auto">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Search by ticket ID..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-background border-border text-foreground w-64"
+                    className="pl-10 bg-background border-border text-foreground w-full sm:w-64"
                   />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger className="w-40 bg-background border-border text-foreground">
+                  <SelectTrigger className="w-full sm:w-40 bg-background border-border text-foreground">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-popover-foreground">
@@ -403,11 +403,11 @@ export function SuperAdminPayouts() {
           </CardHeader>
           <CardContent>
             <div ref={tableTopRef} />
-            <div className="overflow-x-auto professional-table">
+            <div className="overflow-hidden professional-table pb-4 w-full">
               {isLoading ? (
                 <TableSkeleton columns={7} rows={pageSize} />
               ) : (
-                <Table>
+                <Table className="min-w-[1000px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Ticket ID</TableHead>

@@ -316,7 +316,7 @@ export function SignupForm() {
       className="w-full max-w-3xl"
     >
       <Card className="professional-card">
-        <CardHeader className="text-center pb-6">
+        <CardHeader className="text-center pt-2 pb-2">
           <motion.div
             className="flex items-center justify-center"
             initial={{ scale: 0.8 }}
@@ -341,7 +341,7 @@ export function SignupForm() {
           </CardDescription>
         </CardHeader>
 
-        <CardContent>
+        <CardContent className="pb-6">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
             {/* TWO-COLUMN GRID LAYOUT */}

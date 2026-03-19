@@ -141,12 +141,12 @@ export function LandingPage() {
       <section className="relative px-6 py-10 text-center z-10">
         <div className="max-w-6xl mx-auto pt-10 mt-20">
           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 gradient-text leading-tight">
+            <h1 className="text-4xl md:text-5xl lg:text-7xl font-bold mb-4 md:mb-6 gradient-text leading-tight">
               Grow your Loan Distribution.
               <br />
-              <span className="text-4xl md:text-6xl">Track, Earn, Repeat.</span>
+              <span className="text-3xl md:text-4xl lg:text-6xl">Track, Earn, Repeat.</span>
             </h1>
-            <p className="text-xl md:text-2xl text-foreground mb-12 max-w-4xl mx-auto leading-relaxed">
+            <p className="text-lg md:text-xl lg:text-2xl text-foreground mb-8 md:mb-12 max-w-4xl mx-auto leading-relaxed">
               Connect loan aggregators with premium lenders. Automate commission tracking, streamline payouts, and scale
               your financial services business with cutting-edge technology.
             </p>
@@ -156,14 +156,14 @@ export function LandingPage() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="flex flex-col sm:flex-row gap-6 justify-center items-center mb-16"
+            className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center items-center mb-16 px-2"
           >
-            <Link href={`${navigationPaths.login}?role=aggregator_admin`}>
+            <Link href={`${navigationPaths.login}?role=aggregator_admin`} className="w-full sm:w-auto">
               <Button
-                className="bg-primary rounded-2xl px-6 py-4 font-bold text-lg text-white hover:opacity-90 shadow-2xl transition-all"
+                className="bg-primary rounded-2xl px-4 md:px-6 py-3 md:py-4 font-bold text-sm md:text-lg text-white hover:opacity-90 shadow-2xl transition-all w-full sm:w-auto h-auto whitespace-normal max-w-[280px] sm:max-w-none mx-auto flex items-center justify-center"
               >
                 Join as Loan Aggregator/Channel Partner
-                <ArrowRight className="ml-2 w-5 h-5" />
+                <ArrowRight className="ml-2 w-5 h-5 shrink-0 hidden sm:block" />
               </Button>
             </Link>
 

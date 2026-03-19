@@ -31,9 +31,9 @@ export function GlassCard({
             transition={{ type: "spring", stiffness: 120, damping: 18 }}
             className={cn(
                 "relative overflow-hidden rounded-3xl",
-                "border border-white/10 bg-white/5 backdrop-blur-xl",
-                "shadow-[0_20px_80px_-20px_rgba(0,0,0,0.6),0_10px_30px_-10px_rgba(13,18,28,0.7)]",
-                "ring-1 ring-white/10",
+                "border border-border bg-card/60 backdrop-blur-xl",
+                "shadow-[0_8px_30px_-8px_rgba(0,0,0,0.3)]",
+                "ring-1 ring-border/50",
                 className
             )}
         >

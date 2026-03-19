@@ -16,7 +16,7 @@ export default function AboutPage() {
   const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-gray-900 to-slate-800 text-white relative overflow-hidden">
+    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
       {/* BACK BUTTON */}
       {/* <button
         onClick={() => {
@@ -66,13 +66,13 @@ export default function AboutPage() {
       </section>
 
       {/* OUR MISSION */}
-      <section className="py-16 border-t border-gray-800">
+      <section className="py-16 border-t border-border">
         <div className="max-w-6xl mx-auto px-6 md:px-10 text-center">
           <h2 className="text-3xl font-bold mb-4">Our Mission</h2>
           <h3 className="text-lg font-medium text-cyan-300 mb-4">
             Simplifying digital loan distribution through technology and trust
           </h3>
-          <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             Our mission is to transform how financial ecosystems operate by
             making partnerships between lenders and aggregators effortless,
             transparent, and scalable. We believe in technology that enables
@@ -83,13 +83,13 @@ export default function AboutPage() {
       </section>
 
       {/* OUR VISION */}
-      <section className="py-16 border-t border-gray-800 bg-gradient-to-b from-[#061524] to-[#081322]">
+      <section className="py-16 border-t border-border bg-muted/30">
         <div className="max-w-6xl mx-auto px-6 md:px-10 text-center">
           <h2 className="text-3xl font-bold mb-4">Our Vision</h2>
           <h3 className="text-lg font-medium text-cyan-300 mb-4">
             Building the world’s most trusted loan aggregation network
           </h3>
-          <p className="text-gray-400 max-w-3xl mx-auto leading-relaxed">
+          <p className="text-muted-foreground max-w-3xl mx-auto leading-relaxed">
             We envision a future where every financial institution, from a
             fintech startup to a leading bank, can collaborate seamlessly on one
             intelligent, compliant, and transparent platform. LendGrid is paving
@@ -99,7 +99,7 @@ export default function AboutPage() {
       </section>
 
       {/* WHAT WE DO */}
-      <section className="py-16 border-t border-gray-800">
+      <section className="py-16 border-t border-border">
         <div className="max-w-6xl mx-auto px-6 md:px-10">
           <h2 className="text-3xl font-bold text-center mb-8">What We Do</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
@@ -123,11 +123,11 @@ export default function AboutPage() {
               <motion.div
                 key={index}
                 whileHover={{ y: -6 }}
-                className="p-6 rounded-2xl bg-gradient-to-br from-[#071226] to-[#071827] border border-gray-800 shadow-md"
+                className="p-6 rounded-2xl bg-card border border-border shadow-md"
               >
                 {item.icon}
                 <h4 className="mt-4 font-semibold text-lg">{item.title}</h4>
-                <p className="mt-2 text-sm text-gray-300">{item.desc}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{item.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -135,13 +135,13 @@ export default function AboutPage() {
       </section>
 
       {/* WHY CHOOSE US */}
-      <section className="py-16 border-t border-gray-800 bg-gradient-to-br from-[#08142b] to-[#071227]">
+      <section className="py-16 border-t border-border bg-muted/30">
         <div className="max-w-6xl mx-auto px-6 md:px-10 text-center">
           <h2 className="text-3xl font-bold mb-4">Why Choose LendGrid?</h2>
           <h3 className="text-lg font-medium text-cyan-300 mb-4">
             The backbone of reliable financial distribution
           </h3>
-          <p className="text-gray-400 max-w-3xl mx-auto mb-10">
+          <p className="text-muted-foreground max-w-3xl mx-auto mb-10">
             We combine deep fintech expertise, advanced analytics, and
             automation to help financial partners expand their reach, improve
             compliance, and build sustainable relationships with aggregators.
@@ -155,10 +155,10 @@ export default function AboutPage() {
             ].map((text, i) => (
               <div
                 key={i}
-                className="flex items-start gap-3 p-4 bg-[#061724]/40 rounded-xl border border-gray-700"
+                className="flex items-start gap-3 p-4 bg-card rounded-xl border border-border"
               >
                 <CheckCircle className="w-5 h-5 text-cyan-300 flex-shrink-0" />
-                <p className="text-sm text-gray-300">{text}</p>
+                <p className="text-sm text-muted-foreground">{text}</p>
               </div>
             ))}
           </div>
@@ -166,17 +166,17 @@ export default function AboutPage() {
       </section>
 
       {/* CTA SECTION */}
-      <section id="contact" className="py-20 border-t border-gray-800">
+      <section id="contact" className="py-20 border-t border-border">
         <div className="max-w-4xl mx-auto px-6 md:px-10 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-4">
             Ready to Grow with LendGrid?
           </h2>
-          <p className="text-gray-400 mb-8">
+          <p className="text-muted-foreground mb-8">
             Join a growing network of trusted aggregators and lenders. Scale
             your business with automation, insight, and speed.
           </p>
 
-          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-gray-400">
+          <div className="mt-6 flex items-center justify-center gap-2 text-sm text-muted-foreground">
             <Mail className="w-4 h-4" />
             <span>
               email us at{" "}

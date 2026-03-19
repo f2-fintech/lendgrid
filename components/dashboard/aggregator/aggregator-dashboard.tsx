@@ -327,28 +327,28 @@ export function AggregatorDashboard() {
       className={`professional-card hover-lift cursor-pointer ${colorClass}`}
       onClick={() => router.push(navigationPath)}
     >
-      <CardContent className="p-6 flex flex-col items-center text-center gap-2">
+      <CardContent className="p-4 sm:p-6 flex flex-col items-center text-center gap-1 sm:gap-2">
         {/* Icon */}
-        <div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/10">
-          <Icon className="w-6 h-6" />
+        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center bg-black/10">
+          <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
         </div>
 
         {/* Amount */}
         {typeof amount === 'number' && (
-          <p className="text-xl font-bold text-foreground">
+          <p className="text-lg sm:text-xl font-bold text-foreground">
             {formatCurrency(amount)}
           </p>
         )}
 
         {/* Count */}
         {typeof count === 'number' && (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground">
             {count} {countLabel ?? 'tickets'}
           </p>
         )}
 
         {/* Title */}
-        <p className="text-sm font-medium text-foreground whitespace-nowrap">
+        <p className="text-xs sm:text-sm font-medium text-foreground text-center break-words">
           {title}
         </p>
       </CardContent>
@@ -395,12 +395,12 @@ export function AggregatorDashboard() {
         />
       )}
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your performance overview.</p>
         </div>
-        <div className="flex flex-wrap gap-2 items-center sm:space-x-4">
+        <div className="flex flex-wrap gap-2 items-center sm:space-x-4 w-full sm:w-auto">
           <UITooltip>
             <TooltipTrigger asChild>
               <Button 
@@ -425,7 +425,7 @@ export function AggregatorDashboard() {
 
       {/* Metrics Cards */}
       {isCommissionLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
@@ -434,7 +434,7 @@ export function AggregatorDashboard() {
           <CardSkeleton headerLines={2} bodyHeight={20} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
           {/* Row 1 */}
           <MetricCard
             title="Submitted Applications"
@@ -518,11 +518,11 @@ export function AggregatorDashboard() {
             Track your loan disbursal performance over time
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="min-w-0">
           {chartLoading ? (
             <ChartSkeleton height={254} />
           ) : (
-            <div className="h-80 w-full">
+            <div className="h-64 sm:h-80 w-full min-w-0">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" stroke={chartColors.grid} />
@@ -554,25 +554,25 @@ export function AggregatorDashboard() {
       >
         <Card className="professional-card">
           <CardHeader>
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-foreground">Commission History</CardTitle>
                 <CardDescription className="text-muted-foreground">
                   Detailed record of all commission transactions
                 </CardDescription>
               </div>
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Search transactions..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 professional-input w-64"
+                    className="pl-10 professional-input w-full sm:w-64"
                   />
                 </div>
                 <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val as CommissionStatus | '')}>
-                  <SelectTrigger className="w-32 professional-input">
+                  <SelectTrigger className="w-full sm:w-32 professional-input">
                     <SelectValue placeholder="Status" />
                   </SelectTrigger>
                   <SelectContent>
