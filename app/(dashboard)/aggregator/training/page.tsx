@@ -47,7 +47,7 @@ export default function TrainingAndResourcesPage() {
               <iframe
                 width="100%"
                 height="100%"
-                src="http://?fr"
+                src="https://www.youtube.com/embed/4FrmvAJmqI8?modestbranding=1&rel=0"
                 title="Platform Tutorial Video"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
@@ -55,7 +55,7 @@ export default function TrainingAndResourcesPage() {
               ></iframe>
             </div>
             <Button className="w-full gap-2 transition-transform active:scale-95" variant="default" asChild>
-              <a href="http://?2e" target="_blank" rel="noopener noreferrer">
+              <a href="https://youtu.be/4FrmvAJmqI8" target="_blank" rel="noopener noreferrer">
                 <ExternalLink className="w-4 h-4" />
                 Watch In Full Screen
               </a>

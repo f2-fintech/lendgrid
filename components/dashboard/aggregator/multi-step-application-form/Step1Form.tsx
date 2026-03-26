@@ -340,7 +340,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                         setValue('dob', selectedDate, { shouldValidate: true });
                       }
                     }}
-                    captionLayout="dropdown-months"
+                    captionLayout="dropdown"
                     fromYear={1950}
                     toYear={new Date().getFullYear() - 20}
                     defaultMonth={subYears(new Date(), 20)}
