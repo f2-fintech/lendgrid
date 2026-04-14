@@ -1,20 +1,22 @@
-import { gqlFetch } from './http-client'
+import { gqlFetch } from "./http-client";
 
 export const usersApi = {
   /**
    * User login
    */
   login: (payload: { email: string; password: string; captchaToken: string }) =>
-    gqlFetch<{ login: { success: boolean; message: string; access_token?: string } }>({
+    gqlFetch<{
+      login: { success: boolean; message: string; access_token?: string };
+    }>({
       query: `
-        mutation Login($email: String!, $password: String!, $captchaToken: String!) {
-          login(loginInput: { email: $email, password: $password, captchaToken: $captchaToken }) {
-            success
-            message
-            access_token
+          mutation Login($email: String!, $password: String!, $captchaToken: String!) {
+            login(loginInput: { email: $email, password: $password, captchaToken: $captchaToken }) {
+              success
+              message
+              access_token
+            }
           }
-        }
-      `,
+        `,
       variables: payload,
     }),
 
@@ -37,21 +39,21 @@ export const usersApi = {
       };
     }>({
       query: `
-        mutation CreateUser($createUserInput: CreateUserDto!) {
-          createUser(createUserInput: $createUserInput) {
-            success
-            message
-            companyId
-            companyName
-            user {
-              _id
-              username
-              email
-              role
+          mutation CreateUser($createUserInput: CreateUserDto!) {
+            createUser(createUserInput: $createUserInput) {
+              success
+              message
+              companyId
+              companyName
+              user {
+                _id
+                username
+                email
+                role
+              }
             }
           }
-        }
-      `,
+        `,
       variables: { createUserInput: payload },
     }),
 
@@ -72,44 +74,51 @@ export const usersApi = {
       };
     }>({
       query: `
-        query Profile {
-          profile {
-            _id
-            profileId
-            username
-            email
-            role
-            status
-            contact
-            photoUrl
+          query Profile {
+            profile {
+              _id
+              profileId
+              username
+              email
+              role
+              status
+              contact
+              photoUrl
+            }
           }
-        }
-      `,
+        `,
     }),
 
   /**
    * Get users by role
    */
   findByRole: (role: string, params?: { page?: number; limit?: number }) =>
-    gqlFetch<{ usersByRole: { results: any[]; count: number; page: number; pages: number } }>({
+    gqlFetch<{
+      usersByRole: {
+        results: any[];
+        count: number;
+        page: number;
+        pages: number;
+      };
+    }>({
       query: `
-        query UsersByRole($role: Role!, $page: Int, $limit: Int) {
-          usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }) {
-            results {
-              _id
-              username
-              email
-              status
-              role
-              createdAt
-              loginHistory
+          query UsersByRole($role: Role!, $page: Int, $limit: Int) {
+            usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }) {
+              results {
+                _id
+                username
+                email
+                status
+                role
+                createdAt
+                loginHistory
+              }
+              count
+              page
+              pages
             }
-            count
-            page
-            pages
           }
-        }
-      `,
+        `,
       variables: { role, ...params },
     }),
 
@@ -119,27 +128,27 @@ export const usersApi = {
   getUsers: (params?: { page?: number; limit?: number; status?: string }) =>
     gqlFetch<{ users: { results: any[]; count: number; pages: number } }>({
       query: `
-        query Users($page: Int, $limit: Int, $status: String) {
-          users(paginationArgs: { page: $page, limit: $limit, status: $status }) {
-            results {
-              _id
-              username
-              email
-              role
-              status
+          query Users($page: Int, $limit: Int, $status: String) {
+            users(paginationArgs: { page: $page, limit: $limit, status: $status }) {
+              results {
+                _id
+                username
+                email
+                role
+                status
+              }
+              count
+              pages
             }
-            count
-            pages
           }
-        }
-      `,
+        `,
       variables: params,
     }),
 
   /**
    * Update user
    */
-  updateUser: (payload: { id: string; status?: string;[key: string]: any }) =>
+  updateUser: (payload: { id: string; status?: string; [key: string]: any }) =>
     gqlFetch<{
       updateUser: {
         _id: string;
@@ -151,17 +160,17 @@ export const usersApi = {
       };
     }>({
       query: `
-        mutation UpdateUser($updateUserInput: UpdateUserDto!) {
-          updateUser(updateUserInput: $updateUserInput) {
-            _id
-            username
-            email
-            status
-            contact
-            photoUrl
+          mutation UpdateUser($updateUserInput: UpdateUserDto!) {
+            updateUser(updateUserInput: $updateUserInput) {
+              _id
+              username
+              email
+              status
+              contact
+              photoUrl
+            }
           }
-        }
-      `,
+        `,
       variables: { updateUserInput: { ...payload, _id: payload._id } },
     }),
 
@@ -177,14 +186,50 @@ export const usersApi = {
       };
     }>({
       query: `
-        mutation RemoveUser($id: ID!) {
-          removeUser(id: $id) {
-            _id
-            username
-            status
+          mutation RemoveUser($id: ID!) {
+            removeUser(id: $id) {
+              _id
+              username
+              status
+            }
           }
-        }
-      `,
+        `,
       variables: { id },
     }),
-}
+
+  /**
+   * Request password reset link
+   * UPDATED: Fixed to match Boolean return type from backend
+   */
+  forgotPassword: (email: string) =>
+    gqlFetch<{ forgotPassword: boolean }>({
+      query: `
+          mutation ForgotPassword($email: String!) {
+            forgotPassword(email: $email) {
+             success
+             message
+            }
+     }
+        `,
+      variables: { email },
+    }),
+
+  /**
+   * Reset password using token from email
+   */
+  resetPassword: (payload: { token: string; newPassword: string }) =>
+    gqlFetch<{ resetPassword: { success: boolean; message: string } }>({
+      query: `
+          mutation ResetPassword($token: String!, $newPassword: String!) {
+            resetPassword(token: $token, newPassword: $newPassword) {
+            success
+            message
+          }
+        }
+        `,
+      variables: {
+        token: payload.token,
+        newPassword: payload.newPassword,
+      },
+    }),
+};
