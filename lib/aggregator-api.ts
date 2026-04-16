@@ -251,6 +251,15 @@ export const aggregatorProfileApi = {
               status
               photoUrl
             }
+            teamMemberUsers {
+              _id
+              username
+              email
+              contact
+              role
+              status
+              photoUrl
+            }
           }
         }
       `,

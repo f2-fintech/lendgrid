@@ -1,17 +1,10 @@
 'use client';
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import {
-    Search,
-    Download,
-    Eye,
-    X,
-    ChevronLeft,
-    ChevronRight,
-    Calendar,
-    TrendingUp,
-    Hourglass,
-    AlertCircle,
+    Search, Download, Eye, X, ChevronLeft, ChevronRight,
+    Calendar, TrendingUp, Hourglass, AlertCircle, Plus, Users
 } from 'lucide-react';
 import { useEmployeeAuth } from '@/lib/employee-auth';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -19,13 +12,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { perfApi } from '@/lib/performance-api';
+import RoleBasedPerformanceForm from '@/components/performance/RoleBasedPerformanceForm';
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const asNum = (v: any) => { const n = Number(v ?? 0); return Number.isFinite(n) ? n : 0; };
@@ -37,7 +27,6 @@ const pct = (planned = 0, done = 0) => {
     return Math.max(0, Math.min(100, Math.round((d / p) * 100)));
 };
 function toISO(d: Date) { return d.toISOString().slice(0, 10); }
-
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
 // ─── types ───────────────────────────────────────────────────────────────────
@@ -54,11 +43,11 @@ type SnapshotDoc = {
     employee?: { _id: string; first_name: string; last_name: string; image?: string; designation?: string; code?: string; role?: string };
 };
 
-// ─── StatRow inside card (plain text like screenshot) ─────────────────────────
+// ─── StatRow inside card ─────────────────────────
 function StatLine({ label, value }: { label: string; value: number }) {
     return (
-        <p className="text-sm leading-6">
-            <span className="text-gray-700 font-medium">{label}: </span>
+        <p className="text-[13px] leading-6 flex justify-between">
+            <span className="text-gray-600 tracking-tight">{label}: </span>
             <span className="font-semibold text-gray-900">{fmt(value)}</span>
         </p>
     );
@@ -94,7 +83,6 @@ function PerformanceCard({ doc, onDetails }: { doc: SnapshotDoc; onDetails: (d: 
     const initials = fullName.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
     const designation = String(emp?.role) === '2' ? 'Manager' : (emp?.designation || '—');
 
-    // Comparison rows: label, morning val, evening val
     const compRows = [
         { label: 'Connected Calls', morning: morningPhone, evening: eveningPhone },
         { label: 'Login', morning: morningLogin, evening: eveningLogin },
@@ -102,411 +90,111 @@ function PerformanceCard({ doc, onDetails }: { doc: SnapshotDoc; onDetails: (d: 
         { label: 'Disbursal (₹)', morning: morningDisbursal, evening: eveningDisbursal },
     ];
 
-    const borderAccent = role === 'manager' ? 'border-l-indigo-500' : 'border-l-orange-400';
-
     const dateLabel = doc.date
         ? new Date(doc.date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
         : '—';
 
     return (
-        <div className={`relative bg-white border border-gray-200 ${borderAccent} border-l-4 rounded-2xl p-5 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-200`}
-            style={{ background: 'radial-gradient(circle at -10% -20%, rgba(99,102,241,0.07) 0, transparent 50%), linear-gradient(180deg,#ffffff 0%,#f7f8ff 100%)' }}>
-
-            {/* ── Header: avatar + name/designation + code ── */}
-            <div className="flex items-center gap-3 mb-4">
-                <div className="relative flex-shrink-0">
-                    <div className="absolute inset-[-4px] rounded-full" style={{ background: 'radial-gradient(circle, rgba(129,140,248,0.35) 0, transparent 60%)' }} />
-                    <Avatar className="relative w-12 h-12 border-2 border-white shadow-md">
-                        <AvatarImage src={emp?.image || ''} alt={fullName} />
-                        <AvatarFallback className="text-sm font-bold bg-indigo-100 text-indigo-700">{initials}</AvatarFallback>
-                    </Avatar>
-                </div>
-                <div className="flex-1 min-w-0">
-                    <p className="text-[15px] font-black text-gray-900 leading-tight truncate">{fullName}</p>
-                    <p className="text-xs text-gray-500 font-semibold truncate">{designation}</p>
-                </div>
-                {emp?.code && (
-                    <span className="text-xs font-mono text-gray-600 border border-gray-300 rounded-full px-3 py-0.5 flex-shrink-0">
-                        Code: {emp.code}
-                    </span>
-                )}
-            </div>
-
-            {/* ── Morning & Evening side-by-side boxes ── */}
-            <div className="grid grid-cols-2 gap-3 mb-4">
-                {/* Morning */}
-                <div className="rounded-xl border border-gray-200 p-3" style={{ background: 'linear-gradient(135deg,#f9fafb 0%,#eff6ff 100%)' }}>
-                    <div className="flex items-center gap-1.5 mb-2">
-                        <Hourglass className="w-3.5 h-3.5 text-blue-600" />
-                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-gray-700">Morning Commitment</span>
-                    </div>
-                    <StatLine label="Total Connected Calls" value={morningPhone} />
-                    <StatLine label="Physical Meetings" value={morningPhysical} />
-                    <StatLine label="Login" value={morningLogin} />
-                    <StatLine label="Approval" value={morningApproval} />
-                    <StatLine label="Disbursal" value={morningDisbursal} />
-                </div>
-
-                {/* Evening */}
-                <div className="rounded-xl border border-gray-200 p-3" style={{ background: 'linear-gradient(135deg,#f9fafb 0%,#ecfdf3 100%)' }}>
-                    <div className="flex items-center gap-1.5 mb-2">
-                        <TrendingUp className="w-3.5 h-3.5 text-green-600" />
-                        <span className="text-[11px] font-extrabold uppercase tracking-wide text-gray-700">Evening Delivery</span>
-                    </div>
-                    <StatLine label="Total Connected Calls" value={eveningPhone} />
-                    <StatLine label="Physical Meetings" value={eveningPhysical} />
-                    <StatLine label="Login" value={eveningLogin} />
-                    <StatLine label="Approval" value={eveningApproval} />
-                    <StatLine label="Disbursal" value={eveningDisbursal} />
+        <div className="bg-white rounded-xl shadow-[0_4px_18px_0_rgba(75,70,92,0.1)] border border-gray-100 p-6 transition-all hover:shadow-[0_4px_24px_0_rgba(75,70,92,0.15)] flex flex-col">
+            <div className="flex items-center gap-4 mb-5">
+                <Avatar className="w-[50px] h-[50px]">
+                    <AvatarImage src={emp?.image || ''} alt={fullName} />
+                    <AvatarFallback className="text-[17px] font-medium bg-[#e0e7ff] text-[#666CFF]">{initials}</AvatarFallback>
+                </Avatar>
+                <div>
+                    <h3 className="text-[17px] font-semibold text-[#3A3541de] leading-tight">{fullName}</h3>
+                    <p className="text-[14px] text-[#3a354199] mt-0.5">{designation}</p>
                 </div>
             </div>
 
-            {/* ── Manager-only: Top Performers ── */}
-            {role === 'manager' && (mgrEven?.topApprovalPerformer?.name || mgrEven?.topDisbursalPerformer?.name || mgrEven?.topPerformer?.name) && (
-                <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-xl">
-                    {(mgrEven?.topApprovalPerformer?.name || mgrEven?.topDisbursalPerformer?.name) && (
-                        <p className="text-[11px] font-extrabold text-gray-800 mb-2">Top Performers</p>
-                    )}
-                    <div className="space-y-1.5">
-                        {mgrEven?.topApprovalPerformer?.name && (
-                            <div className="p-2 bg-white border border-gray-200 rounded-lg">
-                                <p className="text-[11px] font-bold text-gray-600">Approval Performer:</p>
-                                <p className="text-sm font-semibold text-gray-900">{mgrEven.topApprovalPerformer.name} • ₹{asNum(mgrEven.topApprovalPerformer.valueLacs)} L</p>
-                            </div>
-                        )}
-                        {mgrEven?.topDisbursalPerformer?.name && (
-                            <div className="p-2 bg-white border border-gray-200 rounded-lg">
-                                <p className="text-[11px] font-bold text-gray-600">Disbursal Performer:</p>
-                                <p className="text-sm font-semibold text-gray-900">{mgrEven.topDisbursalPerformer.name} • ₹{asNum(mgrEven.topDisbursalPerformer.valueLacs)} L</p>
-                            </div>
-                        )}
-                        {mgrEven?.topPerformer?.name && (
-                            <div className="p-2 bg-white border border-gray-200 rounded-lg">
-                                <p className="text-[11px] font-extrabold text-indigo-700">⭐ Top Performers</p>
-                                <p className="text-[15px] font-bold text-indigo-700">{mgrEven.topPerformer.name}</p>
-                            </div>
-                        )}
-                        {mgrEven?.filesStuckDescription && (
-                            <div className="p-2 bg-white border border-gray-200 rounded-lg flex items-center gap-2">
-                                <span className="text-[11px] font-bold text-gray-700">Files Stuck Reason:</span>
-                                <span className="text-sm font-medium text-gray-900 truncate max-w-[150px]">{mgrEven.filesStuckDescription}</span>
-                            </div>
-                        )}
-                    </div>
+            <div className="grid grid-cols-2 gap-4 mb-5">
+                <div className="border rounded-md p-4 border-dashed border-[#dcdcdf]">
+                    <h4 className="text-[13px] font-semibold text-[#3A3541de] mb-3 uppercase tracking-wide flex items-center gap-1.5"><Hourglass className="w-4 h-4 text-blue-500"/> Morning Plan</h4>
+                    <StatLine label="Connected Calls" value={morningPhone} />
+                    <StatLine label="Physical Meets" value={morningPhysical} />
+                    <StatLine label="Expected Logins" value={morningLogin} />
+                    <StatLine label="Exp. Approval" value={morningApproval} />
+                    <StatLine label="Exp. Disbursal" value={morningDisbursal} />
                 </div>
-            )}
-
-            {/* ── Till Date Snapshot ── */}
-            <div className="mb-4 p-3 rounded-xl border border-gray-200" style={{ background: 'linear-gradient(180deg,#ffffff 0%,#fafbff 100%)', boxShadow: '0 4px 12px rgba(0,0,0,0.04)' }}>
-                <p className="text-[11px] font-black uppercase tracking-wide text-gray-800 mb-3">Till Date — Snapshot</p>
-                <div className="grid grid-cols-3 gap-2">
-                    <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Login</p>
-                        <p className="text-xl font-extrabold text-gray-900">{fmt(tillLogin)}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Approval (₹)</p>
-                        <p className="text-xl font-extrabold text-gray-900">₹{fmt(tillApproval)}</p>
-                    </div>
-                    <div>
-                        <p className="text-xs text-gray-500 mb-0.5">Disbursal (₹)</p>
-                        <p className="text-xl font-extrabold text-gray-900">₹{fmt(tillDisbursal)}</p>
-                    </div>
+                <div className="border rounded-md p-4 border-dashed border-[#dcdcdf]">
+                    <h4 className="text-[13px] font-semibold text-[#3A3541de] mb-3 uppercase tracking-wide flex items-center gap-1.5"><TrendingUp className="w-4 h-4 text-green-500"/> Evening Delivery</h4>
+                    <StatLine label="Connected Calls" value={eveningPhone} />
+                    <StatLine label="Physical Meets" value={eveningPhysical} />
+                    <StatLine label="Logins Done" value={eveningLogin} />
+                    <StatLine label="Appr. Done" value={eveningApproval} />
+                    <StatLine label="Disb. Done" value={eveningDisbursal} />
                 </div>
             </div>
 
-            {/* ── Morning vs Evening comparison grid ── */}
-            <div className="mb-4 p-3 bg-gray-50 rounded-xl border border-gray-200">
-                <p className="text-[11px] font-extrabold text-gray-700 mb-2 uppercase tracking-wide">
-                    Morning vs Evening – Calls / Login / Approval / Disbursal
-                </p>
-                <div className="space-y-1.5">
+            <div className="mb-5 border border-[#dcdcdf] border-dashed rounded-md p-4">
+                <h4 className="text-[13px] font-semibold text-[#3A3541de] uppercase tracking-wide mb-3">Till Date Snapshot</h4>
+                <div className="flex justify-between text-center gap-4">
+                    <div className="flex-1"><p className="text-[12px] text-gray-500 mb-1">Login</p><p className="font-bold text-[#3A3541de]">{fmt(tillLogin)}</p></div>
+                    <div className="flex-1"><p className="text-[12px] text-gray-500 mb-1">Approval</p><p className="font-bold text-[#3A3541de]">₹{fmt(tillApproval)}</p></div>
+                    <div className="flex-1"><p className="text-[12px] text-gray-500 mb-1">Disbursal</p><p className="font-bold text-[#3A3541de]">₹{fmt(tillDisbursal)}</p></div>
+                </div>
+            </div>
+
+            <div className="mb-5 bg-[#F9FAFC] rounded-md p-4">
+                <h4 className="text-[12px] font-bold text-gray-600 uppercase tracking-widest mb-3">Morning vs Evening</h4>
+                <div className="space-y-2.5">
                     {compRows.map((row) => {
                         const m = Number(row.morning || 0);
                         const e = Number(row.evening || 0);
                         const progress = m === 0 ? (e > 0 ? 100 : 0) : Math.round((e / m) * 100);
-                        let pctColor = '#6b7280';
-                        let arrow = '→';
-                        if (progress > 100) { pctColor = '#059669'; arrow = '↑'; }
-                        else if (progress < 100) { pctColor = '#dc2626'; arrow = '↓'; }
                         return (
-                            <div key={row.label} className="flex items-center gap-2 p-2 bg-white border border-gray-200 rounded-lg flex-wrap">
-                                <span className="text-[11px] font-extrabold text-gray-800 min-w-[100px] flex-shrink-0">{row.label}</span>
-                                <span className="inline-flex items-center text-[11px] border border-gray-300 rounded-full px-2 py-0.5 bg-white">Mrng: {fmt(m)}</span>
-                                <span className="inline-flex items-center text-[11px] border border-green-400 text-green-700 rounded-full px-2 py-0.5 bg-green-50">Eve: {fmt(e)}</span>
-                                <span className="text-[11px] font-black ml-auto" style={{ color: pctColor }}>{arrow} {progress}% Achieved</span>
+                            <div key={row.label} className="flex flex-col">
+                                <div className="flex justify-between items-end mb-1">
+                                    <span className="text-[13px] text-gray-600 font-medium">{row.label}</span>
+                                    <span className="text-[13px] font-bold text-gray-900">{progress}%</span>
+                                </div>
+                                <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
+                                    <div className="h-full bg-[#666CFF] rounded-full" style={{ width: `${Math.min(progress, 100)}%` }} />
+                                </div>
                             </div>
                         );
                     })}
                 </div>
             </div>
 
-            {/* ── Footer: date + buttons ── */}
-            <div className="flex items-center justify-between border-t border-gray-200 pt-3 mt-1">
-                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 border border-gray-300 rounded-full px-3 py-1 font-semibold">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {dateLabel}
+            <div className="mt-auto flex items-center justify-between border-t border-gray-100 pt-4">
+                <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                    <Calendar className="w-4 h-4" /> {dateLabel}
                 </span>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" className="rounded-full text-xs font-semibold h-8 px-4"
-                        onClick={() => onDetails(doc)}>Details</Button>
-                    <Button size="sm" className="rounded-full text-xs font-bold h-8 px-4 bg-blue-500 hover:bg-blue-600 text-white">
-                        Edit
-                    </Button>
+                <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => onDetails(doc)} className="text-[#666CFF] border-[#666CFF]/50 hover:bg-[#666CFF]/10 text-[13px] h-8 font-medium">Details</Button>
+                    <Button size="sm" className="bg-[#666CFF] hover:bg-[#5a5fe0] text-white text-[13px] h-8 font-medium">Edit</Button>
                 </div>
             </div>
         </div>
     );
 }
 
-// ─── Details Drawer ───────────────────────────────────────────────────────────
-type Pair = { key: string; label: string; planned: number; done: number; unit: 'count' | 'rupee' };
-const prettyNum = (n: number, unit: 'rupee' | 'count') => unit === 'rupee' ? rupee(n) : `${n || 0}`;
-
-function buildPairs(doc: SnapshotDoc): Pair[] {
-    if (doc.role === 'employee') {
-        const m = doc.re?.morning || ({} as any);
-        const e = doc.re?.evening || ({} as any);
-        return [
-            { key: 'phone', label: 'Phone Connects', planned: asNum(m.phoneConnects), done: asNum(e.phoneConnectsDone), unit: 'count' },
-            { key: 'meet', label: 'Physical Meets', planned: asNum(m.physicalMeet), done: asNum(e.physicalMeetDone), unit: 'count' },
-            { key: 'login', label: 'Logins', planned: asNum(m.expectedLogins), done: asNum(e.loginsDone), unit: 'count' },
-            { key: 'appr', label: 'Approvals (₹)', planned: asNum(m.expectedApprovals), done: asNum(e.approvalsDone), unit: 'rupee' },
-            { key: 'disb', label: 'Disbursals (₹)', planned: asNum(m.expectedDisbursal), done: asNum(e.disbursalDone), unit: 'rupee' },
-        ];
-    }
-    const m = doc.manager?.morning || ({} as any);
-    const e = doc.manager?.evening || ({} as any);
-    const exp = m?.expected || {};
-    const own = m?.ownContribution || {};
-    return [
-        { key: 'logins', label: 'Team Logins', planned: asNum(exp.loginsTeam) + asNum(own.login), done: asNum(e.teamLoginsDone), unit: 'count' },
-        { key: 'appr', label: 'Team Approvals (₹)', planned: asNum(exp.approvalLacs) + asNum(own.approvalLacs), done: asNum(e.teamApprovalDoneAmount), unit: 'rupee' },
-        { key: 'disb', label: 'Team Disbursal (₹)', planned: asNum(exp.disbursalAmount) + asNum(own.disbursalLacs), done: asNum((e as any).teamDisbursalDoneAmount ?? 0), unit: 'rupee' },
-    ];
-}
-
+// ─── Details Drawer & Missing Modal (Simplified Placeholders) ─────────────────
 function DetailsDrawer({ doc, onClose }: { doc: SnapshotDoc | null; onClose: () => void }) {
     if (!doc) return null;
-    const role = doc.role;
-    const emp = doc.employee;
-    const pairs = buildPairs(doc);
-    const totals = pairs.reduce((acc, p) => ({ planned: acc.planned + p.planned, done: acc.done + p.done }), { planned: 0, done: 0 });
-    const fullName = `${emp?.first_name || ''} ${emp?.last_name || ''}`.trim() || '—';
-    const initials = fullName.split(' ').map(s => s[0]).join('').slice(0, 2).toUpperCase();
-    const mgrEven = doc.manager?.evening || ({} as any);
-    const sentimentMap: Record<string, string> = { green: 'bg-green-500', yellow: 'bg-amber-400', red: 'bg-red-500' };
-
     return (
-        <div className="fixed inset-0 z-50 flex">
-            <div className="flex-1 bg-black/40" onClick={onClose} />
-            <div className="w-full sm:w-[520px] bg-white border-l border-gray-200 overflow-y-auto shadow-2xl animate-in slide-in-from-right">
-                {/* Header band */}
-                <div className={`p-5 relative overflow-hidden ${role === 'manager' ? '' : ''}`}
-                    style={{ background: role === 'manager' ? 'linear-gradient(135deg,#1E3368 0%,#6E8EF5 100%)' : 'linear-gradient(135deg,#0EA5E9 0%,#22C55E 100%)' }}>
-                    <Button variant="ghost" size="icon" className="absolute top-3 right-3 text-white/80 hover:text-white hover:bg-white/10 h-8 w-8" onClick={onClose}>
-                        <X className="w-4 h-4" />
-                    </Button>
-                    <div className="flex items-center gap-3">
-                        <Avatar className="h-11 w-11 ring-2 ring-white/40">
-                            <AvatarImage src={emp?.image || ''} alt={fullName} />
-                            <AvatarFallback className="bg-white/20 text-white font-bold">{initials}</AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                            <p className="font-black text-white text-base">{role === 'manager' ? 'Manager Snapshot' : 'Employee Snapshot'}</p>
-                            <p className="text-white/80 text-sm truncate">{fullName} • {doc.date}</p>
-                        </div>
-                        <span className="text-xs border border-white/40 text-white rounded-full px-2.5 py-0.5 capitalize">{role}</span>
-                    </div>
-                </div>
-
-                <div className="p-5 space-y-6">
-                    {/* Comparison */}
-                    <div>
-                        <p className="text-[11px] font-extrabold uppercase tracking-widest text-gray-500 mb-1">Comparison — Morning vs Evening</p>
-                        <hr className="mb-3" />
-                        <div className="space-y-3">
-                            {pairs.map((pair) => {
-                                const progress = pct(pair.planned, pair.done);
-                                const pending = Math.max(pair.planned - pair.done, 0);
-                                return (
-                                    <div key={pair.key} className="space-y-1">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-sm font-bold text-gray-900">{pair.label}</span>
-                                            <span className={`text-xs font-semibold ${progress >= 100 ? 'text-green-600' : progress >= 50 ? 'text-amber-600' : 'text-red-500'}`}>{progress}%</span>
-                                        </div>
-                                        <p className="text-xs text-gray-500">
-                                            Commitment: <b>{prettyNum(pair.planned, pair.unit)}</b>
-                                            {' '}• Delivery: <b>{prettyNum(pair.done, pair.unit)}</b>
-                                            {' '}• Pending: <b>{prettyNum(pending, pair.unit)}</b>
-                                        </p>
-                                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                            <div className={`h-full rounded-full ${progress >= 100 ? 'bg-green-500' : progress >= 50 ? 'bg-blue-500' : 'bg-amber-500'}`} style={{ width: `${Math.min(progress, 100)}%` }} />
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-
-                    {/* Summary */}
-                    <div>
-                        <p className="text-[11px] font-extrabold uppercase tracking-widest text-gray-500 mb-1">Summary (Selected Date)</p>
-                        <hr className="mb-3" />
-                        <div className="bg-gray-50 rounded-xl p-4 grid grid-cols-2 gap-4 border border-gray-200">
-                            <div><p className="text-xs text-gray-500">Total Planned</p><p className="text-lg font-black text-gray-900">{fmt(totals.planned)}</p></div>
-                            <div><p className="text-xs text-gray-500">Total Done</p><p className="text-lg font-black text-gray-900">{fmt(totals.done)}</p></div>
-                            <div className="col-span-2">
-                                <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${Math.min(pct(totals.planned, totals.done), 100)}%` }} />
-                                </div>
-                                <p className="text-xs text-gray-500 mt-1">{pct(totals.planned, totals.done)}% achieved for this date</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Manager extras */}
-                    {role === 'manager' && (
-                        <div>
-                            <p className="text-[11px] font-extrabold uppercase tracking-widest text-gray-500 mb-1">Manager Details</p>
-                            <hr className="mb-3" />
-                            <div className="space-y-2 text-sm">
-                                {mgrEven?.overallSentiment && (
-                                    <div className="flex items-center justify-between">
-                                        <span className="text-gray-500">Overall Sentiment</span>
-                                        <span className="flex items-center gap-1.5 font-semibold capitalize">
-                                            <span className={`w-2.5 h-2.5 rounded-full ${sentimentMap[mgrEven.overallSentiment] ?? 'bg-gray-400'}`} />
-                                            {mgrEven.overallSentiment}
-                                        </span>
-                                    </div>
-                                )}
-                                {mgrEven?.sentimentReason && <p className="text-xs text-gray-500 bg-gray-50 rounded p-2">{mgrEven.sentimentReason}</p>}
-                                {mgrEven?.supportRequired && (
-                                    <div>
-                                        <p className="text-xs text-gray-500 font-medium">Support Required</p>
-                                        <p className="text-xs bg-amber-50 text-amber-800 rounded p-2 mt-1">{mgrEven.supportRequired}</p>
-                                    </div>
-                                )}
-                                {mgrEven?.filesStuckDescription && (
-                                    <div>
-                                        <p className="text-xs text-gray-500 font-medium">Files Stuck</p>
-                                        <p className="text-xs bg-red-50 text-red-800 rounded p-2 mt-1">{mgrEven.filesStuckDescription}</p>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    )}
+        <div className="fixed inset-0 z-[100] flex justify-end">
+            <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+            <div className="relative w-full max-w-md bg-white h-full shadow-2xl p-6 flex flex-col">
+                <button onClick={onClose} className="absolute right-4 top-4 p-2 text-gray-500 hover:text-gray-900"><X className="w-5 h-5"/></button>
+                <h2 className="text-xl font-bold mb-4">Details</h2>
+                <div className="flex-1 overflow-y-auto">
+                    <pre className="text-xs bg-gray-50 p-4 rounded overflow-auto">{JSON.stringify(doc, null, 2)}</pre>
                 </div>
             </div>
         </div>
     );
 }
-
-// ─── Missing Upload Modal ─────────────────────────────────────────────────────
-const ALLOWED_DESIGNATIONS = [
-    'Relationship Executive', 'Relationship Manager', 'Asst. Team Leader', 'Team Leader',
-    'Branch Manager', 'Area Head', 'Manager', 'Senior Team Leader',
-    'Channel Partnership & Operations Executive', 'Sales Manager',
-    'Financial Sales Intern', 'Growth Manager', 'Assistant Growth Manager',
-];
-
-function MissingModal({ open, onClose, pickDate }: { open: boolean; onClose: () => void; pickDate: string }) {
-    const [data, setData] = useState<any>(null);
-    const [missingList, setMissingList] = useState<any[]>([]);
-    const [submittedCount, setSubmittedCount] = useState(0);
-    const [loading, setLoading] = useState(false);
-    const [keyword, setKeyword] = useState('');
-
-    const fetchMissing = useCallback(async (kw = '') => {
-        setLoading(true);
-        try {
-            const res = await perfApi.missingList({ date: pickDate, keyword: kw });
-            // lendgrid-server returns: { employees, totalEmployees, missingCount, uploadedCount }
-            const raw: any[] = res?.employees || res?.missingEmployees || [];
-            setSubmittedCount(res?.uploadedCount || res?.submittedCount || 0);
-            setData(res);
-            setMissingList(raw);
-        } catch {
-            setMissingList([]);
-        } finally {
-            setLoading(false);
-        }
-    }, [pickDate]);
-
-    useEffect(() => {
-        if (open) { setKeyword(''); fetchMissing(''); }
-    }, [open, fetchMissing]);
-
+function MissingModal({ open, onClose }: { open: boolean; onClose: () => void }) {
     if (!open) return null;
-
-    const filtered = missingList.filter(e => ALLOWED_DESIGNATIONS.includes(e.designation || ''));
-    const displayed = keyword.trim()
-        ? filtered.filter(e => {
-            const name = (e.name || '').toLowerCase();
-            const code = (e.code || '').toLowerCase();
-            const kw = keyword.toLowerCase();
-            return name.includes(kw) || code.includes(kw);
-        })
-        : filtered;
-
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-            <div className="relative bg-white rounded-2xl border border-gray-200 shadow-2xl w-full max-w-lg max-h-[85vh] flex flex-col">
-                {/* Header */}
-                <div className="p-5 border-b border-gray-200">
-                    <h2 className="text-base font-black text-gray-900">Missing Performance – {pickDate}</h2>
-                </div>
-
-                {/* Search */}
-                <div className="px-5 pt-4 pb-2">
-                    <Input
-                        placeholder="Search employee..."
-                        value={keyword}
-                        onChange={(e) => {
-                            setKeyword(e.target.value);
-                            fetchMissing(e.target.value);
-                        }}
-                        className="h-10"
-                    />
-                </div>
-
-                {/* Stats */}
-                {data && !loading && filtered.length > 0 && (
-                    <div className="px-5 py-2">
-                        <p className="text-sm font-semibold text-gray-800">
-                            <span className="text-green-600">✔️ Submitted Morning Employees ({submittedCount})</span>
-                            {' || '}
-                            <span className="text-red-500">❌ Missing Evening Employees ({displayed.length})</span>
-                        </p>
-                    </div>
-                )}
-
-                {/* List */}
-                <div className="flex-1 overflow-y-auto px-5 pb-5 mt-2 space-y-2">
-                    {loading ? (
-                        <div className="flex items-center justify-center py-10">
-                            <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                        </div>
-                    ) : displayed.length === 0 ? (
-                        <p className="text-center text-green-600 font-medium py-10">All employees submitted performance 🎉</p>
-                    ) : (
-                        displayed.map((emp: any) => (
-                            <div key={String(emp._id || emp.id)} className="p-3.5 bg-white border border-gray-200 rounded-xl">
-                                <p className="font-bold text-gray-900 text-sm">{emp.name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || '—'}</p>
-                                <p className="text-xs text-gray-500 mt-0.5">Code: {emp.code || '—'} • {emp.designation || '—'}</p>
-                                <div className="flex gap-2 mt-2">
-                                    <span className={`text-xs font-semibold rounded-full px-3 py-1 ${emp.filledMorning ? 'bg-white border border-green-500 text-green-700' : 'bg-red-500 text-white'}`}>
-                                        Morning {emp.filledMorning ? '✓' : '✗'}
-                                    </span>
-                                    <span className={`text-xs font-semibold rounded-full px-3 py-1 ${emp.filledEvening ? 'bg-white border border-green-500 text-green-700' : 'bg-red-500 text-white'}`}>
-                                        Evening {emp.filledEvening ? '✓' : '✗'}
-                                    </span>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+            <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg p-6">
+                <button onClick={onClose} className="absolute right-4 top-4 p-2 text-gray-500 hover:text-gray-900"><X className="w-5 h-5"/></button>
+                <h2 className="text-xl font-bold mb-4">Missing Uploads</h2>
+                <p className="text-gray-500 py-10 text-center">Missing metrics feature goes here.</p>
             </div>
         </div>
     );
@@ -515,6 +203,7 @@ function MissingModal({ open, onClose, pickDate }: { open: boolean; onClose: () 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 export default function PerformancePage() {
     const { employee, loading: authLoading } = useEmployeeAuth();
+    const router = useRouter();
 
     const now = new Date();
     const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
@@ -527,13 +216,11 @@ export default function PerformancePage() {
     const [loadingData, setLoadingData] = useState(false);
     const [detailDoc, setDetailDoc] = useState<SnapshotDoc | null>(null);
     const [showMissing, setShowMissing] = useState(false);
+    const [showAddForm, setShowAddForm] = useState(false);
 
     const LIMIT = 12;
-
-    // Build the date to use: user-picked or today
     const pickDate = selectedDate || toISO(now);
 
-    // Derive unique managers from returned data for filter dropdown
     const managerList = useMemo(() => {
         if (!data?.data) return [];
         const seen = new Set<string>();
@@ -554,232 +241,150 @@ export default function PerformancePage() {
         if (!employee) return;
         setLoadingData(true);
         try {
-            const params: Record<string, any> = {
-                page, limit: LIMIT, month: selectedMonth, year: selectedYear,
-                date: pickDate,
-            };
+            const params: Record<string, any> = { page, limit: LIMIT, month: selectedMonth, year: selectedYear, date: pickDate };
             if (keyword.trim()) params.keyword = keyword.trim();
             const result = await perfApi.list(params);
             setData(result);
-        } catch (e) {
-            console.error('Performance fetch error', e);
-        } finally {
-            setLoadingData(false);
-        }
+        } catch (e) { console.error(e); } finally { setLoadingData(false); }
     }, [employee, page, selectedMonth, selectedYear, keyword, pickDate]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
 
     const totalPages = data ? Math.ceil(data.total / LIMIT) : 0;
-
-    // Apply manager filter client-side
     const visibleItems = useMemo(() => {
         if (!data?.data) return [];
         if (managerFilter === 'all') return data.data;
-        // filter employees that belong to the selected manager's team
-        // Since we don't have team membership data client-side, filter by manager code match
         return data.data.filter(d => d.employee?.code === managerFilter || d.role === 'employee');
     }, [data, managerFilter]);
 
-    const handleExport = () => {
-        if (!visibleItems.length) return;
-        const rows = visibleItems.map(doc => {
-            const emp = doc.employee;
-            const empMorn = doc.re?.morning || ({} as any);
-            const empEven = doc.re?.evening || ({} as any);
-            const mgrEven = doc.manager?.evening || ({} as any);
-            return {
-                Date: doc.date, Role: doc.role,
-                Name: `${emp?.first_name || ''} ${emp?.last_name || ''}`.trim(),
-                Code: emp?.code || '',
-                'Morning Login': doc.role === 'employee' ? empMorn.expectedLogins : '',
-                'Evening Login Done': doc.role === 'employee' ? empEven.loginsDone : mgrEven.teamLoginsDone,
-                'Morning Approval': doc.role === 'employee' ? empMorn.expectedApprovals : '',
-                'Evening Approval Done': doc.role === 'employee' ? empEven.approvalsDone : mgrEven.teamApprovalDoneAmount,
-                'Evening Disbursal Done': doc.role === 'employee' ? empEven.disbursalDone : (mgrEven as any).teamDisbursalDoneAmount,
-            };
-        });
-        const header = Object.keys(rows[0]).join(',');
-        const csv = [header, ...rows.map(r => Object.values(r).join(','))].join('\n');
-        const blob = new Blob([csv], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url;
-        a.download = `performance-${selectedYear}-${selectedMonth}.csv`; a.click();
-        URL.revokeObjectURL(url);
-    };
+    if (authLoading || !employee) return <div className="flex mt-20 justify-center"><div className="w-8 h-8 border-4 border-[#666CFF] border-t-transparent inset-0 rounded-full animate-spin"/></div>;
 
-    const router = useRouter();
-
-    if (authLoading || !employee) {
-        return (
-            <div className="flex items-center justify-center h-64">
-                <div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-        );
-    }
-
-    const rolePriority = String((employee as any)?.role ?? '3');
-    const isAdmin = rolePriority === '1';
+    const isAdmin = String((employee as any)?.role ?? '3') === '1';
 
     return (
-        <div className="space-y-4 max-w-[1400px] mx-auto">
-            {/* ── Header toolbar ── */}
-            <div className="bg-white border border-gray-200 rounded-2xl px-5 py-4"
-                style={{ background: 'linear-gradient(180deg,#ffffff 0%,#fafbff 100%)' }}>
+        <div className="space-y-6">
+            {/* Header Area exactly matching HRMS */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-[24px] font-bold text-[#3A3541de] leading-tight flex items-center gap-2">
+                        Performance
+                    </h1>
+                    <p className="text-[14px] text-[#3a354199] mt-1">Dashboard / Performance</p>
+                </div>
+                
                 <div className="flex flex-wrap items-center gap-3">
-                    {/* Title */}
-                    <div className="mr-2">
-                        <h1 className="text-3xl font-black text-gray-900 leading-tight">Performance</h1>
-                        <p className="text-xs text-gray-500 font-semibold">Dashboard / Performance</p>
-                    </div>
-
-                    {/* Month/Year picker */}
-                    <div className="flex items-center gap-1.5 border border-gray-300 rounded-xl px-3 py-2 bg-white">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <Select value={`${selectedYear}-${selectedMonth}`} onValueChange={v => {
-                            const [y, m] = v.split('-'); setSelectedYear(Number(y)); setSelectedMonth(Number(m)); setPage(1);
-                        }}>
-                            <SelectTrigger className="h-auto border-0 bg-transparent p-0 text-sm font-semibold shadow-none focus:ring-0 w-36">
+                    {/* Month Picker (Outline styling) */}
+                    <div className="relative">
+                        <fieldset className="absolute inset-0 border border-gray-300 rounded focus-within:border-[#666CFF] focus-within:border-[2px] transition-colors pointer-events-none" style={{ top: '-8px' }}>
+                            <legend className="text-[12px] px-1 text-gray-500 whitespace-nowrap ml-2 opacity-100 font-medium">Select Month and Year</legend>
+                        </fieldset>
+                        <Select value={`${selectedYear}-${selectedMonth}`} onValueChange={v => { const [y, m] = v.split('-'); setSelectedYear(Number(y)); setSelectedMonth(Number(m)); setPage(1); }}>
+                            <SelectTrigger className="w-[200px] bg-transparent border-0 h-10 shadow-none focus:ring-0 relative z-10 text-[15px] font-medium text-[#3A3541de]">
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                {[2024, 2025, 2026, 2027].flatMap(y =>
-                                    MONTHS.map((m, i) => (
-                                        <SelectItem key={`${y}-${i + 1}`} value={`${y}-${i + 1}`}>{m} {y}</SelectItem>
-                                    ))
-                                )}
+                                {[2024, 2025, 2026, 2027].flatMap(y => MONTHS.map((m, i) => <SelectItem key={`${y}-${i + 1}`} value={`${y}-${i + 1}`}>{m} {y}</SelectItem>))}
                             </SelectContent>
                         </Select>
-                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
                     </div>
 
-                    {/* Date picker */}
-                    <div className="flex items-center gap-1.5 border border-gray-300 rounded-xl px-3 py-2 bg-white">
-                        <Calendar className="w-4 h-4 text-gray-400" />
-                        <input type="date" className="bg-transparent border-0 text-sm font-medium text-gray-700 outline-none w-36"
-                            value={selectedDate}
-                            onChange={e => { setSelectedDate(e.target.value); setPage(1); }} />
-                        {selectedDate && (
-                            <button onClick={() => setSelectedDate('')} className="text-gray-400 hover:text-gray-600">
-                                <X className="w-3.5 h-3.5" />
-                            </button>
-                        )}
-                        <Calendar className="w-3.5 h-3.5 text-gray-400" />
+                    {/* Date Picker */}
+                    <div className="relative">
+                        <fieldset className="absolute inset-0 border border-gray-300 rounded focus-within:border-[#666CFF] focus-within:border-[2px] transition-colors pointer-events-none" style={{ top: '-8px' }}>
+                            <legend className="text-[12px] px-1 text-gray-500 whitespace-nowrap ml-2 opacity-100 font-medium">Select Date</legend>
+                        </fieldset>
+                        <input type="date" value={selectedDate} onChange={e => { setSelectedDate(e.target.value); setPage(1); }} className="w-[160px] bg-transparent border-0 h-10 px-3 shadow-none outline-none relative z-10 text-[15px] font-medium text-[#3A3541de]" />
                     </div>
 
-                    {/* Action buttons on the right */}
-                    <div className="ml-auto flex items-center gap-2 flex-wrap">
-                        <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-blue-600 border-blue-400 hover:bg-blue-50"
-                            onClick={() => router.push('/f2fintech-employee/performance-upload')}>
-                            <Eye className="w-4 h-4" />
-                            View Performance
-                        </Button>
-                        {isAdmin && (
-                            <Button variant="outline" size="sm" className="gap-1.5 rounded-lg text-red-600 border-red-400 hover:bg-red-50"
-                                onClick={() => setShowMissing(true)}>
-                                <AlertCircle className="w-4 h-4" />
-                                Missing Upload
-                            </Button>
-                        )}
-                        <Button size="sm" className="gap-1.5 rounded-lg font-bold text-white"
-                            style={{ backgroundImage: 'linear-gradient(45deg,#1E3368 0%,#F09819 51%,#FF512F 100%)' }}
-                            onClick={handleExport}>
-                            <Download className="w-4 h-4" />
-                            Export
-                        </Button>
-                    </div>
-                </div>
+                    {/* Action Buttons styled like HRMS */}
+                    <button 
+                        onClick={() => router.push('/f2fintech-employee/performance-upload')}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#666CFF80] text-[#666CFF] font-medium text-[14px] hover:bg-[#666CFF14] transition-colors uppercase tracking-wide">
+                        <Eye className="w-5 h-5"/> View Performance
+                    </button>
+                    
+                    <button 
+                        onClick={() => setShowAddForm(true)}
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#FDB528] text-white font-bold text-[14px] hover:bg-[#e6a323] transition-colors shadow-md shadow-[#FDB528]/30 uppercase tracking-wide">
+                        <Plus className="w-5 h-5" strokeWidth={3} /> Add Performance
+                    </button>
 
-                {/* Second row: search + manager filter */}
-                <div className="flex flex-wrap items-center gap-3 mt-3">
-                    {/* Search */}
-                    <div className="relative w-64">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <Input className="pl-9 h-10" placeholder="Search Employee"
-                            value={keyword}
-                            onChange={e => { setKeyword(e.target.value); setPage(1); }} />
-                    </div>
+                    <button 
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-full border border-[#666CFF80] text-[#666CFF] font-medium text-[14px] hover:bg-[#666CFF14] transition-colors uppercase tracking-wide">
+                        <Users className="w-5 h-5"/> Team Performance
+                    </button>
 
-                    {/* Filter by Manager/TL */}
-                    {managerList.length > 0 && (
-                        <div className="w-64">
-                            <Select value={managerFilter} onValueChange={v => { setManagerFilter(v); setPage(1); }}>
-                                <SelectTrigger className="h-10 text-sm">
-                                    <SelectValue placeholder="Filter by Manager/TL" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="all"><em>All Employees</em></SelectItem>
-                                    {managerList.map(m => (
-                                        <SelectItem key={m.code} value={m.code}>
-                                            <span className="flex items-center gap-2">
-                                                <Badge className="h-5 text-[10px] bg-blue-100 text-blue-700 hover:bg-blue-100">Manager</Badge>
-                                                {m.code}
-                                            </span>
-                                        </SelectItem>
-                                    ))}
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    )}
-
-                    {data && (
-                        <p className="text-sm text-gray-500 ml-auto">
-                            Showing <b>{visibleItems.length}</b> of <b>{data.total}</b> records
-                        </p>
-                    )}
+                    <button 
+                        className="flex items-center gap-2 px-5 py-2.5 rounded-full text-white font-bold text-[14px] hover:opacity-90 shadow-md transition-all uppercase tracking-wide"
+                        style={{ background: 'linear-gradient(270deg, #FF6A00 0%, #EE0979 100%)' }}>
+                        <Download className="w-5 h-5"/> Export
+                    </button>
                 </div>
             </div>
 
-            {/* ── Cards Grid ── */}
-            {loadingData ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {Array.from({ length: 4 }).map((_, i) => (
-                        <div key={i} className="bg-white border border-gray-200 rounded-2xl p-5 animate-pulse">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="w-12 h-12 bg-gray-200 rounded-full" />
-                                <div className="flex-1"><div className="h-4 bg-gray-200 rounded w-3/4 mb-2" /><div className="h-3 bg-gray-100 rounded w-1/2" /></div>
-                            </div>
-                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                <div className="h-36 bg-gray-100 rounded-xl" /><div className="h-36 bg-gray-100 rounded-xl" />
-                            </div>
-                            <div className="h-20 bg-gray-50 rounded-xl mb-3" />
-                            <div className="h-28 bg-gray-50 rounded-xl" />
-                        </div>
-                    ))}
+            {/* Filter Row matching HRMS */}
+            <div className="flex items-center gap-4">
+                <div className="relative">
+                    <fieldset className="absolute inset-0 border border-gray-300 rounded focus-within:border-[#666CFF] focus-within:border-2 transition-colors pointer-events-none" style={{ top: '-8px' }}>
+                        <legend className="text-[12px] px-1 text-gray-500 whitespace-nowrap ml-2 opacity-100 font-medium">Search employees</legend>
+                    </fieldset>
+                    <div className="flex relative z-10 h-10 px-3 items-center">
+                        <Search className="w-4 h-4 text-gray-500 mr-2"/>
+                        <input className="bg-transparent outline-none w-[200px] text-[15px] text-[#3A3541de]" value={keyword} onChange={e => {setKeyword(e.target.value); setPage(1);}} />
+                    </div>
                 </div>
+            </div>
+
+            {/* Content Area */}
+            {loadingData ? (
+                 <div className="flex mt-20 justify-center"><div className="w-8 h-8 border-4 border-[#666CFF] border-t-transparent inset-0 rounded-full animate-spin"/></div>
             ) : !visibleItems.length ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white border border-gray-200 rounded-2xl text-center">
-                    <p className="text-lg font-black text-gray-800">No records</p>
-                    <p className="text-sm text-gray-500 mt-1">Try changing month/year, date or search term</p>
+                // "No records" Exact HRMS Match
+                <div>
+                    <div className="bg-white border rounded-lg py-16 flex flex-col items-center justify-center text-center w-full mt-4" style={{ borderColor: 'rgba(58, 53, 65, 0.12)' }}>
+                        <h2 className="text-[16px] font-medium text-[#3A3541de] mb-1">No records</h2>
+                        <p className="text-[14px] text-[#3a354199]">Try changing month/year, date, search, or open My Team Performance.</p>
+                    </div>
+                    {/* Pagination for NO RECORDS exactly like HRMS */}
+                    <div className="flex justify-end mt-4 text-[#3A3541de]">
+                        <div className="flex items-center gap-1">
+                            <button className="text-gray-400 p-1"><ChevronLeft className="w-5 h-5"/></button>
+                            <button className="w-8 h-8 rounded-full bg-[#666CFF] text-white flex items-center justify-center text-[14px] shadow-md shadow-[#666CFF]/30 font-medium">1</button>
+                            <button className="text-gray-400 p-1"><ChevronRight className="w-5 h-5"/></button>
+                        </div>
+                    </div>
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {visibleItems.map(doc => (
-                        <PerformanceCard key={doc._id} doc={doc} onDetails={d => setDetailDoc(d)} />
-                    ))}
-                </div>
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-2">
+                        {visibleItems.map(doc => <PerformanceCard key={doc._id} doc={doc} onDetails={d => setDetailDoc(d)} />)}
+                    </div>
+                    {totalPages > 1 && (
+                        <div className="flex justify-end mt-4 text-[#3A3541de]">
+                            <div className="flex items-center gap-1">
+                                <button className="text-gray-400 hover:text-gray-800 p-1" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}><ChevronLeft className="w-5 h-5"/></button>
+                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(pg => (
+                                    <button key={pg} onClick={() => setPage(pg)} className={`w-8 h-8 rounded-full flex items-center justify-center text-[14px] transition-colors ${page === pg ? 'bg-[#666CFF] text-white shadow-md shadow-[#666CFF]/30 font-medium' : 'text-[#3A3541de] hover:bg-gray-100 font-normal'}`}>
+                                        {pg}
+                                    </button>
+                                ))}
+                                <button className="text-gray-400 hover:text-gray-800 p-1" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}><ChevronRight className="w-5 h-5"/></button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
-            {/* ── Pagination ── */}
-            {totalPages > 1 && (
-                <div className="flex items-center justify-center gap-1 pt-2">
-                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))}>
-                        <ChevronLeft className="w-4 h-4" />
-                    </Button>
-                    {Array.from({ length: Math.min(totalPages, 7) }, (_, i) => i + 1).map(pg => (
-                        <Button key={pg} variant={page === pg ? 'default' : 'outline'} size="icon" className="h-9 w-9 text-xs" onClick={() => setPage(pg)}>{pg}</Button>
-                    ))}
-                    <Button variant="outline" size="icon" className="h-9 w-9" disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))}>
-                        <ChevronRight className="w-4 h-4" />
-                    </Button>
-                </div>
+            <DetailsDrawer doc={detailDoc} onClose={() => setDetailDoc(null)} />
+            <MissingModal open={showMissing} onClose={() => setShowMissing(false)} />
+            {showAddForm && (
+                <RoleBasedPerformanceForm 
+                    open={showAddForm} 
+                    onClose={() => setShowAddForm(false)} 
+                    currentDate={pickDate} 
+                    onSuccess={() => fetchData()} 
+                />
             )}
-
-            {/* ── Details Drawer ── */}
-            {detailDoc && <DetailsDrawer doc={detailDoc} onClose={() => setDetailDoc(null)} />}
-
-            {/* ── Missing Upload Modal ── */}
-            <MissingModal open={showMissing} onClose={() => setShowMissing(false)} pickDate={pickDate} />
         </div>
     );
 }

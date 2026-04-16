@@ -631,7 +631,7 @@ export function AggregatorMemberApplications() {
   } = useApplications({
     page,
     limit: pageSize,
-    aggregatorId: user?._id || user?.id,
+    aggregatorId: user?.profileId || user?._id || user?.id,
     status: filterStatus && filterStatus !== 'all' ? filterStatus : undefined,
   })
   const total = applications?.count || 0
@@ -730,7 +730,7 @@ export function AggregatorMemberApplications() {
       if (!selectedProduct) return;
 
       const payload = {
-        aggregatorId: user?._id || user?.id,
+        aggregatorId: user?.profileId || user?._id || user?.id,
         productId: form.productId,
         lenderId: form.lenderId,
         customerName: form.customerName,

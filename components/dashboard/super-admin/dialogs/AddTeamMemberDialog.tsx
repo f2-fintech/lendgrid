@@ -108,7 +108,9 @@ export function AddTeamMemberDialog({
             contact: data.contact,
             password: data.password,
             role: "AGGREGATOR_MEMBER",
-            parentAggregatorId: aggregator.user?._id,
+            parentAggregatorId: aggregator.user?._id || aggregator.userId, // Some views populate user._id, others userId
+            createdBy: aggregator.userId || aggregator.user?._id,
+            captchaToken: "", // Bypassed in backend due to createdBy
         }
 
         console.log("=== ADD TEAM MEMBER PAYLOAD ===")
@@ -143,230 +145,244 @@ export function AddTeamMemberDialog({
     }
 
     const handleClose = () => {
+        if (isSubmitting) return
         reset()
+        setIsSubmitting(false)
+        setShowPassword(false)
+        setShowConfirmPassword(false)
         onClose()
     }
 
     return (
-        <Dialog open={isOpen} onOpenChange={handleClose}>
-            <DialogContent className="bg-gradient-to-br from-gray-900 to-black border-gray-700 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
-                    <div className="flex items-center justify-between">
+        <Dialog open={isOpen} onOpenChange={(open) => {
+            if (!open) handleClose()
+        }}>
+            <DialogContent 
+                onInteractOutside={(e) => e.preventDefault()}
+                className="bg-background border-border text-foreground max-w-3xl max-h-[90vh] overflow-y-auto rounded-xl shadow-2xl p-0"
+            >
+                <DialogHeader className="px-6 pt-6 pb-2">
+                    <div className="flex items-start justify-between gap-4">
                         <div>
-                            <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-300 bg-clip-text text-transparent">
+                            <DialogTitle className="text-2xl font-bold text-foreground">
                                 Add Team Member
                             </DialogTitle>
-                            <DialogDescription className="text-gray-400 mt-1">
+                            <DialogDescription className="text-muted-foreground mt-1">
                                 Add a new team member to{" "}
-                                <span className="font-semibold text-cyan-400">
+                                <span className="font-semibold text-primary">
                                     {aggregator?.companyName || "the company"}
                                 </span>
                             </DialogDescription>
                         </div>
                         <Button
+                            type="button"
                             variant="ghost"
                             size="icon"
                             onClick={handleClose}
-                            className="text-gray-400 hover:text-white hover:bg-gray-700 rounded-full"
+                            className="text-muted-foreground hover:text-foreground hover:bg-muted rounded-full w-8 h-8 flex-shrink-0"
+                            disabled={isSubmitting}
                         >
                             <X className="w-5 h-5" />
                         </Button>
                     </div>
                 </DialogHeader>
 
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 pt-4">
+                <form onSubmit={handleSubmit(onSubmit)} className="space-y-6 px-6 pb-6 pt-2">
                     {/* Company Info Display */}
-                    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+                    <div className="bg-muted/30 rounded-lg p-5 border border-border">
                         <div className="grid grid-cols-2 gap-4 text-sm">
                             <div>
-                                <p className="text-gray-400">Company</p>
-                                <p className="text-white font-semibold">
+                                <p className="text-muted-foreground mb-1">Company</p>
+                                <p className="text-foreground font-semibold text-base">
                                     {aggregator?.companyName || "N/A"}
                                 </p>
                             </div>
                             <div>
-                                <p className="text-gray-400">Role</p>
-                                <p className="text-cyan-400 font-semibold">
+                                <p className="text-muted-foreground mb-1">Role</p>
+                                <p className="text-primary font-semibold text-base">
                                     Aggregator Member
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    {/* Full Name */}
-                    <div className="space-y-2">
-                        <Label htmlFor="fullName" className="text-gray-300">
-                            Full Name <span className="text-red-400">*</span>
-                        </Label>
-                        <Input
-                            id="fullName"
-                            placeholder="Enter full name"
-                            {...register("fullName")}
-                            className={`bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 ${errors.fullName ? "border-red-500" : ""
-                                }`}
-                        />
-                        {errors.fullName && (
-                            <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-red-400 text-sm"
-                            >
-                                {errors.fullName.message}
-                            </motion.p>
-                        )}
-                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-                    {/* Email */}
-                    <div className="space-y-2">
-                        <Label htmlFor="email" className="text-gray-300">
-                            Email Address <span className="text-red-400">*</span>
-                        </Label>
-                        <Input
-                            id="email"
-                            type="email"
-                            placeholder="Enter email address"
-                            {...register("email")}
-                            className={`bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 ${errors.email ? "border-red-500" : ""
-                                }`}
-                        />
-                        {errors.email && (
-                            <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-red-400 text-sm"
-                            >
-                                {errors.email.message}
-                            </motion.p>
-                        )}
-                    </div>
-
-                    {/* Contact */}
-                    <div className="space-y-2">
-                        <Label htmlFor="contact" className="text-gray-300">
-                            Contact Number <span className="text-red-400">*</span>
-                        </Label>
-                        <Input
-                            id="contact"
-                            placeholder="Enter contact number"
-                            {...register("contact")}
-                            className={`bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 ${errors.contact ? "border-red-500" : ""
-                                }`}
-                        />
-                        {errors.contact && (
-                            <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-red-400 text-sm"
-                            >
-                                {errors.contact.message}
-                            </motion.p>
-                        )}
-                    </div>
-
-                    {/* Password */}
-                    <div className="space-y-2">
-                        <Label htmlFor="password" className="text-gray-300">
-                            Password <span className="text-red-400">*</span>
-                        </Label>
-                        <div className="relative">
+                        {/* Full Name */}
+                        <div className="space-y-2">
+                            <Label htmlFor="fullName" className="text-foreground font-medium">
+                                Full Name <span className="text-red-400">*</span>
+                            </Label>
                             <Input
-                                id="password"
-                                type={showPassword ? "text" : "password"}
-                                placeholder="Enter password"
-                                {...register("password")}
-                                className={`bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 pr-10 ${errors.password ? "border-red-500" : ""
+                                id="fullName"
+                                placeholder="Enter full name"
+                                {...register("fullName")}
+                                className={`bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 ${errors.fullName ? "border-red-500" : ""
                                     }`}
                             />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowPassword(!showPassword)}
-                                className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
-                            >
-                                {showPassword ? (
-                                    <EyeOff className="w-4 h-4" />
-                                ) : (
-                                    <Eye className="w-4 h-4" />
-                                )}
-                            </Button>
+                            {errors.fullName && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-red-400 text-sm"
+                                >
+                                    {errors.fullName.message}
+                                </motion.p>
+                            )}
                         </div>
-                        {errors.password && (
-                            <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-red-400 text-sm"
-                            >
-                                {errors.password.message}
-                            </motion.p>
-                        )}
-                    </div>
 
-                    {/* Confirm Password */}
-                    <div className="space-y-2">
-                        <Label htmlFor="confirmPassword" className="text-gray-300">
-                            Confirm Password <span className="text-red-400">*</span>
-                        </Label>
-                        <div className="relative">
+                        {/* Email */}
+                        <div className="space-y-2">
+                            <Label htmlFor="email" className="text-foreground font-medium">
+                                Email Address <span className="text-red-400">*</span>
+                            </Label>
                             <Input
-                                id="confirmPassword"
-                                type={showConfirmPassword ? "text" : "password"}
-                                placeholder="Re-enter password"
-                                {...register("confirmPassword")}
-                                className={`bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 pr-10 ${errors.confirmPassword ? "border-red-500" : ""
+                                id="email"
+                                type="email"
+                                placeholder="Enter email address"
+                                {...register("email")}
+                                className={`bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 ${errors.email ? "border-red-500" : ""
                                     }`}
                             />
-                            <Button
-                                type="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                                className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-white"
-                            >
-                                {showConfirmPassword ? (
-                                    <EyeOff className="w-4 h-4" />
-                                ) : (
-                                    <Eye className="w-4 h-4" />
-                                )}
-                            </Button>
+                            {errors.email && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-red-400 text-sm"
+                                >
+                                    {errors.email.message}
+                                </motion.p>
+                            )}
                         </div>
-                        {errors.confirmPassword && (
-                            <motion.p
-                                initial={{ opacity: 0, y: -10 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="text-red-400 text-sm"
-                            >
-                                {errors.confirmPassword.message}
-                            </motion.p>
-                        )}
+
+                        {/* Contact */}
+                        <div className="space-y-2">
+                            <Label htmlFor="contact" className="text-foreground font-medium">
+                                Contact Number <span className="text-red-400">*</span>
+                            </Label>
+                            <Input
+                                id="contact"
+                                placeholder="Enter contact number"
+                                {...register("contact")}
+                                className={`bg-background border-border text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/20 ${errors.contact ? "border-red-500" : ""
+                                    }`}
+                            />
+                            {errors.contact && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-red-400 text-sm"
+                                >
+                                    {errors.contact.message}
+                                </motion.p>
+                            )}
+                        </div>
+                        
+                        {/* Empty div for grid alignment, since contact is single right now, we can put contact full width or keep blank */}
+                        <div className="hidden md:block"></div>
+
+                        {/* Password */}
+                        <div className="space-y-2">
+                            <Label htmlFor="password" className="text-foreground font-medium">
+                                Password <span className="text-red-400">*</span>
+                            </Label>
+                            <div className="relative">
+                                <Input
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    placeholder="Enter password"
+                                    {...register("password")}
+                                    className={`bg-background border-border text-foreground placeholder:text-muted-foreground pr-10 focus:ring-2 focus:ring-primary/20 ${errors.password ? "border-red-500" : ""
+                                        }`}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                                >
+                                    {showPassword ? (
+                                        <EyeOff className="w-4 h-4" />
+                                    ) : (
+                                        <Eye className="w-4 h-4" />
+                                    )}
+                                </Button>
+                            </div>
+                            {errors.password && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-red-400 text-sm"
+                                >
+                                    {errors.password.message}
+                                </motion.p>
+                            )}
+                        </div>
+
+                        {/* Confirm Password */}
+                        <div className="space-y-2">
+                            <Label htmlFor="confirmPassword" className="text-foreground font-medium">
+                                Confirm Password <span className="text-red-400">*</span>
+                            </Label>
+                            <div className="relative">
+                                <Input
+                                    id="confirmPassword"
+                                    type={showConfirmPassword ? "text" : "password"}
+                                    placeholder="Re-enter password"
+                                    {...register("confirmPassword")}
+                                    className={`bg-background border-border text-foreground placeholder:text-muted-foreground pr-10 focus:ring-2 focus:ring-primary/20 ${errors.confirmPassword ? "border-red-500" : ""
+                                        }`}
+                                />
+                                <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                    className="absolute right-0 top-0 h-full px-3 text-muted-foreground hover:text-foreground"
+                                >
+                                    {showConfirmPassword ? (
+                                        <EyeOff className="w-4 h-4" />
+                                    ) : (
+                                        <Eye className="w-4 h-4" />
+                                    )}
+                                </Button>
+                            </div>
+                            {errors.confirmPassword && (
+                                <motion.p
+                                    initial={{ opacity: 0, y: -10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="text-red-400 text-sm"
+                                >
+                                    {errors.confirmPassword.message}
+                                </motion.p>
+                            )}
+                        </div>
                     </div>
 
-                    {/* Footer Buttons */}
-                    <div className="flex gap-3 pt-4 border-t border-gray-700">
+                    {/* Action Buttons */}
+                    <div className="flex flex-col-reverse sm:flex-row justify-end gap-3 pt-6 border-t border-border mt-4">
                         <Button
                             type="button"
                             variant="outline"
                             onClick={handleClose}
-                            className="flex-1 border-gray-600 text-gray-300 hover:bg-gray-800"
+                            className="w-full sm:w-auto border-border text-foreground hover:bg-red-500/10 hover:text-red-500 hover:border-red-500/30 transition-colors px-6"
                             disabled={isSubmitting}
                         >
                             Cancel
                         </Button>
                         <Button
                             type="submit"
-                            className="flex-1 bg-gradient-to-r from-blue-600 to-cyan-500 text-white hover:from-blue-700 hover:to-cyan-600"
+                            className="w-full sm:w-auto bg-primary hover:bg-primary/90 text-primary-foreground px-6 shadow-lg"
                             disabled={isSubmitting}
                         >
                             {isSubmitting ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                    Adding...
+                                    Creating...
                                 </>
                             ) : (
-                                <>
-                                    <UserPlus className="w-4 h-4 mr-2" />
-                                    Add Team Member
-                                </>
+                                "Add Team Member"
                             )}
                         </Button>
                     </div>

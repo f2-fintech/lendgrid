@@ -21,7 +21,7 @@ import {
   GraduationCap
 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { formatDistanceToNow } from 'date-fns'
 
 import { useAuth, AppRole } from '@/lib/auth'
@@ -64,51 +64,52 @@ interface DashboardLayoutProps {
 
 const navigationConfig = {
   super_admin: [
-    // {
-    //   title: "Overview",
-    //   items: [
-    //     { title: "Analytics", url: navigationPaths.superAdmin.analytics, icon: BarChart3 },
-    //     { title: "Platform Revenue", url: navigationPaths.superAdmin.revenue, icon: TrendingUp },
-    //     { title: "Product Manager", url: navigationPaths.superAdmin.products, icon: CreditCard },
-    //   ]
-    // },
     {
-      title: "Management",
+      title: "Overview",
       items: [
         { title: "Dashboard", url: navigationPaths.superAdmin.dashboard, icon: LayoutDashboard },
-        { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: User2 },
-        { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
-        { title: "Commission Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
-        { title: "F2fintech Employees", url: navigationPaths.superAdmin.f2fintechEmployees, icon: Users }
-        // { title: "Settings", url: navigationPaths.superAdmin.settings, icon: Settings }
-        // { title: "Lender Management", url: navigationPaths.superAdmin.lenders, icon: Building2 },
       ]
     },
-    // {
-    //   title: "System",
-    //   items: [
-    //   ]
-    // }
-  ],
-  aggregator: (isOmsEnabled: boolean) => [
-    // {
-    //   title: "Overview",
-    //   items: [
-    //     { title: "Products", url: navigationPaths.aggregator.products, icon: CreditCard },
-    //     { title: "Reports", url: navigationPaths.aggregator.reports, icon: FileText }
-    //   ]
-    // },
     {
       title: "Management",
       items: [
+        { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: User2 },
+        { title: "F2fintech Employees", url: navigationPaths.superAdmin.f2fintechEmployees, icon: Users }
+      ]
+    },
+    {
+      title: "Financials",
+      items: [
+        { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
+        { title: "Commission Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
+      ]
+    }
+  ],
+  aggregator: (isOmsEnabled: boolean) => [
+    {
+      title: "Overview",
+      items: [
         { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
+      ]
+    },
+    {
+      title: "Operations",
+      items: [
         { title: "Applications", url: navigationPaths.aggregator.applications, icon: FileText },
         { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
-        { title: "Training & Resources", url: navigationPaths.aggregator.training, icon: GraduationCap },
+      ]
+    },
+    {
+      title: "Organization",
+      items: [
+        { title: "Team Management", url: navigationPaths.aggregator.team, icon: Users },
         { title: "Profile Settings", url: navigationPaths.aggregator.settings, icon: Settings },
-        // ...(isOmsEnabled
-        //   ? [{ title: "OMS", url: `https://admin-f2fintech.netlify.app/login`, icon: Building2 }]
-        //   : [])
+      ]
+    },
+    {
+      title: "Resources",
+      items: [
+        { title: "Training Center", url: navigationPaths.aggregator.training, icon: GraduationCap },
       ]
     }
   ],
@@ -117,7 +118,6 @@ const navigationConfig = {
       title: "Operations",
       items: [
         { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
-        { title: "Products", url: navigationPaths.aggregatorMember.products, icon: CreditCard },
         { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: FileText },
       ]
     }
@@ -162,6 +162,7 @@ function AppSidebar({
   isOmsEnabled?: boolean
 }) {
   const router = useRouter()
+  const pathname = usePathname()
   const logout = useLogout()
   const { setOpenMobile } = useSidebar()
   let navigation;
@@ -232,22 +233,35 @@ function AppSidebar({
         </SidebarMenu>
       </SidebarHeader>
 
-      <SidebarContent>
+      <SidebarContent className="px-3 py-2 space-y-4">
         {navigation.map((group) => (
           <SidebarGroup key={group.title}>
-            <SidebarGroupLabel>{group.title}</SidebarGroupLabel>
+            <SidebarGroupLabel className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold px-4 pb-1">
+              {group.title}
+            </SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {group.items.map((item: { url: string; icon: React.ElementType; title: string }) => (
-                  <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <Link href={item.url} onClick={() => setOpenMobile(false)}>
-                        <item.icon className="w-4 h-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
+              <SidebarMenu className="space-y-1 mt-1">
+                {group.items.map((item: { url: string; icon: React.ElementType; title: string }) => {
+                  // Precise active matching
+                  const isActive = pathname === item.url || (item.url !== '/' && pathname.startsWith(item.url))
+                  return (
+                    <SidebarMenuItem key={item.title}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                          ? "bg-primary/10 text-primary font-medium"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          }`}
+                      >
+                        <Link href={item.url} onClick={() => setOpenMobile(false)}>
+                          <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
+                          <span className="text-sm">{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
