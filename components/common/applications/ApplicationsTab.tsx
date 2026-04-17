@@ -557,7 +557,7 @@ export function AggregatorApplications() {
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
-    const { user } = useAuth('aggregator_admin')
+    const { user } = useAuth(['aggregator_admin', 'aggregator_member'])
     const { toast } = useToast()
     const token = getCookie("token")
     const decoded = decodeJwt(token)
@@ -585,7 +585,7 @@ export function AggregatorApplications() {
     } = useApplicationsRest({
         page,
         limit: pageSize,
-        aggregatorId: user?._id || user?.id,
+        aggregatorId: user?.profileId || user?._id || user?.id,
         search: searchTerm
     })
     const total = applications?.count || 0
@@ -625,7 +625,7 @@ export function AggregatorApplications() {
             if (!selectedProduct) return;
 
             const payload = {
-                aggregatorId: user?._id || user?.id,
+                aggregatorId: user?.profileId || user?._id || user?.id,
                 productId: form.productId,
                 lenderId: form.lenderId,
                 customerName: form.customerName,

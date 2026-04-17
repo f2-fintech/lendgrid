@@ -691,7 +691,7 @@ export function TicketsTab() {
     const [approvedDate, setApprovedDate] = useState<string | undefined>();
     const [disbursedDate, setDisbursedDate] = useState<string | undefined>();
 
-    const { user } = useAuth('aggregator_admin')
+    const { user } = useAuth(['aggregator_admin', 'aggregator_member'])
     const { toast } = useToast()
     const token = getCookie("token")
     const decoded = decodeJwt(token)

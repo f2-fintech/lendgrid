@@ -225,7 +225,7 @@ export function LoginForm() {
       } else if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
         router.push(navigationPaths.aggregator.dashboard);
       } else if (role === "aggregator_member" || role === "AGGREGATOR_MEMBER") {
-        router.push(navigationPaths.aggregatorMember.dashboard);
+        router.push(navigationPaths.aggregatorMember.applications);
       } else if (role === "super_admin" || role === "SUPER_ADMIN") {
         router.push(navigationPaths.superAdmin.dashboard);
       } else {
@@ -327,11 +327,10 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setLoginType("user")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all duration-200 ${
-                !isEmployee
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all duration-200 ${!isEmployee
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
             >
               <Users className="w-4 h-4" />
               User Login
@@ -339,11 +338,10 @@ export function LoginForm() {
             <button
               type="button"
               onClick={() => setLoginType("employee")}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all duration-200 ${
-                isEmployee
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
-              }`}
+              className={`flex-1 flex items-center justify-center gap-2 py-2.5 text-sm font-medium transition-all duration-200 ${isEmployee
+                ? "bg-primary text-primary-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
             >
               <UserCheck className="w-4 h-4" />
               Employee Login

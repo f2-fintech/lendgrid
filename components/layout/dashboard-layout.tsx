@@ -115,9 +115,9 @@ const navigationConfig = {
   ],
   aggregator_member: [
     {
-      title: "Operations",
+      title: "Sales",
       items: [
-        { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
+        // { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
         { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: FileText },
       ]
     }

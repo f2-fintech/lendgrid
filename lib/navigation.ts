@@ -34,10 +34,10 @@ export const navigationPaths = {
 
   // Aggregator Member routes
   aggregatorMember: {
-    dashboard: '/aggregator-member',
-    products: '/aggregator-member/products',
+    // dashboard: '/aggregator-member',
+    // products: '/aggregator-member/products',
     applications: '/aggregator-member/applications',
-    settings: '/aggregator-member/settings'
+    // settings: '/aggregator-member/settings'
   },
 
   // Lender routes
