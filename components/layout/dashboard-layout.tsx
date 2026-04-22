@@ -56,10 +56,12 @@ import { Badge } from '@/components/ui/badge'
 import { navigationPaths } from '@/lib/navigation'
 import { getCookie, decodeJwt } from "@/lib/utils"
 import { ThemeLogo } from '@/components/theme-logo'
+import { companiesApi, type Company } from '@/lib/companies-api'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
-  userRole?: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee'
+  userRole?: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' | 'lendgrid_sales'
 }
 
 const navigationConfig = {
@@ -74,7 +76,8 @@ const navigationConfig = {
       title: "Management",
       items: [
         { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: User2 },
-        { title: "F2fintech Employees", url: navigationPaths.superAdmin.f2fintechEmployees, icon: Users }
+        { title: "Sales Team", url: navigationPaths.superAdmin.salesUsers, icon: Users },
+        { title: "F2fintech Employees", url: navigationPaths.superAdmin.f2fintechEmployees, icon: Users },
       ]
     },
     {
@@ -102,7 +105,7 @@ const navigationConfig = {
     {
       title: "Organization",
       items: [
-        { title: "Team Management", url: navigationPaths.aggregator.team, icon: Users },
+        // { title: "Team Management", url: navigationPaths.aggregator.team, icon: Users },
         { title: "Profile Settings", url: navigationPaths.aggregator.settings, icon: Settings },
       ]
     },
@@ -149,6 +152,14 @@ const navigationConfig = {
         { title: "Performance", url: navigationPaths.f2fintechEmployee.performance, icon: TrendingUp },
       ]
     }
+  ],
+  lendgrid_sales: [
+    {
+      title: "Sales Workspace",
+      items: [
+        { title: "Applications", url: navigationPaths.lendgridSales.dashboard, icon: FileText },
+      ]
+    }
   ]
 }
 
@@ -157,7 +168,7 @@ function AppSidebar({
   user,
   isOmsEnabled
 }: {
-  userRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee',
+  userRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' | 'lendgrid_sales',
   user?: any,
   isOmsEnabled?: boolean
 }) {
@@ -189,6 +200,7 @@ function AppSidebar({
       case 'aggregator_member': return 'Aggregator Member'
       case 'lender': return 'Lender Admin'
       case 'hrms_employee': return getEmployeeRoleLabel(user?.rawRole ?? '3')
+      case 'lendgrid_sales': return 'Lendgrid Sales'
       default: return 'User'
     }
   }
@@ -324,24 +336,47 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const decodedEmployee: DecodedEmployee | null = employeeToken ? decodeJwt(employeeToken) as DecodedEmployee : null
   const isEmployeeSession = decodedEmployee?.type === 'hrms_employee'
 
-  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin'] as AppRole[])
-  const normalizedRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' =
+  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin', 'lendgrid_sales'] as AppRole[])
+  const normalizedRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' | 'lendgrid_sales' =
     isEmployeeSession ? 'hrms_employee'
       : role === 'super_admin' ? 'super_admin'
         : role === 'aggregator_admin' ? 'aggregator'
           : role === 'aggregator_member' ? 'aggregator_member'
-            : 'lender'
-  const token = getCookie("token")
+            : role === 'lendgrid_sales' ? 'lendgrid_sales'
+              : 'lender'
+  const token = getCookie("lendgrid_cookie")
   const decoded = decodeJwt(token)
   const isOmsEnabled = decoded?.isOmsEnabled ?? false
 
-  // Build employee user object for sidebar display
   const employeeUser = isEmployeeSession && decodedEmployee ? {
     username: `${decodedEmployee.first_name} ${decodedEmployee.last_name}`.trim(),
     email: decodedEmployee.email,
     profilePicture: decodedEmployee.image,
     rawRole: decodedEmployee.role,  // role_priority: '1'|'2'|'3'
   } : null
+
+  const isSalesRole = normalizedRole === 'lendgrid_sales'
+  const [companies, setCompanies] = useState<Company[]>([])
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
+
+  useEffect(() => {
+    if (!isSalesRole) return
+    const saved = localStorage.getItem('selectedCompanyId') || ''
+    setSelectedCompanyId(saved)
+    companiesApi.getAll({ page: 1, limit: 100 })
+      .then(res => setCompanies(res.data?.results || []))
+      .catch(console.error)
+  }, [isSalesRole])
+
+  const handleCompanyChange = (value: string) => {
+    setSelectedCompanyId(value)
+    if (!value) {
+      localStorage.removeItem('selectedCompanyId')
+    } else {
+      localStorage.setItem('selectedCompanyId', value)
+    }
+    window.dispatchEvent(new CustomEvent('companyChanged', { detail: value }))
+  }
 
   // Use notifications hook with polling
   const {
@@ -433,6 +468,22 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
           <SidebarTrigger className="-ml-1" />
 
           <div className="ml-auto flex items-center space-x-2 relative">
+            {isSalesRole && (
+              <Select value={selectedCompanyId} onValueChange={handleCompanyChange}>
+                <SelectTrigger className="w-52 h-9 bg-background/50 border-border text-foreground text-sm">
+                  <SelectValue placeholder="Select Aggregator..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Aggregators</SelectItem>
+                  {companies.map((c) => (
+                    <SelectItem key={c.id} value={String(c.companyId)}>
+                      {c.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
             {/* Theme Toggle Button */}
             <ThemeToggle />
 

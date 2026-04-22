@@ -18,7 +18,8 @@ export const navigationPaths = {
     commission: '/super-admin/commission',
     payouts: '/super-admin/payouts',
     settings: '/super-admin/settings',
-    f2fintechEmployees: '/super-admin/f2fintech-employees'
+    f2fintechEmployees: '/super-admin/f2fintech-employees',
+    salesUsers: '/super-admin/sales-users'
   },
 
   aggregator: {
@@ -28,7 +29,7 @@ export const navigationPaths = {
     reports: '/aggregator/reports',
     applications: '/aggregator/applications',
     training: '/aggregator/training',
-    team: '/aggregator/team',
+    // team: '/aggregator/team',
     settings: '/aggregator/settings'
   },
 
@@ -55,6 +56,11 @@ export const navigationPaths = {
     dashboard: '/f2fintech-employee',
     profile: '/f2fintech-employee/profile',
     performance: '/f2fintech-employee/performance',
+  },
+
+  // Lendgrid Sales (OMS) routes
+  lendgridSales: {
+    dashboard: '/lendgrid-sales',
   }
 }
 
@@ -64,6 +70,8 @@ export const getNavigationByRole = (role: string) => {
       return navigationPaths.superAdmin
     case 'aggregator_admin':
       return navigationPaths.aggregator
+    case 'lendgrid_sales':
+      return navigationPaths.lendgridSales
     default:
       return navigationPaths.home
   }

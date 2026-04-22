@@ -33,23 +33,23 @@ export default function TurnstileMobilePage() {
                 callback: (token: string) => {
                     // send token to mobile webview
                     window.ReactNativeWebView?.postMessage(
-                        JSON.stringify({ type: "token", token })
+                        JSON.stringify({ type: "lendgrid_cookie", token })
                     );
                 },
                 "expired-callback": () => {
                     window.ReactNativeWebView?.postMessage(
-                        JSON.stringify({ type: "token", token: null })
+                        JSON.stringify({ type: "lendgrid_cookie", token: null })
                     );
                 },
                 "error-callback": () => {
                     window.ReactNativeWebView?.postMessage(
-                        JSON.stringify({ type: "token", token: null })
+                        JSON.stringify({ type: "lendgrid_cookie", token: null })
                     );
                 },
             });
         } catch {
             window.ReactNativeWebView?.postMessage(
-                JSON.stringify({ type: "token", token: null })
+                JSON.stringify({ type: "lendgrid_cookie", token: null })
             );
         }
 

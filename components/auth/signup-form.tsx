@@ -263,7 +263,7 @@ export function SignupForm() {
 
       const token = loginResult?.access_token;
       if (token) {
-        setCookie("token", token, 1);
+        setCookie("lendgrid_cookie", token, 1);
         const decoded = decodeJwt(token);
         const role = decoded?.role;
 

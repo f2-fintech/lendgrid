@@ -79,7 +79,7 @@ export const MultiStepFormContent: React.FC<{
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }, [activeStep, showStep0]);
 
-    const token = getCookie("token")
+    const token = getCookie("lendgrid_cookie")
     const decoded = decodeJwt(token)
     // Guest mode: use prop directly; authenticated mode: read from JWT
     const isOmsEnabled = guestIsOmsEnabled ?? (decoded?.isOmsEnabled ?? false)

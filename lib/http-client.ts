@@ -8,10 +8,14 @@ const DEFAULT_BASE_URL_REST = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://local
 export function getCompanyId(): string | null {
     if (typeof window === 'undefined') return null;
 
+    // Sales dropdown selection takes highest priority
+    const selectedCompanyId = localStorage.getItem('selectedCompanyId');
+    if (selectedCompanyId) return selectedCompanyId;
+
     const token =
         document.cookie
             .split('; ')
-            .find(row => row.startsWith('token='))
+            .find(row => row.startsWith('lendgrid_cookie='))
             ?.split('=')[1] || null;
 
     const decoded = decodeJwt(token);
@@ -30,7 +34,7 @@ export function getAuthToken(): string | null {
     if (typeof document === 'undefined') return null
     // Try regular token first
     const value = `; ${document.cookie}`
-    const parts = value.split(`; token=`)
+    const parts = value.split(`; lendgrid_cookie=`)
     if (parts.length === 2) {
         const t = decodeURIComponent(parts.pop()!.split(';').shift() || '') || null
         if (t) return t
@@ -46,7 +50,7 @@ export function getAuthToken(): string | null {
 /**
  * Build headers with auth token
  */
-export function buildHeaders(extra?: HeadersInit): HeadersInit {
+export function buildHeaders(extra?: HeadersInit, skipCompanyId: boolean = false): HeadersInit {
     const headers: HeadersInit = {
         'Content-Type': 'application/json',
         ...extra,
@@ -55,10 +59,14 @@ export function buildHeaders(extra?: HeadersInit): HeadersInit {
     if (token) {
         (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`
     }
-    const companyId = getCompanyId();
-    if (companyId) {
-        (headers as Record<string, string>)['companyid'] = companyId;
+
+    if (!skipCompanyId) {
+        const companyId = getCompanyId();
+        if (companyId) {
+            (headers as Record<string, string>)['companyid'] = companyId;
+        }
     }
+
     return headers
 }
 
@@ -72,14 +80,15 @@ export async function apiFetch<T>(
         body?: any
         headers?: HeadersInit
         baseUrl?: string
+        skipCompanyId?: boolean
     } = {}
 ): Promise<T> {
-    const { method = 'GET', body, headers, baseUrl = DEFAULT_BASE_URL_REST } = options
+    const { method = 'GET', body, headers, baseUrl = DEFAULT_BASE_URL_REST, skipCompanyId = false } = options
     const url = `${baseUrl}${path}`
 
     const resp = await fetch(url, {
         method,
-        headers: buildHeaders(headers),
+        headers: buildHeaders(headers, skipCompanyId),
         body: body instanceof FormData ? body : body ? JSON.stringify(body) : undefined,
         credentials: 'include',
     })

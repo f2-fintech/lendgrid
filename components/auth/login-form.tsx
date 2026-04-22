@@ -18,7 +18,7 @@ import {
 } from "lucide-react";
 
 import { useLogin } from "@/hooks/use-users";
-import { useEmployeeLogin } from "@/hooks/use-f2fintech-employees";
+import { omsAuthApi } from "@/lib/oms-auth-api";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -27,9 +27,8 @@ import { Label } from "@/components/ui/label";
 import { navigationPaths } from "@/lib/navigation";
 import { decodeJwt, setCookie } from "@/lib/utils";
 import { ThemeLogo } from "@/components/theme-logo";
-import { getEmployeeDashboardPath } from "@/lib/employee-auth";
 
-// Employee login has looser password validation (HRMS passwords may not meet same rules)
+// Employee login has looser password validation (OMS passwords may not meet same rules)
 const employeeLoginSchema = z.object({
   email: z
     .string()
@@ -91,7 +90,6 @@ export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const loginMutation = useLogin();
-  const employeeLoginMutation = useEmployeeLogin();
   const { toast } = useToast();
 
   // User login form
@@ -210,7 +208,7 @@ export function LoginForm() {
         return;
       }
 
-      setCookie("token", result.access_token, 1);
+      setCookie("lendgrid_cookie", result.access_token, 1);
       const decoded = decodeJwt(result.access_token);
       const role = decoded?.role;
       toast({
@@ -245,39 +243,55 @@ export function LoginForm() {
     }
   };
 
-  // ── Employee Login ───────────────────────────────────────────────────────────
+  // ── Employee Login (OMS) ───────────────────────────────────────────────────────────
   const onEmployeeSubmit = async (data: EmployeeLoginFormData) => {
     setIsLoading(true);
     try {
-      const response = await employeeLoginMutation.mutateAsync({
+      const result = await omsAuthApi.login({
         email: data.email,
         password: data.password,
       });
-      const result = response?.loginEmployee;
 
-      if (!result?.success || !result?.token) {
+      if (!result?.access_token) {
         toast({
           title: "Login failed",
-          description: result?.message || "Invalid email or password.",
+          description: "Invalid email or password.",
           variant: "destructive",
         });
         setIsLoading(false);
         return;
       }
 
-      // Store employee token (handled in hook too, but explicit here for clarity)
-      setCookie("employee_token", result.token, 1);
+      // Verify if the user has the 'sales' role before proceeding
+      const decoded = decodeJwt(result.access_token);
+      const omsRole = decoded?.role?.toLowerCase();
+
+      if (omsRole !== 'sales') {
+        toast({
+          title: "Access Denied",
+          description: "Only OMS staff with the 'Sales' role are authorized to login here.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Store standard user token, since Lendgrid treats OMS staff interchangeably
+      setCookie("lendgrid_cookie", result.access_token, 1);
       toast({
         title: "Login successful!",
-        description: `Welcome, ${result.employee?.first_name || "Employee"}!`,
+        description: "Welcome! Redirecting to Sales Workspace...",
       });
 
-      // Redirect based on role_priority: all roles go to /f2fintech-employee dashboard
-      router.push(getEmployeeDashboardPath());
+      // Wait a bit to ensure the cookie propagates for next navigation
+      setTimeout(() => {
+        router.push(navigationPaths.lendgridSales.dashboard);
+      }, 500);
+
     } catch (error: any) {
       toast({
         title: "Login failed",
-        description: error?.message || "Unable to login. Please try again.",
+        description: error?.response?.data?.message || error?.message || "Unable to login. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -344,7 +358,7 @@ export function LoginForm() {
                 }`}
             >
               <UserCheck className="w-4 h-4" />
-              Employee Login
+              OMS Staff
             </button>
           </div>
 
@@ -490,7 +504,7 @@ export function LoginForm() {
                     type={showPassword ? "text" : "password"}
                     {...empRegister("password")}
                     className="h-11 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0"
-                    placeholder="Enter your HRMS password"
+                    placeholder="Enter your OMS password"
                     disabled={isLoading}
                   />
                   <Button
@@ -528,14 +542,14 @@ export function LoginForm() {
                   </>
                 ) : (
                   <>
-                    Sign In as Employee
+                    Sign In as OMS Staff
                     <ArrowRight className="w-5 h-5 ml-2 text-accent" />
                   </>
                 )}
               </Button>
 
               <p className="text-center text-xs text-muted-foreground pt-1">
-                Use your F2Fintech HRMS credentials to login
+                Use your OMS Admin credentials to login
               </p>
             </form>
           )}

@@ -557,9 +557,9 @@ export function AggregatorApplications() {
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
 
-    const { user } = useAuth(['aggregator_admin', 'aggregator_member'])
+    const { user } = useAuth(['aggregator_admin', 'aggregator_member', 'lendgrid_sales'])
     const { toast } = useToast()
-    const token = getCookie("token")
+    const token = getCookie("lendgrid_cookie")
     const decoded = decodeJwt(token)
     const isOmsEnabled = decoded?.isOmsEnabled ?? false
 
@@ -577,6 +577,22 @@ export function AggregatorApplications() {
     const tableTopRef = useRef<HTMLDivElement | null>(null)
     const router = useRouter();
 
+    const [companyIdOverride, setCompanyIdOverride] = useState<string>(() => {
+        if (typeof window === 'undefined') return ''
+        return localStorage.getItem('selectedCompanyId') || ''
+    })
+
+    useEffect(() => {
+        const handleCompanyChange = (e: Event) => {
+            const newCompanyId = (e as CustomEvent<string>).detail
+            setCompanyIdOverride(newCompanyId)
+            setPage(1)
+            setSearchTerm('')
+        }
+        window.addEventListener('companyChanged', handleCompanyChange)
+        return () => window.removeEventListener('companyChanged', handleCompanyChange)
+    }, [])
+
     // Fetch applications New (REST + SWR), using f2fintech-admin-server api
     const {
         data: applications,
@@ -585,8 +601,9 @@ export function AggregatorApplications() {
     } = useApplicationsRest({
         page,
         limit: pageSize,
-        aggregatorId: user?.profileId || user?._id || user?.id,
-        search: searchTerm
+        aggregatorId: user?.profileId || user?._id || user?.id || user?.omsUserId,
+        search: searchTerm,
+        companyIdOverride,
     })
     const total = applications?.count || 0
 

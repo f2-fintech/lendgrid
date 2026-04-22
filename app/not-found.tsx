@@ -7,8 +7,30 @@ import { Home, ArrowRight, Sparkles } from 'lucide-react'
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 
+import { getCookie, decodeJwt } from "@/lib/utils"
+import { navigationPaths } from "@/lib/navigation"
+
 export default function NotFound(): JSX.Element {
     const [hovering, setHovering] = React.useState(false)
+    const [dashboardPath, setDashboardPath] = React.useState("/")
+
+    React.useEffect(() => {
+        const token = getCookie("lendgrid_cookie")
+        if (token) {
+            const decoded = decodeJwt(token)
+            const role = decoded?.role
+
+            if (role === "super_admin" || role === "SUPER_ADMIN") {
+                setDashboardPath(navigationPaths.superAdmin.dashboard)
+            } else if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
+                setDashboardPath(navigationPaths.aggregator.dashboard)
+            } else if (role === "aggregator_member" || role === "AGGREGATOR_MEMBER") {
+                setDashboardPath(navigationPaths.aggregatorMember.applications)
+            } else if (role === "lendgrid_sales") {
+                setDashboardPath(navigationPaths.lendgridSales.dashboard)
+            }
+        }
+    }, [])
 
     return (
         <main
@@ -78,10 +100,10 @@ export default function NotFound(): JSX.Element {
                                 onMouseEnter={() => setHovering(true)}
                                 onMouseLeave={() => setHovering(false)}
                             >
-                                <Link href="/" aria-label="Go back to home">
+                                <Link href={dashboardPath} aria-label="Go back to dashboard">
                                     <span className="relative z-10 inline-flex items-center gap-2">
                                         <Home className="h-4 w-4" aria-hidden="true" />
-                                        <span>Go Home</span>
+                                        <span>{dashboardPath === "/" ? "Go Home" : "Go to Dashboard"}</span>
                                         <ArrowRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5" aria-hidden="true" />
                                     </span>
                                     {/* subtle overlay shimmer */}
@@ -93,12 +115,12 @@ export default function NotFound(): JSX.Element {
                             </Button>
 
                             <Link
-                                href="/"
+                                href={dashboardPath}
                                 className={cn(
                                     "text-sm text-white/70 underline-offset-4 hover:text-white hover:underline transition-colors"
                                 )}
                             >
-                                Return to homepage
+                                {dashboardPath === "/" ? "Return to homepage" : "Return to dashboard"}
                             </Link>
                         </div>
                     </div>

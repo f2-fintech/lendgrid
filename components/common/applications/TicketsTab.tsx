@@ -691,9 +691,9 @@ export function TicketsTab() {
     const [approvedDate, setApprovedDate] = useState<string | undefined>();
     const [disbursedDate, setDisbursedDate] = useState<string | undefined>();
 
-    const { user } = useAuth(['aggregator_admin', 'aggregator_member'])
+    const { user } = useAuth(['aggregator_admin', 'aggregator_member', 'lendgrid_sales'])
     const { toast } = useToast()
-    const token = getCookie("token")
+    const token = getCookie("lendgrid_cookie")
     const decoded = decodeJwt(token)
     const isOmsEnabled = decoded?.isOmsEnabled ?? false
 

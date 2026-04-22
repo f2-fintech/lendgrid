@@ -5,7 +5,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { usersApi } from './users-api'
 import { decodeJwt } from './utils'
 
-export type AppRole = 'super_admin' | 'aggregator_admin' | 'aggregator_member' | 'lender_admin'
+export type AppRole = 'super_admin' | 'aggregator_admin' | 'aggregator_member' | 'lender_admin' | 'lendgrid_sales'
 
 export function useAuth(requiredRole?: AppRole | AppRole[]) {
 	const router = useRouter()
@@ -17,7 +17,7 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 	useEffect(() => {
 		async function verify() {
 			const cookieStr = typeof document !== 'undefined' ? document.cookie : ''
-			const tokenMatch = cookieStr?.split('; ').find(c => c.startsWith('token='))
+			const tokenMatch = cookieStr?.split('; ').find(c => c.startsWith('lendgrid_cookie='))
 			const token = tokenMatch ? decodeURIComponent(tokenMatch.split('=')[1]) : null
 
 			if (!token) {
@@ -33,11 +33,19 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 
 			try {
 				const decoded: any = decodeJwt(token)
-				const decodedRole = decoded?.role?.toLowerCase?.()
-				if (decodedRole) setRole(decodedRole as AppRole)
+				
+				// Map OMS roles (sales, sub_admin) to Lendgrid roles
+				const mapRole = (r: string): AppRole => {
+					const lower = r?.toLowerCase()
+					if (lower === 'sales' || lower === 'sub_admin') return 'lendgrid_sales'
+					return lower as AppRole
+				}
+
+				const decodedRole = decoded?.role ? mapRole(decoded.role) : null
+				if (decodedRole) setRole(decodedRole)
 
 				const profileResp: any = await usersApi.profile()
-				const fetchedRole = profileResp?.profile?.role?.toLowerCase?.() as AppRole | undefined
+				const fetchedRole = profileResp?.profile?.role ? mapRole(profileResp.profile.role) : undefined
 
 				setUser(profileResp?.profile)
 				if (fetchedRole) setRole(fetchedRole)
@@ -53,7 +61,7 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 				}
 			} catch (e) {
 				if (typeof document !== 'undefined') {
-					document.cookie = 'token=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax'
+					document.cookie = 'lendgrid_cookie=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax'
 				}
 				router.replace('/login')
 				return

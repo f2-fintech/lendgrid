@@ -5,19 +5,18 @@ import { motion } from "framer-motion"
 import {
     Users,
     UserPlus,
-    UserMinus,
     Mail,
     Phone,
     BadgeCheck,
     ShieldAlert,
     Search,
-    MoreHorizontal,
     Loader2,
     Eye,
     Trash2,
     Calendar,
     Activity,
-    CheckCircle
+    CheckCircle,
+    X
 } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -33,12 +32,6 @@ import {
     TableHeader,
     TableRow,
 } from "@/components/ui/table"
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
     Dialog,
     DialogContent,
@@ -58,15 +51,8 @@ import {
 } from "@/components/ui/alert-dialog"
 import { TablePagination } from "@/components/ui/pagination"
 import { useToast } from "@/hooks/use-toast"
-import { useAggregator, useRemoveTeamMember, useAddTeamMember } from "@/hooks/use-aggregators"
-import { useAuth } from "@/lib/auth"
-import { AddTeamMemberDialog } from "@/components/dashboard/super-admin/dialogs/AddTeamMemberDialog"
-import { getCookie, decodeJwt } from "@/lib/utils"
-
-const ROLE_LABEL: Record<string, string> = {
-    AGGREGATOR_MEMBER: "Aggregator Member",
-    AGGREGATOR_ADMIN: "Aggregator Admin",
-}
+import { useUsersByRole, useUpdateUser } from "@/hooks/use-users"
+import { AddSalesUserDialog } from "@/components/dashboard/super-admin/dialogs/AddSalesUserDialog"
 
 const STATUS_STYLE: Record<string, string> = {
     ACTIVE: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
@@ -137,7 +123,7 @@ function MetricCard({
     )
 }
 
-export function TeamManagement() {
+export function SuperAdminSalesUsers() {
     const { toast } = useToast()
     const [searchTerm, setSearchTerm] = useState("")
     const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
@@ -152,31 +138,21 @@ export function TeamManagement() {
     const [pageSize, setPageSize] = useState(10)
     const tableTopRef = useRef<HTMLDivElement | null>(null)
 
-    // useAuth already calls usersApi.profile() which returns profileId = AggregatorProfile._id
-    const { user, loading: authLoading } = useAuth('aggregator_admin')
-    const profileId: string | undefined = user?.profileId
+    // Pass large limit to manage filtering locally like team-management, 
+    // or rely on backend. For parity with team-management, we use a single query hook.
+    // useUsersByRole manages its own pagination or returns all if limit is high.
+    const { data: usersData, isLoading, refetch } = useUsersByRole('LENDGRID_SALES', { page: 1, limit: 1000 })
+    const updateUserMutation = useUpdateUser()
 
-    // companyName from JWT token (available after next login once backend change is live)
-    const token = getCookie("lendgrid_cookie")
-    const decoded = decodeJwt(token)
-    const companyNameFromToken: string | null = decoded?.companyName ?? null
+    const salesMembers: any[] = usersData?.results || []
 
-    const { data: profile, isLoading, refetch } = useAggregator(profileId || '', !!profileId)
-    const removeTeamMemberMutation = useRemoveTeamMember()
-    const addTeamMemberMutation = useAddTeamMember()
+    const activeCount = salesMembers.filter((m) => m.status === "ACTIVE").length
+    const inactiveCount = salesMembers.filter((m) => m.status === "INACTIVE").length
 
-    // companyName: prefer JWT (no extra call), fall back to profile from API
-    const companyName = companyNameFromToken || profile?.companyName || null
-
-    const teamMembers: any[] = profile?.teamMemberUsers || []
-    
-    const activeCount = teamMembers.filter((m) => m.status === "ACTIVE").length
-    const inactiveCount = teamMembers.filter((m) => m.status === "INACTIVE").length
-
-    const filtered = teamMembers.filter((m: any) => {
+    const filtered = salesMembers.filter((m: any) => {
         const matchesStatus = isInactiveView ? m.status === "INACTIVE" : m.status !== "INACTIVE"
         if (!matchesStatus) return false
-        
+
         const q = searchTerm.toLowerCase()
         return (
             m.username?.toLowerCase().includes(q) ||
@@ -199,23 +175,16 @@ export function TeamManagement() {
     const paginatedMembers = filtered.slice((page - 1) * pageSize, page * pageSize)
 
     const handleConfirmRemove = async () => {
-        if (!memberToRemove || !profile?._id) return
+        if (!memberToRemove) return
         try {
-            await removeTeamMemberMutation.mutateAsync({
-                id: profile._id,
-                userId: memberToRemove.id,
+            await updateUserMutation.mutateAsync({
+                id: memberToRemove.id,
+                status: "INACTIVE"
             })
-            toast({
-                title: "Member Removed",
-                description: `${memberToRemove.name} has been removed from the team.`,
-            })
+            // Toast will be shown by hook
             refetch()
         } catch (err: any) {
-            toast({
-                title: "Error",
-                description: err?.message || "Failed to remove team member.",
-                variant: "destructive",
-            })
+            // Error managed by hook toast
         } finally {
             setIsConfirmOpen(false)
             setMemberToRemove(null)
@@ -223,20 +192,19 @@ export function TeamManagement() {
     }
 
     const handleRestore = async (userId: string | undefined) => {
-        if (!userId || !profile?._id) return
+        if (!userId) return
         try {
-            await addTeamMemberMutation.mutateAsync({
-                id: profile._id,
-                userId: userId,
+            await updateUserMutation.mutateAsync({
+                id: userId,
+                status: "ACTIVE"
             })
-            // onSuccess handles toast and refetch implicitly if handled in hook, but let's refresh explicitly
             refetch()
         } catch (err: any) {
-            // Error is handled in the hook's toast
+            // Error managed by hook
         }
     }
 
-    if (authLoading || isLoading) {
+    if (isLoading) {
         return (
             <div className="flex items-center justify-center h-64">
                 <div className="flex flex-col items-center gap-3">
@@ -257,26 +225,27 @@ export function TeamManagement() {
                 className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
             >
                 <div className="w-full md:w-auto">
-                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">Team Management</h1>
+                    <h1 className="text-2xl md:text-3xl font-bold text-foreground">Sales Team Management</h1>
                     <p className="text-muted-foreground mt-1 text-sm md:text-base">
-                        {isInactiveView ? 'View and restore deleted team members for ' : 'Manage your active team members for '}
+                        {isInactiveView ? 'View and restore deleted ' : 'Manage your active '}
                         <span className="text-primary font-medium">
-                            {companyName || profile?.companyName || "your company"}
+                            LendGrid Sales
                         </span>
+                        {' members'}
                     </p>
                 </div>
-                
-                <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-2 md:mt-0">
+
+                {/* <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-2 md:mt-0">
                     {!isInactiveView && (
                         <Button
                             onClick={() => setIsAddDialogOpen(true)}
                             className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
                         >
                             <UserPlus className="w-4 h-4" />
-                            Add Member
+                            Add Sales User
                         </Button>
                     )}
-                    
+
                     <Button
                         className={
                             isInactiveView
@@ -288,7 +257,7 @@ export function TeamManagement() {
                         {isInactiveView ? (
                             <>
                                 <CheckCircle className="w-4 h-4 mr-2" />
-                                Active Members
+                                Active Sales
                                 {activeCount > 0 && (
                                     <Badge className="ml-2 bg-foreground/20 text-foreground border-none">
                                         {activeCount}
@@ -298,7 +267,7 @@ export function TeamManagement() {
                         ) : (
                             <>
                                 <Trash2 className="w-4 h-4 mr-2" />
-                                Deleted Members
+                                Deleted Sales
                                 {inactiveCount > 0 && (
                                     <Badge className="ml-2 bg-foreground/20 text-foreground border-none">
                                         {inactiveCount}
@@ -307,36 +276,36 @@ export function TeamManagement() {
                             </>
                         )}
                     </Button>
-                </div>
+                </div> */}
             </motion.div>
 
             {/* Stats */}
             {!isInactiveView && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
-                <MetricCard
-                    index={0}
-                    title="Total Members"
-                    amount={teamMembers.length}
-                    countLabel="members"
-                    icon={Users}
-                    colorClass="metric-card-primary"
-                />
-                <MetricCard
-                    index={1}
-                    title="Active Members"
-                    amount={teamMembers.filter((m) => m.status === "ACTIVE").length}
-                    countLabel="active"
-                    icon={BadgeCheck}
-                    colorClass="metric-card-success"
-                />
-                <MetricCard
-                    index={2}
-                    title="Inactive Members"
-                    amount={teamMembers.filter((m) => m.status !== "ACTIVE").length}
-                    countLabel="inactive"
-                    icon={ShieldAlert}
-                    colorClass="metric-card-error"
-                />
+                    <MetricCard
+                        index={0}
+                        title="Total Members"
+                        amount={salesMembers.length}
+                        countLabel="members"
+                        icon={Users}
+                        colorClass="metric-card-primary"
+                    />
+                    <MetricCard
+                        index={1}
+                        title="Active Members"
+                        amount={activeCount}
+                        countLabel="active"
+                        icon={BadgeCheck}
+                        colorClass="metric-card-success"
+                    />
+                    <MetricCard
+                        index={2}
+                        title="Inactive Members"
+                        amount={inactiveCount}
+                        countLabel="inactive"
+                        icon={ShieldAlert}
+                        colorClass="metric-card-warning"
+                    />
                 </div>
             )}
 
@@ -352,7 +321,7 @@ export function TeamManagement() {
                             <div>
                                 <CardTitle className="text-foreground flex items-center gap-2">
                                     <Users className="w-5 h-5 text-primary" />
-                                    {isInactiveView ? 'Deleted Members' : 'Active Members'}
+                                    {isInactiveView ? 'Deleted Sales Members' : 'Active Sales Members'}
                                 </CardTitle>
                                 <CardDescription className="mt-1">
                                     {filtered.length} member{filtered.length !== 1 ? "s" : ""} found
@@ -382,7 +351,7 @@ export function TeamManagement() {
                                 <p className="text-sm text-muted-foreground mb-6">
                                     {searchTerm
                                         ? "Try adjusting your search term."
-                                        : isInactiveView ? "All members are currently active." : "Click \"Add Member\" to invite your first team member."}
+                                        : isInactiveView ? "All members are currently active." : "Click \"Add Sales User\" to invite your first team member."}
                                 </p>
                                 {!searchTerm && !isInactiveView && (
                                     <Button
@@ -447,7 +416,7 @@ export function TeamManagement() {
                                                 {/* Role */}
                                                 <TableCell>
                                                     <span className="text-sm text-foreground">
-                                                        {ROLE_LABEL[member.role] || member.role || "—"}
+                                                        LendGrid Sales
                                                     </span>
                                                 </TableCell>
 
@@ -478,7 +447,7 @@ export function TeamManagement() {
                                                                 variant="ghost"
                                                                 size="icon"
                                                                 onClick={() => handleRestore(member._id)}
-                                                                disabled={addTeamMemberMutation.isPending}
+                                                                disabled={updateUserMutation.isPending}
                                                                 className="h-8 w-8 text-green-400 hover:text-green-500 hover:bg-green-500/10 transition-colors"
                                                                 title="Restore Member"
                                                             >
@@ -525,11 +494,10 @@ export function TeamManagement() {
                 </Card>
             </motion.div>
 
-            {/* Add Member Dialog — reuses the SuperAdmin's AddTeamMemberDialog */}
-            <AddTeamMemberDialog
+            {/* Add Member Dialog */}
+            <AddSalesUserDialog
                 isOpen={isAddDialogOpen}
                 onClose={() => setIsAddDialogOpen(false)}
-                aggregator={profile ?? null}
                 refetch={refetch}
             />
 
@@ -537,13 +505,13 @@ export function TeamManagement() {
             <AlertDialog open={isConfirmOpen} onOpenChange={setIsConfirmOpen}>
                 <AlertDialogContent className="bg-card border-border">
                     <AlertDialogHeader>
-                        <AlertDialogTitle className="text-foreground">Remove Team Member</AlertDialogTitle>
+                        <AlertDialogTitle className="text-foreground">Remove Sales Member</AlertDialogTitle>
                         <AlertDialogDescription className="text-muted-foreground">
-                            Are you sure you want to remove{" "}
+                            Are you sure you want to delete{" "}
                             <span className="font-semibold text-foreground">
                                 {memberToRemove?.name}
                             </span>{" "}
-                            from your team? This action can be reversed by adding them again.
+                            from the sales team? This action will set the member to inactive.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -552,10 +520,10 @@ export function TeamManagement() {
                         </AlertDialogCancel>
                         <AlertDialogAction
                             onClick={handleConfirmRemove}
-                            disabled={removeTeamMemberMutation.isPending}
+                            disabled={updateUserMutation.isPending}
                             className="bg-red-600 hover:bg-red-700 text-white"
                         >
-                            {removeTeamMemberMutation.isPending ? (
+                            {updateUserMutation.isPending ? (
                                 <>
                                     <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                                     Removing…
@@ -570,76 +538,115 @@ export function TeamManagement() {
 
             {/* Member Details Dialog */}
             <Dialog open={!!selectedMemberForDetails} onOpenChange={(val) => !val && setSelectedMemberForDetails(null)}>
-                <DialogContent className="max-w-md bg-card border-border p-0 overflow-hidden shadow-2xl">
+                <DialogContent className="max-w-2xl bg-card border-border p-0 overflow-hidden shadow-2xl rounded-2xl">
                     {selectedMemberForDetails && (
-                        <>
-                            <DialogHeader className="p-6 pb-0">
-                                <DialogTitle className="text-xl">Member Details</DialogTitle>
-                                <DialogDescription>Full profile information</DialogDescription>
-                            </DialogHeader>
-                            <div className="p-6 space-y-4">
-                                <div className="flex items-center gap-4">
-                                    <Avatar className="w-16 h-16">
-                                        <AvatarFallback className="bg-primary/10 text-primary text-xl font-bold">
-                                            {getInitials(selectedMemberForDetails.username)}
-                                        </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                        <h3 className="text-lg font-semibold text-foreground">{selectedMemberForDetails.username}</h3>
-                                        <p className="text-sm text-primary font-medium">{ROLE_LABEL[selectedMemberForDetails.role] || selectedMemberForDetails.role}</p>
-                                    </div>
+                        <div className="flex flex-col w-full">
+                            {/* Header Banner */}
+                            <div className="h-28 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 relative">
+                                <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]"></div>
+                                <div className="absolute top-4 left-6">
+                                    <h2 className="text-white/90 text-sm font-medium tracking-wider uppercase">Profile Overview</h2>
                                 </div>
-                                
-                                <div className="grid gap-4 pt-5 border-t border-border mt-2">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-                                            <Mail className="w-4 h-4 text-muted-foreground" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Email Address</p>
-                                            <p className="text-sm font-medium text-foreground">{selectedMemberForDetails.email}</p>
-                                        </div>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute top-4 right-4 h-8 w-8 rounded-full bg-black/20 hover:bg-red-500 text-white transition-all z-20 hover:scale-110 active:scale-95"
+                                    onClick={() => setSelectedMemberForDetails(null)}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            </div>
+
+                            {/* Profile Section */}
+                            <div className="px-8 pb-8 relative">
+                                <div className="flex flex-col sm:flex-row sm:items-end gap-6 -mt-10 mb-8">
+                                    <div className="relative group">
+                                        <div className="absolute inset-0 bg-blue-500 blur-xl opacity-20 rounded-full group-hover:opacity-40 transition-opacity"></div>
+                                        <Avatar className="w-24 h-24 border-4 border-card shadow-2xl relative z-10">
+                                            <AvatarFallback className="bg-gradient-to-br from-blue-600 to-indigo-800 text-white text-3xl font-bold">
+                                                {getInitials(selectedMemberForDetails.username)}
+                                            </AvatarFallback>
+                                        </Avatar>
+                                        <div className="absolute bottom-1 right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-card z-20 shadow-lg" title="Active Account"></div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-                                            <Phone className="w-4 h-4 text-muted-foreground" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Contact Number</p>
-                                            <p className="text-sm font-medium text-foreground">{selectedMemberForDetails.contact}</p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-                                            <Activity className="w-4 h-4 text-muted-foreground" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-muted-foreground">Status</p>
-                                            <Badge variant="outline" className={`mt-0.5 text-[10px] uppercase font-bold py-0 h-5 ${STATUS_STYLE[selectedMemberForDetails.status] || "bg-muted/30 text-muted-foreground"}`}>
-                                                {selectedMemberForDetails.status || "—"}
+                                    <div className="flex-1 pb-1">
+                                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div className="flex flex-col items-start">
+                                                <h3 className="text-2xl font-bold text-foreground tracking-tight leading-none mb-2">{selectedMemberForDetails.username.charAt(0).toUpperCase() + selectedMemberForDetails.username.slice(1)}</h3>
+                                                <div className="flex items-center gap-2 -ml-2.5">
+                                                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-none hover:bg-blue-500/20 transition-colors">
+                                                        LendGrid Sales
+                                                    </Badge>
+                                                    <span className="text-xs text-muted-foreground">•</span>
+                                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Member ID: #{selectedMemberForDetails._id?.toString().slice(0, 4) || "0000"}</span>
+                                                </div>
+                                            </div>
+                                            <Badge className={`px-4 py-1 text-xs font-bold uppercase tracking-widest ${STATUS_STYLE[selectedMemberForDetails.status]}`}>
+                                                {selectedMemberForDetails.status}
                                             </Badge>
                                         </div>
                                     </div>
-                                    {selectedMemberForDetails.createdAt && (
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
-                                                <Calendar className="w-4 h-4 text-muted-foreground" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-muted-foreground">Date Added</p>
-                                                <p className="text-sm font-medium text-foreground">
-                                                    {new Date(selectedMemberForDetails.createdAt).toLocaleDateString(undefined, { 
-                                                        year: 'numeric', 
-                                                        month: 'long', 
-                                                        day: 'numeric' 
-                                                    })}
-                                                </p>
-                                            </div>
+                                </div>
+
+                                {/* Information Grid */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-8 border-t border-border/50">
+                                    {/* Email */}
+                                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-muted/30 border border-border/20 hover:bg-muted/50 transition-all duration-300 group">
+                                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center text-blue-500 group-hover:bg-blue-500 group-hover:text-white transition-all duration-300">
+                                            <Mail className="w-5 h-5" />
                                         </div>
-                                    )}
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Email Address</p>
+                                            <p className="text-sm font-semibold text-foreground truncate" title={selectedMemberForDetails.email}>
+                                                {selectedMemberForDetails.email}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Contact */}
+                                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-muted/30 border border-border/20 hover:bg-muted/50 transition-all duration-300 group">
+                                        <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500 group-hover:bg-emerald-500 group-hover:text-white transition-all duration-300">
+                                            <Phone className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Contact Number</p>
+                                            <p className="text-sm font-semibold text-foreground">{selectedMemberForDetails.contact}</p>
+                                        </div>
+                                    </div>
+
+                                    {/* Account Created */}
+                                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-muted/30 border border-border/20 hover:bg-muted/50 transition-all duration-300 group">
+                                        <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500 group-hover:bg-amber-500 group-hover:text-white transition-all duration-300">
+                                            <Calendar className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Registration Date</p>
+                                            <p className="text-sm font-semibold text-foreground">
+                                                {selectedMemberForDetails.createdAt ? new Date(selectedMemberForDetails.createdAt).toLocaleDateString('en-IN', {
+                                                    day: '2-digit',
+                                                    month: 'long',
+                                                    year: 'numeric'
+                                                }) : 'N/A'}
+                                            </p>
+                                        </div>
+                                    </div>
+
+                                    {/* Additional Info / Security */}
+                                    <div className="flex items-start gap-4 p-4 rounded-2xl bg-muted/30 border border-border/20 hover:bg-muted/50 transition-all duration-300 group">
+                                        <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-500 group-hover:bg-purple-500 group-hover:text-white transition-all duration-300">
+                                            <CheckCircle className="w-5 h-5" />
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Security Status</p>
+                                            <p className="text-sm font-semibold text-emerald-500 flex items-center gap-1.5">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div>
+                                                Verified Member
+                                            </p>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                        </>
+                        </div>
                     )}
                 </DialogContent>
             </Dialog>

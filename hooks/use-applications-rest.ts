@@ -8,6 +8,7 @@ type UseApplicationsProps = {
     status?: string
     search?: string
     enabled?: boolean
+    companyIdOverride?: string
 }
 
 export interface CustomerApplication {
@@ -47,6 +48,7 @@ export function useApplicationsRest({
     status,
     search,
     enabled = true,
+    companyIdOverride,
 }: UseApplicationsProps) {
     const params = new URLSearchParams({
         page: String(page),
@@ -57,7 +59,7 @@ export function useApplicationsRest({
     if (status) params.append('status', status)
     if (search) params.append('search', search)
 
-    const key = enabled ? `/get-customer-loan-applications?${params}` : null
+    const key = enabled ? `/get-customer-loan-applications?${params}&_cid=${companyIdOverride ?? ''}` : null
 
     const { data, error, isLoading, mutate } = useSWR<{
         statusCode: number

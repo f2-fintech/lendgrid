@@ -54,7 +54,7 @@ export const usersApi = {
             }
           }
         `,
-      variables: { createUserInput: payload },
+      variables: { createUserInput: { ...payload, role: payload.role ? payload.role.toUpperCase() : undefined } },
     }),
 
   /**
@@ -71,6 +71,7 @@ export const usersApi = {
         status: string;
         contact: string;
         photoUrl: string;
+        omsUserId?: string | null;
       };
     }>({
       query: `
@@ -84,6 +85,7 @@ export const usersApi = {
               status
               contact
               photoUrl
+              omsUserId
             }
           }
         `,
@@ -108,6 +110,7 @@ export const usersApi = {
                 _id
                 username
                 email
+                contact
                 status
                 role
                 createdAt
@@ -119,7 +122,7 @@ export const usersApi = {
             }
           }
         `,
-      variables: { role, ...params },
+      variables: { role: role.toUpperCase(), ...params },
     }),
 
   /**
@@ -148,7 +151,7 @@ export const usersApi = {
   /**
    * Update user
    */
-  updateUser: (payload: { id: string; status?: string; [key: string]: any }) =>
+  updateUser: (payload: { id: string; status?: string;[key: string]: any }) =>
     gqlFetch<{
       updateUser: {
         _id: string;

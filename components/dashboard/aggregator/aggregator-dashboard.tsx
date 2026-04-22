@@ -97,7 +97,7 @@ export function AggregatorDashboard() {
   useEffect(() => {
     if (!userData && !aggData) return
 
-    const token = getCookie("token")
+    const token = getCookie("lendgrid_cookie")
     const decoded = decodeJwt(token)
     const aggregatorType = decoded?.aggregatorType
     const isSourcer = aggregatorType === "SOURCER" // Check against string value stored in cookie

@@ -114,7 +114,7 @@ export enum ApplicableFor {
 }
 
 // USER & AUTH TYPES
-export type AppRole = 'super_admin' | 'aggregator_admin' | 'lender_admin'
+export type AppRole = 'super_admin' | 'aggregator_admin' | 'lender_admin' | 'lendgrid_sales'
 
 export interface User {
   _id: string
