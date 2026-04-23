@@ -697,6 +697,22 @@ export function TicketsTab() {
     const decoded = decodeJwt(token)
     const isOmsEnabled = decoded?.isOmsEnabled ?? false
 
+    const [companyIdOverride, setCompanyIdOverride] = useState<string>(() => {
+        if (typeof window === 'undefined') return ''
+        return localStorage.getItem('selectedCompanyId') || ''
+    })
+
+    useEffect(() => {
+        const handleCompanyChange = (e: Event) => {
+            const newCompanyId = (e as CustomEvent<string>).detail
+            setCompanyIdOverride(newCompanyId)
+            setPage(1)
+            setSearchTerm('')
+        }
+        window.addEventListener('companyChanged', handleCompanyChange)
+        return () => window.removeEventListener('companyChanged', handleCompanyChange)
+    }, [])
+
     // Fetch tickets New (REST + SWR), using f2fintech-admin-server api
     const {
         value: ticketsData,
@@ -706,7 +722,11 @@ export function TicketsTab() {
         '/get-all-tickets',
         page,
         pageSize,
-        searchTerm
+        searchTerm,
+        null,
+        null,
+        companyIdOverride || undefined,
+        decoded?.source === 'oms' && decoded?.role === 'sales' ? decoded?.id : undefined
     )
     const total = ticketsData?.count || 0
 

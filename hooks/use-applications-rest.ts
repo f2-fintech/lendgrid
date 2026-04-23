@@ -9,6 +9,7 @@ type UseApplicationsProps = {
     search?: string
     enabled?: boolean
     companyIdOverride?: string
+    salesUserId?: string | number
 }
 
 export interface CustomerApplication {
@@ -49,6 +50,7 @@ export function useApplicationsRest({
     search,
     enabled = true,
     companyIdOverride,
+    salesUserId,
 }: UseApplicationsProps) {
     const params = new URLSearchParams({
         page: String(page),
@@ -56,6 +58,7 @@ export function useApplicationsRest({
     })
 
     // if (aggregatorId) params.append('appliedBy', aggregatorId)
+    if (salesUserId) params.append('appliedBy', String(salesUserId))
     if (status) params.append('status', status)
     if (search) params.append('search', search)
 

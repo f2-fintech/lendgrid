@@ -49,16 +49,23 @@ export const useGetTickets = (
     limit: number = 6,
     filter: string = "",
     startDate: string | null = null,
-    endDate: string | null = null
+    endDate: string | null = null,
+    companyId?: string,
+    salesUserId?: string | number
 ) => {
     const params = new URLSearchParams();
     if (filter) params.set("name", filter);
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
+    if (companyId) params.set("companyId", companyId);
+    if (salesUserId) params.set("appliedBy", "sales");
 
-    const fullPath = pathKey.includes('?')
-        ? `${pathKey}&page=${page}&limit=${limit}&${params.toString()}`
-        : `${pathKey}?page=${page}&limit=${limit}&${params.toString()}`;
+    // If salesUserId is provided, append it as a path parameter as per the backend route design
+    const finalPathKey = salesUserId ? `${pathKey}/${salesUserId}` : pathKey;
+
+    const fullPath = finalPathKey.includes('?')
+        ? `${finalPathKey}&page=${page}&limit=${limit}&${params.toString()}`
+        : `${finalPathKey}?page=${page}&limit=${limit}&${params.toString()}`;
 
     const {
         data: swrData,

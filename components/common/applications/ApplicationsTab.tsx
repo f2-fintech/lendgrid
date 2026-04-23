@@ -601,9 +601,10 @@ export function AggregatorApplications() {
     } = useApplicationsRest({
         page,
         limit: pageSize,
-        aggregatorId: user?.profileId || user?._id || user?.id || user?.omsUserId,
         search: searchTerm,
-        companyIdOverride,
+        companyIdOverride: companyIdOverride || undefined,
+        salesUserId: decoded?.source === 'oms' && decoded?.role === 'sales' ? decoded?.id : undefined,
+        aggregatorId: (decoded?.source === 'oms' && decoded?.role === 'sales') ? undefined : (user?.profileId || user?._id || user?.id || user?.omsUserId),
     })
     const total = applications?.count || 0
 
