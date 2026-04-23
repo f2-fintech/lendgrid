@@ -63,6 +63,11 @@ import { cn, decodeJwt, formatDateIndian, getCookie } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { useGetTickets } from '@/hooks/use-tickets-rest'
 import { TicketHistoryData, useGetTicketHistory } from '@/hooks/use-ticket-histories-rest'
+import { FilterPanel } from '../FilterPanel'
+import { DateRange } from 'react-day-picker'
+import * as XLSX from 'xlsx'
+import { format } from 'date-fns'
+import { apiFetch } from '@/lib/http-client'
 
 export const pretty = (v: string) => v?.toLowerCase()?.replace(/_/g, " ");
 
@@ -673,6 +678,8 @@ export function TicketsTab() {
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('')
     const [filterLender, setFilterLender] = useState('')
+    const [dateRange, setDateRange] = useState<DateRange | undefined>()
+    const [isExporting, setIsExporting] = useState(false)
 
     const [selectedApplication, setSelectedApplication] = useState<any>(null)
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
@@ -695,7 +702,7 @@ export function TicketsTab() {
     const { toast } = useToast()
     const token = getCookie("lendgrid_cookie")
     const decoded = decodeJwt(token)
-    const isOmsEnabled = decoded?.isOmsEnabled ?? false
+    const isOmsEnabled = decoded?.isOmsEnabled ?? true
 
     const [companyIdOverride, setCompanyIdOverride] = useState<string>(() => {
         if (typeof window === 'undefined') return ''
@@ -723,10 +730,12 @@ export function TicketsTab() {
         page,
         pageSize,
         searchTerm,
-        null,
-        null,
+        dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd HH:mm:ss') : null,
+        dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd HH:mm:ss') : null,
         companyIdOverride || undefined,
-        decoded?.source === 'oms' && decoded?.role === 'sales' ? decoded?.id : undefined
+        decoded?.source === 'oms' && decoded?.role === 'sales' ? decoded?.id : undefined,
+        filterStatus,
+        filterLender
     )
     const total = ticketsData?.count || 0
 
@@ -769,21 +778,10 @@ export function TicketsTab() {
         ]
     }, [ticketsData, total])
 
-    // Client-side filtering for search and lender
-    const filteredTickets = useMemo(() => {
-        return ticketsData?.results?.filter(ticket => {
-            const matchesSearch =
-                ticket.customerName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                ticket.customerEmail.toLowerCase().includes(searchTerm.toLowerCase())
-
-            const matchesStatus =
-                !filterStatus ||
-                filterStatus === 'all' ||
-                pretty(ticket.ticketStatus) === pretty(filterStatus)
-
-            return matchesSearch && matchesStatus
-        })
-    }, [ticketsData?.results, searchTerm, filterStatus])
+    // Client-side filtering is no longer strictly needed if the API handles it all, but we keep it
+    // if backend search does not cover all fields, however we rely on backend pagination so client filtering
+    // shouldn't filter out things unless we know what we are doing.
+    const filteredTickets = ticketsData?.results || [];
 
     // Reset page when filters change
     useEffect(() => {
@@ -800,6 +798,122 @@ export function TicketsTab() {
         setPage(1)
         tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
     }
+
+    const handleExportToExcel = async () => {
+        try {
+            setIsExporting(true);
+
+            // Construct export URL
+            const params = new URLSearchParams();
+            params.set("page", "1");
+            params.set("limit", "10000"); // fetch all
+
+            if (searchTerm) params.set("name", searchTerm);
+            if (dateRange?.from) params.set("startDate", format(dateRange.from, 'yyyy-MM-dd HH:mm:ss'));
+            if (dateRange?.to) params.set("endDate", format(dateRange.to, 'yyyy-MM-dd HH:mm:ss'));
+            if (companyIdOverride) params.set("companyId", companyIdOverride);
+
+            // if sales user
+            if (decoded?.source === 'oms' && decoded?.role === 'sales') {
+                params.set("appliedBy", "sales");
+            }
+
+            if (filterStatus && filterStatus !== 'all') params.set("status", filterStatus);
+            if (filterLender && filterLender !== 'all') params.set("provider", filterLender);
+
+            const pathKey = `/get-all-tickets${decoded?.source === 'oms' && decoded?.role === 'sales' && decoded?.id ? `/${decoded.id}` : ''}`;
+            const finalEndpoint = `${pathKey}?${params.toString()}`;
+
+            const response = await apiFetch(finalEndpoint);
+            const exportData = response.data?.results;
+
+            if (!exportData || exportData.length === 0) {
+                toast({
+                    title: "Export Failed",
+                    description: "No tickets found to export.",
+                    variant: "destructive"
+                });
+                return;
+            }
+
+            // Report period formatting
+            let reportPeriod = "All Time";
+            const currentDate = new Date();
+            const currentMonth = format(currentDate, "MMMM");
+            const currentYear = format(currentDate, "yyyy");
+
+            if (dateRange?.from && dateRange?.to) {
+                reportPeriod = `${format(dateRange.from, "MM/dd/yyyy")} to ${format(dateRange.to, "MM/dd/yyyy")}`;
+            } else if (dateRange?.from) {
+                reportPeriod = `From ${format(dateRange.from, "MM/dd/yyyy")} to ${format(currentDate, "MM/dd/yyyy")}`;
+            } else if (dateRange?.to) {
+                reportPeriod = `All records until ${format(dateRange.to, "MM/dd/yyyy")}`;
+            } else {
+                reportPeriod = `All records of ${currentMonth} ${currentYear} until ${format(currentDate, "MM/dd/yyyy")}`;
+            }
+
+            // Format data
+            const formattedData = exportData.map((t: any, index: number) => ({
+                "S.No": index + 1,
+                "Ticket ID": t?.ticketId || "-",
+                Name: t?.customerName || "-",
+                Email: t?.customerEmail || "-",
+                Amount: t?.applicationAmount || "-",
+                Provider: t?.applicationProvider || "-",
+                Tenure: t?.applicationTenure ? `${t.applicationTenure} ${t.applicationTenure > 1 ? "Years" : "Year"}` : "-",
+                Status: t?.ticketStatus || "-",
+                Location: `${t?.customerLocation || "-"}, ${t?.customerState || "-"}`,
+                "Created At": t?.createdAt ? format(new Date(t.createdAt), "MM/dd/yyyy") : "-",
+            }));
+
+            // Excel building
+            const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
+            // Add metadata
+            const range = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+            const nextRow = range.e.r + 2;
+            const userName = user?.name || decoded?.username || "Unknown User";
+            const userRole = user?.role || decoded?.role || "Unknown Role";
+
+            XLSX.utils.sheet_add_aoa(
+                worksheet,
+                [
+                    [],
+                    [],
+                    [],
+                    ["Report Generated By:", userName],
+                    ["User Role:", userRole],
+                    ["Report Period:", reportPeriod],
+                    [
+                        "Filters Applied:",
+                        `Status: ${filterStatus || 'all'} , Provider: ${filterLender || 'all'}${searchTerm ? `, Search: ${searchTerm}` : ""}`
+                    ],
+                    ["Generated On:", format(new Date(), "MM/dd/yyyy hh:mm a")],
+                    ["Total Records:", exportData.length]
+                ],
+                { origin: `A${nextRow}` }
+            );
+
+            // Update range
+            const updatedRange = XLSX.utils.decode_range(worksheet["!ref"] || "A1");
+            updatedRange.e.r += 9;
+            worksheet["!ref"] = XLSX.utils.encode_range(updatedRange);
+
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Tickets");
+
+            XLSX.writeFile(workbook, `Tickets_${userRole}_${userName.replace(/\s+/g, "_")}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+        } catch (error) {
+            console.error("Export error:", error);
+            toast({
+                title: "Export Failed",
+                description: "There was an error generating the Excel file.",
+                variant: "destructive"
+            });
+        } finally {
+            setIsExporting(false);
+        }
+    };
 
     const handleDelete = async (id: number) => {
         if (!confirm('Are you sure you want to delete')) return
@@ -883,157 +997,98 @@ export function TicketsTab() {
 
     return (
         <div className="space-y-6">
-            {/* Stats Cards */}
-            {isTableLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    <CardSkeleton headerLines={2} bodyHeight={20} />
-                    <CardSkeleton headerLines={2} bodyHeight={20} />
-                    <CardSkeleton headerLines={2} bodyHeight={20} />
-                    <CardSkeleton headerLines={2} bodyHeight={20} />
-                </div>
-            ) : (
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
-                    {stats.map((stat, index) => (
-                        <motion.div
-                            key={stat.title}
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.5, delay: index * 0.1 }}
-                        >
-                            <Card className="professional-card hover-lift hover:border-gold/50 transition-all duration-300 hover:shadow-lg hover:shadow-gold/10">
-                                <CardContent className="p-4 sm:p-6">
-                                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-                                        <div>
-                                            <p className="text-xs sm:text-sm font-medium text-muted-foreground">{stat.title}</p>
-                                            <p className="text-lg sm:text-2xl font-bold text-foreground mt-1 sm:mt-2">{stat.value}</p>
-                                            {/* <p className="text-success text-sm mt-1">{stat.change} from last month</p> */}
-                                        </div>
-                                        <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center bg-background/50 ${stat.color}`}>
-                                            <stat.icon className="w-5 h-5 sm:w-6 sm:h-6" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </motion.div>
-                    ))}
-                </div>
-            )}
-
-            {/* Filters */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-4"
-            >
-                <div className="relative flex-1 w-full">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2  text-muted-foreground w-4 h-4" />
-                    <Input
-                        placeholder="Search ticketsData..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-background/50 border-gray-800  text-foreground"
-                    />
-                </div>
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                    <SelectTrigger className="w-full sm:w-40 bg-background/50 border-gray-800  text-foreground">
-                        <SelectValue placeholder="All Status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-background border-border  text-foreground">
-                        {Object.values(ApplicationStatus).map((status) => {
-                            const key = pretty(status);
-                            return (
-                                <SelectItem key={status} value={status}>
-                                    <div className="flex items-center gap-2">
-                                        {/* Dot */}
-                                        <span
-                                            className="w-3 h-3 rounded-full inline-block"
-                                            style={{
-                                                backgroundColor: STATUS_STYLE[key]?.split(" ")[0]?.replace("bg-", "").replace("/20", "")
-                                            }}
-                                        />
-                                        {/* Icon */}
-                                        {STATUS_META[key]?.icon}
-                                        {/* Label */}
-                                        {key}
-                                    </div>
-                                </SelectItem>
-                            );
-                        })}
-                    </SelectContent>
-                </Select>
-                {/* <Select value={filterLender} onValueChange={setFilterLender}>
-                    <SelectTrigger className="w-40 bg-background/50 border-gray-800  text-foreground">
-                        <SelectValue placeholder="All Lenders" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Lenders</SelectItem>
-                        {ticketsData?.results?.map((app, idx) => (
-                            <SelectItem key={idx} value={app.applicationProvider}>{app.applicationProvider}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select> */}
-            </motion.div>
-
-            {/* Tickets Table/Grid with View Toggle */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
-            >
-                <Card className="professional-card">
-                    <CardHeader>
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div className={`h-12 rounded-lg flex items-center justify-center text-blue`}>
-                                <ClipboardList className="w-6 h-6 mr-3" />
-                                <div>
-                                    <CardTitle className=" text-foreground mb-1">Tickets Overview</CardTitle>
-                                    <CardDescription className=" text-muted-foreground">
-                                        Track and manage all loan tickets
-                                    </CardDescription>
-                                </div>
-                            </div>
-                            {/* VIEW TOGGLE BUTTONS */}
-                            <div className="flex items-center gap-2 bg-background/50 rounded-lg p-1 w-full sm:w-auto">
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant={viewMode === 'table' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setViewMode('table')}
-                                            className={`${viewMode === 'table'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
-                                                : ' text-muted-foreground hover: text-foreground'
-                                                }`}
-                                        >
-                                            <List className="w-4 h-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Table View</TooltipContent>
-                                </Tooltip>
-
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setViewMode('grid')}
-                                            className={`${viewMode === 'grid'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
-                                                : ' text-muted-foreground hover: text-foreground'
-                                                }`}
-                                        >
-                                            <LayoutGrid className="w-4 h-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Grid View</TooltipContent>
-                                </Tooltip>
-                            </div>
+            <div className="flex flex-col gap-6" ref={tableTopRef}>
+                <div className="flex justify-between items-center bg-card/50 p-4 border border-border rounded-xl">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-500/10 rounded-lg">
+                            <ClipboardList className="w-5 h-5 text-blue-500" />
                         </div>
-                    </CardHeader>
+                        <div>
+                            <h2 className="text-xl font-bold text-foreground">Tickets Overview</h2>
+                            <p className="text-sm text-muted-foreground">Track and manage all loan tickets</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 p-1 bg-background/50 border border-border rounded-lg">
+                        <Button
+                            variant={viewMode === 'table' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('table')}
+                            className={viewMode === 'table' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-muted-foreground"}
+                        >
+                            <List className="w-4 h-4 mr-1.5" /> Table
+                        </Button>
+                        <Button
+                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                            size="sm"
+                            onClick={() => setViewMode('grid')}
+                            className={viewMode === 'grid' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-muted-foreground"}
+                        >
+                            <LayoutGrid className="w-4 h-4 mr-1.5" /> Grid
+                        </Button>
+                    </div>
+                </div>
 
-                    <CardContent>
-                        <div ref={tableTopRef} />
+                <FilterPanel
+                    searchTerm={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    searchPlaceholder="Search tickets..."
+                    status={filterStatus}
+                    onStatusChange={setFilterStatus}
+                    statusOptions={[
+                        { label: "Under Credit Review", value: "under credit review" },
+                        { label: "Operations", value: "operations" },
+                        { label: "Pendency in File", value: "pendency in file" },
+                        { label: "File Send to Banker", value: "file send to banker" },
+                        { label: "Hold", value: "hold" },
+                        { label: "To Be Approved", value: "to be approved" },
+                        { label: "To Be Disbursed", value: "to be disbursed" },
+                        { label: "Approved", value: "approved" },
+                        { label: "Disbursed", value: "disbursed" },
+                        { label: "Carry Forward", value: "carry forward" },
+                        { label: "Drop", value: "drop" },
+                        { label: "Rejected", value: "rejected" }
+                    ]}
+                    provider={filterLender}
+                    onProviderChange={setFilterLender}
+                    providerOptions={[
+                        { label: "ABFL", value: "abfl" },
+                        { label: "Axis", value: "axis" },
+                        { label: "Bajaj Finance", value: "bajaj finance" },
+                        { label: "Bajaj Market", value: "bajaj market" },
+                        { label: "Bank of Baroda", value: "bank of baroda" },
+                        { label: "BOI", value: "boi" },
+                        { label: "Canara Bank", value: "canara bank" },
+                        { label: "Cholamandalam", value: "cholamandalam" },
+                        { label: "Credit Saison", value: "credit saison" },
+                        { label: "Deutsche Bank", value: "deutsche bank" },
+                        { label: "Godrej", value: "godrej" },
+                        { label: "HDFC", value: "hdfc" },
+                        { label: "HSBC Bank", value: "hsbc bank" },
+                        { label: "ICICI", value: "icici" },
+                        { label: "IDFC", value: "idfc" },
+                        { label: "Indusind", value: "indusind" },
+                        { label: "Incred", value: "incred" },
+                        { label: "Kotak Bank", value: "kotak bank" },
+                        { label: "L&T", value: "l&t" },
+                        { label: "Lending Kart", value: "lending kart" },
+                        { label: "Paysense", value: "paysense" },
+                        { label: "PNB", value: "pnb" },
+                        { label: "Poonawala", value: "poonawala" },
+                        { label: "SBI", value: "sbi" },
+                        { label: "Shriram", value: "shriram" },
+                        { label: "SMFG", value: "smfg" },
+                        { label: "Standard Chartered Bank", value: "standard chartered bank" },
+                        { label: "Tata", value: "tata" },
+                        { label: "YES Bank", value: "yes bank" }
+                    ]}
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                    onExport={handleExportToExcel}
+                    isExporting={isExporting}
+                />
+
+                <Card className="border-border bg-card/50">
+                    <CardContent className="p-0">
                         {/* CONDITIONAL RENDERING: TABLE OR GRID */}
                         {viewMode === 'table' ? (
                             <div className="overflow-x-auto professional-table">
@@ -1095,11 +1150,11 @@ export function TicketsTab() {
                             total={total}
                             onPageChange={handlePageChange}
                             onPageSizeChange={handlePageSizeChange}
-                            className="mt-4"
+                            className="p-4"
                         />
                     </CardContent>
                 </Card>
-            </motion.div>
+            </div>
 
             {/* View Ticket Dialog */}
             <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>

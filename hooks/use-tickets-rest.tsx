@@ -51,7 +51,9 @@ export const useGetTickets = (
     startDate: string | null = null,
     endDate: string | null = null,
     companyId?: string,
-    salesUserId?: string | number
+    salesUserId?: string | number,
+    status?: string,
+    provider?: string
 ) => {
     const params = new URLSearchParams();
     if (filter) params.set("name", filter);
@@ -59,6 +61,8 @@ export const useGetTickets = (
     if (endDate) params.set("endDate", endDate);
     if (companyId) params.set("companyId", companyId);
     if (salesUserId) params.set("appliedBy", "sales");
+    if (status && status !== 'all') params.set("status", status);
+    if (provider && provider !== 'all') params.set("provider", provider);
 
     // If salesUserId is provided, append it as a path parameter as per the backend route design
     const finalPathKey = salesUserId ? `${pathKey}/${salesUserId}` : pathKey;
