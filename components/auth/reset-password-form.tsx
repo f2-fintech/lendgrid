@@ -8,13 +8,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useResetPassword } from "@/hooks/use-users";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,14 +38,12 @@ export function ResetPasswordForm() {
   const { toast } = useToast();
   const resetMutation = useResetPassword();
 
-  // States
   const [isVerifying, setIsVerifying] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const token = searchParams.get("token");
 
-  // Hooks must be top-level
   const {
     register,
     handleSubmit,
@@ -63,7 +54,6 @@ export function ResetPasswordForm() {
   });
 
   useEffect(() => {
-    // Small timeout ensures Next.js searchParams are fully mounted
     const timer = setTimeout(() => {
       if (!token) {
         toast({
@@ -76,7 +66,6 @@ export function ResetPasswordForm() {
         setIsVerifying(false);
       }
     }, 500);
-
     return () => clearTimeout(timer);
   }, [token, router, toast]);
 
@@ -87,7 +76,6 @@ export function ResetPasswordForm() {
         token,
         newPassword: data.password,
       });
-
       if (response?.resetPassword?.success) {
         toast({
           title: "Password Updated",
@@ -107,7 +95,7 @@ export function ResetPasswordForm() {
   };
 
   return (
-    <div className="w-full max-w-md">
+    <div className="w-full max-w-[480px]">
       <AnimatePresence mode="wait">
         {isVerifying ? (
           <motion.div
@@ -117,111 +105,158 @@ export function ResetPasswordForm() {
             exit={{ opacity: 0 }}
             className="flex flex-col items-center justify-center h-64 space-y-4"
           >
-            <Loader2 className="w-10 h-10 animate-spin text-primary" />
-            <p className="text-sm text-gray-400">Verifying reset link...</p>
+            <Loader2
+              className="w-8 h-8 animate-spin"
+              style={{ color: "#3b82f6" }}
+            />
+            <p className="text-sm" style={{ color: "#64748b" }}>
+              Verifying reset link...
+            </p>
           </motion.div>
         ) : (
           <motion.div
             key="form"
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4 }}
           >
-            <Card className="enhanced-card">
-              <CardHeader className="text-center">
-                <div className="flex flex-col items-center gap-2 mb-4">
-                  <div className="w-12 h-12 rounded-xl bg-card border border-border flex items-center justify-center">
-                    <ThemeLogo
-                      alt="LendGrid"
-                      className="w-12 h-12 object-contain"
-                    />
-                  </div>
-                  <CardTitle className="text-2xl font-bold text-white">
-                    Reset Password
-                  </CardTitle>
-                  <CardDescription className="text-gray-400">
-                    Enter your new secure password below
-                  </CardDescription>
+            {/* Brand Header — pixel-matched to login page */}
+            <div className="flex flex-col items-center mb-10">
+              <div className="flex items-center gap-3 mb-2">
+                <div
+                  className="w-12 h-12 rounded-xl flex items-center justify-center"
+                  style={{ background: "#131e30", border: "1px solid #1e2d45" }}
+                >
+                  <ThemeLogo
+                    alt="LendGrid"
+                    className="w-10 h-10 object-contain"
+                  />
                 </div>
-              </CardHeader>
-              <CardContent>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                  {/* Password Field */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-300">New Password</Label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        type={showPassword ? "text" : "password"}
-                        {...register("password")}
-                        className="glass-input pl-10 pr-10"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                      >
-                        {showPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.password && (
-                      <p className="text-red-400 text-xs mt-1">
-                        {errors.password.message}
-                      </p>
-                    )}
-                  </div>
+                <span
+                  className="text-3xl font-bold"
+                  style={{ color: "#5b9cf6" }}
+                >
+                  LendGrid
+                </span>
+              </div>
+              <p className="text-sm" style={{ color: "#64748b" }}>
+                Secure access to your dashboard
+              </p>
+            </div>
 
-                  {/* Confirm Password Field */}
-                  <div className="space-y-2">
-                    <Label className="text-gray-300">Confirm Password</Label>
-                    <div className="relative">
-                      <ShieldCheck className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        type={showConfirmPassword ? "text" : "password"}
-                        {...register("confirmPassword")}
-                        className="glass-input pl-10 pr-10"
-                        placeholder="••••••••"
-                      />
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setShowConfirmPassword(!showConfirmPassword)
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
-                      >
-                        {showConfirmPassword ? (
-                          <EyeOff className="w-4 h-4" />
-                        ) : (
-                          <Eye className="w-4 h-4" />
-                        )}
-                      </button>
-                    </div>
-                    {errors.confirmPassword && (
-                      <p className="text-red-400 text-xs mt-1">
-                        {errors.confirmPassword.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    disabled={resetMutation.isPending}
-                    className="w-full btn-primary h-11 mt-4 font-semibold"
+            {/* Fields float directly on the dark page — no card wrapper */}
+            <div className="w-full space-y-5">
+              {/* New Password */}
+              <div className="space-y-2">
+                <Label
+                  className="text-sm font-semibold"
+                  style={{ color: "#cbd5e1" }}
+                >
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Lock
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                    style={{ color: "#4b607a" }}
+                  />
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    {...register("password")}
+                    placeholder="••••••••"
+                    className="h-12 w-full rounded-lg text-sm pl-10 pr-10"
+                    style={{
+                      background: "#0d1625",
+                      border: "1px solid #1e2d45",
+                      color: "#e2e8f0",
+                      caretColor: "#e2e8f0",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-80"
+                    style={{ color: "#4b607a" }}
                   >
-                    {resetMutation.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    {showPassword ? (
+                      <EyeOff className="w-4 h-4" />
                     ) : (
-                      "Update Password"
+                      <Eye className="w-4 h-4" />
                     )}
-                  </Button>
-                </form>
-              </CardContent>
-            </Card>
+                  </button>
+                </div>
+                {errors.password && (
+                  <p className="text-xs mt-1" style={{ color: "#f87171" }}>
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label
+                  className="text-sm font-semibold"
+                  style={{ color: "#cbd5e1" }}
+                >
+                  Confirm Password
+                </Label>
+                <div className="relative">
+                  <ShieldCheck
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4"
+                    style={{ color: "#4b607a" }}
+                  />
+                  <Input
+                    type={showConfirmPassword ? "text" : "password"}
+                    {...register("confirmPassword")}
+                    placeholder="••••••••"
+                    className="h-12 w-full rounded-lg text-sm pl-10 pr-10"
+                    style={{
+                      background: "#0d1625",
+                      border: "1px solid #1e2d45",
+                      color: "#e2e8f0",
+                      caretColor: "#e2e8f0",
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 transition-opacity hover:opacity-80"
+                    style={{ color: "#4b607a" }}
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="w-4 h-4" />
+                    ) : (
+                      <Eye className="w-4 h-4" />
+                    )}
+                  </button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-xs mt-1" style={{ color: "#f87171" }}>
+                    {errors.confirmPassword.message}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="button"
+                onClick={handleSubmit(onSubmit)}
+                disabled={resetMutation.isPending}
+                className="w-full h-12 font-semibold rounded-xl text-white text-sm"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
+                  border: "none",
+                }}
+              >
+                {resetMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                    Updating...
+                  </>
+                ) : (
+                  "Update Password"
+                )}
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
