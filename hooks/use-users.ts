@@ -30,12 +30,12 @@ export function useProfile(enabled = true) {
  */
 export function useUsersByRole(
   role: string,
-  { page = 1, limit = 10, enabled = true }: UseUsersProps = {},
+  { page = 1, limit = 10, status, searchTerm, enabled = true }: UseUsersProps & { searchTerm?: string } = {},
 ) {
   return useQuery({
-    queryKey: queryKeys.users.byRole(role, page, limit),
+    queryKey: queryKeys.users.byRole(role, page, limit, status, searchTerm),
     queryFn: async () => {
-      const response = await usersApi.findByRole(role, { page, limit });
+      const response = await usersApi.findByRole(role, { page, limit, status, searchTerm });
       return response.usersByRole;
     },
     enabled: enabled && !!role,

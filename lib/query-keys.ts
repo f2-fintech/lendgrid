@@ -6,8 +6,8 @@ export const queryKeys = {
     users: {
         all: ['users'] as const,
         profile: () => [...queryKeys.users.all, 'profile'] as const,
-        byRole: (role: string, page?: number, limit?: number) =>
-            [...queryKeys.users.all, 'role', role, { page, limit }] as const,
+        byRole: (role: string, page?: number, limit?: number, status?: string, searchTerm?: string) =>
+            [...queryKeys.users.all, 'role', role, { page, limit, status, searchTerm }] as const,
         list: (page?: number, limit?: number, status?: string) =>
             [...queryKeys.users.all, 'list', { page, limit, status }] as const,
     },
@@ -15,14 +15,14 @@ export const queryKeys = {
     // Aggregators
     aggregators: {
         all: ['aggregators'] as const,
-        list: (page?: number, limit?: number) =>
-            [...queryKeys.aggregators.all, 'list', { page, limit }] as const,
+        list: (page?: number, limit?: number, status?: string) =>
+            [...queryKeys.aggregators.all, 'list', { page, limit, status }] as const,
         detail: (id: string) => [...queryKeys.aggregators.all, 'detail', id] as const,
         myProfile: () => [...queryKeys.aggregators.all, 'my-profile'] as const,
         byKycStatus: (status: string, page?: number, limit?: number) =>
             [...queryKeys.aggregators.all, 'kyc-status', status, { page, limit }] as const,
-        search: (term: string, page?: number, limit?: number) =>
-            [...queryKeys.aggregators.all, 'search', term, { page, limit }] as const,
+        search: (term: string, page?: number, limit?: number, status?: string) =>
+            [...queryKeys.aggregators.all, 'search', term, { page, limit, status }] as const,
     },
 
     // Lenders

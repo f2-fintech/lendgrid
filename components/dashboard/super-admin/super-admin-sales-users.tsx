@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { motion } from "framer-motion"
 import {
     Users,
@@ -136,30 +136,30 @@ export function SuperAdminSalesUsers() {
     // Pagination state
     const [page, setPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
+    const [debouncedSearch, setDebouncedSearch] = useState('')
     const tableTopRef = useRef<HTMLDivElement | null>(null)
 
-    // Pass large limit to manage filtering locally like team-management, 
-    // or rely on backend. For parity with team-management, we use a single query hook.
-    // useUsersByRole manages its own pagination or returns all if limit is high.
-    const { data: usersData, isLoading, refetch } = useUsersByRole('LENDGRID_SALES', { page: 1, limit: 1000 })
+    // Debounce search term
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(searchTerm)
+            setPage(1)
+        }, 350)
+        return () => clearTimeout(timer)
+    }, [searchTerm])
+
+    const { data: usersData, isLoading, refetch } = useUsersByRole('LENDGRID_SALES', {
+        page,
+        limit: pageSize,
+        status: filterStatus || undefined,
+        searchTerm: debouncedSearch || undefined
+    })
     const updateUserMutation = useUpdateUser()
 
     const salesMembers: any[] = usersData?.results || []
-
-    const activeCount = salesMembers.filter((m) => m.status === "ACTIVE").length
-    const inactiveCount = salesMembers.filter((m) => m.status === "INACTIVE").length
-
-    const filtered = salesMembers.filter((m: any) => {
-        const matchesStatus = isInactiveView ? m.status === "INACTIVE" : m.status !== "INACTIVE"
-        if (!matchesStatus) return false
-
-        const q = searchTerm.toLowerCase()
-        return (
-            m.username?.toLowerCase().includes(q) ||
-            m.email?.toLowerCase().includes(q) ||
-            m.contact?.toLowerCase().includes(q)
-        )
-    })
+    const totalCount = usersData?.count || 0
+    const activeCount = usersData?.activeCount || 0
+    const inactiveCount = usersData?.inactiveCount || 0
 
     const handlePageChange = (newPage: number) => {
         setPage(newPage)
@@ -172,7 +172,7 @@ export function SuperAdminSalesUsers() {
         tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
     }
 
-    const paginatedMembers = filtered.slice((page - 1) * pageSize, page * pageSize)
+    const paginatedMembers = salesMembers
 
     const handleConfirmRemove = async () => {
         if (!memberToRemove) return
@@ -234,49 +234,6 @@ export function SuperAdminSalesUsers() {
                         {' members'}
                     </p>
                 </div>
-
-                {/* <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-2 md:mt-0">
-                    {!isInactiveView && (
-                        <Button
-                            onClick={() => setIsAddDialogOpen(true)}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
-                        >
-                            <UserPlus className="w-4 h-4" />
-                            Add Sales User
-                        </Button>
-                    )}
-
-                    <Button
-                        className={
-                            isInactiveView
-                                ? 'bg-green-500 hover:bg-green-600 text-foreground'
-                                : 'bg-red-500 hover:bg-red-600 text-foreground'
-                        }
-                        onClick={() => setFilterStatus(isInactiveView ? '' : 'INACTIVE')}
-                    >
-                        {isInactiveView ? (
-                            <>
-                                <CheckCircle className="w-4 h-4 mr-2" />
-                                Active Sales
-                                {activeCount > 0 && (
-                                    <Badge className="ml-2 bg-foreground/20 text-foreground border-none">
-                                        {activeCount}
-                                    </Badge>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Deleted Sales
-                                {inactiveCount > 0 && (
-                                    <Badge className="ml-2 bg-foreground/20 text-foreground border-none">
-                                        {inactiveCount}
-                                    </Badge>
-                                )}
-                            </>
-                        )}
-                    </Button>
-                </div> */}
             </motion.div>
 
             {/* Stats */}
@@ -285,8 +242,8 @@ export function SuperAdminSalesUsers() {
                     <MetricCard
                         index={0}
                         title="Total Members"
-                        amount={salesMembers.length}
-                        countLabel="members"
+                        amount={totalCount}
+                        countLabel=""
                         icon={Users}
                         colorClass="metric-card-primary"
                     />
@@ -294,7 +251,7 @@ export function SuperAdminSalesUsers() {
                         index={1}
                         title="Active Members"
                         amount={activeCount}
-                        countLabel="active"
+                        countLabel=""
                         icon={BadgeCheck}
                         colorClass="metric-card-success"
                     />
@@ -302,7 +259,7 @@ export function SuperAdminSalesUsers() {
                         index={2}
                         title="Inactive Members"
                         amount={inactiveCount}
-                        countLabel="inactive"
+                        countLabel=""
                         icon={ShieldAlert}
                         colorClass="metric-card-warning"
                     />
@@ -324,7 +281,7 @@ export function SuperAdminSalesUsers() {
                                     {isInactiveView ? 'Deleted Sales Members' : 'Active Sales Members'}
                                 </CardTitle>
                                 <CardDescription className="mt-1">
-                                    {filtered.length} member{filtered.length !== 1 ? "s" : ""} found
+                                    {totalCount} member{totalCount !== 1 ? "s" : ""} found
                                 </CardDescription>
                             </div>
                             <div className="relative w-72">
@@ -340,7 +297,7 @@ export function SuperAdminSalesUsers() {
                     </CardHeader>
 
                     <CardContent className="p-0">
-                        {filtered.length === 0 ? (
+                        {paginatedMembers.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
                                 <div className="p-5 bg-muted rounded-full mb-4">
                                     <Users className="w-12 h-12 text-muted-foreground" />
@@ -426,7 +383,7 @@ export function SuperAdminSalesUsers() {
                                                         variant="outline"
                                                         className={`text-xs ${STATUS_STYLE[member.status] || "bg-muted/30 text-muted-foreground"}`}
                                                     >
-                                                        {member.status || "—"}
+                                                        {member.status?.toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) || "—"}
                                                     </Badge>
                                                 </TableCell>
 
@@ -442,34 +399,6 @@ export function SuperAdminSalesUsers() {
                                                         >
                                                             <Eye className="w-4 h-4" />
                                                         </Button>
-                                                        {member.status === "INACTIVE" ? (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => handleRestore(member._id)}
-                                                                disabled={updateUserMutation.isPending}
-                                                                className="h-8 w-8 text-green-400 hover:text-green-500 hover:bg-green-500/10 transition-colors"
-                                                                title="Restore Member"
-                                                            >
-                                                                <CheckCircle className="w-4 h-4" />
-                                                            </Button>
-                                                        ) : (
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                onClick={() => {
-                                                                    setMemberToRemove({
-                                                                        id: member._id,
-                                                                        name: member.username || member.email,
-                                                                    })
-                                                                    setIsConfirmOpen(true)
-                                                                }}
-                                                                className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-500/10 transition-colors"
-                                                                title="Remove Member"
-                                                            >
-                                                                <Trash2 className="w-4 h-4" />
-                                                            </Button>
-                                                        )}
                                                     </div>
                                                 </TableCell>
                                             </motion.tr>
@@ -479,12 +408,12 @@ export function SuperAdminSalesUsers() {
                             </div>
                         )}
 
-                        {filtered.length > 0 && (
+                        {totalCount > 0 && (
                             <div className="p-4 border-t border-border">
                                 <TablePagination
                                     page={page}
                                     pageSize={pageSize}
-                                    total={filtered.length}
+                                    total={totalCount}
                                     onPageChange={handlePageChange}
                                     onPageSizeChange={handlePageSizeChange}
                                 />
@@ -582,7 +511,7 @@ export function SuperAdminSalesUsers() {
                                                 </div>
                                             </div>
                                             <Badge className={`px-4 py-1 text-xs font-bold uppercase tracking-widest ${STATUS_STYLE[selectedMemberForDetails.status]}`}>
-                                                {selectedMemberForDetails.status}
+                                                {selectedMemberForDetails.status?.toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
                                             </Badge>
                                         </div>
                                     </div>

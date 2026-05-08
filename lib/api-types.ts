@@ -14,6 +14,8 @@ export interface PaginatedResponse<T> {
   count: number
   page: number
   pages: number
+  activeCount?: number
+  inactiveCount?: number
 }
 
 export interface CreateResponse<T> {
@@ -522,6 +524,7 @@ export interface CommissionTransactionFilterInput {
   aggregatorId?: string;
   status?: CommissionStatus;
   loanType?: string;
+  searchTerm?: string;
 }
 
 export interface PaginatedCommissionRules {

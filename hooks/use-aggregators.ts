@@ -7,17 +7,18 @@ import type { KYCStatus, BusinessType, AggregatorDocuments } from '@/lib/api-typ
 interface UseAggregatorsProps {
   page?: number
   limit?: number
+  status?: string
   enabled?: boolean
 }
 
 /**
  * Fetch all aggregators
  */
-export function useAggregators({ page = 1, limit = 10, enabled = true }: UseAggregatorsProps = {}) {
+export function useAggregators({ page = 1, limit = 10, status, enabled = true }: UseAggregatorsProps = {}) {
   return useQuery({
-    queryKey: queryKeys.aggregators.list(page, limit),
+    queryKey: queryKeys.aggregators.list(page, limit, status),
     queryFn: async () => {
-      const response = await aggregatorProfileApi.findAll({ page, limit })
+      const response = await aggregatorProfileApi.findAll({ page, limit, status })
       return response.findAllAggregatorProfiles
     },
     enabled,
@@ -74,12 +75,12 @@ export function useAggregatorsByKycStatus(
  */
 export function useSearchAggregators(
   searchTerm: string,
-  { page = 1, limit = 10, enabled = true }: UseAggregatorsProps = {}
+  { page = 1, limit = 10, status, enabled = true }: UseAggregatorsProps = {}
 ) {
   return useQuery({
-    queryKey: queryKeys.aggregators.search(searchTerm, page, limit),
+    queryKey: queryKeys.aggregators.search(searchTerm, page, limit, status),
     queryFn: async () => {
-      const response = await aggregatorProfileApi.search(searchTerm, { page, limit })
+      const response = await aggregatorProfileApi.search(searchTerm, { page, limit, status })
       return response.searchAggregatorProfiles
     },
     enabled: enabled && !!searchTerm && searchTerm.length > 0,

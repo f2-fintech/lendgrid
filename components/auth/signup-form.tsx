@@ -32,7 +32,7 @@ const mapLoginRoleToSignupType = (loginRole: string | null): 'aggregator' | 'len
 const signupSchema = z.object({
   fullName: z.string()
     .min(2, 'Name must be at least 2 characters')
-    .max(50, 'Name is too long')
+    .max(30, 'Name is too long')
     .trim()
     .toLowerCase()
     .regex(/^[a-zA-Z\s]+$/, 'Name can only contain letters and spaces'),

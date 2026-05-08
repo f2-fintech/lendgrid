@@ -94,18 +94,20 @@ export const usersApi = {
   /**
    * Get users by role
    */
-  findByRole: (role: string, params?: { page?: number; limit?: number }) =>
+  findByRole: (role: string, params?: { page?: number; limit?: number; status?: string; searchTerm?: string }) =>
     gqlFetch<{
       usersByRole: {
         results: any[];
         count: number;
         page: number;
         pages: number;
+        activeCount: number;
+        inactiveCount: number;
       };
     }>({
       query: `
-          query UsersByRole($role: Role!, $page: Int, $limit: Int) {
-            usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }) {
+          query UsersByRole($role: Role!, $page: Int, $limit: Int, $status: Status, $searchTerm: String) {
+            usersByRole(role: $role, paginationArgs: { page: $page, limit: $limit }, status: $status, searchTerm: $searchTerm) {
               results {
                 _id
                 username
@@ -119,6 +121,8 @@ export const usersApi = {
               count
               page
               pages
+              activeCount
+              inactiveCount
             }
           }
         `,

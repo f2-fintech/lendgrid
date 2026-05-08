@@ -70,11 +70,11 @@ export const aggregatorProfileApi = {
   /**
    * Get all aggregator profiles with pagination
    */
-  findAll: (params?: { page?: number; limit?: number }) =>
+  findAll: (params?: { page?: number; limit?: number; status?: string }) =>
     gqlFetch<{ findAllAggregatorProfiles: PaginatedResponse<AggregatorProfile> }>({
       query: `
-        query FindAllAggregatorProfiles($paginationArgs: PaginationQuery!) {
-          findAllAggregatorProfiles(paginationArgs: $paginationArgs) {
+        query FindAllAggregatorProfiles($paginationArgs: PaginationQuery!, $status: Status) {
+          findAllAggregatorProfiles(paginationArgs: $paginationArgs, status: $status) {
             success
             message
             results {
@@ -125,10 +125,15 @@ export const aggregatorProfileApi = {
             count
             page
             pages
+            activeCount
+            inactiveCount
           }
         }
       `,
-      variables: { paginationArgs: params || { page: 1, limit: 10 } },
+      variables: { 
+        paginationArgs: { page: params?.page || 1, limit: params?.limit || 10 },
+        status: params?.status || null
+      },
     }),
 
   /**
@@ -302,20 +307,55 @@ export const aggregatorProfileApi = {
   /**
    * Search aggregator profiles by company name
    */
-  search: (searchTerm: string, params?: { page?: number; limit?: number }) =>
+  search: (searchTerm: string, params?: { page?: number; limit?: number; status?: string }) =>
     gqlFetch<{ searchAggregatorProfiles: PaginatedResponse<AggregatorProfile> }>({
       query: `
-        query SearchAggregatorProfiles($searchTerm: String!, $paginationArgs: PaginationQuery!) {
-          searchAggregatorProfiles(searchTerm: $searchTerm, paginationArgs: $paginationArgs) {
+        query SearchAggregatorProfiles($searchTerm: String!, $paginationArgs: PaginationQuery!, $status: Status) {
+          searchAggregatorProfiles(searchTerm: $searchTerm, paginationArgs: $paginationArgs, status: $status) {
             success
             results {
               _id
+              userId
               companyName
+              companyId
+              aggregatorType
               isOmsEnabled
+              rank
+              businessType
               city
               state
+              pincode
               kycStatus
+              totalApplicationsSubmitted
+              totalApplicationsDisbursed
+              totalCommissionEarned
+              totalDisbursedAmount
+              pendingPayout
+              fixedCommissionPercent
+              lenderCommissions {
+                lenderName
+                commissionPercent
+              }
               createdAt
+              createdBy
+              teamMemberUsers {
+                _id
+                username
+                email
+                contact
+                status
+                role
+              }
+              user {
+                _id
+                username
+                email
+                contact
+                role
+                status
+                createdAt
+                loginHistory
+              }
             }
             count
             page
@@ -323,7 +363,11 @@ export const aggregatorProfileApi = {
           }
         }
       `,
-      variables: { searchTerm, paginationArgs: params || { page: 1, limit: 10 } },
+      variables: {
+        searchTerm,
+        paginationArgs: { page: params?.page || 1, limit: params?.limit || 10 },
+        status: params?.status || null
+      },
     }),
 
   /**

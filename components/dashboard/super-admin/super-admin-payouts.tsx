@@ -26,6 +26,7 @@ import { uploadToS3 } from '@/lib/utils'
 
 export function SuperAdminPayouts() {
   const [searchTerm, setSearchTerm] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [selectedPayout, setSelectedPayout] = useState<any>(null)
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
@@ -45,13 +46,27 @@ export function SuperAdminPayouts() {
   const tableTopRef = useRef<HTMLDivElement | null>(null)
   const { toast } = useToast()
 
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+      setPage(1)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  // Reset page when filter status changes
+  useEffect(() => {
+    setPage(1)
+  }, [filterStatus])
+
   // Fetch commission transactions
   const { data: transactionsData, isLoading } = useCommissionTransactions({
     page,
     limit: pageSize,
     filters: {
       status: filterStatus && filterStatus !== 'all' ? (filterStatus as any) : undefined,
-      productType: searchTerm || undefined,
+      searchTerm: debouncedSearch || undefined,
     },
   })
 
@@ -232,21 +247,8 @@ export function SuperAdminPayouts() {
     }
   }
 
-  const filteredPayouts = useMemo(() => {
-    if (!transactionsData?.data) return []
-
-    return transactionsData.data.filter((payout) => {
-      const matchesSearch =
-        payout.ticketId?.toString().includes(searchTerm) ||
-        payout.id.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesStatus = !filterStatus || filterStatus === 'all' || payout.status === filterStatus
-
-      return matchesSearch && matchesStatus
-    })
-  }, [transactionsData, searchTerm, filterStatus])
-
   const total = transactionsData?.total || 0
-  const paginated = filteredPayouts
+  const paginated = transactionsData?.data || []
 
   const handlePageChange = async (newPage: number) => {
     setPage(newPage)
@@ -334,28 +336,28 @@ export function SuperAdminPayouts() {
             value={metrics.totalPayouts}
             icon={FileText}
             color="metric-card-primary"
-            subtitle="All time"
+            subtitle=""
           />
           <MetricCard
             title="Pending Payouts"
             value={metrics.pendingPayouts}
             icon={Clock}
             color="metric-card-warning"
-            subtitle="Awaiting processing"
+            subtitle=""
           />
           <MetricCard
             title="Completed Payouts"
             value={metrics.completedPayouts}
             icon={FileCheck}
             color="metric-card-success"
-            subtitle="Successfully processed"
+            subtitle=""
           />
           <MetricCard
             title="Total Amount"
             value={formatCurrency(metrics.totalAmount)}
             icon={IndianRupee}
             color="metric-card-primary"
-            subtitle="Total commission"
+            subtitle=""
           />
         </div>
       )}

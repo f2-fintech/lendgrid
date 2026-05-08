@@ -127,8 +127,8 @@ export function SuperAdminDashboard() {
 
     return {
       totalAggregators: aggregatorsData?.count || 0,
-      activeAggregators: aggregators.filter(a => a.user?.status === 'ACTIVE').length,
-      inActiveAggregators: aggregators.filter(a => a.user?.status === 'INACTIVE').length,
+      activeAggregators: aggregatorsData?.activeCount || 0,
+      inActiveAggregators: aggregatorsData?.inactiveCount || 0,
       totalApplications,
       totalCommissionEarned,
       totalCommissionPaid,

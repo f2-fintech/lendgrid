@@ -38,7 +38,7 @@ import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 
 import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
 import { AddTeamMemberDialog } from './dialogs/AddTeamMemberDialog'
-import { useAggregators, useUpdateAggregatorProfile } from '@/hooks/use-aggregators'
+import { useAggregators, useSearchAggregators, useUpdateAggregatorProfile } from '@/hooks/use-aggregators'
 import { useUpdateUser } from '@/hooks/use-users'
 import { AggregatorProfile } from '@/lib'
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -74,38 +74,62 @@ export function SuperAdminAggregators() {
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
   const tableTopRef = useRef<HTMLDivElement | null>(null)
   const { mutate: updateUserStatus } = useUpdateUser()
   const updateAggHook = useUpdateAggregatorProfile()
   const { toast } = useToast()
 
+  // Debounce the search term so we don't fire API on every keystroke
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+      setPage(1) // reset to page 1 on new search
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  const isSearching = debouncedSearch.trim().length > 0
+
   const {
-    data,
-    isLoading: isTableLoading,
-    isError,
-    error,
-    refetch,
-  } = useAggregators({ page, limit: pageSize })
+    data: allData,
+    isLoading: isAllLoading,
+    isError: isAllError,
+    error: allError,
+    refetch: refetchAll,
+  } = useAggregators({ page, limit: pageSize, status: filterStatus, enabled: !isSearching })
+
+  const {
+    data: searchData,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+    error: searchError,
+  } = useSearchAggregators(debouncedSearch, { page, limit: pageSize, status: filterStatus, enabled: isSearching })
+
+  const data = isSearching ? searchData : allData
+  const isTableLoading = isSearching ? isSearchLoading : isAllLoading
+  const isError = isSearching ? isSearchError : isAllError
+  const error = isSearching ? searchError : allError
+  const refetch = refetchAll
 
   const aggregators = data?.results || []
   const total = data?.count || 0
+  const activeCount = data?.activeCount ?? 0
+  const inactiveCount = data?.inactiveCount ?? 0
   const isInactiveView = filterStatus === 'INACTIVE'
 
+  // Metrics use the server-provided total counts, not the current page slice
   const metrics = useMemo(() => {
-    const allAggregators = aggregators // All aggregators
-    const activeOnly = allAggregators.filter(a => a.user?.status === 'ACTIVE')
-    const inactiveOnly = allAggregators.filter(a => a.user?.status === 'INACTIVE')
-
     return {
-      totalAggregators: allAggregators.length,
-      activeAggregators: activeOnly.length,
-      inactiveAggregators: inactiveOnly.length,
+      totalAggregators: total,
+      activeAggregators: activeCount,
+      inactiveAggregators: inactiveCount,
     }
-  }, [aggregators])
+  }, [total, activeCount, inactiveCount])
 
   useEffect(() => {
     setPage(1)
-  }, [searchTerm, filterStatus])
+  }, [filterStatus])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -137,26 +161,8 @@ export function SuperAdminAggregators() {
     }
   }
 
-  const filteredAggregators = useMemo(() => {
-    return aggregators.filter((aggregator) => {
-      const username = aggregator.user?.username || ''
-      const email = aggregator.user?.email || ''
-      const matchesSearch =
-        username.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        email.toLowerCase().includes(searchTerm.toLowerCase())
-
-      // Default to showing only ACTIVE aggregators
-      const statusToFilter = filterStatus || 'ACTIVE'
-      const matchesStatus = statusToFilter === "all" || aggregator.user?.status === statusToFilter
-
-      return matchesSearch && matchesStatus
-    })
-  }, [aggregators, searchTerm, filterStatus])
-
-  const paginatedAggregators = useMemo(() => {
-    const start = (page - 1) * pageSize
-    return filteredAggregators.slice(start, start + pageSize)
-  }, [filteredAggregators, page, pageSize])
+  // Server handles searching — just use results directly
+  const filteredAggregators = aggregators
 
   const handlePageChange = (newPage: number) => {
     setPage(newPage)
@@ -360,22 +366,22 @@ export function SuperAdminAggregators() {
                 value={metrics.totalAggregators}
                 icon={Users}
                 color="metric-card-primary"
-                subtitle="All Registered Aggregators"
+                subtitle=""
               />
               <MetricCard
                 title="Active Aggregators"
                 value={metrics.activeAggregators}
                 icon={CheckCircle}
                 color="metric-card-success"
-                subtitle="Currently operational Aggregators"
+                subtitle=""
               />
               <MetricCard
                 title="Deleted Aggregators"
                 value={metrics.inactiveAggregators}
                 icon={AlertCircle}
                 color="metric-card-warning"
-                subtitle="Deleted Aggregators"
                 className="col-span-2 md:col-span-1 lg:col-span-1"
+                subtitle=""
               />
             </div>
           )}
@@ -433,7 +439,7 @@ export function SuperAdminAggregators() {
                     <div className="text-center">Actions</div>
                   </div>
                   <div className="space-y-1">
-                    {paginatedAggregators.map((aggregator, index) => (
+                    {filteredAggregators.map((aggregator, index) => (
                       <motion.div
                         key={aggregator._id}
                         initial={{ opacity: 0, y: 10 }}
@@ -611,7 +617,7 @@ export function SuperAdminAggregators() {
               )}
             </div>
 
-            {!isTableLoading && filterStatus === 'INACTIVE' && paginatedAggregators.length === 0 && (
+            {!isTableLoading && filterStatus === 'INACTIVE' && aggregators.length === 0 && (
               <div className="text-center py-12">
                 <CheckCircle className="w-16 h-16 text-green-400 mx-auto mb-4" />
                 <h3 className="text-lg font-semibold text-foreground mb-2">
@@ -677,7 +683,7 @@ export function SuperAdminAggregators() {
                   <Badge
                     className={`${getStatusColor(selectedAggregator.user?.status)} border px-4 py-1.5 text-sm font-semibold`}
                   >
-                    {selectedAggregator.user?.status}
+                    {selectedAggregator.user?.status?.toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
                   </Badge>
 
                   <Badge
