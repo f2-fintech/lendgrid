@@ -289,6 +289,38 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                     )}
                 </div>
 
+                {/* Business Entity Type — only shown for Business Loan */}
+                {loanType === 'business loan' && (
+                    <div>
+                        <Label className="text-foreground">Type of Business Entity*</Label>
+                        <Controller
+                            control={control}
+                            name="businessEntityType"
+                            render={({ field }) => (
+                                <Select value={field.value || ''} onValueChange={field.onChange}>
+                                    <SelectTrigger className="bg-card border-border text-foreground mt-2">
+                                        <SelectValue placeholder="Select entity type" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                        <SelectItem value="sole_proprietorship" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                            Sole Proprietorship
+                                        </SelectItem>
+                                        <SelectItem value="private_limited" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                            Private Limited
+                                        </SelectItem>
+                                        <SelectItem value="partnership" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                            Partnership Firm
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                        {loanType === 'business loan' && !businessEntityType && (
+                            <p className="text-sm text-amber-400 mt-1.5">Please select a business entity type to continue</p>
+                        )}
+                    </div>
+                )}
+
                 {/* Tenure */}
                 <div>
                     <Label className="text-foreground">Loan Tenure*</Label>
@@ -613,38 +645,6 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         </div>
                     )}
                 </div>
-
-                {/* Business Entity Type — only shown for Business Loan */}
-                {loanType === 'business loan' && (
-                    <div>
-                        <Label className="text-foreground">Type of Business Entity*</Label>
-                        <Controller
-                            control={control}
-                            name="businessEntityType"
-                            render={({ field }) => (
-                                <Select value={field.value || ''} onValueChange={field.onChange}>
-                                    <SelectTrigger className="bg-card border-border text-foreground mt-2">
-                                        <SelectValue placeholder="Select entity type" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-popover border-border text-popover-foreground">
-                                        <SelectItem value="sole_proprietorship" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
-                                            Sole Proprietorship
-                                        </SelectItem>
-                                        <SelectItem value="private_limited" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
-                                            Private Limited
-                                        </SelectItem>
-                                        <SelectItem value="partnership" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
-                                            Partnership Firm
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
-                            )}
-                        />
-                        {loanType === 'business loan' && !businessEntityType && (
-                            <p className="text-sm text-amber-400 mt-1.5">Please select a business entity type to continue</p>
-                        )}
-                    </div>
-                )}
 
                 {/* Submit Button */}
                 <Button

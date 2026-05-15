@@ -5,6 +5,7 @@ import { subYears } from 'date-fns';
 export const step0Schema = z.object({
     amount: z
         .string()
+        .trim()
         .min(1, 'Amount is required')
         .refine((val) => !isNaN(Number(val)), 'Amount must be a number')
         .refine((val) => Number(val) >= 50000, 'Amount must be at least 50,000')
@@ -31,12 +32,12 @@ export const step0Schema = z.object({
     existingLoans: z.array(
         z.object({
             hasRunningLoans: z.string().min(1, 'Required'),
-            whichLoan: z.string().optional(),
-            loanAmount: z.string().optional(),
-            runningEmi: z.string().optional(),
+            whichLoan: z.string().trim().optional(),
+            loanAmount: z.string().trim().optional(),
+            runningEmi: z.string().trim().optional(),
         })
     ).min(1),
-    caseType: z.string().min(1, 'Case type is required'),
+    caseType: z.string().trim().optional(),
 
     businessEntityType: z.string().optional(),
 }).superRefine((data, ctx) => {
@@ -111,45 +112,63 @@ export const step1Schema = z.object({
         .string()
         .min(2, 'Name must be at least 2 characters')
         .max(40, 'Name must not exceed 40 characters')
+        .trim()
+        .toLowerCase()
         .regex(/^[a-zA-Z\s]+$/, 'Name should only contain letters'),
 
     email: z
         .string()
         .email('Invalid email address')
+        .trim()
+        .toLowerCase()
         .regex(/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/, 'Email address is not valid'),
 
     contact: z
         .string()
+        .trim()
+        .min(10, 'Contact must be at least 10 digits')
+        .max(20, 'Contact is too long')
         .regex(/^[0-9]{7,10}$/, 'Contact number must be between 7 and 10 digits'),
 
     pan: z
         .string()
+        .trim()
         .regex(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/, 'Invalid PAN card format'),
 
     father_name: z
         .string()
+        .trim()
+        .toLowerCase()
         .min(2, 'Father\'s name must be at least 2 characters')
         .max(40, 'Father\'s name must not exceed 40 characters')
         .regex(/^[a-zA-Z\s]+$/, 'Name should only contain letters'),
 
     mother_name: z
         .string()
+        .trim()
+        .toLowerCase()
         .min(2, 'Mother\'s name must be at least 2 characters')
         .max(40, 'Mother\'s name must not exceed 40 characters')
         .regex(/^[a-zA-Z\s]+$/, 'Name should only contain letters'),
 
     working_address: z
         .string()
+        .trim()
+        .toLowerCase()
         .min(10, 'Address must be at least 10 characters')
         .max(240, 'Address must not exceed 240 characters'),
 
     permanent_address: z
         .string()
+        .trim()
+        .toLowerCase()
         .min(10, 'Address must be at least 10 characters')
         .max(240, 'Address must not exceed 240 characters'),
 
     current_address: z
         .string()
+        .trim()
+        .toLowerCase()
         .min(10, 'Address must be at least 10 characters')
         .max(240, 'Address must not exceed 240 characters'),
 
@@ -157,6 +176,8 @@ export const step1Schema = z.object({
         .string()
         .min(2, 'City name must be at least 2 characters')
         .max(30, 'City name must not exceed 30 characters')
+        .trim()
+        .toLowerCase()
         .regex(/^[a-zA-Z\s]+$/, 'City name should only contain letters'),
 
     state: z.enum(indianStates, {
@@ -202,6 +223,7 @@ export type Step3FormData = z.infer<typeof step3Schema>;
 export const step4Schema = z.object({
     salary: z
         .string()
+        .trim()
         .min(1, 'Salary/Turnover is required')
         .refine((val) => !isNaN(Number(val)), 'Must be a valid number')
         .refine((val) => Number(val) >= 50000, 'Must be at least 50,000'),

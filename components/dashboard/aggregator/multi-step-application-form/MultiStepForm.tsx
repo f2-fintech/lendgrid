@@ -58,6 +58,7 @@ export const MultiStepFormContent: React.FC<{
 }> = ({ apiBaseUrl, providers, onClose, onSuccess, guestCompanyId, aggregatorProfileId, guestIsOmsEnabled, guestSource }) => {
     const {
         activeStep,
+        setActiveStep,
         customerId,
         setCustomerId,
         applicationNumber,
@@ -73,6 +74,7 @@ export const MultiStepFormContent: React.FC<{
     const [completedSteps, setCompletedSteps] = useState<number[]>([]);
     const [skippedSteps, setSkippedSteps] = useState<number[]>([])
     const [showStep0, setShowStep0] = useState(true);
+    const [isHydrated, setIsHydrated] = useState(false);
 
     // Scroll to top on step change
     useEffect(() => {
@@ -97,6 +99,11 @@ export const MultiStepFormContent: React.FC<{
         const savedCustomerId = localStorage.getItem('loanFormCustomerId');
         const savedAppNumber = localStorage.getItem('loanFormAppNumber');
         const savedFormData = localStorage.getItem('loanFormData');
+        const savedActiveStep = localStorage.getItem('activeStep');
+
+        if (savedActiveStep) {
+            setActiveStep(parseInt(savedActiveStep, 10));
+        }
 
         if (savedCustomerId) setCustomerId(savedCustomerId);
         if (savedAppNumber) setApplicationNumber(savedAppNumber);
@@ -111,9 +118,13 @@ export const MultiStepFormContent: React.FC<{
                 console.error('Error parsing saved form data', e);
             }
         }
+
+        setIsHydrated(true);
     }, []);
 
     useEffect(() => {
+        if (!isHydrated) return;
+        localStorage.setItem('activeStep', activeStep.toString());
         if (customerId) {
             localStorage.setItem('loanFormCustomerId', customerId);
         }
@@ -123,7 +134,7 @@ export const MultiStepFormContent: React.FC<{
         if (Object.keys(formData).length > 0) {
             localStorage.setItem('loanFormData', JSON.stringify(formData));
         }
-    }, [customerId, applicationNumber, formData]);
+    }, [activeStep, customerId, applicationNumber, formData, isHydrated]);
 
     const generateApplicationNumber = () => {
         return Math.floor(10000000 + Math.random() * 90000000).toString();
@@ -217,6 +228,20 @@ export const MultiStepFormContent: React.FC<{
         console.log('CREATE DOCUMENT:', documentData);
     };
 
+    // API call to create customer partners
+    const createCustomerPartners = async (partnersData: any[]) => {
+        const response = await fetch(`${apiBaseUrl}/create-customer-partners`, {
+            method: 'POST',
+            headers: commonHeaders,
+            body: JSON.stringify(partnersData),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create partners');
+        }
+        console.log('CREATE PARTNERS:', partnersData);
+    };
+
     // API call to update customer info
     const updateCustomerInfo = async (customerId: string, updates: any) => {
         await fetch(`${apiBaseUrl}/customer-info-update`, {
@@ -279,21 +304,8 @@ export const MultiStepFormContent: React.FC<{
             await createCustomerInfo(newCustomerId, restData);
 
             // ── Defer application creation to Step 4 ──────────────────────────
-            // Store all data needed by create-application in localStorage.
-            // Step 4's handleStep4Submit reads this and fires the deferred APIs.
-            const pendingApplicationData = {
-                customerId: newCustomerId,
-                providers: formData.providers,
-                providerAmounts: formData.providerAmounts,
-                amount: formData.amount,
-                tenure: formData.tenure,
-                loanType: formData.loanType,
-                loanCategory: formData.loanCategory,
-                leadType: formData.leadType,
-                existingLoans: formData.existingLoans,
-                caseType: formData.caseType,
-            };
-            localStorage.setItem('pendingApplicationData', JSON.stringify(pendingApplicationData));
+            // We use formData directly from FormContext in Step 4.
+            // No need to create duplicate pendingApplicationData here.
 
             // Use a placeholder so the form can progress without a real app number yet
             setApplicationNumber('pending');
@@ -342,13 +354,13 @@ export const MultiStepFormContent: React.FC<{
                     computationOfIncome: 'computation of income',
                     financials: 'financials',
                     udhyamCertificate: 'udhyam certificate',
-                    udhyam: 'udhyam',
+                    udhyam: 'udhyam certificate', // mapping both to the enum value
                     gst: 'gst',
-                    form26as: 'form 26as',
+                    form26as: 'form 26 as',
                     listOfDirectors: 'list of directors',
                     listOfShareholders: 'list of shareholders',
-                    aoa: 'article of association',
-                    moa: 'memorandum of association',
+                    aoa: 'aoa',
+                    moa: 'moa',
                     companyPan: 'company pan',
                     directorsKyc: 'directors kyc',
                     partnershipDeed: 'partnership deed',
@@ -358,21 +370,45 @@ export const MultiStepFormContent: React.FC<{
                 };
 
                 const url = await uploadToS3(file, file.name);
+                let docType = typeMap[fieldKey] || fieldKey;
+                if (fieldKey.includes('_aadhaar')) docType = 'aadhaar front';
+                if (fieldKey.includes('_pan')) docType = 'pancard';
+
+                let finalUrl = url;
+                if (docType === 'bank statement' && textFields.bankingPassword) {
+                    finalUrl = `${url}#pwd=${encodeURIComponent(textFields.bankingPassword)}`;
+                }
+
                 await createDocument({
                     customer_id: customerId,
-                    document_url: url,
-                    type: typeMap[fieldKey] || fieldKey,
+                    document_url: finalUrl,
+                    type: docType,
                 });
             }
 
-            // Merge text fields into pendingApplicationData for the final submit step
+            // Submit partner details if present
+            if (textFields.personDetails) {
+                try {
+                    const parsedPartners = JSON.parse(textFields.personDetails);
+                    if (Array.isArray(parsedPartners) && parsedPartners.length > 0) {
+                        const partnersData = parsedPartners.map((p: any) => ({
+                            customer_id: customerId,
+                            aadhaar: p.aadhaar,
+                            pan: p.pan,
+                            mobile: p.mobile
+                        }));
+                        await createCustomerPartners(partnersData);
+                    }
+                } catch (e) {
+                    console.error("Failed to parse personDetails", e);
+                }
+            }
+
+            // Merge text fields into formData (or handle them via API immediately if needed)
+            // For now, we will save it to loanFormData to avoid duplicate pendingApplicationData key
             if (Object.keys(textFields).length > 0) {
-                const raw = localStorage.getItem('pendingApplicationData');
-                const existing = raw ? JSON.parse(raw) : {};
-                localStorage.setItem(
-                    'pendingApplicationData',
-                    JSON.stringify({ ...existing, step2TextFields: textFields })
-                );
+                const updatedFormData = { ...formData, step2TextFields: textFields };
+                setFormData(updatedFormData);
             }
 
             setCompletedSteps((prev) =>
@@ -456,75 +492,70 @@ export const MultiStepFormContent: React.FC<{
                 });
             }
 
-            // 3. Fire the deferred application APIs using data saved at Step 1
-            const raw = localStorage.getItem('pendingApplicationData');
-            if (raw) {
-                const pending = JSON.parse(raw);
+            // 3. Fire the deferred application APIs using data from context
+            const activeProviders: string[] =
+                formData.providers && formData.providers.length > 0
+                    ? formData.providers
+                    : ['Default Provider'];
 
-                const activeProviders: string[] =
-                    pending.providers && pending.providers.length > 0
-                        ? pending.providers
-                        : ['Default Provider'];
+            // Single application record — all providers as comma-separated string
+            // (mirrors f2fintech-admin Step7Form's single-application pattern)
+            const providersString = activeProviders.join(', ');
 
-                // Single application record — all providers as comma-separated string
-                // (mirrors f2fintech-admin Step7Form's single-application pattern)
-                const providersString = activeProviders.join(', ');
+            const primaryLoanType: string =
+                formData.loanType || 'personal loan';
 
-                const primaryLoanType: string =
-                    pending.loanType || 'personal loan';
+            const numericTenure: number = formData.tenure
+                ? Number(String(formData.tenure).split(' ')[0])
+                : 5;
 
-                const numericTenure: number = pending.tenure
-                    ? Number(String(pending.tenure).split(' ')[0])
-                    : 5;
+            const finalAmount = Number(formData.amount || 100000);
 
-                const finalAmount = Number(pending.amount || 100000);
+            const appNumber = generateApplicationNumber();
 
-                const appNumber = generateApplicationNumber();
+            const applicationPayload = {
+                customer_id: customerId,
+                application_no: appNumber,
+                amount: finalAmount,
+                tenure: numericTenure,
+                provider: providersString,
+                loan_type: primaryLoanType,
+                loan_category: formData.loanCategory || 'unsecured',
+                lead_type: formData.leadType || 'null',
+                existing_loans: JSON.stringify(
+                    (formData.existingLoans || []).map((l: any) => ({
+                        has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
+                        which_loan: l.whichLoan || null,
+                        loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
+                        running_emi: l.runningEmi ? Number(l.runningEmi) : null,
+                    }))
+                ),
+                case_type: formData.caseType || 'fresh',
+                is_picked: isOmsEnabled ? 0 : 1,
+                source: guestSource || 'lendgrid',
+                ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
+            };
 
-                const applicationPayload = {
-                    customer_id: customerId,
-                    application_no: appNumber,
-                    amount: finalAmount,
-                    tenure: numericTenure,
-                    provider: providersString,
-                    loan_type: primaryLoanType,
-                    loan_category: pending.loanCategory || 'unsecured',
-                    lead_type: pending.leadType || 'null',
-                    existing_loans: JSON.stringify(
-                        (pending.existingLoans || []).map((l: any) => ({
-                            has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
-                            which_loan: l.whichLoan || null,
-                            loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
-                            running_emi: l.runningEmi ? Number(l.runningEmi) : null,
-                        }))
-                    ),
-                    case_type: pending.caseType || 'fresh',
-                    is_picked: isOmsEnabled ? 0 : 1,
-                    source: guestSource || 'lendgrid',
-                    ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
-                };
+            const applicationId = await createApplication(applicationPayload);
+            await createLoanTracking(applicationId);
 
-                const applicationId = await createApplication(applicationPayload);
-                await createLoanTracking(applicationId);
-
-                // Create ticket only if OMS is NOT enabled (matches Step 1's original guard)
-                if (!isOmsEnabled) {
-                    await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/create-ticket`, {
-                        method: 'POST',
-                        headers: commonHeaders,
-                        body: JSON.stringify({
-                            customer_application_id: applicationId,
-                            user_id: companyId,
-                            status: 'operations',
-                        }),
-                    });
-                }
-
-                setApplicationNumber(String(appNumber));
+            // Create ticket only if OMS is NOT enabled (matches Step 1's original guard)
+            if (!isOmsEnabled) {
+                await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/create-ticket`, {
+                    method: 'POST',
+                    headers: commonHeaders,
+                    body: JSON.stringify({
+                        customer_application_id: applicationId,
+                        user_id: companyId,
+                        status: 'operations',
+                    }),
+                });
             }
 
+            setApplicationNumber(String(appNumber));
+
             // 4. Clear all persisted loan-form data from localStorage
-            localStorage.removeItem('pendingApplicationData');
+            localStorage.removeItem('activeStep');
             localStorage.removeItem('loanFormCustomerId');
             localStorage.removeItem('loanFormAppNumber');
             localStorage.removeItem('loanFormData');

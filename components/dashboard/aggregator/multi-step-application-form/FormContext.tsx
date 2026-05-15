@@ -49,7 +49,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         providers: [] as string[],
         providerAmounts: [] as { provider: string; amount: string }[],
         existingLoans: [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
-        caseType: '',
+        caseType: 'fresh',
         businessEntityType: '',
     });
 

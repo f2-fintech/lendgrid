@@ -115,13 +115,7 @@ const fieldLabels: Record<string, string> = {
     registration: 'Registration',
 };
 
-const requiredFields: Record<string, string[]> = {
-    personal: ['form16', 'itr', 'salarySlip', 'banking'],
-    sole_proprietorship: ['computationOfIncome', 'financials', 'banking'],
-    private_limited: ['banking', 'itr', 'financials'],
-    partnership: ['partnershipDeed', 'banking'],
-    professional: ['ugCertificate', 'registration'],
-};
+
 
 function buildFilesState(fieldKeys: string[]): FilesState {
     return Object.fromEntries(fieldKeys.map((k) => [k, emptyFile()]));
@@ -149,7 +143,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
         }
         if (loanType === 'professional loan') return professionalLoanFields;
         // Fallback (secured loans etc.) — single bank-statement upload
-        return ['banking'];
+        return ['bank statement'];
     };
 
     const fieldKeys = getFieldKeys();
@@ -213,23 +207,6 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
 
     // ── Upload ────────────────────────────────────────────────────────────────
     const handleUpload = async () => {
-        // Check required files
-        const reqKeys = requiredFields[
-            loanType === 'personal loan' ? 'personal'
-                : loanType === 'professional loan' ? 'professional'
-                    : entityType
-        ] || [];
-
-        const missing = reqKeys.filter((k) => !files[k]?.file);
-        if (missing.length > 0) {
-            toast({
-                title: 'Required Documents Missing',
-                description: `Please upload: ${missing.map((k) => fieldLabels[k] || k).join(', ')}`,
-                variant: 'destructive',
-            });
-            return;
-        }
-
         try {
             const namedFiles: Record<string, File | null> = Object.fromEntries(
                 Object.entries(files).map(([k, v]) => [k, v.file])
@@ -359,11 +336,13 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
             </div>
 
             {personDetails.map((person, idx) => (
-                <div key={idx} className="border border-border rounded-lg p-4 space-y-3">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                        {label} #{idx + 1}
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div key={idx} className="border-2 border-primary/30 bg-card/50 rounded-xl p-5 space-y-4 shadow-sm">
+                    <div className="inline-flex">
+                        <span className="text-xs font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-md uppercase tracking-widest shadow-sm">
+                            {label} #{idx + 1}
+                        </span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
                         <div className="space-y-1">
                             <Label className="text-foreground text-sm">Aadhaar Number</Label>
                             <Input
@@ -395,6 +374,12 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                                 type="tel"
                             />
                         </div>
+                    </div>
+
+                    {/* Dynamic File Uploads for each partner/director */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-4 border-t border-border border-dashed">
+                        <FileUploadBox label="Aadhaar Document" field={`person_${idx}_aadhaar`} />
+                        <FileUploadBox label="PAN Document" field={`person_${idx}_pan`} />
                     </div>
                 </div>
             ))}
@@ -449,23 +434,13 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     <>
                         <SectionHeading title="Required Documents" />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="Form 16" field="form16" required />
-                            <FileUploadBox label="ITR" field="itr" required />
-                            <FileUploadBox label="3 Months Salary Slip" field="salarySlip" required />
-                            <FileUploadBox label="Banking (Multiple Files)" field="banking" required />
+                            <FileUploadBox label="Form 16" field="form16" />
+                            <FileUploadBox label="ITR" field="itr" />
+                            <FileUploadBox label="3 Months Salary Slip" field="salarySlip" />
+                            <FileUploadBox label="Banking (Multiple Files)" field="banking" />
                         </div>
 
-                        {/* Banking Password — text input */}
-                        <div className="space-y-2">
-                            <Label className="text-foreground">Banking Password</Label>
-                            <Input
-                                value={textFields.bankingPassword || ''}
-                                onChange={(e) => setTextFields((prev) => ({ ...prev, bankingPassword: e.target.value }))}
-                                className="bg-card border-border text-foreground"
-                                placeholder="Enter net-banking / statement password"
-                                type="text"
-                            />
-                        </div>
+
                     </>
                 )}
 
@@ -474,12 +449,12 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     <>
                         <SectionHeading title="Sole Proprietorship Documents" />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="2 Year Computation of Income" field="computationOfIncome" required />
-                            <FileUploadBox label="2 Financials (P/L, B/S)" field="financials" required />
+                            <FileUploadBox label="2 Year Computation of Income" field="computationOfIncome" />
+                            <FileUploadBox label="2 Financials (P/L, B/S)" field="financials" />
                             <FileUploadBox label="Udhyam Certificate" field="udhyamCertificate" />
                             <FileUploadBox label="GST" field="gst" />
                             <FileUploadBox label="2 Year ITR" field="itr" />
-                            <FileUploadBox label="1 Year Banking" field="banking" required />
+                            <FileUploadBox label="1 Year Banking" field="banking" />
                         </div>
                     </>
                 )}
@@ -489,10 +464,10 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     <>
                         <SectionHeading title="Private Limited Documents" />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="1 Year Banking" field="banking" required />
+                            <FileUploadBox label="1 Year Banking" field="banking" />
                             <FileUploadBox label="Form 26 AS" field="form26as" />
-                            <FileUploadBox label="2 Year ITR" field="itr" required />
-                            <FileUploadBox label="2 Year Financials (P/L, B/S)" field="financials" required />
+                            <FileUploadBox label="2 Year ITR" field="itr" />
+                            <FileUploadBox label="2 Year Financials (P/L, B/S)" field="financials" />
                             <FileUploadBox label="GST" field="gst" />
                             <FileUploadBox label="List of Directors" field="listOfDirectors" />
                             <FileUploadBox label="List of Shareholders" field="listOfShareholders" />
@@ -520,8 +495,8 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                         <PersonRows label="Partner" />
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                            <FileUploadBox label="Partnership Deed" field="partnershipDeed" required />
-                            <FileUploadBox label="1 Year Banking" field="banking" required />
+                            <FileUploadBox label="Partnership Deed" field="partnershipDeed" />
+                            <FileUploadBox label="1 Year Banking" field="banking" />
                             <FileUploadBox label="Udhyam" field="udhyam" />
                             <FileUploadBox label="GST" field="gst" />
                             <FileUploadBox label="2 Year Financials" field="financials" />
@@ -535,9 +510,9 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     <>
                         <SectionHeading title="Degree & Registration Documents" />
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="UG Certificate (MBBS, BDS, BAMS, BHMS)" field="ugCertificate" required />
+                            <FileUploadBox label="UG Certificate (MBBS, BDS, BAMS, BHMS)" field="ugCertificate" />
                             <FileUploadBox label="PG Certificate (MD, MS, MCH)" field="pgCertificate" />
-                            <FileUploadBox label="Registration" field="registration" required />
+                            <FileUploadBox label="Registration" field="registration" />
                             <FileUploadBox label="Banking" field="banking" />
                             <FileUploadBox label="ITR" field="itr" />
                             <FileUploadBox label="Computation of Income" field="computationOfIncome" />
@@ -554,9 +529,25 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                                 Upload your recent 6 months Bank Statement.{' '}
                                 Maximum File Upload Limit is <span className="text-accent">10</span>
                             </p>
-                            <FileUploadBox label="Bank Statement" field="banking" required />
+                            <FileUploadBox label="Bank Statement" field="banking" />
                         </>
                     )}
+
+                {/* ── SHARED FIELDS ─────────────────────────────────────────────── */}
+                {(fieldKeys.includes('banking') || fieldKeys.includes('bank statement')) && (
+                    <div className="pt-4 border-t border-border mt-4 mb-4">
+                        <SectionHeading title="Bank Statement Password" />
+                        <div className="space-y-2 max-w-md">
+                            <Input
+                                value={textFields.bankingPassword || ''}
+                                onChange={(e) => setTextFields((prev) => ({ ...prev, bankingPassword: e.target.value }))}
+                                className="bg-card border-border text-foreground"
+                                placeholder="Enter PDF password if protected"
+                                type="text"
+                            />
+                        </div>
+                    </div>
+                )}
 
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center pt-4">
