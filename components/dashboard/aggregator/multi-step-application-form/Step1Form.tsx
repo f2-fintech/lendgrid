@@ -405,7 +405,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                 Submitting...
               </>
             ) : (
-              'Apply Now'
+              'Proceed To Next Step'
             )}
           </Button>
         </div>

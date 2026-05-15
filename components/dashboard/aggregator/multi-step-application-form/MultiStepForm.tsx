@@ -40,7 +40,7 @@ interface MultiStepFormDialogProps {
 const allSteps = [
     { id: -1, name: 'Loan Details', icon: '💰' },
     { id: 0, name: 'Basic Details', icon: '📋' },
-    { id: 1, name: 'Statement Upload', icon: '📄' },
+    { id: 1, name: 'Documents Upload', icon: '📄' },
     { id: 2, name: 'Profile & Proof', icon: '🆔' },
     { id: 3, name: 'Additional Details', icon: '💼' },
 ];
@@ -243,6 +243,14 @@ export const MultiStepFormContent: React.FC<{
     };
 
     // Step 1 Submit Handler
+    // ─────────────────────────────────────────────────────────────────────────
+    // PORTED FROM f2fintech-admin (Step1Form.tsx → create() callback):
+    //   At this step we ONLY create the customer + customer-info records.
+    //   create-application and create-loan-tracking are intentionally deferred
+    //   to Step 4 (the final submit), mirroring the admin portal's logic.
+    //   Loan/provider data is persisted to localStorage here so Step 4 can
+    //   pick it up and fire those APIs once all form data is complete.
+    // ─────────────────────────────────────────────────────────────────────────
     const handleStep1Submit = async (data: Step1FormData, existingCustomerId: string) => {
         setIsLoading(true);
         try {
@@ -266,59 +274,29 @@ export const MultiStepFormContent: React.FC<{
                 setCustomerId(newCustomerId);
             }
 
-            // Create customer info
+            // Create customer info (addresses, PAN, employment type, etc.)
             const { title, name, email, contact, dob, ...restData } = data;
             await createCustomerInfo(newCustomerId, restData);
 
-            // Create applications for each provider
-            const appNumbers: string[] = [];
-            for (const provider of formData.providers) {
-                const providerAmount =
-                    formData.providerAmounts.find((pa) => pa.provider === provider)?.amount ||
-                    formData.amount;
+            // ── Defer application creation to Step 4 ──────────────────────────
+            // Store all data needed by create-application in localStorage.
+            // Step 4's handleStep4Submit reads this and fires the deferred APIs.
+            const pendingApplicationData = {
+                customerId: newCustomerId,
+                providers: formData.providers,
+                providerAmounts: formData.providerAmounts,
+                amount: formData.amount,
+                tenure: formData.tenure,
+                loanType: formData.loanType,
+                loanCategory: formData.loanCategory,
+                leadType: formData.leadType,
+                existingLoans: formData.existingLoans,
+                caseType: formData.caseType,
+            };
+            localStorage.setItem('pendingApplicationData', JSON.stringify(pendingApplicationData));
 
-                const appNumber = generateApplicationNumber();
-                const applicationData = {
-                    customer_id: newCustomerId,
-                    application_no: appNumber,
-                    amount: providerAmount,
-                    tenure: formData.tenure,
-                    provider,
-                    loan_type: formData.loanType,
-                    loan_category: formData.loanCategory,
-                    lead_type: formData.leadType,
-                    existing_loans: JSON.stringify(formData.existingLoans.map((l) => ({
-                        has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
-                        which_loan: l.whichLoan || null,
-                        loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
-                        running_emi: l.runningEmi ? Number(l.runningEmi) : null
-                    }))),
-                    case_type: formData.caseType,
-                    is_picked: isOmsEnabled ? 0 : 1,
-                    source: guestSource || 'lendgrid',
-                    // Guest mode: pass aggregator's MongoDB _id so the server can set aggregatorId without a JWT
-                    ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
-                };
-
-                const applicationId = await createApplication(applicationData);
-                await createLoanTracking(applicationId);
-                appNumbers.push(appNumber);
-
-                // Create ticket only if OMS is NOT enabled
-                if (!isOmsEnabled) {
-                    await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/create-ticket`, {
-                        method: 'POST',
-                        headers: commonHeaders,
-                        body: JSON.stringify({
-                            customer_application_id: applicationId,
-                            user_id: companyId,
-                            status: "operations",
-                        }),
-                    });
-                }
-            }
-
-            setApplicationNumber(appNumbers[0]);
+            // Use a placeholder so the form can progress without a real app number yet
+            setApplicationNumber('pending');
             setCompletedSteps((prev) =>
                 prev.includes(0) ? prev : [...prev, 0]
             );
@@ -339,20 +317,64 @@ export const MultiStepFormContent: React.FC<{
         }
     };
 
-    // Step 2 Submit Handler (Statement Upload)
-    const handleStep2Submit = async (files: File[]) => {
+    // Step 2 Submit Handler (Loan-Specific Document Upload)
+    // Named files are uploaded to S3 with their correct document-type strings.
+    // Text fields (e.g. banking password, person details) are persisted into
+    // pendingApplicationData in localStorage for use at final submission.
+    const handleStep2Submit = async (
+        namedFiles: Record<string, File | null>,
+        textFields: Record<string, string>
+    ) => {
         if (!customerId) return;
 
         setIsLoading(true);
         try {
-            for (const file of files) {
+            // Upload each named file with a descriptive type string
+            for (const [fieldKey, file] of Object.entries(namedFiles)) {
+                if (!file) continue;
+
+                // Map field key → document type label for the create-document API
+                const typeMap: Record<string, string> = {
+                    form16: 'form 16',
+                    itr: 'itr',
+                    salarySlip: 'salary slip',
+                    banking: 'bank statement',
+                    computationOfIncome: 'computation of income',
+                    financials: 'financials',
+                    udhyamCertificate: 'udhyam certificate',
+                    udhyam: 'udhyam',
+                    gst: 'gst',
+                    form26as: 'form 26as',
+                    listOfDirectors: 'list of directors',
+                    listOfShareholders: 'list of shareholders',
+                    aoa: 'article of association',
+                    moa: 'memorandum of association',
+                    companyPan: 'company pan',
+                    directorsKyc: 'directors kyc',
+                    partnershipDeed: 'partnership deed',
+                    ugCertificate: 'ug certificate',
+                    pgCertificate: 'pg certificate',
+                    registration: 'registration',
+                };
+
                 const url = await uploadToS3(file, file.name);
                 await createDocument({
                     customer_id: customerId,
                     document_url: url,
-                    type: 'bank statement',
+                    type: typeMap[fieldKey] || fieldKey,
                 });
             }
+
+            // Merge text fields into pendingApplicationData for the final submit step
+            if (Object.keys(textFields).length > 0) {
+                const raw = localStorage.getItem('pendingApplicationData');
+                const existing = raw ? JSON.parse(raw) : {};
+                localStorage.setItem(
+                    'pendingApplicationData',
+                    JSON.stringify({ ...existing, step2TextFields: textFields })
+                );
+            }
+
             setCompletedSteps((prev) =>
                 prev.includes(1) ? prev : [...prev, 1]
             );
@@ -402,19 +424,29 @@ export const MultiStepFormContent: React.FC<{
     };
 
     // Step 4 Submit Handler
+    // ─────────────────────────────────────────────────────────────────────────
+    // PORTED FROM f2fintech-admin (Step7Form.tsx → create() callback):
+    //   This is the final submit. All deferred APIs that were intentionally
+    //   skipped at Step 1 are fired here, once all form data is complete:
+    //     1. PATCH /customer-info-update  (salary, EMI, liability)
+    //     2. POST  /create-application    (one record, providers comma-joined)
+    //     3. POST  /create-loan-tracking
+    //     4. POST  /create-ticket         (only when OMS is disabled)
+    //     5. POST  /upload-to-s3 + /create-document  (optional certificates)
+    // ─────────────────────────────────────────────────────────────────────────
     const handleStep4Submit = async (data: Step4FormData, certificates: File[]) => {
         if (!customerId) return;
 
         setIsLoading(true);
         try {
-            // Update customer info with salary data
+            // 1. Update customer info with salary/EMI/liability
             await updateCustomerInfo(customerId, {
                 salary: data.salary,
                 existing_emi: data.existing_emi,
                 existing_liability: data.existing_liability,
             });
 
-            // Upload certificates
+            // 2. Upload certificates (optional)
             for (const file of certificates) {
                 const url = await uploadToS3(file, file.name);
                 await createDocument({
@@ -424,7 +456,75 @@ export const MultiStepFormContent: React.FC<{
                 });
             }
 
-            // Clear localStorage
+            // 3. Fire the deferred application APIs using data saved at Step 1
+            const raw = localStorage.getItem('pendingApplicationData');
+            if (raw) {
+                const pending = JSON.parse(raw);
+
+                const activeProviders: string[] =
+                    pending.providers && pending.providers.length > 0
+                        ? pending.providers
+                        : ['Default Provider'];
+
+                // Single application record — all providers as comma-separated string
+                // (mirrors f2fintech-admin Step7Form's single-application pattern)
+                const providersString = activeProviders.join(', ');
+
+                const primaryLoanType: string =
+                    pending.loanType || 'personal loan';
+
+                const numericTenure: number = pending.tenure
+                    ? Number(String(pending.tenure).split(' ')[0])
+                    : 5;
+
+                const finalAmount = Number(pending.amount || 100000);
+
+                const appNumber = generateApplicationNumber();
+
+                const applicationPayload = {
+                    customer_id: customerId,
+                    application_no: appNumber,
+                    amount: finalAmount,
+                    tenure: numericTenure,
+                    provider: providersString,
+                    loan_type: primaryLoanType,
+                    loan_category: pending.loanCategory || 'unsecured',
+                    lead_type: pending.leadType || 'null',
+                    existing_loans: JSON.stringify(
+                        (pending.existingLoans || []).map((l: any) => ({
+                            has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
+                            which_loan: l.whichLoan || null,
+                            loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
+                            running_emi: l.runningEmi ? Number(l.runningEmi) : null,
+                        }))
+                    ),
+                    case_type: pending.caseType || 'fresh',
+                    is_picked: isOmsEnabled ? 0 : 1,
+                    source: guestSource || 'lendgrid',
+                    ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
+                };
+
+                const applicationId = await createApplication(applicationPayload);
+                await createLoanTracking(applicationId);
+
+                // Create ticket only if OMS is NOT enabled (matches Step 1's original guard)
+                if (!isOmsEnabled) {
+                    await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/create-ticket`, {
+                        method: 'POST',
+                        headers: commonHeaders,
+                        body: JSON.stringify({
+                            customer_application_id: applicationId,
+                            user_id: companyId,
+                            status: 'operations',
+                        }),
+                    });
+                }
+
+                setApplicationNumber(String(appNumber));
+            }
+
+            // 4. Clear all persisted loan-form data from localStorage
+            localStorage.removeItem('pendingApplicationData');
             localStorage.removeItem('loanFormCustomerId');
             localStorage.removeItem('loanFormAppNumber');
             localStorage.removeItem('loanFormData');

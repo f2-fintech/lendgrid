@@ -17,6 +17,7 @@ interface FormContextType {
         providerAmounts: { provider: string; amount: string }[];
         existingLoans: { hasRunningLoans: string; whichLoan: string; loanAmount: string; runningEmi: string }[];
         caseType: string;
+        businessEntityType: string; // 'sole_proprietorship' | 'private_limited' | 'partnership' | ''
     };
     setFormData: (data: any) => void;
     nextStep: () => void;
@@ -49,6 +50,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         providerAmounts: [] as { provider: string; amount: string }[],
         existingLoans: [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
         caseType: '',
+        businessEntityType: '',
     });
 
     const nextStep = useCallback(() => {
@@ -73,6 +75,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
             providerAmounts: [],
             existingLoans: [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
             caseType: '',
+            businessEntityType: '',
         });
     }, []);
 

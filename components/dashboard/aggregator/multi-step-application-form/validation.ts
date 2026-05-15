@@ -37,6 +37,8 @@ export const step0Schema = z.object({
         })
     ).min(1),
     caseType: z.string().min(1, 'Case type is required'),
+
+    businessEntityType: z.string().optional(),
 }).superRefine((data, ctx) => {
     if (data.existingLoans) {
         data.existingLoans.forEach((loan, index) => {

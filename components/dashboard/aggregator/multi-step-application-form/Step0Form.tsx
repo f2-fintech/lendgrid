@@ -112,6 +112,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
             providerAmounts: formData.providerAmounts || [],
             existingLoans: formData.existingLoans || [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
             caseType: formData.caseType || 'fresh',
+            businessEntityType: formData.businessEntityType || '',
         },
     });
 
@@ -124,6 +125,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
     const selectedProviders = watch('providers');
     const providerAmounts = watch('providerAmounts');
     const existingLoans = watch('existingLoans');
+    const businessEntityType = watch('businessEntityType');
 
     const canAddAnotherLoan = existingLoans?.every(loan =>
         loan.hasRunningLoans === 'yes' &&
@@ -158,6 +160,10 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
         const category = getLoanCategory(value);
         setValue('loanCategory', category);
         setValue('tenure', ''); // Reset tenure when loan type changes
+        // Clear entity type if switching away from business loan
+        if (value !== 'business loan') {
+            setValue('businessEntityType', '');
+        }
     };
 
     // Handle provider selection
@@ -608,9 +614,42 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                     )}
                 </div>
 
+                {/* Business Entity Type — only shown for Business Loan */}
+                {loanType === 'business loan' && (
+                    <div>
+                        <Label className="text-foreground">Type of Business Entity*</Label>
+                        <Controller
+                            control={control}
+                            name="businessEntityType"
+                            render={({ field }) => (
+                                <Select value={field.value || ''} onValueChange={field.onChange}>
+                                    <SelectTrigger className="bg-card border-border text-foreground mt-2">
+                                        <SelectValue placeholder="Select entity type" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                        <SelectItem value="sole_proprietorship" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                            Sole Proprietorship
+                                        </SelectItem>
+                                        <SelectItem value="private_limited" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                            Private Limited
+                                        </SelectItem>
+                                        <SelectItem value="partnership" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                            Partnership Firm
+                                        </SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            )}
+                        />
+                        {loanType === 'business loan' && !businessEntityType && (
+                            <p className="text-sm text-amber-400 mt-1.5">Please select a business entity type to continue</p>
+                        )}
+                    </div>
+                )}
+
                 {/* Submit Button */}
                 <Button
                     type="submit"
+                    disabled={loanType === 'business loan' && !businessEntityType}
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Let's Get Started
