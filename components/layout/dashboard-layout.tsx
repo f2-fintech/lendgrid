@@ -579,8 +579,8 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   } = useNotifications({
     page: 1,
     limit: 10,
-    pollingInterval: 10000, // Poll every 10 minutes
   });
+ 
 
   useEffect(() => {
     refetch();

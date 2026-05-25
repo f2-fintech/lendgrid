@@ -23,7 +23,7 @@ export function useNotifications({
   limit = 20,
   filters,
   enabled = true,
-  pollingInterval = 10000, 
+  pollingInterval = 0,
 }: UseNotificationsProps = {}) {
   const queryClient = useQueryClient();
   const previousUnreadCount = useRef<number>(0);
@@ -34,7 +34,6 @@ export function useNotifications({
     queryKey: queryKeys.notifications.list({ page, limit, ...filters }),
     queryFn: () => notificationsApi.getNotifications({ page, limit, filters }),
     enabled,
-    refetchInterval: pollingInterval,
     refetchOnWindowFocus: true,
   });
 
@@ -43,9 +42,48 @@ export function useNotifications({
     queryKey: queryKeys.notifications.stats(),
     queryFn: () => notificationsApi.getNotificationStats(),
     enabled,
-    refetchInterval: pollingInterval,
     refetchOnWindowFocus: true,
   });
+
+  // Subscribe to push notifications (GraphQL subscription) and invalidate queries when new notification arrives
+  // This replaces polling/refetch intervals
+  useEffect(() => {
+    if (!enabled) return;
+    let unsub: (() => void) | null = null;
+    let pollIntervalId: any = null;
+
+    // dynamic import to avoid SSR issues
+    import('@/lib/subscription-client')
+      .then((mod) => {
+        const result = mod.subscribeToNotificationCreated((payload: any) => {
+          const notification = payload?.data?.notificationCreated || payload?.notificationCreated;
+          if (notification) {
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+          }
+        });
+
+        if (typeof result === 'function') {
+          unsub = result;
+        } else {
+          // subscription not available; fallback to polling
+          pollIntervalId = setInterval(() => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+          }, 10000);
+        }
+      })
+      .catch((err) => {
+        console.error('Failed to initialize notifications subscription', err);
+        // fallback to polling
+        pollIntervalId = setInterval(() => {
+          queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+        }, 10000);
+      });
+
+    return () => {
+      if (unsub) unsub();
+      if (pollIntervalId) clearInterval(pollIntervalId);
+    };
+  }, [enabled, queryClient]);
 
   // Show toast for new notifications
   useEffect(() => {
