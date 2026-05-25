@@ -1,15 +1,18 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { notificationsApi, NotificationFilterInput } from '@/lib/notifications-api'
-import { queryKeys } from '@/lib/query-keys'
-import { toast } from 'sonner'
-import { useEffect, useRef } from 'react'
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  notificationsApi,
+  NotificationFilterInput,
+} from "@/lib/notifications-api";
+import { queryKeys } from "@/lib/query-keys";
+import { toast } from "sonner";
+import { useEffect, useRef } from "react";
 
 interface UseNotificationsProps {
-  page?: number
-  limit?: number
-  filters?: NotificationFilterInput
-  enabled?: boolean
-  pollingInterval?: number // in milliseconds
+  page?: number;
+  limit?: number;
+  filters?: NotificationFilterInput;
+  enabled?: boolean;
+  pollingInterval?: number; // in milliseconds
 }
 
 /**
@@ -20,10 +23,11 @@ export function useNotifications({
   limit = 20,
   filters,
   enabled = true,
-  pollingInterval = 1000000, // Poll every 10 minutes by default
+  pollingInterval = 10000, 
 }: UseNotificationsProps = {}) {
-  const queryClient = useQueryClient()
-  const previousUnreadCount = useRef<number>(0)
+  const queryClient = useQueryClient();
+  const previousUnreadCount = useRef<number>(0);
+  const isFirstLoad = useRef<boolean>(true); 
 
   // Fetch notifications
   const query = useQuery({
@@ -32,7 +36,7 @@ export function useNotifications({
     enabled,
     refetchInterval: pollingInterval,
     refetchOnWindowFocus: true,
-  })
+  });
 
   // Fetch stats
   const statsQuery = useQuery({
@@ -41,72 +45,83 @@ export function useNotifications({
     enabled,
     refetchInterval: pollingInterval,
     refetchOnWindowFocus: true,
-  })
+  });
 
   // Show toast for new notifications
   useEffect(() => {
     if (query.data) {
-      const currentUnreadCount = query.data.unreadCount
+      const currentUnreadCount = query.data.unreadCount;
 
-      // Only show toast if unread count increased (new notification)
-      if (previousUnreadCount.current > 0 && currentUnreadCount > previousUnreadCount.current) {
-        const newNotifications = query.data.data.filter(n => n.status === 'UNREAD')
+      // ✅ FIXED: Only skip the toast if it's the very first time the page loads
+      if (isFirstLoad.current) {
+        isFirstLoad.current = false;
+        previousUnreadCount.current = currentUnreadCount;
+        return;
+      }
+
+      // ✅ FIXED: Now triggers safely even if the user previously had 0 notifications
+      if (currentUnreadCount > previousUnreadCount.current) {
+        const newNotifications = query.data.data.filter(
+          (n: any) => n.status === "UNREAD",
+        );
         if (newNotifications.length > 0) {
-          const latest = newNotifications[0]
+          const latest = newNotifications[0];
           toast.info(latest.title, {
             description: latest.message,
             duration: 5000,
-            action: latest.actionUrl ? {
-              label: 'View',
-              onClick: () => {
-                if (latest.actionUrl) {
-                  window.location.href = latest.actionUrl
+            action: latest.actionUrl
+              ? {
+                  label: "View",
+                  onClick: () => {
+                    if (latest.actionUrl) {
+                      window.location.href = latest.actionUrl;
+                    }
+                  },
                 }
-              },
-            } : undefined,
-          })
+              : undefined,
+          });
         }
       }
 
-      previousUnreadCount.current = currentUnreadCount
+      previousUnreadCount.current = currentUnreadCount;
     }
-  }, [query.data])
+  }, [query.data]);
 
   // Mark as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.markAsRead(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
     },
-  })
+  });
 
   // Mark all as read mutation
   const markAllAsReadMutation = useMutation({
     mutationFn: () => notificationsApi.markAllAsRead(),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
-      toast.success('All notifications marked as read')
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      toast.success("All notifications marked as read");
     },
     onError: (error: Error) => {
-      toast.error('Failed to mark all as read', {
+      toast.error("Failed to mark all as read", {
         description: error.message,
-      })
+      });
     },
-  })
+  });
 
   // Delete notification mutation
   const deleteNotificationMutation = useMutation({
     mutationFn: (id: string) => notificationsApi.deleteNotification(id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all })
-      toast.success('Notification deleted')
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      toast.success("Notification deleted");
     },
     onError: (error: Error) => {
-      toast.error('Failed to delete notification', {
+      toast.error("Failed to delete notification", {
         description: error.message,
-      })
+      });
     },
-  })
+  });
 
   return {
     notifications: query.data?.data || [],
@@ -123,13 +138,13 @@ export function useNotifications({
     loading: query.isLoading || statsQuery.isLoading,
     error: query.error || statsQuery.error,
     refetch: () => {
-      query.refetch()
-      statsQuery.refetch()
+      query.refetch();
+      statsQuery.refetch();
     },
     markAsRead: (id: string) => markAsReadMutation.mutate(id),
     markAllAsRead: () => markAllAsReadMutation.mutate(),
     deleteNotification: (id: string) => deleteNotificationMutation.mutate(id),
-  }
+  };
 }
 
 /**
@@ -140,5 +155,5 @@ export function useNotification(id: string, enabled = true) {
     queryKey: queryKeys.notifications.detail(id),
     queryFn: () => notificationsApi.getNotification(id),
     enabled: enabled && !!id,
-  })
+  });
 }

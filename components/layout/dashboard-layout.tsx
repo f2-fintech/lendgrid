@@ -1,6 +1,6 @@
-"use client"
+"use client";
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect } from "react";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -18,16 +18,22 @@ import {
   Trash2,
   Clock,
   User2,
-  GraduationCap
-} from 'lucide-react'
-import Link from 'next/link'
-import { useRouter, usePathname } from 'next/navigation'
-import { formatDistanceToNow } from 'date-fns'
+  GraduationCap,
+  ExternalLink, 
+} from "lucide-react";
+import Link from "next/link";
+import { useRouter, usePathname } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
 
-import { useAuth, AppRole } from '@/lib/auth'
-import { useLogout } from '@/lib/logout'
-import { getEmployeeToken, getEmployeeRoleLabel, clearEmployeeToken, type DecodedEmployee } from '@/lib/employee-auth'
-import { useNotifications } from '@/hooks/use-notifications'
+import { useAuth, AppRole } from "@/lib/auth";
+import { useLogout } from "@/lib/logout";
+import {
+  getEmployeeToken,
+  getEmployeeRoleLabel,
+  clearEmployeeToken,
+  type DecodedEmployee,
+} from "@/lib/employee-auth";
+import { useNotifications } from "@/hooks/use-notifications";
 import {
   Sidebar,
   SidebarContent,
@@ -44,24 +50,41 @@ import {
   SidebarRail,
   SidebarTrigger,
   useSidebar,
-} from '@/components/ui/sidebar'
-import { Button } from '@/components/ui/button'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Separator } from "@/components/ui/separator"
-import { ThemeToggle } from '@/components/theme-toggle'
-import { Badge } from '@/components/ui/badge'
-import { navigationPaths } from '@/lib/navigation'
-import { getCookie, decodeJwt } from "@/lib/utils"
-import { ThemeLogo } from '@/components/theme-logo'
-import { companiesApi, type Company } from '@/lib/companies-api'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+} from "@/components/ui/sidebar";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { ThemeToggle } from "@/components/theme-toggle";
+import { Badge } from "@/components/ui/badge";
+import { navigationPaths } from "@/lib/navigation";
+import { getCookie, decodeJwt } from "@/lib/utils";
+import { ThemeLogo } from "@/components/theme-logo";
+import { companiesApi, type Company } from "@/lib/companies-api";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
-  userRole?: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' | 'lendgrid_sales'
+  children: React.ReactNode;
+  userRole?:
+    | "super_admin"
+    | "aggregator"
+    | "aggregator_member"
+    | "lender"
+    | "hrms_employee"
+    | "lendgrid_sales";
 }
 
 const navigationConfig = {
@@ -69,113 +92,213 @@ const navigationConfig = {
     {
       title: "Overview",
       items: [
-        { title: "Dashboard", url: navigationPaths.superAdmin.dashboard, icon: LayoutDashboard },
-      ]
+        {
+          title: "Dashboard",
+          url: navigationPaths.superAdmin.dashboard,
+          icon: LayoutDashboard,
+        },
+      ],
     },
     {
       title: "Management",
       items: [
-        { title: "Aggregator Management", url: navigationPaths.superAdmin.aggregators, icon: User2 },
-        { title: "Sales Team", url: navigationPaths.superAdmin.salesUsers, icon: Users },
-        { title: "F2fintech Employees", url: navigationPaths.superAdmin.f2fintechEmployees, icon: Users },
-      ]
+        {
+          title: "Aggregator Management",
+          url: navigationPaths.superAdmin.aggregators,
+          icon: User2,
+        },
+        {
+          title: "Sales Team",
+          url: navigationPaths.superAdmin.salesUsers,
+          icon: Users,
+        },
+        {
+          title: "F2fintech Employees",
+          url: navigationPaths.superAdmin.f2fintechEmployees,
+          icon: Users,
+        },
+      ],
     },
     {
       title: "Financials",
       items: [
-        { title: "Commission Rules", url: navigationPaths.superAdmin.commission, icon: CreditCard },
-        { title: "Commission Payouts", url: navigationPaths.superAdmin.payouts, icon: FileText },
-      ]
-    }
+        {
+          title: "Commission Rules",
+          url: navigationPaths.superAdmin.commission,
+          icon: CreditCard,
+        },
+        {
+          title: "Commission Payouts",
+          url: navigationPaths.superAdmin.payouts,
+          icon: FileText,
+        },
+      ],
+    },
   ],
   aggregator: (isOmsEnabled: boolean) => [
     {
       title: "Overview",
       items: [
-        { title: "Dashboard", url: navigationPaths.aggregator.dashboard, icon: LayoutDashboard },
-      ]
+        {
+          title: "Dashboard",
+          url: navigationPaths.aggregator.dashboard,
+          icon: LayoutDashboard,
+        },
+      ],
     },
     {
       title: "Operations",
       items: [
-        { title: "Applications", url: navigationPaths.aggregator.applications, icon: FileText },
-        { title: "Commission", url: navigationPaths.aggregator.commission, icon: TrendingUp },
-      ]
+        {
+          title: "Applications",
+          url: navigationPaths.aggregator.applications,
+          icon: FileText,
+        },
+        {
+          title: "Commission",
+          url: navigationPaths.aggregator.commission,
+          icon: TrendingUp,
+        },
+      ],
     },
     {
       title: "Organization",
       items: [
         // { title: "Team Management", url: navigationPaths.aggregator.team, icon: Users },
-        { title: "Profile Settings", url: navigationPaths.aggregator.settings, icon: Settings },
-      ]
+        {
+          title: "Profile Settings",
+          url: navigationPaths.aggregator.settings,
+          icon: Settings,
+        },
+      ],
     },
     {
       title: "Resources",
       items: [
-        { title: "Training Center", url: navigationPaths.aggregator.training, icon: GraduationCap },
-      ]
-    }
+        {
+          title: "Training Center",
+          url: navigationPaths.aggregator.training,
+          icon: GraduationCap,
+        },
+        {
+          title: "SAAS Product",
+          url: "https://f2fintech-lendgrid.vercel.app/",
+          icon: CreditCard, // You can change this icon (e.g., CreditCard, LayoutDashboard, etc.)
+          isExternal: true,
+        },
+      ],
+    },
   ],
   aggregator_member: [
     {
       title: "Sales",
       items: [
         // { title: "Dashboard", url: navigationPaths.aggregatorMember.dashboard, icon: LayoutDashboard },
-        { title: "Applications", url: navigationPaths.aggregatorMember.applications, icon: FileText },
-      ]
-    }
+        {
+          title: "Applications",
+          url: navigationPaths.aggregatorMember.applications,
+          icon: FileText,
+        },
+      ],
+    },
   ],
   lender: [
     {
       title: "Overview",
       items: [
-        { title: "Dashboard", url: navigationPaths.lender.dashboard, icon: LayoutDashboard },
-        { title: "Product Manager", url: navigationPaths.lender.products, icon: CreditCard },
-        { title: "Aggregator Insights", url: navigationPaths.lender.insights, icon: BarChart3 }
-      ]
+        {
+          title: "Dashboard",
+          url: navigationPaths.lender.dashboard,
+          icon: LayoutDashboard,
+        },
+        {
+          title: "Product Manager",
+          url: navigationPaths.lender.products,
+          icon: CreditCard,
+        },
+        {
+          title: "Aggregator Insights",
+          url: navigationPaths.lender.insights,
+          icon: BarChart3,
+        },
+      ],
     },
     {
       title: "Operations",
       items: [
-        { title: "Applications", url: navigationPaths.lender.applications, icon: CreditCard },
-        { title: "Payout Approval", url: navigationPaths.lender.payouts, icon: FileText },
-        { title: "Settings", url: navigationPaths.lender.settings, icon: Settings }
-      ]
-    }
+        {
+          title: "Applications",
+          url: navigationPaths.lender.applications,
+          icon: CreditCard,
+        },
+        {
+          title: "Payout Approval",
+          url: navigationPaths.lender.payouts,
+          icon: FileText,
+        },
+        {
+          title: "Settings",
+          url: navigationPaths.lender.settings,
+          icon: Settings,
+        },
+      ],
+    },
   ],
   hrms_employee: [
     {
       title: "Workspace",
       items: [
-        { title: "Dashboard", url: navigationPaths.f2fintechEmployee.dashboard, icon: LayoutDashboard },
-        { title: "Profile", url: navigationPaths.f2fintechEmployee.profile, icon: User2 },
-        { title: "Performance", url: navigationPaths.f2fintechEmployee.performance, icon: TrendingUp },
-      ]
-    }
+        {
+          title: "Dashboard",
+          url: navigationPaths.f2fintechEmployee.dashboard,
+          icon: LayoutDashboard,
+        },
+        {
+          title: "Profile",
+          url: navigationPaths.f2fintechEmployee.profile,
+          icon: User2,
+        },
+        {
+          title: "Performance",
+          url: navigationPaths.f2fintechEmployee.performance,
+          icon: TrendingUp,
+        },
+      ],
+    },
   ],
   lendgrid_sales: [
     {
       title: "Sales Workspace",
       items: [
-        { title: "Applications", url: navigationPaths.lendgridSales.dashboard, icon: FileText },
-      ]
-    }
-  ]
-}
+        {
+          title: "Applications",
+          url: navigationPaths.lendgridSales.dashboard,
+          icon: FileText,
+        },
+      ],
+    },
+  ],
+};
 
 function AppSidebar({
   userRole,
   user,
-  isOmsEnabled
+  isOmsEnabled,
 }: {
-  userRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' | 'lendgrid_sales',
-  user?: any,
-  isOmsEnabled?: boolean
+  userRole:
+    | "super_admin"
+    | "aggregator"
+    | "aggregator_member"
+    | "lender"
+    | "hrms_employee"
+    | "lendgrid_sales";
+  user?: any;
+  isOmsEnabled?: boolean;
 }) {
-  const router = useRouter()
-  const pathname = usePathname()
-  const logout = useLogout()
-  const { setOpenMobile } = useSidebar()
+  const router = useRouter();
+  const pathname = usePathname();
+  const logout = useLogout();
+  const { setOpenMobile } = useSidebar();
   let navigation;
 
   if (userRole === "aggregator") {
@@ -185,32 +308,39 @@ function AppSidebar({
   }
 
   const handleLogout = () => {
-    if (userRole === 'hrms_employee') {
-      clearEmployeeToken()
-      router.replace('/login')
+    if (userRole === "hrms_employee") {
+      clearEmployeeToken();
+      router.replace("/login");
     } else {
-      logout()
+      logout();
     }
-  }
+  };
 
   const getRoleDisplayName = (role: string) => {
     switch (role) {
-      case 'super_admin': return 'Super Admin'
-      case 'aggregator': return 'Aggregator Admin'
-      case 'aggregator_member': return 'Aggregator Member'
-      case 'lender': return 'Lender Admin'
-      case 'hrms_employee': return getEmployeeRoleLabel(user?.rawRole ?? '3')
-      case 'lendgrid_sales': return 'Lendgrid Sales'
-      default: return 'User'
+      case "super_admin":
+        return "Super Admin";
+      case "aggregator":
+        return "Aggregator Admin";
+      case "aggregator_member":
+        return "Aggregator Member";
+      case "lender":
+        return "Lender Admin";
+      case "hrms_employee":
+        return getEmployeeRoleLabel(user?.rawRole ?? "3");
+      case "lendgrid_sales":
+        return "Lendgrid Sales";
+      default:
+        return "User";
     }
-  }
+  };
 
-  const displayName = user?.username || user?.email || 'User'
-  const initials = (displayName || 'U')
-    .split(' ')
+  const displayName = user?.username || user?.email || "User";
+  const initials = (displayName || "U")
+    .split(" ")
     .map((s: string) => s.charAt(0).toUpperCase())
     .slice(0, 2)
-    .join('')
+    .join("");
 
   if (!navigation || !Array.isArray(navigation)) {
     return (
@@ -219,7 +349,7 @@ function AppSidebar({
           <div className="p-4 text-sidebar-foreground">Loading...</div>
         </SidebarHeader>
       </Sidebar>
-    )
+    );
   }
 
   return (
@@ -228,7 +358,10 @@ function AppSidebar({
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
-              <Link href={navigationPaths.home} onClick={() => setOpenMobile(false)}>
+              <Link
+                href={navigationPaths.home}
+                onClick={() => setOpenMobile(false)}
+              >
                 <div className="flex items-center gap-3">
                   <ThemeLogo
                     alt="F2Fintech Logo"
@@ -253,27 +386,56 @@ function AppSidebar({
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="space-y-1 mt-1">
-                {group.items.map((item: { url: string; icon: React.ElementType; title: string }) => {
-                  // Precise active matching
-                  const isActive = pathname === item.url || (item.url !== '/' && pathname.startsWith(item.url))
-                  return (
-                    <SidebarMenuItem key={item.title}>
-                      <SidebarMenuButton
-                        asChild
-                        isActive={isActive}
-                        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
-                          ? "bg-primary/10 text-primary font-medium"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                {/* === EXACT REFERENCE: THIS IS THE PIECE THAT WAS REPLACED === */}
+                {group.items.map(
+                  (item: {
+                    url: string;
+                    icon: React.ElementType;
+                    title: string;
+                    isExternal?: boolean;
+                  }) => {
+                    // Precise active matching
+                    const isActive =
+                      pathname === item.url ||
+                      (item.url !== "/" && pathname.startsWith(item.url));
+                    return (
+                      <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                          asChild
+                          isActive={isActive}
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
+                            isActive
+                              ? "bg-primary/10 text-primary font-medium"
+                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
                           }`}
-                      >
-                        <Link href={item.url} onClick={() => setOpenMobile(false)}>
-                          <item.icon className={`w-5 h-5 ${isActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                          <span className="text-sm">{item.title}</span>
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  )
-                })}
+                        >
+                          <Link
+                            href={item.url}
+                            onClick={() => setOpenMobile(false)}
+                            target={item.isExternal ? "_blank" : undefined}
+                            rel={
+                              item.isExternal
+                                ? "noopener noreferrer"
+                                : undefined
+                            }
+                          >
+                            <item.icon
+                              className={`w-5 h-5 ${isActive ? "text-primary" : "text-muted-foreground"}`}
+                            />
+
+                            {/* Flex wrapper to space out the title text and the external icon */}
+                            <span className="text-sm flex items-center gap-1.5 w-full justify-between">
+                              {item.title}
+                              {item.isExternal && (
+                                <ExternalLink className="w-3.5 h-3.5 opacity-60 group-hover:opacity-100 transition-opacity" />
+                              )}
+                            </span>
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  },
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
@@ -287,12 +449,21 @@ function AppSidebar({
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarImage src={user?.profilePicture || ''} alt={displayName} />
-                    <AvatarFallback className="rounded-lg bg-accent text-accent-foreground">{initials}</AvatarFallback>
+                    <AvatarImage
+                      src={user?.profilePicture || ""}
+                      alt={displayName}
+                    />
+                    <AvatarFallback className="rounded-lg bg-accent text-accent-foreground">
+                      {initials}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-semibold">{displayName}</span>
-                    <span className="truncate text-xs text-muted-foreground">{getRoleDisplayName(userRole)}</span>
+                    <span className="truncate font-semibold">
+                      {displayName}
+                    </span>
+                    <span className="truncate text-xs text-muted-foreground">
+                      {getRoleDisplayName(userRole)}
+                    </span>
                   </div>
                   <ChevronUp className="ml-auto size-4" />
                 </SidebarMenuButton>
@@ -304,15 +475,10 @@ function AppSidebar({
                 align="end"
                 sideOffset={4}
               >
-                {/* <DropdownMenuItem>
-                  <User className="w-4 h-4 mr-2" />
-                  Profile
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="w-4 h-4 mr-2" />
-                  Settings
-                </DropdownMenuItem> */}
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-destructive"
+                >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout
                 </DropdownMenuItem>
@@ -323,60 +489,83 @@ function AppSidebar({
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
-  )
+  );
 }
 
 export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
-  const [showNotifications, setShowNotifications] = useState(false)
-  const panelRef = useRef<HTMLDivElement | null>(null)
-  const router = useRouter()
+  const [showNotifications, setShowNotifications] = useState(false);
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const router = useRouter();
 
   // Detect employee session first (employee_token cookie)
-  const employeeToken = getEmployeeToken()
-  const decodedEmployee: DecodedEmployee | null = employeeToken ? decodeJwt(employeeToken) as DecodedEmployee : null
-  const isEmployeeSession = decodedEmployee?.type === 'hrms_employee'
+  const employeeToken = getEmployeeToken();
+  const decodedEmployee: DecodedEmployee | null = employeeToken
+    ? (decodeJwt(employeeToken) as DecodedEmployee)
+    : null;
+  const isEmployeeSession = decodedEmployee?.type === "hrms_employee";
 
-  const { loading, role, user } = useAuth(['super_admin', 'aggregator_admin', 'aggregator_member', 'lender_admin', 'lendgrid_sales'] as AppRole[])
-  const normalizedRole: 'super_admin' | 'aggregator' | 'aggregator_member' | 'lender' | 'hrms_employee' | 'lendgrid_sales' =
-    isEmployeeSession ? 'hrms_employee'
-      : role === 'super_admin' ? 'super_admin'
-        : role === 'aggregator_admin' ? 'aggregator'
-          : role === 'aggregator_member' ? 'aggregator_member'
-            : role === 'lendgrid_sales' ? 'lendgrid_sales'
-              : 'lender'
-  const token = getCookie("lendgrid_cookie")
-  const decoded = decodeJwt(token)
-  const isOmsEnabled = decoded?.isOmsEnabled ?? false
+  const { loading, role, user } = useAuth([
+    "super_admin",
+    "aggregator_admin",
+    "aggregator_member",
+    "lender_admin",
+    "lendgrid_sales",
+  ] as AppRole[]);
+  const normalizedRole:
+    | "super_admin"
+    | "aggregator"
+    | "aggregator_member"
+    | "lender"
+    | "hrms_employee"
+    | "lendgrid_sales" = isEmployeeSession
+    ? "hrms_employee"
+    : role === "super_admin"
+      ? "super_admin"
+      : role === "aggregator_admin"
+        ? "aggregator"
+        : role === "aggregator_member"
+          ? "aggregator_member"
+          : role === "lendgrid_sales"
+            ? "lendgrid_sales"
+            : "lender";
+  const token = getCookie("lendgrid_cookie");
+  const decoded = decodeJwt(token);
+  const isOmsEnabled = decoded?.isOmsEnabled ?? false;
 
-  const employeeUser = isEmployeeSession && decodedEmployee ? {
-    username: `${decodedEmployee.first_name} ${decodedEmployee.last_name}`.trim(),
-    email: decodedEmployee.email,
-    profilePicture: decodedEmployee.image,
-    rawRole: decodedEmployee.role,  // role_priority: '1'|'2'|'3'
-  } : null
+  const employeeUser =
+    isEmployeeSession && decodedEmployee
+      ? {
+          username:
+            `${decodedEmployee.first_name} ${decodedEmployee.last_name}`.trim(),
+          email: decodedEmployee.email,
+          profilePicture: decodedEmployee.image,
+          rawRole: decodedEmployee.role, // role_priority: '1'|'2'|'3'
+        }
+      : null;
 
-  const isSalesRole = normalizedRole === 'lendgrid_sales'
-  const [companies, setCompanies] = useState<Company[]>([])
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>('')
+  const isSalesRole = normalizedRole === "lendgrid_sales";
+  const [companies, setCompanies] = useState<Company[]>([]);
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
 
   useEffect(() => {
-    if (!isSalesRole) return
-    const saved = localStorage.getItem('selectedCompanyId') || ''
-    setSelectedCompanyId(saved)
-    companiesApi.getAll({ page: 1, limit: 100 })
-      .then(res => setCompanies(res.data?.results || []))
-      .catch(console.error)
-  }, [isSalesRole])
+    if (!isSalesRole) return;
+    const saved = localStorage.getItem("selectedCompanyId") || "";
+    setSelectedCompanyId(saved);
+    companiesApi
+      .getAll({ page: 1, limit: 100 })
+      .then((res) => setCompanies(res.data?.results || []))
+      .catch(console.error);
+  }, [isSalesRole]);
 
   const handleCompanyChange = (value: string) => {
-    setSelectedCompanyId(value)
+    setSelectedCompanyId(value);
     if (!value) {
-      localStorage.removeItem('selectedCompanyId')
+      localStorage.removeItem("selectedCompanyId");
     } else {
-      localStorage.setItem('selectedCompanyId', value)
+      localStorage.setItem("selectedCompanyId", value);
     }
-    window.dispatchEvent(new CustomEvent('companyChanged', { detail: value }))
-  }
+    window.dispatchEvent(new CustomEvent("companyChanged", { detail: value }));
+  };
 
   // Use notifications hook with polling
   const {
@@ -390,69 +579,75 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   } = useNotifications({
     page: 1,
     limit: 10,
-    pollingInterval: 1000000,   // Poll every 10 minutes
-  })
+    pollingInterval: 10000, // Poll every 10 minutes
+  });
 
   useEffect(() => {
-    refetch()
-  }, [])
+    refetch();
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (panelRef.current && !panelRef.current.contains(event.target as Node)) {
-        setShowNotifications(false)
+      if (
+        panelRef.current &&
+        !panelRef.current.contains(event.target as Node)
+      ) {
+        setShowNotifications(false);
       }
     }
     if (showNotifications) {
-      document.addEventListener("mousedown", handleClickOutside)
+      document.addEventListener("mousedown", handleClickOutside);
     }
-    return () => document.removeEventListener("mousedown", handleClickOutside)
-  }, [showNotifications])
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showNotifications]);
 
   const handleNotificationClick = (notification: any) => {
     // Mark as read
-    if (notification.status === 'UNREAD') {
-      markAsRead(notification._id)
+    if (notification.status === "UNREAD") {
+      markAsRead(notification._id);
     }
 
     // Navigate to action URL if exists
     if (notification.actionUrl) {
-      router.push(notification.actionUrl)
-      setShowNotifications(false)
+      router.push(notification.actionUrl);
+      setShowNotifications(false);
     }
-  }
+  };
 
-  const handleDeleteNotification = (e: React.MouseEvent, notificationId: string) => {
-    e.stopPropagation()
-    deleteNotification(notificationId)
-  }
+  const handleDeleteNotification = (
+    e: React.MouseEvent,
+    notificationId: string,
+  ) => {
+    e.stopPropagation();
+    deleteNotification(notificationId);
+  };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
-      case 'URGENT':
-        return 'text-red-500'
-      case 'HIGH':
-        return 'text-orange-500'
-      case 'MEDIUM':
-        return 'text-yellow-500'
+      case "URGENT":
+        return "text-red-500";
+      case "HIGH":
+        return "text-orange-500";
+      case "MEDIUM":
+        return "text-yellow-500";
       default:
-        return 'text-blue-500'
+        return "text-blue-500";
     }
-  }
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case 'COMMISSION_STATUS_CHANGE':
-        return <CreditCard className="h-4 w-4" />
-      case 'TICKET_STATUS_CHANGE':
-        return <FileText className="h-4 w-4" />
+      case "COMMISSION_STATUS_CHANGE":
+        return <CreditCard className="h-4 w-4" />;
+      case "TICKET_STATUS_CHANGE":
+        return <FileText className="h-4 w-4" />;
       default:
-        return <Bell className="h-4 w-4" />
+        return <Bell className="h-4 w-4" />;
     }
-  }
+  };
 
   if (loading) {
-    return <div className="p-8 text-foreground">Loading...</div>
+    return <div className="p-8 text-foreground">Loading...</div>;
   }
 
   return (
@@ -469,7 +664,10 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
 
           <div className="ml-auto flex items-center space-x-2 relative">
             {isSalesRole && (
-              <Select value={selectedCompanyId} onValueChange={handleCompanyChange}>
+              <Select
+                value={selectedCompanyId}
+                onValueChange={handleCompanyChange}
+              >
                 <SelectTrigger className="w-52 h-9 bg-background/50 border-border text-foreground text-sm">
                   <SelectValue placeholder="Select Aggregator..." />
                 </SelectTrigger>
@@ -497,13 +695,16 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
                 <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs bg-destructive hover:bg-destructive notification-pulse">
-                  {unreadCount > 9 ? '9+' : unreadCount}
+                  {unreadCount > 9 ? "9+" : unreadCount}
                 </Badge>
               )}
             </Button>
 
             {showNotifications && (
-              <div ref={panelRef} className="absolute right-0 top-14 w-[420px] z-50">
+              <div
+                ref={panelRef}
+                className="absolute right-0 top-14 w-[420px] z-50"
+              >
                 <Card className="glass-effect shadow-2xl rounded-2xl overflow-hidden">
                   <CardHeader className="border-b border-border py-4">
                     <div className="flex items-center justify-between">
@@ -547,7 +748,9 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                       <div className="flex items-center justify-center h-[450px]">
                         <div className="flex flex-col items-center gap-3">
                           <div className="professional-spinner h-10 w-10" />
-                          <p className="text-sm text-muted-foreground">Loading notifications...</p>
+                          <p className="text-sm text-muted-foreground">
+                            Loading notifications...
+                          </p>
                         </div>
                       </div>
                     ) : notifications.length === 0 ? (
@@ -555,7 +758,9 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                         <div className="p-4 bg-muted rounded-full mb-4">
                           <Bell className="h-12 w-12 text-muted-foreground" />
                         </div>
-                        <p className="text-base font-medium mb-1">No notifications yet</p>
+                        <p className="text-base font-medium mb-1">
+                          No notifications yet
+                        </p>
                         <p className="text-sm text-muted-foreground text-center">
                           We'll notify you when something important happens
                         </p>
@@ -563,18 +768,31 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                     ) : (
                       <CardContent className="p-0">
                         {notifications.map((notification, index) => {
-                          const isUnread = notification.status === 'UNREAD'
-                          const isHighPriority = notification.priority === 'HIGH' || notification.priority === 'URGENT'
-                          const priorityColor = notification.priority === 'URGENT' ? 'text-red-400' :
-                            notification.priority === 'HIGH' ? 'text-orange-400' : 'text-blue-400'
+                          const isUnread = notification.status === "UNREAD";
+                          const isHighPriority =
+                            notification.priority === "HIGH" ||
+                            notification.priority === "URGENT";
+                          const priorityColor =
+                            notification.priority === "URGENT"
+                              ? "text-red-400"
+                              : notification.priority === "HIGH"
+                                ? "text-orange-400"
+                                : "text-blue-400";
 
                           return (
                             <div key={notification._id}>
-                              <div className={`relative p-4 hover:bg-muted/50 cursor-pointer transition-all group ${isUnread ? 'bg-primary/10 border-l-4 border-primary' : 'bg-transparent border-l-4 border-transparent'}`}
-                                onClick={() => handleNotificationClick(notification)}>
+                              <div
+                                className={`relative p-4 hover:bg-muted/50 cursor-pointer transition-all group ${isUnread ? "bg-primary/10 border-l-4 border-primary" : "bg-transparent border-l-4 border-transparent"}`}
+                                onClick={() =>
+                                  handleNotificationClick(notification)
+                                }
+                              >
                                 {isUnread && isHighPriority && (
                                   <div className="absolute top-2 right-2">
-                                    <div className={`w-2 h-2 rounded-full ${notification.priority === 'URGENT' ? 'bg-destructive animate-pulse' : 'bg-orange-500'}`} title={notification.priority} />
+                                    <div
+                                      className={`w-2 h-2 rounded-full ${notification.priority === "URGENT" ? "bg-destructive animate-pulse" : "bg-orange-500"}`}
+                                      title={notification.priority}
+                                    />
                                   </div>
                                 )}
 
@@ -582,27 +800,40 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                                   {/* Content */}
                                   <div className="flex-1 space-y-1.5 min-w-0 pr-6">
                                     <div className="flex items-start justify-between gap-2">
-                                      <p className={`text-sm font-semibold ${isUnread ? 'text-foreground' : 'text-muted-foreground'}`}>
+                                      <p
+                                        className={`text-sm font-semibold ${isUnread ? "text-foreground" : "text-muted-foreground"}`}
+                                      >
                                         {notification.title}
                                       </p>
-                                      {isUnread &&
-                                        <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1.5 shadow-lg shadow-primary/50" />}
+                                      {isUnread && (
+                                        <div className="h-2 w-2 rounded-full bg-primary flex-shrink-0 mt-1.5 shadow-lg shadow-primary/50" />
+                                      )}
                                     </div>
-                                    <p className={`text-xs leading-relaxed ${isUnread ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}>
+                                    <p
+                                      className={`text-xs leading-relaxed ${isUnread ? "text-muted-foreground" : "text-muted-foreground/70"}`}
+                                    >
                                       {notification.message}
                                     </p>
                                     <div className="flex items-center justify-between pt-1">
                                       <p className="text-xs flex items-center gap-1 text-muted-foreground">
                                         <Clock className="h-3 w-3" />
-                                        {formatDistanceToNow(new Date(notification.createdAt), {
-                                          addSuffix: true,
-                                        })}
+                                        {formatDistanceToNow(
+                                          new Date(notification.createdAt),
+                                          {
+                                            addSuffix: true,
+                                          },
+                                        )}
                                       </p>
                                       <Button
                                         variant="ghost"
                                         size="icon"
                                         className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
-                                        onClick={(e) => handleDeleteNotification(e, notification._id)}
+                                        onClick={(e) =>
+                                          handleDeleteNotification(
+                                            e,
+                                            notification._id,
+                                          )
+                                        }
                                       >
                                         <Trash2 className="h-3.5 w-3.5" />
                                       </Button>
@@ -614,7 +845,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                                 <Separator />
                               )}
                             </div>
-                          )
+                          );
                         })}
                       </CardContent>
                     )}
@@ -648,5 +879,5 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
         </main>
       </SidebarInset>
     </SidebarProvider>
-  )
+  );
 }

@@ -523,6 +523,15 @@ export function LoginForm() {
                     )}
                   </Button>
                 </div>
+
+                <div className="flex justify-end mt-1">
+                  <Link
+                    href="/forgot-password?role=employee"
+                    className="text-xs text-primary hover:underline font-medium transition-colors"
+                  >
+                    Forgot Password?
+                  </Link>
+                </div>
                 {empErrors.password && (
                   <p className="text-destructive text-sm mt-1 font-medium">
                     {empErrors.password.message}

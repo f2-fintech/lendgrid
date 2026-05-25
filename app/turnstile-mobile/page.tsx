@@ -4,87 +4,88 @@ import Script from "next/script";
 import { useEffect, useRef, useState } from "react";
 
 declare global {
-    interface Window {
-        turnstile?: {
-            render: (el: string | HTMLElement, opts: any) => string;
-            reset: (id: string) => void;
-            remove: (id: string) => void;
-        };
-        ReactNativeWebView?: {
-            postMessage: (msg: string) => void;
-        };
-    }
+  interface Window {
+    turnstile?: {
+      render: (el: string | HTMLElement, opts: any) => string;
+      reset: (id: string) => void;
+      remove: (id: string) => void;
+    };
+    ReactNativeWebView?: {
+      postMessage: (msg: string) => void;
+    };
+  }
 }
 
 export default function TurnstileMobilePage() {
-    const [loaded, setLoaded] = useState(false);
-    const widgetId = useRef<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const widgetId = useRef<string | null>(null);
 
-    useEffect(() => {
-        if (!loaded || !window.turnstile || widgetId.current) return;
+  useEffect(() => {
+    if (!loaded || !window.turnstile || widgetId.current) return;
 
-        const el = document.getElementById("turnstile-mobile");
-        if (!el) return;
+    const el = document.getElementById("turnstile-mobile");
+    if (!el) return;
 
+    try {
+      widgetId.current = window.turnstile.render(el, {
+        sitekey: process.env.NEXT_PUBLIC_CLOUDFLARE_SITE_KEY,
+        theme: "light", // Keeps Turnstile widget light
+        callback: (token: string) => {
+          // send token to mobile webview
+          window.ReactNativeWebView?.postMessage(
+            JSON.stringify({ type: "lendgrid_cookie", token }),
+          );
+        },
+        "expired-callback": () => {
+          window.ReactNativeWebView?.postMessage(
+            JSON.stringify({ type: "lendgrid_cookie", token: null }),
+          );
+        },
+        "error-callback": () => {
+          window.ReactNativeWebView?.postMessage(
+            JSON.stringify({ type: "lendgrid_cookie", token: null }),
+          );
+        },
+      });
+    } catch {
+      window.ReactNativeWebView?.postMessage(
+        JSON.stringify({ type: "lendgrid_cookie", token: null }),
+      );
+    }
+
+    return () => {
+      if (widgetId.current && window.turnstile) {
         try {
-            widgetId.current = window.turnstile.render(el, {
-                sitekey: process.env.NEXT_PUBLIC_CLOUDFLARE_SITE_KEY,
-                theme: "dark",
-                callback: (token: string) => {
-                    // send token to mobile webview
-                    window.ReactNativeWebView?.postMessage(
-                        JSON.stringify({ type: "lendgrid_cookie", token })
-                    );
-                },
-                "expired-callback": () => {
-                    window.ReactNativeWebView?.postMessage(
-                        JSON.stringify({ type: "lendgrid_cookie", token: null })
-                    );
-                },
-                "error-callback": () => {
-                    window.ReactNativeWebView?.postMessage(
-                        JSON.stringify({ type: "lendgrid_cookie", token: null })
-                    );
-                },
-            });
-        } catch {
-            window.ReactNativeWebView?.postMessage(
-                JSON.stringify({ type: "lendgrid_cookie", token: null })
-            );
-        }
+          window.turnstile.remove(widgetId.current);
+        } catch {}
+        widgetId.current = null;
+      }
+    };
+  }, [loaded]);
 
-        return () => {
-            if (widgetId.current && window.turnstile) {
-                try {
-                    window.turnstile.remove(widgetId.current);
-                } catch { }
-                widgetId.current = null;
-            }
-        };
-    }, [loaded]);
+  return (
+    <div
+      style={{
+        minHeight: "100vh",
+        backgroundColor: "#ffffff", // ◄ Forces the full container background to pure white
+        color: "#000000", // ◄ Forces any text to pure black
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        flexDirection: "column",
+        gap: 10,
+        padding: 16,
+      }}
+    >
+      {/* optional */}
+      <meta name="robots" content="noindex, nofollow" />
 
-    return (
-        <div
-            className="bg-background"
-            style={{
-                minHeight: "100vh",
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "center",
-                flexDirection: "column",
-                gap: 10,
-                padding: 16,
-            }}
-        >
-            {/* optional */}
-            <meta name="robots" content="noindex, nofollow" />
-
-            <div id="turnstile-mobile" />
-            <Script
-                src="https://challenges.cloudflare.com/turnstile/v0/api.js"
-                strategy="afterInteractive"
-                onLoad={() => setLoaded(true)}
-            />
-        </div>
-    );
+      <div id="turnstile-mobile" />
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="afterInteractive"
+        onLoad={() => setLoaded(true)}
+      />
+    </div>
+  );
 }
