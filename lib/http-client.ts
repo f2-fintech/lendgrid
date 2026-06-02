@@ -10,7 +10,7 @@ export function getCompanyId(): string | null {
 
     // Sales dropdown selection takes highest priority
     const selectedCompanyId = localStorage.getItem('selectedCompanyId');
-    if (selectedCompanyId) return selectedCompanyId;
+    if (selectedCompanyId && selectedCompanyId !== 'all') return selectedCompanyId;
 
     const token =
         document.cookie

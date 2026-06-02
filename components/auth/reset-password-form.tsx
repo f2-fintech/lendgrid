@@ -41,8 +41,10 @@ export function ResetPasswordForm() {
   const [isVerifying, setIsVerifying] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isEmployeePending, setIsEmployeePending] = useState(false);
 
   const token = searchParams.get("token");
+  const isEmployee = searchParams.get("role") === "employee";
 
   const {
     register,
@@ -72,18 +74,42 @@ export function ResetPasswordForm() {
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token) return;
     try {
-      const response: any = await resetMutation.mutateAsync({
-        token,
-        newPassword: data.password,
-      });
-      if (response?.resetPassword?.success) {
-        toast({
-          title: "Password Updated",
-          description:
-            response.resetPassword.message ||
-            "Your password has been reset successfully.",
+      if (isEmployee) {
+        setIsEmployeePending(true);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/reset-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, newPassword: data.password }),
         });
-        router.push("/login");
+        const result = await response.json();
+
+        if (response.ok && result.statusCode === 200) {
+          toast({
+            title: "Password Updated",
+            description: result.message || "Your OMS password has been reset successfully.",
+          });
+          router.push("/login?role=employee");
+        } else {
+          toast({
+            title: "Error",
+            description: result.message || "Invalid or expired token.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        const response: any = await resetMutation.mutateAsync({
+          token,
+          newPassword: data.password,
+        });
+        if (response?.resetPassword?.success) {
+          toast({
+            title: "Password Updated",
+            description:
+              response.resetPassword.message ||
+              "Your password has been reset successfully.",
+          });
+          router.push("/login");
+        }
       }
     } catch (error: any) {
       toast({
@@ -91,8 +117,12 @@ export function ResetPasswordForm() {
         description: error.message || "Could not reset password.",
         variant: "destructive",
       });
+    } finally {
+      if (isEmployee) setIsEmployeePending(false);
     }
   };
+
+  const loading = resetMutation.isPending || isEmployeePending;
 
   return (
     <div className="w-full max-w-[480px]">
@@ -140,7 +170,7 @@ export function ResetPasswordForm() {
                 </span>
               </div>
               <p className="text-sm" style={{ color: "#64748b" }}>
-                Secure access to your dashboard
+                {isEmployee ? "OMS Staff Password Reset" : "Secure access to your dashboard"}
               </p>
             </div>
 
@@ -239,7 +269,7 @@ export function ResetPasswordForm() {
               <Button
                 type="button"
                 onClick={handleSubmit(onSubmit)}
-                disabled={resetMutation.isPending}
+                disabled={loading}
                 className="w-full h-12 font-semibold rounded-xl text-white text-sm"
                 style={{
                   background:
@@ -247,7 +277,7 @@ export function ResetPasswordForm() {
                   border: "none",
                 }}
               >
-                {resetMutation.isPending ? (
+                {loading ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin mr-2" />
                     Updating...

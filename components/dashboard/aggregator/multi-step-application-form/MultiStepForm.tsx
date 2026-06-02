@@ -67,6 +67,7 @@ export const MultiStepFormContent: React.FC<{
         setFormData,
         nextStep,
         prevStep,
+        resetForm,
     } = useFormContext();
 
     const { toast } = useToast();
@@ -85,14 +86,24 @@ export const MultiStepFormContent: React.FC<{
     const decoded = decodeJwt(token)
     // Guest mode: use prop directly; authenticated mode: read from JWT
     const isOmsEnabled = guestIsOmsEnabled ?? (decoded?.isOmsEnabled ?? false)
+    const isOmsSalesSession =
+        decoded?.source === 'oms' && String(decoded?.role || '').toLowerCase() === 'sales';
+    const omsSalesUserId =
+        decoded?.id ??
+        decoded?.userId ??
+        decoded?.sub ??
+        decoded?.salesUserId ??
+        decoded?.user_id;
 
     // Guest mode: use URL-sourced companyId; authenticated mode: read from JWT / localStorage
     const companyId =
         guestCompanyId ??
         (typeof window !== 'undefined' ? getCompanyId() : null);
+    const resolvedCompanyId =
+        companyId && companyId !== 'all' ? String(companyId) : '';
     const commonHeaders = {
         'Content-Type': 'application/json',
-        ...(companyId ? { 'companyid': companyId } : {}),
+        ...(resolvedCompanyId ? { 'companyid': resolvedCompanyId } : {}),
     };
 
     useEffect(() => {
@@ -193,7 +204,7 @@ export const MultiStepFormContent: React.FC<{
             body: JSON.stringify({
                 customer_application_id: applicationId,
                 status: 'submitted',
-                ...(companyId ? { company_id: companyId } : {}),
+                ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
             }),
         });
 
@@ -279,6 +290,10 @@ export const MultiStepFormContent: React.FC<{
     const handleStep1Submit = async (data: Step1FormData, existingCustomerId: string) => {
         setIsLoading(true);
         try {
+            if (isOmsSalesSession && !resolvedCompanyId) {
+                throw new Error('Please select an aggregator before creating the application.');
+            }
+
             const randomFourDigit = 8462;
 
             // Prepare customer data
@@ -290,6 +305,7 @@ export const MultiStepFormContent: React.FC<{
                 dob: data.dob,
                 password: `${data.name.replace(/\s/g, '')}@${randomFourDigit}`,
                 status: 'active',
+                ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
             };
 
             // Register customer or use existing
@@ -475,6 +491,10 @@ export const MultiStepFormContent: React.FC<{
 
         setIsLoading(true);
         try {
+            if (isOmsSalesSession && !resolvedCompanyId) {
+                throw new Error('Please select an aggregator before creating the application.');
+            }
+
             // 1. Update customer info with salary/EMI/liability
             await updateCustomerInfo(customerId, {
                 salary: data.salary,
@@ -532,11 +552,29 @@ export const MultiStepFormContent: React.FC<{
                 ),
                 case_type: formData.caseType || 'fresh',
                 is_picked: isOmsEnabled ? 0 : 1,
-                source: guestSource || 'lendgrid',
+                source: guestSource || (isOmsSalesSession ? 'oms' : 'lendgrid'),
+                ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
+                ...(isOmsSalesSession && omsSalesUserId
+                    ? { applied_by: Number(omsSalesUserId) }
+                    : {}),
                 ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
             };
 
             const applicationId = await createApplication(applicationPayload);
+            
+            // Clear localStorage immediately after successful application creation
+            // This ensures form data is cleared even if subsequent API calls fail
+            localStorage.removeItem('activeStep');
+            localStorage.removeItem('loanFormCustomerId');
+            localStorage.removeItem('loanFormAppNumber');
+            localStorage.removeItem('loanFormData');
+            
+            // Reset form context state and local UI state
+            resetForm();
+            setShowStep0(true);
+            setCompletedSteps([]);
+            setSkippedSteps([]);
+            
             await createLoanTracking(applicationId);
 
             // Create ticket only if OMS is NOT enabled (matches Step 1's original guard)
@@ -546,21 +584,11 @@ export const MultiStepFormContent: React.FC<{
                     headers: commonHeaders,
                     body: JSON.stringify({
                         customer_application_id: applicationId,
-                        user_id: companyId,
+                        user_id: resolvedCompanyId,
                         status: 'operations',
                     }),
                 });
             }
-
-            setApplicationNumber(String(appNumber));
-
-            // 4. Clear all persisted loan-form data from localStorage
-            localStorage.removeItem('activeStep');
-            localStorage.removeItem('loanFormCustomerId');
-            localStorage.removeItem('loanFormAppNumber');
-            localStorage.removeItem('loanFormData');
-
-            setCompletedSteps((prev) => [...prev, 3]);
 
             if (onSuccess) {
                 onSuccess();

@@ -43,6 +43,12 @@ export function useCreateApplication() {
     return useMutation({
         mutationFn: (payload: any) => applicationsApi.create(payload),
         onSuccess: () => {
+            // Clear localStorage used for loan form data
+            localStorage.removeItem('activeStep');
+            localStorage.removeItem('loanFormCustomerId');
+            localStorage.removeItem('loanFormAppNumber');
+            localStorage.removeItem('loanFormData');
+            
             queryClient.invalidateQueries({ queryKey: queryKeys.applications.all })
             toast({
                 title: 'Success',

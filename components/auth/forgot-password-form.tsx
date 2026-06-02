@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, ArrowLeft, CheckCircle } from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { navigationPaths } from "@/lib/navigation";
 import { ThemeLogo } from "@/components/theme-logo";
 import { useForgotPassword } from "@/hooks/use-users";
@@ -23,9 +24,13 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export function ForgotPasswordForm() {
   const [isSuccess, setIsSuccess] = useState(false);
+  const [isEmployeePending, setIsEmployeePending] = useState(false);
   const { toast } = useToast();
+  const searchParams = useSearchParams();
+  const isEmployee = searchParams.get("role") === "employee";
 
   const { mutateAsync, isPending } = useForgotPassword();
+  const loading = isPending || isEmployeePending;
 
   const {
     register,
@@ -37,17 +42,37 @@ export function ForgotPasswordForm() {
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
     try {
-      const response = await mutateAsync(data.email);
-      if (response?.forgotPassword?.success) {
-        setIsSuccess(true);
-      } else {
-        toast({
-          title: "Error",
-          description:
-            response?.forgotPassword?.message ||
-            "User not found or could not process request.",
-          variant: "destructive",
+      if (isEmployee) {
+        setIsEmployeePending(true);
+        const response = await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/forgot-password`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: data.email }),
         });
+        const result = await response.json();
+
+        if (response.ok && result.statusCode === 200) {
+          setIsSuccess(true);
+        } else {
+          toast({
+            title: "Error",
+            description: result?.message || "User not found or could not process request.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        const response = await mutateAsync(data.email);
+        if (response?.forgotPassword?.success) {
+          setIsSuccess(true);
+        } else {
+          toast({
+            title: "Error",
+            description:
+              response?.forgotPassword?.message ||
+              "User not found or could not process request.",
+            variant: "destructive",
+          });
+        }
       }
     } catch (error: any) {
       console.error("Forgot password error:", error);
@@ -56,6 +81,8 @@ export function ForgotPasswordForm() {
         description: error.message || "Could not reach the server.",
         variant: "destructive",
       });
+    } finally {
+      if (isEmployee) setIsEmployeePending(false);
     }
   };
 
@@ -162,14 +189,14 @@ export function ForgotPasswordForm() {
             className="text-sm font-semibold"
             style={{ color: "#cbd5e1" }}
           >
-            Email Address
+            {isEmployee ? "OMS Work Email" : "Email Address"}
           </Label>
           <Input
             id="email"
             type="email"
             {...register("email")}
             placeholder="Enter your email"
-            disabled={isPending}
+            disabled={loading}
             className="h-12 w-full rounded-lg text-sm"
             style={{
               background: "#0d1625",
@@ -188,14 +215,14 @@ export function ForgotPasswordForm() {
         <Button
           type="button"
           onClick={handleSubmit(onSubmit)}
-          disabled={isPending}
+          disabled={loading}
           className="w-full h-12 font-semibold rounded-xl text-white text-sm"
           style={{
             background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
             border: "none",
           }}
         >
-          {isPending ? (
+          {loading ? (
             <>
               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
               Sending Link...
