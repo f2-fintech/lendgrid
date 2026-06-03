@@ -29,7 +29,7 @@ export const navigationPaths = {
     reports: '/aggregator/reports',
     applications: '/aggregator/applications',
     training: '/aggregator/training',
-    // team: '/aggregator/team',
+    team: '/aggregator/team',
     settings: '/aggregator/settings'
   },
 

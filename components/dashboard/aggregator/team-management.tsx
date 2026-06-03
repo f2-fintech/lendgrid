@@ -17,7 +17,10 @@ import {
     Trash2,
     Calendar,
     Activity,
-    CheckCircle
+    CheckCircle,
+    Copy,
+    Share2,
+    Link as LinkIcon
 } from "lucide-react"
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -169,14 +172,14 @@ export function TeamManagement() {
     const companyName = companyNameFromToken || profile?.companyName || null
 
     const teamMembers: any[] = profile?.teamMemberUsers || []
-    
+
     const activeCount = teamMembers.filter((m) => m.status === "ACTIVE").length
     const inactiveCount = teamMembers.filter((m) => m.status === "INACTIVE").length
 
     const filtered = teamMembers.filter((m: any) => {
         const matchesStatus = isInactiveView ? m.status === "INACTIVE" : m.status !== "INACTIVE"
         if (!matchesStatus) return false
-        
+
         const q = searchTerm.toLowerCase()
         return (
             m.username?.toLowerCase().includes(q) ||
@@ -265,7 +268,7 @@ export function TeamManagement() {
                         </span>
                     </p>
                 </div>
-                
+
                 <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto mt-2 md:mt-0">
                     {!isInactiveView && (
                         <Button
@@ -276,7 +279,7 @@ export function TeamManagement() {
                             Add Member
                         </Button>
                     )}
-                    
+
                     <Button
                         className={
                             isInactiveView
@@ -312,31 +315,84 @@ export function TeamManagement() {
 
             {/* Stats */}
             {!isInactiveView && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-6">
-                <MetricCard
-                    index={0}
-                    title="Total Members"
-                    amount={teamMembers.length}
-                    countLabel="members"
-                    icon={Users}
-                    colorClass="metric-card-primary"
-                />
-                <MetricCard
-                    index={1}
-                    title="Active Members"
-                    amount={teamMembers.filter((m) => m.status === "ACTIVE").length}
-                    countLabel="active"
-                    icon={BadgeCheck}
-                    colorClass="metric-card-success"
-                />
-                <MetricCard
-                    index={2}
-                    title="Inactive Members"
-                    amount={teamMembers.filter((m) => m.status !== "ACTIVE").length}
-                    countLabel="inactive"
-                    icon={ShieldAlert}
-                    colorClass="metric-card-error"
-                />
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-4 lg:gap-6">
+                    <MetricCard
+                        index={0}
+                        title="Total Members"
+                        amount={teamMembers.length}
+                        countLabel="members"
+                        icon={Users}
+                        colorClass="metric-card-primary"
+                    />
+                    <MetricCard
+                        index={1}
+                        title="Active Members"
+                        amount={teamMembers.filter((m) => m.status === "ACTIVE").length}
+                        countLabel="active"
+                        icon={BadgeCheck}
+                        colorClass="metric-card-success"
+                    />
+                    <MetricCard
+                        index={2}
+                        title="Inactive Members"
+                        amount={teamMembers.filter((m) => m.status !== "ACTIVE").length}
+                        countLabel="inactive"
+                        icon={ShieldAlert}
+                        colorClass="metric-card-error"
+                    />
+
+                    {/* Referral Share Card */}
+                    {profile?.referralCode && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.3 }}
+                        >
+                            <Card className="professional-card h-full overflow-hidden relative group border-primary/20 bg-primary/5 hover:border-primary/40">
+                                <div className="absolute top-0 right-0 p-4 opacity-5 text-primary">
+                                    <Share2 className="w-24 h-24 transform rotate-12" />
+                                </div>
+                                <CardContent className="p-4 sm:p-5 flex flex-col h-full justify-between relative z-10">
+                                    <div className="flex items-center gap-2 mb-3 text-primary">
+                                        <LinkIcon className="w-5 h-5 opacity-90" />
+                                        <p className="text-sm font-semibold opacity-90 text-foreground">Referral Code</p>
+                                    </div>
+                                    <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-1.5 mb-4">
+                                        <span className="text-sm font-mono font-bold tracking-wider px-2 flex-1 truncate text-foreground">
+                                            {profile.referralCode}
+                                        </span>
+                                        <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted rounded-md shrink-0"
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(profile.referralCode || '')
+                                                toast({
+                                                    title: "Copied!",
+                                                    description: "Referral code copied to clipboard",
+                                                })
+                                            }}
+                                        >
+                                            <Copy className="w-3.5 h-3.5" />
+                                        </Button>
+                                    </div>
+                                    <Button
+                                        className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold h-9 shadow-sm"
+                                        onClick={() => {
+                                            const url = `${window.location.origin}/signup?ref=${profile.referralCode}&c_name=${encodeURIComponent(companyName || '')}`;
+                                            navigator.clipboard.writeText(url)
+                                            toast({
+                                                title: "Link Copied!",
+                                                description: "Onboarding link copied to clipboard",
+                                            })
+                                        }}
+                                    >
+                                        Share Link
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        </motion.div>
+                    )}
                 </div>
             )}
 
@@ -589,7 +645,7 @@ export function TeamManagement() {
                                         <p className="text-sm text-primary font-medium">{ROLE_LABEL[selectedMemberForDetails.role] || selectedMemberForDetails.role}</p>
                                     </div>
                                 </div>
-                                
+
                                 <div className="grid gap-4 pt-5 border-t border-border mt-2">
                                     <div className="flex items-center gap-3">
                                         <div className="w-8 h-8 rounded-full bg-muted/50 flex items-center justify-center flex-shrink-0">
@@ -628,10 +684,10 @@ export function TeamManagement() {
                                             <div>
                                                 <p className="text-xs text-muted-foreground">Date Added</p>
                                                 <p className="text-sm font-medium text-foreground">
-                                                    {new Date(selectedMemberForDetails.createdAt).toLocaleDateString(undefined, { 
-                                                        year: 'numeric', 
-                                                        month: 'long', 
-                                                        day: 'numeric' 
+                                                    {new Date(selectedMemberForDetails.createdAt).toLocaleDateString(undefined, {
+                                                        year: 'numeric',
+                                                        month: 'long',
+                                                        day: 'numeric'
                                                     })}
                                                 </p>
                                             </div>

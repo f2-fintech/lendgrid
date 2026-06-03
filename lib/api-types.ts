@@ -190,6 +190,8 @@ export type AggregatorProfile = {
   totalCommissionEarned?: number
   totalPaidOut?: number
   pendingPayout?: number
+  // Referral System
+  referralCode?: string
   // Commission config
   fixedCommissionPercent?: number
   lenderCommissions?: LenderCommission[]

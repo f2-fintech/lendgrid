@@ -47,11 +47,7 @@ const signupSchema = z.object({
     .toLowerCase()
     .trim(),
 
-  companyName: z.string()
-    .min(2, 'Company name must be at least 2 characters')
-    .max(50, 'Company name is too long')
-    .trim()
-    .toLowerCase(),
+  companyName: z.string().optional(),
 
   password: z.string()
     .min(8, "Password Must Be 8 Characters Long")
@@ -82,6 +78,10 @@ declare global {
 }
 
 export function SignupForm() {
+  const searchParams = useSearchParams();
+  const referralCode = searchParams.get('ref') || '';
+  const parentCompanyName = searchParams.get('c_name') || '';
+
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -90,7 +90,6 @@ export function SignupForm() {
   const turnstileWidgetId = useRef<string | null>(null);
 
   const router = useRouter();
-  const searchParams = useSearchParams();
   const registerMutation = useRegister();
   const loginMutation = useLogin();
   const { toast } = useToast();
@@ -179,11 +178,12 @@ export function SignupForm() {
         contact: data.contact,
         email: data.email,
         password: data.password,
-        role: 'AGGREGATOR_ADMIN',
+        role: referralCode ? 'AGGREGATOR_MEMBER' : 'AGGREGATOR_ADMIN',
         aggregatorType: 'CHANNEL_PARTNER',  // to allow backend to auto-create profile of aggregator
-        companyName: data.companyName,        // to allow backend to auto-create profile of aggregator
+        companyName: parentCompanyName || data.companyName,        // to allow backend to auto-create profile of aggregator
         isOmsEnabled: true,
         fixedCommissionPercent: 0.75,
+        referralCode: referralCode ? referralCode : undefined,
         captchaToken
       };
 
@@ -211,34 +211,36 @@ export function SignupForm() {
         throw new Error("Aggregator profile not created");
       }
 
-      // Create Company (REST Api) - Non-blocking
-      try {
-        const companyRes = await fetch(`${DEFAULT_BASE_URL_REST}/companies`, {
-          method: "POST",
-          headers: buildHeaders(),
-          body: JSON.stringify({
-            name: data.companyName,
-            email: data.email,
-            contactNumber: data.contact,
-            companyId,
-          }),
-        });
+      // Create Company (REST Api) - Non-blocking (Skip if registering as member)
+      if (!referralCode) {
+        try {
+          const companyRes = await fetch(`${DEFAULT_BASE_URL_REST}/companies`, {
+            method: "POST",
+            headers: buildHeaders(),
+            body: JSON.stringify({
+              name: data.companyName || `${data.fullName}'s Agency`,
+              email: data.email,
+              contactNumber: data.contact,
+              companyId,
+            }),
+          });
 
-        if (!companyRes.ok) {
-          console.warn("Company creation failed:", await companyRes.text());
+          if (!companyRes.ok) {
+            console.warn("Company creation failed:", await companyRes.text());
+            toast({
+              title: "Company Sync Warning",
+              description: "Account created but company profile sync failed. Please contact support.",
+              variant: "destructive",
+            });
+          }
+        } catch (companyError) {
+          console.error("Company creation error:", companyError);
           toast({
-            title: "Company Sync Warning",
-            description: "Account created but company profile sync failed. Please contact support.",
-            variant: "destructive",
+            title: "Company Sync Skipped",
+            description: "Secondary server unavailable. Account created locally.",
+            variant: "destructive", // Using destructive to catch attention
           });
         }
-      } catch (companyError) {
-        console.error("Company creation error:", companyError);
-        toast({
-          title: "Company Sync Skipped",
-          description: "Secondary server unavailable. Account created locally.",
-          variant: "destructive", // Using destructive to catch attention
-        });
       }
 
       // Auto-login without captcha (already verified during signup)
@@ -275,7 +277,7 @@ export function SignupForm() {
         if (role === "aggregator_admin" || role === "AGGREGATOR_ADMIN") {
           router.push(navigationPaths.aggregator.dashboard);
         } else if (role === "aggregator_member" || role === "AGGREGATOR_MEMBER") {
-          router.push(navigationPaths.aggregatorMember.dashboard);
+          router.push(navigationPaths.aggregatorMember.applications);
         } else if (role === "super_admin" || role === "SUPER_ADMIN") {
           router.push(navigationPaths.superAdmin.dashboard);
         } else {
@@ -347,22 +349,36 @@ export function SignupForm() {
             {/* TWO-COLUMN GRID LAYOUT */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-              {/* Company Name - Full Width */}
-              <div className="space-y-1 md:col-span-2">
-                <Label htmlFor="companyName" className="text-foreground font-medium">
-                  Company Name
-                </Label>
-                <Input
-                  id="companyName"
-                  {...register('companyName')}
-                  className="h-11 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0"
-                  placeholder="Your Company Ltd."
-                  disabled={isLoading}
-                />
-                {errors.companyName && (
-                  <p className="text-destructive text-sm mt-1">{errors.companyName.message}</p>
-                )}
-              </div>
+              {/* Referred By - Full Width - Only show if referralCode exists */}
+              {referralCode && (
+                <div className="space-y-1 md:col-span-2">
+                  <Label className="text-foreground font-medium">Referred By</Label>
+                  <Input
+                    className="h-11 rounded-xl bg-muted border border-border text-primary font-bold placeholder:text-muted-foreground focus-visible:ring-0 opacity-100"
+                    value={`${referralCode}${parentCompanyName ? ` (${parentCompanyName})` : ''}`}
+                    disabled={true}
+                  />
+                </div>
+              )}
+
+              {/* Company Name - Full Width (Hide if member) */}
+              {!referralCode && (
+                <div className="space-y-1 md:col-span-2">
+                  <Label htmlFor="companyName" className="text-foreground font-medium">
+                    Company Name
+                  </Label>
+                  <Input
+                    id="companyName"
+                    {...register('companyName', { required: !referralCode ? 'Company name is required' : false })}
+                    className="h-11 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0"
+                    placeholder="Your Company Ltd."
+                    disabled={isLoading}
+                  />
+                  {errors.companyName && (
+                    <p className="text-destructive text-sm mt-1">{errors.companyName.message}</p>
+                  )}
+                </div>
+              )}
 
               {/* Full Name */}
               <div className="space-y-1">

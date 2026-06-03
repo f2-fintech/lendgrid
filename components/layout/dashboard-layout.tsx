@@ -19,7 +19,7 @@ import {
   Clock,
   User2,
   GraduationCap,
-  ExternalLink, 
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -79,12 +79,12 @@ import {
 interface DashboardLayoutProps {
   children: React.ReactNode;
   userRole?:
-    | "super_admin"
-    | "aggregator"
-    | "aggregator_member"
-    | "lender"
-    | "hrms_employee"
-    | "lendgrid_sales";
+  | "super_admin"
+  | "aggregator"
+  | "aggregator_member"
+  | "lender"
+  | "hrms_employee"
+  | "lendgrid_sales";
 }
 
 const navigationConfig = {
@@ -164,7 +164,7 @@ const navigationConfig = {
     {
       title: "Organization",
       items: [
-        // { title: "Team Management", url: navigationPaths.aggregator.team, icon: Users },
+        { title: "Team Management", url: navigationPaths.aggregator.team, icon: Users },
         {
           title: "Profile Settings",
           url: navigationPaths.aggregator.settings,
@@ -286,12 +286,12 @@ function AppSidebar({
   isOmsEnabled,
 }: {
   userRole:
-    | "super_admin"
-    | "aggregator"
-    | "aggregator_member"
-    | "lender"
-    | "hrms_employee"
-    | "lendgrid_sales";
+  | "super_admin"
+  | "aggregator"
+  | "aggregator_member"
+  | "lender"
+  | "hrms_employee"
+  | "lendgrid_sales";
   user?: any;
   isOmsEnabled?: boolean;
 }) {
@@ -403,11 +403,10 @@ function AppSidebar({
                         <SidebarMenuButton
                           asChild
                           isActive={isActive}
-                          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${
-                            isActive
-                              ? "bg-primary/10 text-primary font-medium"
-                              : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                          }`}
+                          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all duration-200 ${isActive
+                            ? "bg-primary/10 text-primary font-medium"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            }`}
                         >
                           <Link
                             href={item.url}
@@ -518,16 +517,16 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     | "lender"
     | "hrms_employee"
     | "lendgrid_sales" = isEmployeeSession
-    ? "hrms_employee"
-    : role === "super_admin"
-      ? "super_admin"
-      : role === "aggregator_admin"
-        ? "aggregator"
-        : role === "aggregator_member"
-          ? "aggregator_member"
-          : role === "lendgrid_sales"
-            ? "lendgrid_sales"
-            : "lender";
+      ? "hrms_employee"
+      : role === "super_admin"
+        ? "super_admin"
+        : role === "aggregator_admin"
+          ? "aggregator"
+          : role === "aggregator_member"
+            ? "aggregator_member"
+            : role === "lendgrid_sales"
+              ? "lendgrid_sales"
+              : "lender";
   const token = getCookie("lendgrid_cookie");
   const decoded = decodeJwt(token);
   const isOmsEnabled = decoded?.isOmsEnabled ?? false;
@@ -535,12 +534,12 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
   const employeeUser =
     isEmployeeSession && decodedEmployee
       ? {
-          username:
-            `${decodedEmployee.first_name} ${decodedEmployee.last_name}`.trim(),
-          email: decodedEmployee.email,
-          profilePicture: decodedEmployee.image,
-          rawRole: decodedEmployee.role, // role_priority: '1'|'2'|'3'
-        }
+        username:
+          `${decodedEmployee.first_name} ${decodedEmployee.last_name}`.trim(),
+        email: decodedEmployee.email,
+        profilePicture: decodedEmployee.image,
+        rawRole: decodedEmployee.role, // role_priority: '1'|'2'|'3'
+      }
       : null;
 
   const isSalesRole = normalizedRole === "lendgrid_sales";
@@ -580,7 +579,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     page: 1,
     limit: 10,
   });
- 
+
 
   useEffect(() => {
     refetch();

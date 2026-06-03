@@ -58,6 +58,7 @@ export const aggregatorProfileApi = {
               city
               state
               kycStatus
+              referralCode
               createdAt
               createdBy
             }
@@ -96,6 +97,7 @@ export const aggregatorProfileApi = {
               totalCommissionEarned
               totalDisbursedAmount
               pendingPayout
+              referralCode
               fixedCommissionPercent
               lenderCommissions {
                 lenderName
@@ -186,6 +188,7 @@ export const aggregatorProfileApi = {
           totalCommissionEarned
           totalPaidOut
           pendingPayout
+          referralCode
           fixedCommissionPercent
           lenderCommissions {
             lenderName
@@ -245,6 +248,7 @@ export const aggregatorProfileApi = {
             totalApplicationsDisbursed
             totalCommissionEarned
             pendingPayout
+            referralCode
             createdAt
             updatedAt
             user {
@@ -331,6 +335,7 @@ export const aggregatorProfileApi = {
               totalCommissionEarned
               totalDisbursedAmount
               pendingPayout
+              referralCode
               fixedCommissionPercent
               lenderCommissions {
                 lenderName
