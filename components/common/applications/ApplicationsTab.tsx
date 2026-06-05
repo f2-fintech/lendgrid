@@ -603,8 +603,8 @@ export function AggregatorApplications() {
         limit: pageSize,
         search: searchTerm,
         companyIdOverride: companyIdOverride || undefined,
-        salesUserId: decoded?.source === 'oms' && decoded?.role === 'sales' ? decoded?.id : undefined,
-        aggregatorId: (decoded?.source === 'oms' && decoded?.role === 'sales') ? undefined : (user?.profileId || user?._id || user?.id || user?.omsUserId),
+        salesUserId: (decoded?.source === 'oms' && decoded?.role?.toLowerCase() === 'sales') || (decoded?.role?.toLowerCase() === 'aggregator_member') ? (decoded?.id || decoded?.sub) : undefined,
+        aggregatorId: (decoded?.source === 'oms' && decoded?.role?.toLowerCase() === 'sales') || (decoded?.role?.toLowerCase() === 'aggregator_member') ? undefined : (user?.profileId || user?._id || user?.id || user?.omsUserId),
     })
     const total = applications?.count || 0
 

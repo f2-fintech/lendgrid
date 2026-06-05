@@ -159,7 +159,7 @@ export function useDashboardTicketStats(
         }
     )
 
-    const result = data?.data
+    const result = (data as any)?.data
 
     return {
         count:
@@ -215,7 +215,7 @@ export function useDisbursedTicketsByMonth(
     )
 
     return {
-        data: data?.data ?? [],
+        data: (data as any)?.data ?? [],
         isLoading,
         error,
     }

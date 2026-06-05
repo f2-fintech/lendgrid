@@ -68,7 +68,11 @@ export function useApplicationsRest({
         statusCode: number
         message: string
         data: ApplicationsResponse
-    }>(key, (url) => apiFetch(url))
+    }>(key, (url: string) => apiFetch<{
+        statusCode: number
+        message: string
+        data: ApplicationsResponse
+    }>(url))
 
     return {
         data: data?.data,

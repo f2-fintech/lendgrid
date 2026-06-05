@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Smartphone } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -89,7 +89,33 @@ export function SignupForm() {
   const [turnstileLoaded, setTurnstileLoaded] = useState(false);
   const turnstileWidgetId = useRef<string | null>(null);
 
+  const [isMobile, setIsMobile] = useState(false);
+  const [showAppPrompt, setShowAppPrompt] = useState(false);
+
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const userAgent = window.navigator.userAgent || window.navigator.vendor || (window as any).opera;
+      const isMobileDevice = /android|iphone|ipad|ipod/i.test(userAgent);
+      if (isMobileDevice) {
+        setIsMobile(true);
+        setShowAppPrompt(true);
+        
+        // Attempt automatic deep link redirect
+        const deepLinkUrl = `lendgridmobile://signup?ref=${encodeURIComponent(referralCode)}&c_name=${encodeURIComponent(parentCompanyName)}`;
+        const timer = setTimeout(() => {
+          window.location.href = deepLinkUrl;
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    }
+  }, [referralCode, parentCompanyName]);
+
+  const handleOpenApp = () => {
+    const deepLinkUrl = `lendgridmobile://signup?ref=${encodeURIComponent(referralCode)}&c_name=${encodeURIComponent(parentCompanyName)}`;
+    window.location.href = deepLinkUrl;
+  };
   const registerMutation = useRegister();
   const loginMutation = useLogin();
   const { toast } = useToast();
@@ -344,6 +370,44 @@ export function SignupForm() {
         </CardHeader>
 
         <CardContent className="pb-6">
+          {isMobile && showAppPrompt && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              className="mb-6 p-4 rounded-xl bg-primary/10 border border-primary/20 flex flex-col sm:flex-row items-center justify-between gap-4 text-left"
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <Smartphone className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="font-semibold text-sm text-foreground">Register in LendGrid App</h4>
+                  <p className="text-xs text-muted-foreground">Open this link in our mobile app to automatically auto-fill your referral details.</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowAppPrompt(false)}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Stay on Web
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleOpenApp}
+                  className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold px-4 py-2 rounded-lg shadow-sm"
+                >
+                  Open App
+                </Button>
+              </div>
+            </motion.div>
+          )}
+
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
 
             {/* TWO-COLUMN GRID LAYOUT */}
