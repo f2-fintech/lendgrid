@@ -814,14 +814,18 @@ export function TicketsTab() {
             if (companyIdOverride) params.set("companyId", companyIdOverride);
 
             // if sales user or aggregator member
+            const isNumericId = decoded?.id && /^\d+$/.test(String(decoded.id));
             if ((decoded?.source === 'oms' && decoded?.role === 'sales') || decoded?.role === 'aggregator_member') {
                 params.set("appliedBy", "sales");
+                if (decoded?.id && !isNumericId) {
+                    params.set("aggregatorMemberId", String(decoded.id));
+                }
             }
 
             if (filterStatus && filterStatus !== 'all') params.set("status", filterStatus);
             if (filterLender && filterLender !== 'all') params.set("provider", filterLender);
 
-            const pathKey = `/get-all-tickets${((decoded?.source === 'oms' && decoded?.role === 'sales') || decoded?.role === 'aggregator_member') && decoded?.id ? `/${decoded.id}` : ''}`;
+            const pathKey = `/get-all-tickets${((decoded?.source === 'oms' && decoded?.role === 'sales') || decoded?.role === 'aggregator_member') && decoded?.id && isNumericId ? `/${decoded.id}` : ''}`;
             const finalEndpoint = `${pathKey}?${params.toString()}`;
 
             const response = await apiFetch(finalEndpoint);

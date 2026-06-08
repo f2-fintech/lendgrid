@@ -233,7 +233,7 @@ export function SignupForm() {
       }
 
       const { companyId } = result;
-      if (!companyId) {
+      if (!referralCode && !companyId) {
         throw new Error("Aggregator profile not created");
       }
 
@@ -267,6 +267,15 @@ export function SignupForm() {
             variant: "destructive", // Using destructive to catch attention
           });
         }
+      }
+
+      if (referralCode) {
+        toast({
+          title: "Agent created successfully!",
+          description: "Redirecting to login page...",
+        });
+        router.push(navigationPaths.login);
+        return;
       }
 
       // Auto-login without captcha (already verified during signup)
