@@ -214,14 +214,12 @@ export function AggregatorMemberDashboard() {
 
       {/* Metrics Cards */}
       {cardsLoading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <CardSkeleton headerLines={2} bodyHeight={20} />
-          <CardSkeleton headerLines={2} bodyHeight={20} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <CardSkeleton headerLines={2} bodyHeight={20} />
           <CardSkeleton headerLines={2} bodyHeight={20} />
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <MetricCard
             index={0}
             title="Total Disbursed Amount"
@@ -232,22 +230,6 @@ export function AggregatorMemberDashboard() {
           />
           <MetricCard
             index={1}
-            title="Total Commission Earned"
-            value={formatCurrency(mockData.metrics.totalCommission)}
-            icon={TrendingUp}
-            trend="+8.2% from last month"
-            color="bg-gold/20 text-gold"
-          />
-          <MetricCard
-            index={2}
-            title="Pending Payouts"
-            value={formatCurrency(mockData.metrics.pendingPayouts)}
-            icon={CreditCard}
-            trend="2 payouts pending"
-            color="bg-orange-500/20 text-orange-400"
-          />
-          <MetricCard
-            index={3}
             title="Active Lender Products"
             value={mockData.metrics.activeLenders}
             icon={Building2}
@@ -360,8 +342,6 @@ export function AggregatorMemberDashboard() {
                     <TableHead className="text-gray-300">Lender</TableHead>
                     <TableHead className="text-gray-300">Loan Type</TableHead>
                     <TableHead className="text-gray-300">Disbursed Amount</TableHead>
-                    <TableHead className="text-gray-300">Commission %</TableHead>
-                    <TableHead className="text-gray-300">Commission Amount</TableHead>
                     <TableHead className="text-gray-300">Status</TableHead>
                     <TableHead className="text-gray-300">Payout Date</TableHead>
                   </TableRow>
@@ -373,8 +353,6 @@ export function AggregatorMemberDashboard() {
                       <TableCell className="text-white">{app.lenderName}</TableCell>
                       <TableCell className="text-gray-300">{app.loanType}</TableCell>
                       <TableCell className="text-white">{formatCurrency(app.disbursedAmount)}</TableCell>
-                      <TableCell className="text-gold">{app.commissionPercent}%</TableCell>
-                      <TableCell className="text-green-400">{formatCurrency(app.calculatedCommission)}</TableCell>
                       <TableCell>
                         <Badge
                           variant={app.payoutStatus === 'Paid' ? 'default' : 'secondary'}

@@ -72,6 +72,8 @@ export const getNavigationByRole = (role: string) => {
       return navigationPaths.aggregator
     case 'lendgrid_sales':
       return navigationPaths.lendgridSales
+    case 'aggregator_member':
+      return navigationPaths.aggregatorMember
     default:
       return navigationPaths.home
   }

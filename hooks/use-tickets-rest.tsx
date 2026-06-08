@@ -60,12 +60,20 @@ export const useGetTickets = (
     if (startDate) params.set("startDate", startDate);
     if (endDate) params.set("endDate", endDate);
     if (companyId) params.set("companyId", companyId);
-    if (salesUserId) params.set("appliedBy", "sales");
+
+    const isNumericSalesUserId = salesUserId && /^\d+$/.test(String(salesUserId));
+    if (salesUserId) {
+        params.set("appliedBy", "sales");
+        if (!isNumericSalesUserId) {
+            params.set("aggregatorMemberId", String(salesUserId));
+        }
+    }
+
     if (status && status !== 'all') params.set("status", status);
     if (provider && provider !== 'all') params.set("provider", provider);
 
-    // If salesUserId is provided, append it as a path parameter as per the backend route design
-    const finalPathKey = salesUserId ? `${pathKey}/${salesUserId}` : pathKey;
+    // If salesUserId is provided and is numeric, append it as a path parameter as per the backend route design
+    const finalPathKey = (salesUserId && isNumericSalesUserId) ? `${pathKey}/${salesUserId}` : pathKey;
 
     const fullPath = finalPathKey.includes('?')
         ? `${finalPathKey}&page=${page}&limit=${limit}&${params.toString()}`
@@ -159,7 +167,7 @@ export function useDashboardTicketStats(
         }
     )
 
-    const result = data?.data
+    const result = (data as any)?.data
 
     return {
         count:
@@ -215,7 +223,7 @@ export function useDisbursedTicketsByMonth(
     )
 
     return {
-        data: data?.data ?? [],
+        data: (data as any)?.data ?? [],
         isLoading,
         error,
     }

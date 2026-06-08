@@ -104,6 +104,7 @@ export const MultiStepFormContent: React.FC<{
     const commonHeaders = {
         'Content-Type': 'application/json',
         ...(resolvedCompanyId ? { 'companyid': resolvedCompanyId } : {}),
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
     };
 
     useEffect(() => {
@@ -222,6 +223,9 @@ export const MultiStepFormContent: React.FC<{
 
         const response = await fetch(`${apiBaseUrl}/upload-to-s3`, {
             method: 'POST',
+            headers: {
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+            },
             body: formData,
         });
 

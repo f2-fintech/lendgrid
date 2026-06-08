@@ -733,7 +733,7 @@ export function TicketsTab() {
         dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd HH:mm:ss') : null,
         dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd HH:mm:ss') : null,
         companyIdOverride || undefined,
-        decoded?.source === 'oms' && decoded?.role === 'sales' ? decoded?.id : undefined,
+        (decoded?.source === 'oms' && decoded?.role?.toLowerCase() === 'sales') || decoded?.role?.toLowerCase() === 'aggregator_member' ? (decoded?.id || decoded?.sub) : undefined,
         filterStatus,
         filterLender
     )
@@ -813,15 +813,19 @@ export function TicketsTab() {
             if (dateRange?.to) params.set("endDate", format(dateRange.to, 'yyyy-MM-dd HH:mm:ss'));
             if (companyIdOverride) params.set("companyId", companyIdOverride);
 
-            // if sales user
-            if (decoded?.source === 'oms' && decoded?.role === 'sales') {
+            // if sales user or aggregator member
+            const isNumericId = decoded?.id && /^\d+$/.test(String(decoded.id));
+            if ((decoded?.source === 'oms' && decoded?.role === 'sales') || decoded?.role === 'aggregator_member') {
                 params.set("appliedBy", "sales");
+                if (decoded?.id && !isNumericId) {
+                    params.set("aggregatorMemberId", String(decoded.id));
+                }
             }
 
             if (filterStatus && filterStatus !== 'all') params.set("status", filterStatus);
             if (filterLender && filterLender !== 'all') params.set("provider", filterLender);
 
-            const pathKey = `/get-all-tickets${decoded?.source === 'oms' && decoded?.role === 'sales' && decoded?.id ? `/${decoded.id}` : ''}`;
+            const pathKey = `/get-all-tickets${((decoded?.source === 'oms' && decoded?.role === 'sales') || decoded?.role === 'aggregator_member') && decoded?.id && isNumericId ? `/${decoded.id}` : ''}`;
             const finalEndpoint = `${pathKey}?${params.toString()}`;
 
             const response = await apiFetch(finalEndpoint);

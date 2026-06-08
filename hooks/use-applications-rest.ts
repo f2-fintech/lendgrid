@@ -58,7 +58,14 @@ export function useApplicationsRest({
     })
 
     // if (aggregatorId) params.append('appliedBy', aggregatorId)
-    if (salesUserId) params.append('appliedBy', String(salesUserId))
+    if (salesUserId) {
+        const isNumeric = /^\d+$/.test(String(salesUserId));
+        if (isNumeric) {
+            params.append('appliedBy', String(salesUserId));
+        } else {
+            params.append('aggregatorMemberId', String(salesUserId));
+        }
+    }
     if (status) params.append('status', status)
     if (search) params.append('search', search)
 
@@ -68,7 +75,11 @@ export function useApplicationsRest({
         statusCode: number
         message: string
         data: ApplicationsResponse
-    }>(key, (url) => apiFetch(url))
+    }>(key, (url: string) => apiFetch<{
+        statusCode: number
+        message: string
+        data: ApplicationsResponse
+    }>(url))
 
     return {
         data: data?.data,
