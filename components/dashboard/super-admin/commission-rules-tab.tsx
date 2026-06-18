@@ -32,8 +32,184 @@ import {
     RuleStatus,
     ApplicableFor,
     AggregatorType,
-    CreateCommissionRuleInput
+    CreateCommissionRuleInput,
+    DealLender
 } from '@/lib/api-types'
+import { dealLendersApi } from '@/lib/deal-lender-api'
+
+const CustomMedalIcon = ({ tier, className = "w-16 h-20" }: { tier: string; className?: string }) => {
+    const t = (tier || '').toUpperCase()
+
+    // 1. Keep Diamond Gem icon for personal/company use
+    if (t === 'DIAMOND_GEM') {
+        return (
+            <svg viewBox="0 0 200 245" className={className} xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                    <linearGradient id="diam-g1" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#e0f2fe" />
+                        <stop offset="100%" stopColor="#38bdf8" />
+                    </linearGradient>
+                    <linearGradient id="diam-g2" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="100%" stopColor="#bae6fd" />
+                    </linearGradient>
+                    <linearGradient id="diam-g3" x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#bae6fd" />
+                        <stop offset="100%" stopColor="#0284c7" />
+                    </linearGradient>
+                    <linearGradient id="diam-g4" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#7dd3fc" />
+                        <stop offset="100%" stopColor="#0369a1" />
+                    </linearGradient>
+                    <linearGradient id="diam-g5" x1="50%" y1="0%" x2="50%" y2="100%">
+                        <stop offset="0%" stopColor="#ffffff" />
+                        <stop offset="100%" stopColor="#38bdf8" />
+                    </linearGradient>
+                    <linearGradient id="diam-g6" x1="100%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#38bdf8" />
+                        <stop offset="100%" stopColor="#075985" />
+                    </linearGradient>
+                    <g id="sparkle-tab">
+                        <path d="M 0,-8 Q 0,0 8,0 Q 0,0 0,8 Q 0,0 0,-8 Z" fill="#ffffff" filter="drop-shadow(0 0 4px #38bdf8)" />
+                    </g>
+                </defs>
+
+                <circle cx="100" cy="135" r="70" fill="#38bdf8" opacity="0.15" filter="blur(20px)" />
+
+                <g filter="drop-shadow(0 10px 15px rgba(3,105,161,0.3))">
+                    <path d="M 60,60 L 20,110 L 75,110 Z" fill="url(#diam-g1)" stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M 60,60 L 75,110 L 125,110 L 140,60 Z" fill="url(#diam-g2)" stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M 140,60 L 125,110 L 180,110 Z" fill="url(#diam-g3)" stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M 20,110 L 100,210 L 75,110 Z" fill="url(#diam-g4)" stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M 75,110 L 100,210 L 125,110 Z" fill="url(#diam-g5)" stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
+                    <path d="M 125,110 L 100,210 L 180,110 Z" fill="url(#diam-g6)" stroke="#ffffff" strokeWidth="1" strokeLinejoin="round" />
+                </g>
+
+                <use href="#sparkle-tab" x="50" y="55" transform="scale(0.8)" />
+                <use href="#sparkle-tab" x="165" y="105" transform="scale(1.2)" />
+                <use href="#sparkle-tab" x="100" y="180" transform="scale(0.6)" />
+            </svg>
+        )
+    }
+
+    // Standard normalized categories: render modern premium geometric shape
+    let startColor = "#3b82f6"
+    let endColor = "#1d4ed8"
+    let glowColor = "rgba(59, 130, 246, 0.3)"
+    let customSvgContent = null
+
+    if (t === 'BRONZE') {
+        // Spark - Amber/Orange Sparkle Star
+        startColor = "#f59e0b"
+        endColor = "#b45309"
+        glowColor = "rgba(245, 158, 11, 0.3)"
+        customSvgContent = (
+            <path d="M 100 65 Q 100 120 155 120 Q 100 120 100 175 Q 100 120 45 120 Q 100 120 100 65 Z" fill="#ffffff" />
+        )
+    } else if (t === 'SILVER') {
+        // Pulse - Teal ECG Line
+        startColor = "#0d9488"
+        endColor = "#115e59"
+        glowColor = "rgba(13, 148, 136, 0.3)"
+        customSvgContent = (
+            <path d="M 50 120 L 75 120 L 85 90 L 97 150 L 109 105 L 119 135 L 127 120 L 150 120" stroke="#ffffff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+        )
+    } else if (t === 'GOLD') {
+        // Momentum - Blue Chevrons
+        startColor = "#2563eb"
+        endColor = "#1e3a8a"
+        glowColor = "rgba(37, 99, 235, 0.3)"
+        customSvgContent = (
+            <g stroke="#ffffff" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                <path d="M 65 105 L 100 75 L 135 105" />
+                <path d="M 65 125 L 100 95 L 135 125" />
+                <path d="M 65 145 L 100 115 L 135 145" />
+            </g>
+        )
+    } else if (t === 'DIAMOND') {
+        // Catalyst - Emerald Atom/Network
+        startColor = "#10b981"
+        endColor = "#064e3b"
+        glowColor = "rgba(16, 185, 129, 0.3)"
+        customSvgContent = (
+            <g stroke="#ffffff" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" fill="none">
+                <line x1="100" y1="120" x2="135" y2="85" />
+                <line x1="100" y1="120" x2="65" y2="85" />
+                <line x1="100" y1="120" x2="135" y2="155" />
+                <line x1="100" y1="120" x2="65" y2="155" />
+                <circle cx="100" cy="120" r="10" fill="#ffffff" stroke="none" />
+                <circle cx="135" cy="85" r="7" fill="#ffffff" stroke="none" />
+                <circle cx="65" cy="85" r="7" fill="#ffffff" stroke="none" />
+                <circle cx="135" cy="155" r="7" fill="#ffffff" stroke="none" />
+                <circle cx="65" cy="155" r="7" fill="#ffffff" stroke="none" />
+            </g>
+        )
+    } else if (t === 'PLATINUM') {
+        // Apex - Purple Overlapping Peaks
+        startColor = "#a855f7"
+        endColor = "#581c87"
+        glowColor = "rgba(168, 85, 247, 0.3)"
+        customSvgContent = (
+            <g fill="#ffffff" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round">
+                <polygon points="100,80 60,150 140,150" opacity="0.6" />
+                <polygon points="120,95 85,150 155,150" />
+            </g>
+        )
+    } else if (t === 'VANGUARD') {
+        // Vanguard - Rose Shield with Star
+        startColor = "#f43f5e"
+        endColor = "#881337"
+        glowColor = "rgba(244, 63, 94, 0.3)"
+        customSvgContent = (
+            <g fill="#ffffff">
+                <path d="M 70 80 L 130 80 L 130 120 C 130 150 100 165 100 165 C 100 165 70 150 70 120 Z" opacity="0.9" stroke="#ffffff" strokeWidth="2" strokeLinejoin="round" />
+                <polygon points="100,98 103,107 112,107 105,113 107,122 100,116 93,122 95,113 88,107 97,107" fill={endColor} />
+            </g>
+        )
+    } else {
+        customSvgContent = (
+            <circle cx="100" cy="120" r="30" fill="#ffffff" />
+        )
+    }
+
+    return (
+        <svg viewBox="0 0 200 245" className={className} xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <linearGradient id={`bg-grad-${t}`} x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor={startColor} />
+                    <stop offset="100%" stopColor={endColor} />
+                </linearGradient>
+            </defs>
+            <rect x="30" y="52" width="140" height="140" rx="35" fill={startColor} opacity="0.15" filter="blur(15px)" />
+            <rect x="30" y="52" width="140" height="140" rx="35" fill={`url(#bg-grad-${t})`} stroke="rgba(255,255,255,0.2)" strokeWidth="2" filter="drop-shadow(0 8px 16px rgba(0,0,0,0.2))" />
+            {customSvgContent}
+        </svg>
+    )
+}
+
+export const getTierIconFromBadgeLabel = (badgeLabel?: string | null, applicableFor?: string) => {
+    if (badgeLabel) {
+        const label = badgeLabel.toLowerCase();
+        if (label.includes('spark')) return 'BRONZE';
+        if (label.includes('pulse')) return 'SILVER';
+        if (label.includes('momentum')) return 'GOLD';
+        if (label.includes('catalyst')) return 'DIAMOND';
+        if (label.includes('apex')) return 'PLATINUM';
+        if (label.includes('vanguard')) return 'VANGUARD';
+    }
+    
+    if (applicableFor) {
+        const tier = applicableFor.toUpperCase();
+        if (tier.includes('BRONZE')) return 'BRONZE';
+        if (tier.includes('SILVER')) return 'SILVER';
+        if (tier.includes('GOLD')) return 'GOLD';
+        if (tier.includes('DIAMOND')) return 'DIAMOND';
+        if (tier.includes('PLATINUM')) return 'PLATINUM';
+        if (tier.includes('VANGUARD')) return 'VANGUARD';
+    }
+    
+    return 'GOLD'; // default fallback
+}
 
 // Schema with validation
 export const commissionRuleSchema = z.object({
@@ -41,6 +217,9 @@ export const commissionRuleSchema = z.object({
         .string()
         .min(3, "Rule name must be at least 3 characters")
         .max(100, "Rule name must be less than 100 characters"),
+
+    icon: z.string().nullable().optional(),
+    badgeLabel: z.string().nullable().optional(),
 
     productType: z
         .string()
@@ -81,6 +260,13 @@ export const commissionRuleSchema = z.object({
         .optional(),
 
     status: z.nativeEnum(RuleStatus).optional(),
+    lenderCommissions: z.array(
+        z.object({
+            lenderName: z.string(),
+            securedRate: z.number().nullable().optional(),
+            unsecuredRate: z.number().nullable().optional(),
+        })
+    ).optional(),
 })
     .refine((data) => data.maxAmount > data.minAmount, {
         message: "Max amount must be greater than Min amount",
@@ -100,6 +286,15 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
     const [filterApplicableFor, setFilterApplicableFor] = useState<ApplicableFor | ''>('')
     const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
     const [editingRule, setEditingRule] = useState<any>(null)
+    const [dealLenders, setDealLenders] = useState<DealLender[]>([])
+    const [viewingRule, setViewingRule] = useState<any>(null)
+    const [isViewChartOpen, setIsViewChartOpen] = useState(false)
+
+    useEffect(() => {
+        dealLendersApi.getDealLenders()
+            .then(data => setDealLenders(data))
+            .catch(err => console.error("Failed to fetch deal lenders:", err))
+    }, [])
 
     const [page, setPage] = useState(1)
     const [pageSize, setPageSize] = useState(10)
@@ -137,8 +332,9 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
     } = useForm<CommissionRuleFormValues>({
         resolver: zodResolver(commissionRuleSchema),
         defaultValues: {
-            ruleName: "",
             productType: "",
+            icon: null,
+            badgeLabel: null,
             commissionType: CommissionType.PERCENTAGE,
             commissionRate: undefined,
             minAmount: undefined,
@@ -211,6 +407,14 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
 
     const handleCreateRule = async (data: CommissionRuleFormValues) => {
         try {
+            const filteredCommissions = ((data as any).lenderCommissions || [])
+                .filter((lc: any) => lc.securedRate !== undefined && lc.securedRate !== null && lc.securedRate !== "" || lc.unsecuredRate !== undefined && lc.unsecuredRate !== null && lc.unsecuredRate !== "")
+                .map((lc: any) => ({
+                    lenderName: lc.lenderName,
+                    securedRate: lc.securedRate !== undefined && lc.securedRate !== null && lc.securedRate !== "" ? parseFloat(lc.securedRate.toString()) : undefined,
+                    unsecuredRate: lc.unsecuredRate !== undefined && lc.unsecuredRate !== null && lc.unsecuredRate !== "" ? parseFloat(lc.unsecuredRate.toString()) : undefined,
+                }))
+
             const payload: CreateCommissionRuleInput = {
                 ruleName: data.ruleName,
                 productType: data.productType,
@@ -222,6 +426,9 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                 aggregatorType: aggregatorType, // Auto-set based on active tab
                 priority: data.priority,
                 description: data.description,
+                lenderCommissions: filteredCommissions,
+                icon: data.icon || getTierIconFromBadgeLabel(data.badgeLabel, data.applicableFor),
+                badgeLabel: data.badgeLabel || null,
                 ...(editingRule && data.status && { status: data.status }), // Only include status when editing
             }
 
@@ -245,10 +452,39 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
         }
     }
 
+    const handleCreateRuleButton = () => {
+        setEditingRule(null)
+        reset({
+            productType: "",
+            icon: null,
+            badgeLabel: null,
+            commissionType: CommissionType.PERCENTAGE,
+            commissionRate: undefined,
+            minAmount: undefined,
+            maxAmount: undefined,
+            applicableFor: ApplicableFor.ALL_AGGREGATORS,
+            priority: 0,
+            description: "",
+            lenderCommissions: dealLenders.map(l => ({
+                lenderName: l.name,
+                securedRate: undefined,
+                unsecuredRate: undefined,
+            })),
+        })
+        setIsCreateDialogOpen(true)
+    }
+
+    const handleViewChart = (rule: any) => {
+        setViewingRule(rule)
+        setIsViewChartOpen(true)
+    }
+
     const handleEditRule = (rule: any) => {
         setEditingRule(rule)
         setValue('ruleName', rule.ruleName)
         setValue('productType', rule.productType)
+        setValue('icon', rule.icon || null)
+        setValue('badgeLabel', rule.badgeLabel || null)
         setValue('commissionType', rule.commissionType)
         setValue('commissionRate', rule.commissionRate)
         setValue('minAmount', rule.minAmount)
@@ -257,6 +493,24 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
         setValue('priority', rule.priority)
         setValue('description', rule.description || '')
         setValue('status', rule.status || RuleStatus.ACTIVE)
+
+        const commissionsMap = new Map<string, { securedRate?: number; unsecuredRate?: number }>()
+        rule.lenderCommissions?.forEach((lc: any) => {
+            commissionsMap.set(lc.lenderName.toLowerCase(), {
+                securedRate: lc.securedRate,
+                unsecuredRate: lc.unsecuredRate,
+            })
+        })
+
+        const formLenders = dealLenders.map(l => {
+            const matched = commissionsMap.get(l.name.toLowerCase())
+            return {
+                lenderName: l.name,
+                securedRate: matched?.securedRate,
+                unsecuredRate: matched?.unsecuredRate,
+            }
+        })
+        setValue('lenderCommissions', formLenders)
         setIsCreateDialogOpen(true)
     }
 
@@ -347,16 +601,15 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                 </div>
                 <div className="w-full md:w-auto">
                     <Dialog open={isCreateDialogOpen} onOpenChange={handleDialogClose}>
-                        <DialogTrigger asChild>
-                            <Button
-                                className={`w-full sm:w-auto ${aggregatorType === AggregatorType.SOURCER
-                                    ? 'bg-green-600 hover:bg-green-700'
-                                    : 'bg-orange-600 hover:bg-orange-700'} text-white shadow-lg`}
-                            >
-                                <Plus className="w-4 h-4 mr-2" />
-                                Create {aggregatorTypeLabel} Rule
-                            </Button>
-                        </DialogTrigger>
+                        <Button
+                            onClick={handleCreateRuleButton}
+                            className={`w-full sm:w-auto ${aggregatorType === AggregatorType.SOURCER
+                                ? 'bg-green-600 hover:bg-green-700'
+                                : 'bg-orange-600 hover:bg-orange-700'} text-white shadow-lg`}
+                        >
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create {aggregatorTypeLabel} Rule
+                        </Button>
                         <DialogContent
                             className="bg-background border-border text-foreground max-w-3xl max-h-[90vh] overflow-y-auto"
                             onInteractOutside={(e) => e.preventDefault()}
@@ -396,23 +649,123 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {/* Rule Name */}
-                                        <div>
-                                            <Label htmlFor="ruleName" className="text-sm font-medium">
-                                                Rule Name <span className="text-red-400">*</span>
-                                            </Label>
-                                            <Input
-                                                id="ruleName"
-                                                {...register("ruleName")}
-                                                className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                placeholder="e.g., Personal Loan - Gold Tier Commission"
-                                            />
-                                            {errors.ruleName && (
-                                                <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                    <AlertCircle className="w-3 h-3" />
-                                                    {errors.ruleName.message}
-                                                </p>
-                                            )}
+                                        {/* Rule Name, Badge Label & Icon Selection */}
+                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                            <div>
+                                                <Label htmlFor="ruleName" className="text-sm font-medium">
+                                                    Rule Name <span className="text-red-400">*</span>
+                                                </Label>
+                                                <Input
+                                                    id="ruleName"
+                                                    {...register("ruleName")}
+                                                    className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                                    placeholder="e.g., Personal Loan - Gold Tier"
+                                                />
+                                                {errors.ruleName && (
+                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        {errors.ruleName.message}
+                                                    </p>
+                                                )}
+                                            </div>
+
+                                            <div>
+                                                <Label htmlFor="badgeLabel" className="text-sm font-medium">
+                                                    Badge Label <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
+                                                </Label>
+                                                <Controller
+                                                    control={control}
+                                                    name="badgeLabel"
+                                                    render={({ field }) => (
+                                                        <Select value={field.value || 'NONE'} onValueChange={(val) => {
+                                                            field.onChange(val === 'NONE' ? null : val);
+                                                            if (val && val !== 'NONE') {
+                                                                const mappedIcon = getTierIconFromBadgeLabel(val);
+                                                                setValue('icon', mappedIcon, { shouldDirty: true });
+                                                            }
+                                                        }}>
+                                                            <SelectTrigger id="badgeLabel" className="mt-1.5 bg-background border-border h-10">
+                                                                <SelectValue placeholder="No Label" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                <SelectItem value="NONE" className="cursor-pointer">
+                                                                    <span className="text-sm font-medium">No Label</span>
+                                                                </SelectItem>
+                                                                <SelectItem value="Spark" className="cursor-pointer">Spark</SelectItem>
+                                                                <SelectItem value="Pulse" className="cursor-pointer">Pulse</SelectItem>
+                                                                <SelectItem value="Momentum" className="cursor-pointer">Momentum</SelectItem>
+                                                                <SelectItem value="Catalyst" className="cursor-pointer">Catalyst</SelectItem>
+                                                                <SelectItem value="Apex" className="cursor-pointer">Apex</SelectItem>
+                                                                <SelectItem value="Vanguard" className="cursor-pointer">Vanguard</SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <Label htmlFor="icon" className="text-sm font-medium">
+                                                    Tier Icon <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
+                                                </Label>
+                                                <Controller
+                                                    control={control}
+                                                    name="icon"
+                                                    render={({ field }) => (
+                                                        <Select value={field.value || 'NONE'} onValueChange={(val) => field.onChange(val === 'NONE' ? null : val)}>
+                                                            <SelectTrigger id="icon" className="mt-1.5 bg-background border-border h-10">
+                                                                <SelectValue placeholder="No Icon" />
+                                                            </SelectTrigger>
+                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                <SelectItem value="NONE" className="cursor-pointer">
+                                                                    <span className="text-sm font-medium">No Icon</span>
+                                                                </SelectItem>
+                                                                <SelectItem value="BRONZE" className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CustomMedalIcon tier="BRONZE" className="w-5 h-6 flex-shrink-0" />
+                                                                        <span>Spark Icon</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="SILVER" className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CustomMedalIcon tier="SILVER" className="w-5 h-6 flex-shrink-0" />
+                                                                        <span>Pulse Icon</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="GOLD" className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CustomMedalIcon tier="GOLD" className="w-5 h-6 flex-shrink-0" />
+                                                                        <span>Momentum Icon</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="DIAMOND" className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CustomMedalIcon tier="DIAMOND" className="w-5 h-6 flex-shrink-0" />
+                                                                        <span>Catalyst Icon</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="PLATINUM" className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CustomMedalIcon tier="PLATINUM" className="w-5 h-6 flex-shrink-0" />
+                                                                        <span>Apex Icon</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="VANGUARD" className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CustomMedalIcon tier="VANGUARD" className="w-5 h-6 flex-shrink-0" />
+                                                                        <span>Vanguard Icon</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                                <SelectItem value="DIAMOND_GEM" className="cursor-pointer">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <CustomMedalIcon tier="DIAMOND_GEM" className="w-5 h-6 flex-shrink-0" />
+                                                                        <span>Diamond Gem Icon (Company Use)</span>
+                                                                    </div>
+                                                                </SelectItem>
+                                                            </SelectContent>
+                                                        </Select>
+                                                    )}
+                                                />
+                                            </div>
                                         </div>
 
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -602,6 +955,77 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                     </p>
                                                 )}
                                             </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+
+                                {/* Lender-wise Commission Rates */}
+                                <Card className="border-border bg-card/50">
+                                    <CardHeader className="pb-4">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-8 h-8 rounded-lg bg-teal-500/10 flex items-center justify-center">
+                                                <Settings className="w-4 h-4 text-teal-400" />
+                                            </div>
+                                            <div>
+                                                <CardTitle className="text-foreground text-lg">Lender-wise Commission Rates</CardTitle>
+                                                <CardDescription className="text-xs">Define Secured & Unsecured rates (%) for each Bank/NBFC (Optional - defaults to rule rate if blank)</CardDescription>
+                                            </div>
+                                        </div>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <div className="border border-border rounded-lg overflow-hidden bg-background max-h-[300px] overflow-y-auto">
+                                            <Table>
+                                                <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                                                    <TableRow className="border-border">
+                                                        <TableHead className="w-2/5 font-semibold text-foreground bg-muted/50">Lender Name</TableHead>
+                                                        <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Type</TableHead>
+                                                        <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Secured Rate (%)</TableHead>
+                                                        <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Unsecured Rate (%)</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {dealLenders.map((lender, index) => {
+                                                        return (
+                                                            <TableRow key={lender.id} className="border-border hover:bg-muted/30">
+                                                                <TableCell className="font-medium text-foreground py-3">
+                                                                    {lender.name}
+                                                                </TableCell>
+                                                                <TableCell className="py-3">
+                                                                    <Badge variant="outline" className="capitalize text-xs py-0.5 border-border">
+                                                                        {lender.type}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="py-2">
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        className="h-8 bg-background border-border text-foreground text-sm py-1 focus:ring-1"
+                                                                        placeholder="Use Default"
+                                                                        value={watch(`lenderCommissions.${index}.securedRate`) ?? ''}
+                                                                        onChange={(e) => {
+                                                                            const val = e.target.value === '' ? undefined : parseFloat(e.target.value)
+                                                                            setValue(`lenderCommissions.${index}.securedRate`, val, { shouldDirty: true })
+                                                                        }}
+                                                                    />
+                                                                </TableCell>
+                                                                <TableCell className="py-2">
+                                                                    <Input
+                                                                        type="number"
+                                                                        step="0.01"
+                                                                        className="h-8 bg-background border-border text-foreground text-sm py-1 focus:ring-1"
+                                                                        placeholder="Use Default"
+                                                                        value={watch(`lenderCommissions.${index}.unsecuredRate`) ?? ''}
+                                                                        onChange={(e) => {
+                                                                            const val = e.target.value === '' ? undefined : parseFloat(e.target.value)
+                                                                            setValue(`lenderCommissions.${index}.unsecuredRate`, val, { shouldDirty: true })
+                                                                        }}
+                                                                    />
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )
+                                                    })}
+                                                </TableBody>
+                                            </Table>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -840,8 +1264,19 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                 className="border-border hover:bg-card/50"
                                             >
                                                 <TableCell>
-                                                    <div>
-                                                        <p className="font-medium">{rule.ruleName}</p>
+                                                    <div className="flex items-center gap-2">
+                                                        {(() => {
+                                                            const tierIcon = rule.icon || getTierIconFromBadgeLabel(rule.badgeLabel, rule.applicableFor);
+                                                            return tierIcon ? (
+                                                                <CustomMedalIcon tier={tierIcon} className="w-5 h-6 flex-shrink-0" />
+                                                            ) : null;
+                                                        })()}
+                                                        <div>
+                                                            <p className="font-medium">{rule.ruleName}</p>
+                                                            {rule.badgeLabel && (
+                                                                <p className="text-xs text-muted-foreground">Label: {rule.badgeLabel}</p>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>
@@ -876,7 +1311,23 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                 <TableCell>
                                                     <div className="flex items-center justify-center gap-2">
                                                         <Tooltip>
-                                                            <TooltipTrigger>
+                                                            <TooltipTrigger asChild>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    className="text-teal-400 hover:text-foreground hover:bg-muted rounded-lg"
+                                                                    onClick={() => handleViewChart(rule)}
+                                                                >
+                                                                    <TrendingUp className="w-4 h-4" />
+                                                                </Button>
+                                                            </TooltipTrigger>
+                                                            <TooltipContent>
+                                                                <p>View Rates Chart</p>
+                                                            </TooltipContent>
+                                                        </Tooltip>
+
+                                                        <Tooltip>
+                                                            <TooltipTrigger asChild>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
@@ -892,7 +1343,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                         </Tooltip>
 
                                                         <Tooltip>
-                                                            <TooltipTrigger>
+                                                            <TooltipTrigger asChild>
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
@@ -935,6 +1386,84 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                     </CardContent>
                 </Card>
             </motion.div>
+            {/* View Rates Chart Dialog */}
+            <Dialog open={isViewChartOpen} onOpenChange={setIsViewChartOpen}>
+                <DialogContent className="bg-background border-border text-foreground max-w-2xl max-h-[80vh] overflow-y-auto">
+                    <DialogHeader className="border-b border-border pb-4">
+                        <DialogTitle className="text-xl font-bold flex items-center gap-2">
+                            <TrendingUp className="w-5 h-5 text-teal-400" />
+                            {viewingRule?.ruleName} - Commission Rates
+                        </DialogTitle>
+                        <DialogDescription className="text-muted-foreground">
+                            Lender-wise rates configured under this tier. Product: {viewingRule?.productType}
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="mt-4 space-y-4">
+                        <div className="grid grid-cols-2 gap-4 bg-muted/30 p-3 rounded-lg border border-border">
+                            <div>
+                                <p className="text-xs text-muted-foreground">Rule Base Rate</p>
+                                <p className="text-sm font-semibold text-foreground">
+                                    {viewingRule?.commissionType === CommissionType.PERCENTAGE
+                                        ? `${viewingRule?.commissionRate}%`
+                                        : formatCurrency(viewingRule?.commissionRate || 0)}
+                                </p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-muted-foreground">Applicable For</p>
+                                <p className="text-sm font-semibold text-foreground">
+                                    {viewingRule && getApplicableForLabel(viewingRule.applicableFor)}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="border border-border rounded-lg overflow-hidden bg-background">
+                            <Table>
+                                <TableHeader className="bg-muted/50">
+                                    <TableRow className="border-border">
+                                        <TableHead className="font-semibold text-foreground">Lender Name</TableHead>
+                                        <TableHead className="font-semibold text-foreground">Type</TableHead>
+                                        <TableHead className="font-semibold text-foreground text-center">Secured Rate (%)</TableHead>
+                                        <TableHead className="font-semibold text-foreground text-center">Unsecured Rate (%)</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {dealLenders.length > 0 ? (
+                                        dealLenders.map((lender) => {
+                                            const matched = viewingRule?.lenderCommissions?.find(
+                                                (lc: any) => lc.lenderName.toLowerCase() === lender.name.toLowerCase()
+                                            )
+                                            return (
+                                                <TableRow key={lender.id} className="border-border hover:bg-muted/30">
+                                                    <TableCell className="font-medium text-foreground">
+                                                        {lender.name}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Badge variant="outline" className="capitalize text-xs py-0.5 border-border">
+                                                            {lender.type}
+                                                        </Badge>
+                                                    </TableCell>
+                                                    <TableCell className="text-center font-semibold text-teal-400">
+                                                        {matched?.securedRate != null ? `${matched.securedRate}%` : '-'}
+                                                    </TableCell>
+                                                    <TableCell className="text-center font-semibold text-orange-400">
+                                                        {matched?.unsecuredRate != null ? `${matched.unsecuredRate}%` : '-'}
+                                                    </TableCell>
+                                                </TableRow>
+                                            )
+                                        })
+                                    ) : (
+                                        <TableRow>
+                                            <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                                                No deal lenders found.
+                                            </TableCell>
+                                        </TableRow>
+                                    )}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     )
 }

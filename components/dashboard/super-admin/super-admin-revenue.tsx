@@ -63,8 +63,8 @@ const mockData = {
 }
 
 export function SuperAdminRevenue() {
-  const [timeRange, setTimeRange] = useState('12m')
-  const [selectedMetric, setSelectedMetric] = useState('revenue')
+  const [timeRange, setTimeRange] = useState<TimeRange>('12m')
+  const [selectedMetric, setSelectedMetric] = useState<'transactions' | 'revenue' | 'avgTicket'>('revenue')
   const [chartLoading, setChartLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
@@ -200,7 +200,7 @@ export function SuperAdminRevenue() {
             <p className="text-gray-400 mt-1">Track and analyze platform commission revenue streams</p>
           </div>
           <div className="flex items-center space-x-4">
-            <Select value={timeRange} onValueChange={setTimeRange}>
+            <Select value={timeRange} onValueChange={(val) => setTimeRange(val as TimeRange)}>
               <SelectTrigger className="w-32 bg-gray-800 border-gray-600 text-white">
                 <SelectValue />
               </SelectTrigger>
@@ -271,7 +271,7 @@ export function SuperAdminRevenue() {
                     Monthly platform revenue and transaction metrics
                   </CardDescription>
                 </div>
-                <Select value={selectedMetric} onValueChange={setSelectedMetric}>
+                <Select value={selectedMetric} onValueChange={(val) => setSelectedMetric(val as any)}>
                   <SelectTrigger className="w-40 bg-gray-900 border-gray-600 text-white">
                     <SelectValue />
                   </SelectTrigger>

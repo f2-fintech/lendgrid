@@ -18,7 +18,34 @@ declare global {
 
 export default function TurnstileMobilePage() {
   const [loaded, setLoaded] = useState(false);
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const widgetId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const themeParam = params.get("theme");
+      if (themeParam === "dark") {
+        setTheme("dark");
+      } else {
+        setTheme("light");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Force transparent backgrounds to support blending into the mobile app's theme
+      document.body.style.setProperty("background-color", "transparent", "important");
+      document.documentElement.style.setProperty("background-color", "transparent", "important");
+
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else {
+        document.documentElement.classList.remove("dark");
+      }
+    }
+  }, [theme]);
 
   useEffect(() => {
     if (!loaded || !window.turnstile || widgetId.current) return;
@@ -29,7 +56,7 @@ export default function TurnstileMobilePage() {
     try {
       widgetId.current = window.turnstile.render(el, {
         sitekey: process.env.NEXT_PUBLIC_CLOUDFLARE_SITE_KEY,
-        theme: "light", // Keeps Turnstile widget light
+        theme: theme, // Dynamically sets theme to "light" or "dark"
         callback: (token: string) => {
           // send token to mobile webview
           window.ReactNativeWebView?.postMessage(
@@ -61,14 +88,13 @@ export default function TurnstileMobilePage() {
         widgetId.current = null;
       }
     };
-  }, [loaded]);
+  }, [loaded, theme]);
 
   return (
     <div
       style={{
         minHeight: "100vh",
-        backgroundColor: "#ffffff", // ◄ Forces the full container background to pure white
-        color: "#000000", // ◄ Forces any text to pure black
+        backgroundColor: "transparent", // ◄ Transparent so mobile app's background shows through
         display: "flex",
         justifyContent: "center",
         alignItems: "center",

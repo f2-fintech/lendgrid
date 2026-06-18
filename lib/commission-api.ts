@@ -32,8 +32,11 @@ export const commissionsApi = {
             data {
               id
               ruleName
+              icon
+              badgeLabel
               commissionType
               commissionRate
+              productType
               minAmount
               maxAmount
               applicableFor
@@ -47,6 +50,11 @@ export const commissionsApi = {
               updatedAt
               createdBy
               updatedBy
+              lenderCommissions {
+                lenderName
+                securedRate
+                unsecuredRate
+              }
             }
             total
             page
@@ -75,8 +83,11 @@ export const commissionsApi = {
             data {
               id
               ruleName
+              icon
+              badgeLabel
               commissionType
               commissionRate
+              productType
               minAmount
               maxAmount
               applicableFor
@@ -90,12 +101,60 @@ export const commissionsApi = {
               updatedAt
               createdBy
               updatedBy
+              lenderCommissions {
+                lenderName
+                securedRate
+                unsecuredRate
+              }
             }
           }
         }
       `,
       variables: { id },
     }).then(res => res.getCommissionRule),
+
+  /**
+   * Get currently logged in aggregator's assigned active commission rule
+   */
+  myCommissionRule: () =>
+    gqlFetch<{ myCommissionRule: CommissionRuleResponse }>({
+      query: `
+        query MyCommissionRule {
+          myCommissionRule {
+            success
+            message
+            data {
+              id
+              ruleName
+              icon
+              badgeLabel
+              commissionType
+              commissionRate
+              productType
+              minAmount
+              maxAmount
+              applicableFor
+              aggregatorType
+              status
+              priority
+              description
+              effectiveFrom
+              effectiveTo
+              createdAt
+              updatedAt
+              createdBy
+              updatedBy
+              lenderCommissions {
+                lenderName
+                securedRate
+                unsecuredRate
+              }
+            }
+          }
+        }
+      `,
+    }).then(res => res.myCommissionRule),
+
 
   /**
    * Create new commission rule
@@ -110,6 +169,8 @@ export const commissionsApi = {
             data {
               id
               ruleName
+              icon
+              badgeLabel
               commissionType
               commissionRate
               minAmount
@@ -121,6 +182,11 @@ export const commissionsApi = {
               description
               createdAt
               updatedAt
+              lenderCommissions {
+                lenderName
+                securedRate
+                unsecuredRate
+              }
             }
           }
         }
@@ -141,6 +207,8 @@ export const commissionsApi = {
             data {
               id
               ruleName
+              icon
+              badgeLabel
               commissionType
               commissionRate
               minAmount
@@ -151,6 +219,11 @@ export const commissionsApi = {
               priority
               description
               updatedAt
+              lenderCommissions {
+                lenderName
+                securedRate
+                unsecuredRate
+              }
             }
           }
         }

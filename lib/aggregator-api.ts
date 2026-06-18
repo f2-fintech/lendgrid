@@ -240,6 +240,7 @@ export const aggregatorProfileApi = {
             aggregatorType
             isOmsEnabled
             rank
+            commissionRuleId
             businessType
             city
             state
