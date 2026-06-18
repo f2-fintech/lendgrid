@@ -5,10 +5,11 @@ import { motion } from 'framer-motion'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { AggregatorType } from '@/lib/api-types'
 import { CommissionRulesTab } from './commission-rules-tab'
-import { Users, Building2 } from 'lucide-react'
+import { DealLendersTab } from './deal-lenders-tab'
+import { Users, Building2, Landmark } from 'lucide-react'
 
 export function SuperAdminCommission() {
-  const [activeTab, setActiveTab] = useState<'sourcer' | 'channel_partner'>('sourcer')
+  const [activeTab, setActiveTab] = useState<'sourcer' | 'channel_partner' | 'lenders'>('sourcer')
 
   return (
     <div className="space-y-6 p-6">
@@ -26,8 +27,8 @@ export function SuperAdminCommission() {
       </motion.div>
 
       {/* Beautiful Full-Width Tabs */}
-      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'sourcer' | 'channel_partner')}>
-        <TabsList className="flex flex-col sm:grid w-full sm:grid-cols-2 bg-muted/50 p-1 rounded-lg h-auto sm:h-14 gap-1 sm:gap-0">
+      <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'sourcer' | 'channel_partner' | 'lenders')}>
+        <TabsList className="flex flex-col sm:grid w-full sm:grid-cols-3 bg-muted/50 p-1 rounded-lg h-auto sm:h-14 gap-1 sm:gap-0">
           <TabsTrigger
             value="sourcer"
             className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 rounded-md flex items-center justify-center gap-2 text-sm sm:text-base font-medium py-2.5 sm:py-0 whitespace-normal text-center h-auto sm:h-full"
@@ -41,6 +42,13 @@ export function SuperAdminCommission() {
           >
             <Building2 className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
             Channel Partner Commission Rules
+          </TabsTrigger>
+          <TabsTrigger
+            value="lenders"
+            className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all duration-300 rounded-md flex items-center justify-center gap-2 text-sm sm:text-base font-medium py-2.5 sm:py-0 whitespace-normal text-center h-auto sm:h-full"
+          >
+            <Landmark className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
+            Lender Directory
           </TabsTrigger>
         </TabsList>
 
@@ -61,6 +69,16 @@ export function SuperAdminCommission() {
             transition={{ duration: 0.4 }}
           >
             <CommissionRulesTab aggregatorType={AggregatorType.CHANNEL_PARTNER} />
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value="lenders" className="mt-6">
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.4 }}
+          >
+            <DealLendersTab />
           </motion.div>
         </TabsContent>
       </Tabs>

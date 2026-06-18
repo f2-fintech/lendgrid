@@ -383,7 +383,7 @@ export function SuperAdminSalesUsers() {
                                                         variant="outline"
                                                         className={`text-xs ${STATUS_STYLE[member.status] || "bg-muted/30 text-muted-foreground"}`}
                                                     >
-                                                        {member.status?.toLowerCase().replace(/^\w/, (c) => c.toUpperCase()) || "—"}
+                                                        {member.status?.toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase()) || "—"}
                                                     </Badge>
                                                 </TableCell>
 
@@ -511,7 +511,7 @@ export function SuperAdminSalesUsers() {
                                                 </div>
                                             </div>
                                             <Badge className={`px-4 py-1 text-xs font-bold uppercase tracking-widest ${STATUS_STYLE[selectedMemberForDetails.status]}`}>
-                                                {selectedMemberForDetails.status?.toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+                                                {selectedMemberForDetails.status?.toLowerCase().replace(/^\w/, (c: string) => c.toUpperCase())}
                                             </Badge>
                                         </div>
                                     </div>

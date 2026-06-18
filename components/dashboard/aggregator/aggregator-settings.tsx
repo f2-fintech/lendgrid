@@ -403,10 +403,10 @@ function BusinessDetailsTab() {
                           <span>{ApplicableFor.GOLD_AGGREGATORS}</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
+                      <SelectItem value={ApplicableFor.DIAMOND_AGGREGATORS} className="text-foreground">
                         <div className="flex items-center gap-2">
                           <Landmark className="w-4 h-4" />
-                          <span>{ApplicableFor.PLATINUM_AGGREGATORS}</span>
+                          <span>{ApplicableFor.DIAMOND_AGGREGATORS}</span>
                         </div>
                       </SelectItem>
                     </SelectContent>

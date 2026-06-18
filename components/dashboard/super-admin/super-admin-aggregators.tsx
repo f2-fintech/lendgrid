@@ -357,7 +357,9 @@ export function SuperAdminAggregators() {
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
               <CardSkeleton headerLines={2} bodyHeight={20} />
               <CardSkeleton headerLines={2} bodyHeight={20} />
-              <CardSkeleton headerLines={2} bodyHeight={20} className="col-span-2 md:col-span-1 lg:col-span-1" />
+              <div className="col-span-2 md:col-span-1 lg:col-span-1">
+                <CardSkeleton headerLines={2} bodyHeight={20} />
+              </div>
             </div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6">
@@ -823,7 +825,9 @@ export function SuperAdminAggregators() {
                   <div className="bg-background/50 rounded-lg p-4 border border-border/50">
                     <p className="text-xs text-muted-foreground mb-2">Conversion Rate</p>
                     <p className="text-2xl font-bold text-purple-400">
-                      {(selectedAggregator.conversionRate || 0) > 0 ? `${selectedAggregator.conversionRate.toFixed(1)}%` : 'N/A'}
+                      {selectedAggregator.conversionRate != null && selectedAggregator.conversionRate > 0
+                        ? `${selectedAggregator.conversionRate.toFixed(1)}%`
+                        : 'N/A'}
                     </p>
                   </div>
 

@@ -26,10 +26,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 import { useToast } from "@/hooks/use-toast";
 import { useRegister } from "@/hooks/use-users";
 import { buildHeaders } from "@/lib/http-client";
+import { ApplicableFor, RuleStatus, AggregatorType } from "@/lib/api-types";
+import { commissionsApi } from "@/lib/commission-api";
+import { dealLendersApi } from "@/lib/deal-lender-api";
 
 // Available lenders for commission mapping
 const AVAILABLE_LENDERS = [
@@ -118,12 +123,9 @@ const schema = z
 
         confirmPassword: z.string(),
 
-        fixedCommissionPercent: z
-            .union([z.number().min(0, "Must be 0 or more").max(100, "Cannot exceed 100%"), z.nan(), z.null()])
-            .optional()
-            .transform((val) => (val === null || val === undefined || Number.isNaN(val) ? undefined : val)),
-
-        lenderCommissions: z.array(lenderCommissionSchema).optional(),
+        commissionRuleId: z.string({
+            required_error: "Please select a commission rule",
+        }).min(1, "Please select a commission rule"),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match",
@@ -143,6 +145,9 @@ export function AddAggregatorDialog({
 }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [activeRules, setActiveRules] = useState<any[]>([]);
+    const [selectedRule, setSelectedRule] = useState<any>(null);
+    const [dealLenders, setDealLenders] = useState<any[]>([]);
 
     const registerMutation = useRegister();
     const { toast } = useToast();
@@ -166,11 +171,7 @@ export function AddAggregatorDialog({
             aggregatorType: "CHANNEL_PARTNER",
             password: "",
             confirmPassword: "",
-            fixedCommissionPercent: undefined,
-            lenderCommissions: AVAILABLE_LENDERS.map((name) => ({
-                lenderName: name,
-                commissionPercent: undefined,
-            })),
+            commissionRuleId: "",
         },
     });
 
@@ -178,22 +179,59 @@ export function AddAggregatorDialog({
     const isChannelPartner = aggregatorType === "CHANNEL_PARTNER";
 
     useEffect(() => {
-        if (isOpen) reset();
-    }, [isOpen, reset]);
+        if (isOpen) {
+            reset({
+                fullName: "",
+                contact: "",
+                email: "",
+                companyName: "",
+                aggregatorType: "CHANNEL_PARTNER",
+                password: "",
+                confirmPassword: "",
+                commissionRuleId: "",
+            });
+            // Fetch deal lenders
+            dealLendersApi.getDealLenders()
+                .then(data => setDealLenders(data))
+                .catch(err => console.error("Failed to fetch deal lenders:", err));
+        }
+    }, [isOpen]);
+
+    useEffect(() => {
+        if (isOpen && aggregatorType) {
+            // Fetch commission rules for this aggregatorType
+            commissionsApi.getRules({
+                page: 1,
+                limit: 100,
+                filters: {
+                    status: RuleStatus.ACTIVE,
+                    aggregatorType: aggregatorType as AggregatorType,
+                }
+            })
+            .then(res => {
+                const rules = res.data || [];
+                setActiveRules(rules);
+                if (rules.length > 0) {
+                    setValue("commissionRuleId", rules[0].id || "");
+                } else {
+                    setValue("commissionRuleId", "");
+                }
+            })
+            .catch(err => console.error("Failed to fetch commission rules:", err));
+        }
+    }, [isOpen, aggregatorType]);
+
+    // Update selectedRule when watch("commissionRuleId") changes
+    const commissionRuleIdWatch = watch("commissionRuleId");
+    useEffect(() => {
+        const matched = activeRules.find((r: any) => r.id === commissionRuleIdWatch);
+        setSelectedRule(matched || null);
+    }, [commissionRuleIdWatch, activeRules]);
 
     const onSubmit = async (data: FormValues) => {
         const DEFAULT_BASE_URL_REST = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3010/api/v1'
         try {
-            // Build lender commissions — only include lenders with a value set
-            const filledLenderCommissions = isChannelPartner
-                ? (data.lenderCommissions || [])
-                    .filter((lc) => lc.commissionPercent !== undefined && lc.commissionPercent !== null)
-                    .map((lc) => ({
-                        lenderName: lc.lenderName,
-                        commissionPercent: lc.commissionPercent,
-                    }))
-                : undefined;
-
+            const matchedRule = activeRules.find((r: any) => r.id === data.commissionRuleId);
             const payload: Record<string, any> = {
                 username: data.fullName,
                 contact: data.contact,
@@ -204,17 +242,9 @@ export function AddAggregatorDialog({
                 companyName: data.companyName,
                 aggregatorType: data.aggregatorType,
                 isOmsEnabled: true,
+                rank: matchedRule ? matchedRule.applicableFor : undefined,
+                commissionRuleId: data.commissionRuleId || undefined,
             };
-
-            // Add fixed commission for both types
-            if (data.fixedCommissionPercent !== undefined && data.fixedCommissionPercent !== null) {
-                payload.fixedCommissionPercent = data.fixedCommissionPercent;
-            }
-
-            // Add lender-wise commissions only for channel partners
-            if (isChannelPartner && filledLenderCommissions && filledLenderCommissions.length > 0) {
-                payload.lenderCommissions = filledLenderCommissions;
-            }
 
             const res = await registerMutation.mutateAsync(payload);
             if (!res?.createUser?.success) {
@@ -512,7 +542,7 @@ export function AddAggregatorDialog({
                         </CardContent>
                     </Card>
 
-                    {/* ─── Card 3: Commission Configuration ─── */}
+                    {/* ─── Card 3: Commission Rule Selection ─── */}
                     <Card className="border-border bg-card/50">
                         <CardHeader className="pb-4">
                             <div className="flex items-center gap-2">
@@ -520,82 +550,117 @@ export function AddAggregatorDialog({
                                     <Percent className="w-4 h-4 text-purple-400" />
                                 </div>
                                 <div>
-                                    <CardTitle className="text-foreground text-lg">Commission Configuration</CardTitle>
+                                    <CardTitle className="text-foreground text-lg">Commission Rule Tier</CardTitle>
                                     <CardDescription className="text-xs">
-                                        {isChannelPartner
-                                            ? 'Set fixed and lender-wise commission rates for this channel partner'
-                                            : 'Set the fixed commission rate for this sourcer'}
+                                        Select the active commission rule tier to apply to this aggregator
                                     </CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent className="space-y-4">
-                            {/* Fixed Commission Rate */}
+                            {/* Commission Rule Select */}
                             <div>
-                                <Label htmlFor="fixedCommissionPercent" className="text-sm font-medium">
-                                    Fixed Commission Rate
+                                <Label htmlFor="commissionRuleId" className="text-sm font-medium">
+                                    Commission Rule <span className="text-red-400">*</span>
                                 </Label>
-                                <div className="relative mt-1.5 max-w-xs">
-                                    <Input
-                                        id="fixedCommissionPercent"
-                                        type="number"
-                                        step="0.01"
-                                        {...register("fixedCommissionPercent", { valueAsNumber: true })}
-                                        className="bg-background border-border pr-10 focus:ring-2 focus:ring-primary/20"
-                                        placeholder="e.g., 3.5"
-                                    />
-                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">%</span>
-                                </div>
-                                {errors.fixedCommissionPercent && (
+                                <Controller
+                                    control={control}
+                                    name="commissionRuleId"
+                                    render={({ field }) => (
+                                        <Select value={field.value} onValueChange={field.onChange}>
+                                            <SelectTrigger id="commissionRuleId" className="mt-1.5 bg-background border-border max-w-md">
+                                                <SelectValue placeholder="Select commission rule" />
+                                            </SelectTrigger>
+                                            <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                {activeRules.map((rule) => {
+                                                    const ruleId = rule.id;
+                                                    return (
+                                                        <SelectItem key={ruleId} value={ruleId} className="cursor-pointer">
+                                                            {rule.ruleName} ({rule.applicableFor.replace('_AGGREGATORS', '').replace('_', ' ')})
+                                                        </SelectItem>
+                                                    );
+                                                })}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+                                />
+                                {errors.commissionRuleId && (
                                     <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
                                         <AlertCircle className="w-3 h-3" />
-                                        {errors.fixedCommissionPercent.message}
+                                        {errors.commissionRuleId.message}
                                     </p>
                                 )}
                             </div>
 
-                            {/* Lender-wise Commission Grid — Channel Partners only */}
-                            {isChannelPartner && (
-                                <>
-                                    <div className="space-y-3 pt-2">
-                                        <div className="flex items-center justify-between">
-                                            <Label className="text-sm font-medium">Lender-wise Commission Overrides</Label>
-                                            <span className="text-xs text-muted-foreground">Leave blank if not applicable</span>
+                            {/* Active Rule Details Preview */}
+                            {selectedRule ? (
+                                <div className="mt-4 space-y-3">
+                                    <div className="grid grid-cols-2 gap-4 bg-muted/30 p-3 rounded-lg border border-border">
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Rule Name</p>
+                                            <p className="text-sm font-semibold text-foreground">{selectedRule.ruleName}</p>
                                         </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[340px] overflow-y-auto pr-1">
-                                            {AVAILABLE_LENDERS.map((lender, index) => (
-                                                <div
-                                                    key={lender}
-                                                    className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 hover:border-primary/30 transition-colors"
-                                                >
-                                                    <span className="text-sm text-foreground truncate min-w-0 flex-1" title={lender}>
-                                                        {lender}
-                                                    </span>
-                                                    <div className="relative w-24 flex-shrink-0">
-                                                        <Input
-                                                            type="number"
-                                                            step="0.01"
-                                                            {...register(`lenderCommissions.${index}.commissionPercent` as const, {
-                                                                valueAsNumber: true,
-                                                            })}
-                                                            className="bg-background border-border h-8 text-sm pr-7 w-full focus:ring-2 focus:ring-primary/20"
-                                                            placeholder="—"
-                                                        />
-                                                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">%</span>
-                                                    </div>
-                                                </div>
-                                            ))}
+                                        <div>
+                                            <p className="text-xs text-muted-foreground">Rule Base Rate</p>
+                                            <p className="text-sm font-semibold text-foreground">
+                                                {selectedRule.commissionRate}% ({selectedRule.commissionType.toLowerCase()})
+                                            </p>
                                         </div>
                                     </div>
 
-                                    <Alert className="bg-blue-500/10 border-blue-500/30">
-                                        <Info className="h-4 w-4 text-blue-400" />
-                                        <AlertDescription className="text-sm text-foreground">
-                                            💡 Fixed commission applies as the default rate. Lender-specific overrides take priority when set.
-                                        </AlertDescription>
-                                    </Alert>
-                                </>
+                                    <div className="border border-border rounded-lg overflow-hidden bg-background max-h-[220px] overflow-y-auto">
+                                        <Table>
+                                            <TableHeader className="bg-muted/50 sticky top-0 z-10">
+                                                <TableRow className="border-border">
+                                                    <TableHead className="font-semibold text-foreground py-2 bg-muted/50">Lender Name</TableHead>
+                                                    <TableHead className="font-semibold text-foreground py-2 bg-muted/50">Type</TableHead>
+                                                    <TableHead className="font-semibold text-foreground text-center py-2 bg-muted/50">Secured (%)</TableHead>
+                                                    <TableHead className="font-semibold text-foreground text-center py-2 bg-muted/50">Unsecured (%)</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {dealLenders.length > 0 ? (
+                                                    dealLenders.map((lender) => {
+                                                        const matched = selectedRule.lenderCommissions?.find(
+                                                            (lc: any) => lc.lenderName.toLowerCase() === lender.name.toLowerCase()
+                                                        )
+                                                        return (
+                                                            <TableRow key={lender.id} className="border-border hover:bg-muted/10">
+                                                                <TableCell className="py-2 font-medium text-sm text-foreground">
+                                                                    {lender.name}
+                                                                </TableCell>
+                                                                <TableCell className="py-2">
+                                                                    <Badge variant="outline" className="capitalize text-[10px] py-0 border-border">
+                                                                        {lender.type}
+                                                                    </Badge>
+                                                                </TableCell>
+                                                                <TableCell className="text-center font-semibold text-teal-400 py-2 text-sm">
+                                                                    {matched?.securedRate != null ? `${matched.securedRate}%` : '-'}
+                                                                </TableCell>
+                                                                <TableCell className="text-center font-semibold text-orange-400 py-2 text-sm">
+                                                                    {matched?.unsecuredRate != null ? `${matched.unsecuredRate}%` : '-'}
+                                                                </TableCell>
+                                                            </TableRow>
+                                                        )
+                                                    })
+                                                ) : (
+                                                    <TableRow>
+                                                        <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
+                                                            No deal lenders found.
+                                                        </TableCell>
+                                                    </TableRow>
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
+                            ) : (
+                                <Alert className="bg-amber-500/10 border-amber-500/30">
+                                    <Info className="h-4 w-4 text-amber-400" />
+                                    <AlertDescription className="text-sm text-foreground">
+                                        💡 No active rule found for this tier. Base commission will default to 0%.
+                                    </AlertDescription>
+                                </Alert>
                             )}
                         </CardContent>
                     </Card>

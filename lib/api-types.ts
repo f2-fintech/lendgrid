@@ -112,7 +112,7 @@ export enum ApplicableFor {
   BRONZE_AGGREGATORS = 'BRONZE_AGGREGATORS',
   SILVER_AGGREGATORS = 'SILVER_AGGREGATORS',
   GOLD_AGGREGATORS = 'GOLD_AGGREGATORS',
-  PLATINUM_AGGREGATORS = 'PLATINUM_AGGREGATORS',
+  DIAMOND_AGGREGATORS = 'DIAMOND_AGGREGATORS',
 }
 
 // USER & AUTH TYPES
@@ -190,6 +190,7 @@ export type AggregatorProfile = {
   totalCommissionEarned?: number
   totalPaidOut?: number
   pendingPayout?: number
+  conversionRate?: number
   // Referral System
   referralCode?: string
   // Commission config
@@ -412,6 +413,21 @@ export interface Payout {
   lenderId: string
 }
 
+export interface DealLender {
+  id: string
+  name: string
+  type: 'bank' | 'nbfc' | 'fintech'
+  status: 'active' | 'inactive'
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface RuleLenderCommission {
+  lenderName: string
+  securedRate?: number
+  unsecuredRate?: number
+}
+
 export interface CommissionRule {
   id: string;
   ruleName: string;
@@ -427,6 +443,9 @@ export interface CommissionRule {
   description?: string;
   effectiveFrom?: string;
   effectiveTo?: string;
+  icon?: string;
+  badgeLabel?: string;
+  lenderCommissions?: RuleLenderCommission[];
   createdAt: string;
   updatedAt: string;
   createdBy?: {
@@ -463,6 +482,7 @@ export interface CommissionTransaction {
   aggregatorType?: string;
   status: CommissionStatus;
   aggregatorRank?: string;
+  aggregatorName?: string;
   provider?: string;
   calculatedAt: string;
   approvedAt?: string;
@@ -490,6 +510,9 @@ export interface CreateCommissionRuleInput {
   description?: string;
   effectiveFrom?: Date;
   effectiveTo?: Date;
+  icon?: string;
+  badgeLabel?: string;
+  lenderCommissions?: RuleLenderCommission[];
 }
 
 export interface UpdateCommissionRuleInput {
@@ -500,6 +523,9 @@ export interface UpdateCommissionRuleInput {
   status?: RuleStatus;
   description?: string;
   priority?: number;
+  icon?: string;
+  badgeLabel?: string;
+  lenderCommissions?: RuleLenderCommission[];
 }
 
 export interface CalculateCommissionInput {
