@@ -565,7 +565,7 @@ export function LoginForm() {
 
           {/* Sign Up Link (users only) */}
           {!isEmployee && (
-            <div className="text-center pt-6 mt-6 border-t border-border">
+            <div className="text-center pt-6 mt-6 border-t border-border space-y-2.5">
               <p className="text-muted-foreground text-sm">
                 Don't have an account?{" "}
                 <Link
@@ -575,6 +575,14 @@ export function LoginForm() {
                   Sign up
                 </Link>
               </p>
+              <div>
+                <Link
+                  href="/delete-account"
+                  className="text-xs text-muted-foreground hover:text-primary transition-colors"
+                >
+                  Request Delete Account
+                </Link>
+              </div>
             </div>
           )}
         </CardContent>

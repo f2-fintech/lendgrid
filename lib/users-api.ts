@@ -209,7 +209,7 @@ export const usersApi = {
    * UPDATED: Fixed to match Boolean return type from backend
    */
   forgotPassword: (email: string) =>
-    gqlFetch<{ forgotPassword: boolean }>({
+    gqlFetch<{ forgotPassword: { success: boolean; message: string } }>({
       query: `
           mutation ForgotPassword($email: String!) {
             forgotPassword(email: $email) {
@@ -238,5 +238,81 @@ export const usersApi = {
         token: payload.token,
         newPassword: payload.newPassword,
       },
+    }),
+
+  /**
+   * Request account deletion
+   */
+  requestDeletion: (payload: { email: string; password: string; reason?: string }) =>
+    gqlFetch<{
+      requestAccountDeletion: { success: boolean; message: string };
+    }>({
+      query: `
+          mutation RequestAccountDeletion($email: String!, $password: String!, $reason: String) {
+            requestAccountDeletion(email: $email, password: $password, reason: $reason) {
+              success
+              message
+            }
+          }
+        `,
+      variables: payload,
+    }),
+
+  /**
+   * Get all account deletion requests
+   */
+  getDeletionRequests: (params?: { page?: number; limit?: number }) =>
+    gqlFetch<{
+      findAllDeletionRequests: {
+        success: boolean;
+        message: string;
+        results: any[];
+        count: number;
+        page: number;
+        pages: number;
+      };
+    }>({
+      query: `
+          query FindAllDeletionRequests($page: Int, $limit: Int) {
+            findAllDeletionRequests(paginationArgs: { page: $page, limit: $limit }) {
+              success
+              message
+              results {
+                _id
+                userId
+                email
+                username
+                reason
+                parentAggregatorId
+                status
+                eligible
+                createdAt
+                updatedAt
+              }
+              count
+              page
+              pages
+            }
+          }
+        `,
+      variables: params,
+    }),
+
+  /**
+   * Process a deletion request
+   */
+  processDeletionRequest: (payload: { id: string; action: string }) =>
+    gqlFetch<{
+      processDeletionRequest: { success: boolean; message: string };
+    }>({
+      query: `
+          mutation ProcessDeletionRequest($id: ID!, $action: DeletionRequestAction!) {
+            processDeletionRequest(id: $id, action: $action) {
+              success
+              message
+            }
+          }
+        `,
+      variables: payload,
     }),
 };
