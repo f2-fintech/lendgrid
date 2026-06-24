@@ -248,3 +248,84 @@ export function useResetPassword() {
     },
   });
 }
+
+/**
+ * Request account deletion hook
+ */
+export function useRequestDeletion() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: { email: string; password: string; reason?: string }) =>
+      usersApi.requestDeletion(payload),
+    onSuccess: (response) => {
+      if (response?.requestAccountDeletion?.success) {
+        toast({
+          title: "Request Submitted",
+          description: response.requestAccountDeletion.message || "Your request is pending review",
+        });
+      } else {
+        toast({
+          title: "Submission Failed",
+          description: response?.requestAccountDeletion?.message || "Could not submit deletion request",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Request Failed",
+        description: error.message || "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+}
+
+/**
+ * Get account deletion requests hook
+ */
+export function useDeletionRequests({ page = 1, limit = 10 }: { page?: number; limit?: number } = {}) {
+  return useQuery({
+    queryKey: queryKeys.users.deletionRequests(page, limit),
+    queryFn: async () => {
+      const response = await usersApi.getDeletionRequests({ page, limit });
+      return response.findAllDeletionRequests;
+    },
+  });
+}
+
+/**
+ * Process a deletion request hook (Approve / Reject)
+ */
+export function useProcessDeletionRequest() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: (payload: { id: string; action: string }) =>
+      usersApi.processDeletionRequest(payload),
+    onSuccess: (response) => {
+      if (response?.processDeletionRequest?.success) {
+        queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
+        toast({
+          title: "Success",
+          description: response.processDeletionRequest.message || "Request processed successfully",
+        });
+      } else {
+        toast({
+          title: "Failed",
+          description: response?.processDeletionRequest?.message || "Failed to process request",
+          variant: "destructive",
+        });
+      }
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed",
+        description: error.message || "Failed to process deletion request",
+        variant: "destructive",
+      });
+    },
+  });
+}

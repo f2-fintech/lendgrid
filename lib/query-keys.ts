@@ -10,6 +10,8 @@ export const queryKeys = {
             [...queryKeys.users.all, 'role', role, { page, limit, status, searchTerm }] as const,
         list: (page?: number, limit?: number, status?: string) =>
             [...queryKeys.users.all, 'list', { page, limit, status }] as const,
+        deletionRequests: (page?: number, limit?: number) =>
+            [...queryKeys.users.all, 'deletionRequests', { page, limit }] as const,
     },
 
     // Aggregators

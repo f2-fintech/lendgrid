@@ -4,6 +4,7 @@ export const navigationPaths = {
   login: '/login',
   signup: '/signup',
   forgotPassword: '/forgot-password',
+  deleteAccount: '/delete-account',
 
   // Super Admin routes
   superAdmin: {
@@ -19,7 +20,8 @@ export const navigationPaths = {
     payouts: '/super-admin/payouts',
     settings: '/super-admin/settings',
     f2fintechEmployees: '/super-admin/f2fintech-employees',
-    salesUsers: '/super-admin/sales-users'
+    salesUsers: '/super-admin/sales-users',
+    deletionRequests: '/super-admin/deletion-requests'
   },
 
   aggregator: {
@@ -30,7 +32,8 @@ export const navigationPaths = {
     applications: '/aggregator/applications',
     training: '/aggregator/training',
     team: '/aggregator/team',
-    settings: '/aggregator/settings'
+    settings: '/aggregator/settings',
+    deletionRequests: '/aggregator/deletion-requests'
   },
 
   // Aggregator Member routes

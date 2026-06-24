@@ -117,6 +117,11 @@ const navigationConfig = {
           url: navigationPaths.superAdmin.f2fintechEmployees,
           icon: Users,
         },
+        {
+          title: "Deletion Requests",
+          url: navigationPaths.superAdmin.deletionRequests,
+          icon: Trash2,
+        },
       ],
     },
     {
@@ -169,6 +174,11 @@ const navigationConfig = {
           title: "Profile Settings",
           url: navigationPaths.aggregator.settings,
           icon: Settings,
+        },
+        {
+          title: "Deletion Requests",
+          url: navigationPaths.aggregator.deletionRequests,
+          icon: Trash2,
         },
       ],
     },

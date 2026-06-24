@@ -3,6 +3,7 @@ import { gqlFetch } from './http-client'
 export enum NotificationType {
     COMMISSION_STATUS_CHANGE = 'COMMISSION_STATUS_CHANGE',
     TICKET_STATUS_CHANGE = 'TICKET_STATUS_CHANGE',
+    SECURITY = 'SECURITY',
 }
 
 export enum NotificationStatus {
