@@ -21,7 +21,7 @@ export default function Footer() {
               <span className="text-xl md:text-2xl font-bold gradient-text text-primary">LendGrid</span>
             </div>
             <p className="text-foreground/70 leading-relaxed">
-              Empowering the future of loan distribution with technology and innovation.
+              "Empowering the future of financial technology with innovation.
             </p>
           </div>
 
