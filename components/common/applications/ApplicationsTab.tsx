@@ -1059,6 +1059,22 @@ export function AggregatorApplications() {
                                     </div>
                                 </div>
 
+                                {/* Referral Code Card */}
+                                <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                                    <h3 className="text-lg font-semibold mb-4 text-purple-400 flex items-center gap-2">
+                                        <Briefcase className="w-5 h-5" />
+                                        Referral Information
+                                    </h3>
+                                    <div className="bg-background/50 rounded-lg p-4 border border-border/50">
+                                        <p className="text-xs text-muted-foreground mb-2">Referral Code</p>
+                                        {selectedApplication.referralCode ? (
+                                            <p className="text-xl font-bold font-mono text-purple-400">{selectedApplication.referralCode}</p>
+                                        ) : (
+                                            <p className="text-muted-foreground italic">No referral code provided</p>
+                                        )}
+                                    </div>
+                                </div>
+
                                 {/* System Information Card */}
                                 {/* <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
                                     <h3 className="text-lg font-semibold mb-4 text-amber-400 flex items-center gap-2">

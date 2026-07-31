@@ -562,6 +562,7 @@ export const MultiStepFormContent: React.FC<{
                     ? { applied_by: Number(omsSalesUserId) }
                     : {}),
                 ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
+                ...(formData.referralCode?.trim() ? { referral_code: formData.referralCode.trim() } : {}),
             };
 
             const applicationId = await createApplication(applicationPayload);

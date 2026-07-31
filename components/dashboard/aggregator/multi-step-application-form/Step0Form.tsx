@@ -646,6 +646,26 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                     )}
                 </div>
 
+                {/* Referral Code (Optional) */}
+                <div className="bg-card/50 rounded-xl p-6 border border-border mt-6">
+                    <Label className="text-foreground flex items-center gap-2">
+                        Referral Code
+                        <span className="text-xs text-muted-foreground font-normal">(Optional)</span>
+                    </Label>
+                    <div className="relative mt-2">
+                        <Input
+                            type="text"
+                            value={formData.referralCode || ''}
+                            onChange={(e) => setFormData({ ...formData, referralCode: e.target.value.toUpperCase() })}
+                            placeholder="e.g. REF-AGENT001"
+                            className="bg-card border-border text-foreground focus:ring-2 focus:ring-primary/20 uppercase"
+                        />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                        Agar kisi ke referral se aya h toh referral code daalen, warna khali chhod sakte hain.
+                    </p>
+                </div>
+
                 {/* Submit Button */}
                 <Button
                     type="submit"

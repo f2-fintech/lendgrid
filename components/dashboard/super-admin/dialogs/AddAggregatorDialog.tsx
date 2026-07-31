@@ -126,6 +126,8 @@ const schema = z
         commissionRuleId: z.string({
             required_error: "Please select a commission rule",
         }).min(1, "Please select a commission rule"),
+
+        referralCode: z.string().optional(),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match",
@@ -172,6 +174,7 @@ export function AddAggregatorDialog({
             password: "",
             confirmPassword: "",
             commissionRuleId: "",
+            referralCode: "",
         },
     });
 
@@ -189,6 +192,7 @@ export function AddAggregatorDialog({
                 password: "",
                 confirmPassword: "",
                 commissionRuleId: "",
+                referralCode: "",
             });
             // Fetch deal lenders
             dealLendersApi.getDealLenders()
@@ -244,6 +248,7 @@ export function AddAggregatorDialog({
                 isOmsEnabled: true,
                 rank: matchedRule ? matchedRule.applicableFor : undefined,
                 commissionRuleId: data.commissionRuleId || undefined,
+                referralCode: data.referralCode || undefined,
             };
 
             const res = await registerMutation.mutateAsync(payload);
@@ -458,11 +463,12 @@ export function AddAggregatorDialog({
                                             {errors.contact.message}
                                         </p>
                                     )}
-                                </div>
-                            </div>
+                                 </div>
+                             </div>
 
-                            {/* Email — full width */}
-                            <div>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {/* Email */}
+                                <div>
                                 <Label htmlFor="email" className="text-sm font-medium">
                                     Email Address <span className="text-red-400">*</span>
                                 </Label>
@@ -480,6 +486,21 @@ export function AddAggregatorDialog({
                                     </p>
                                 )}
                             </div>
+
+                            {/* Referral Code (Optional) */}
+                            <div>
+                                <Label htmlFor="referralCode" className="text-sm font-medium">
+                                    Referral Code <span className="text-muted-foreground font-normal">(Optional)</span>
+                                </Label>
+                                <Input
+                                    id="referralCode"
+                                    type="text"
+                                    {...register("referralCode")}
+                                    className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20 uppercase"
+                                    placeholder="e.g. REF-12345"
+                                />
+                            </div>
+                        </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 {/* Password */}
                                 <div>
