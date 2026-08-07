@@ -173,7 +173,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         {/* Father's and Mother's Name */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <Label htmlFor="father_name" className=" text-foreground">Father's Name*</Label>
+            <Label htmlFor="father_name" className=" text-foreground">Father's Name</Label>
             <Input
               {...register('father_name')}
               className="bg-card border-border  text-foreground mt-2"
