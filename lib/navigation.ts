@@ -21,7 +21,8 @@ export const navigationPaths = {
     settings: '/super-admin/settings',
     f2fintechEmployees: '/super-admin/f2fintech-employees',
     salesUsers: '/super-admin/sales-users',
-    deletionRequests: '/super-admin/deletion-requests'
+    deletionRequests: '/super-admin/deletion-requests',
+    dataUploads: '/super-admin/data'
   },
 
   aggregator: {

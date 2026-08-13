@@ -378,6 +378,22 @@ export function SuperAdminPayouts() {
                 </CardDescription>
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+                <Button 
+                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/graphql', '')}/commissions/export/dsa-billing`, '_blank')} 
+                  variant="outline" 
+                  className="bg-background border-border text-foreground hover:bg-muted whitespace-nowrap"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  DSA Billing Excel
+                </Button>
+                <Button 
+                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/graphql', '')}/commissions/export/summary`, '_blank')} 
+                  variant="outline" 
+                  className="bg-background border-border text-foreground hover:bg-muted whitespace-nowrap"
+                >
+                  <FileCheck className="w-4 h-4 mr-2" />
+                  Summary Excel
+                </Button>
                 <div className="relative w-full sm:w-auto">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input

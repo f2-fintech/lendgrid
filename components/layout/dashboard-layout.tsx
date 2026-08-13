@@ -20,6 +20,7 @@ import {
   User2,
   GraduationCap,
   ExternalLink,
+  Database,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -136,6 +137,11 @@ const navigationConfig = {
           title: "Commission Payouts",
           url: navigationPaths.superAdmin.payouts,
           icon: FileText,
+        },
+        {
+          title: "Data Uploads",
+          url: navigationPaths.superAdmin.dataUploads,
+          icon: Database,
         },
       ],
     },
