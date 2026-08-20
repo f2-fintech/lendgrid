@@ -216,18 +216,32 @@ body,
 .professional-card {
   @apply bg-card border border-border rounded-xl shadow-sm hover:shadow-md;
   transition: all 0.2s ease;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Elevated Cards for important content */
 .elevated-card {
   @apply bg-card border border-border rounded-2xl shadow-lg hover:shadow-xl;
   transition: all 0.2s ease;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 /* Metric Cards with colored backgrounds */
 .metric-card {
   @apply bg-card border border-border rounded-2xl p-6;
   transition: all 0.2s ease;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Enhanced Cards (Shadcn generic cards) */
+.enhanced-card {
+  @apply bg-card border border-border rounded-xl shadow-sm hover:shadow-md;
+  transition: all 0.2s ease;
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .metric-card-success {
