@@ -34,7 +34,10 @@ export function useNotifications({
     queryKey: queryKeys.notifications.list({ page, limit, ...filters }),
     queryFn: () => notificationsApi.getNotifications({ page, limit, filters }),
     enabled,
-    refetchOnWindowFocus: true,
+    // Window-focus refetch is disabled: the GraphQL subscription (or fallback
+    // poller) handles cache invalidation. Enabling this caused 4 redundant HTTP
+    // calls per tab-switch when the hook was mounted in two places simultaneously.
+    refetchOnWindowFocus: false,
   });
 
   // Fetch stats
@@ -42,45 +45,64 @@ export function useNotifications({
     queryKey: queryKeys.notifications.stats(),
     queryFn: () => notificationsApi.getNotificationStats(),
     enabled,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false,
   });
 
-  // Subscribe to push notifications (GraphQL subscription) and invalidate queries when new notification arrives
-  // This replaces polling/refetch intervals
+  // Subscribe to push notifications (GraphQL subscription) and invalidate queries
+  // when a new notification arrives. The subscription-client module is a singleton
+  // that fans out to multiple callers internally, so even if this hook is mounted
+  // twice, only one WebSocket subscription is opened.
+  const unsubRef = useRef<(() => void) | null>(null);
+
   useEffect(() => {
     if (!enabled) return;
-    let unsub: (() => void) | null = null;
     let pollIntervalId: any = null;
+    let cancelled = false;
 
-    // dynamic import to avoid SSR issues
+    // Dynamic import to avoid SSR issues
     import('@/lib/subscription-client')
-      .then((mod) => {
-        const result = mod.subscribeToNotificationCreated((payload: any) => {
-          const notification = payload?.data?.notificationCreated || payload?.notificationCreated;
+      .then(async (mod) => {
+        if (cancelled) return;
+
+        const result = await mod.subscribeToNotificationCreated((payload: any) => {
+          const notification =
+            payload?.data?.notificationCreated || payload?.notificationCreated;
           if (notification) {
             queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
           }
         });
 
+        if (cancelled) {
+          // Component unmounted before subscribe resolved — clean up immediately
+          if (typeof result === 'function') result();
+          return;
+        }
+
         if (typeof result === 'function') {
-          unsub = result;
+          unsubRef.current = result;
         } else {
-          // subscription not available; fallback to polling
+          // Subscription not available (null returned); fallback to polling
           pollIntervalId = setInterval(() => {
             queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
           }, 10000);
         }
       })
       .catch((err) => {
-        console.error('Failed to initialize notifications subscription', err);
-        // fallback to polling
-        pollIntervalId = setInterval(() => {
-          queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-        }, 10000);
+        console.error('[useNotifications] Failed to initialize subscription', err);
+        if (!cancelled) {
+          // Fallback to polling only if subscription setup failed
+          pollIntervalId = setInterval(() => {
+            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+          }, 10000);
+        }
       });
 
     return () => {
-      if (unsub) unsub();
+      cancelled = true;
+      if (unsubRef.current) {
+        unsubRef.current();
+        unsubRef.current = null;
+      }
       if (pollIntervalId) clearInterval(pollIntervalId);
     };
   }, [enabled, queryClient]);

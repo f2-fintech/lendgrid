@@ -582,12 +582,11 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     window.dispatchEvent(new CustomEvent("companyChanged", { detail: value }));
   };
 
-  // Use notifications hook with polling
+  // Use notifications hook — subscription/fallback-poller handles freshness after initial load
   const {
     notifications,
     unreadCount,
     loading: notificationsLoading,
-    refetch,
     markAsRead,
     markAllAsRead,
     deleteNotification,
@@ -596,10 +595,6 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
     limit: 10,
   });
 
-
-  useEffect(() => {
-    refetch();
-  }, []);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -866,23 +861,30 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
                     )}
                   </ScrollArea>
 
-                  {/* {notifications.length > 0 && (
-                    <div className="border-t border-gray-700/50 p-3 bg-gradient-to-r from-gray-900 to-gray-800">
+                  {/* Footer: "View all" links to the full paginated notifications page */}
+                  {notifications.length > 0 && (
+                    <div className="border-t border-border p-3">
                       <Button
                         variant="ghost"
-                        className="w-full text-foreground hover:text-cyan-300 hover:bg-gray-700/50 text-sm font-medium rounded-lg h-9"
+                        className="w-full text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg h-9 flex items-center justify-center gap-1.5"
                         onClick={() => {
-                          setShowNotifications(false)
-                          if (normalizedRole === "super_admin") router.push(navigationPaths.superAdmin.payouts)
-                          else if (normalizedRole === "aggregator") router.push(navigationPaths.aggregator.commission)
-                          else router.push("/lender/notification")
+                          setShowNotifications(false);
+                          const notifPath =
+                            normalizedRole === "super_admin"
+                              ? "/super-admin/notification"
+                              : normalizedRole === "aggregator"
+                                ? "/aggregator/notification"
+                                : normalizedRole === "lender"
+                                  ? "/lender/notification"
+                                  : "/notification";
+                          router.push(notifPath);
                         }}
                       >
                         View all notifications
-                        <span className="ml-2">→</span>
+                        <ExternalLink className="h-3.5 w-3.5 opacity-60" />
                       </Button>
                     </div>
-                  )} */}
+                  )}
                 </Card>
               </div>
             )}
