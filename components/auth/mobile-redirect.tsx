@@ -16,10 +16,10 @@ export function MobileRedirect() {
       if (isAndroid && ref) {
         setIsRedirecting(true)
         const referrer = `utm_source=website&ref=${ref}`
-        const intentUrl = `intent://details?id=com.lendgrid.mobile&referrer=${encodeURIComponent(referrer)}#Intent;scheme=market;package=com.android.vending;end`
+        const playStoreUrl = `https://play.google.com/store/apps/details?id=com.lendgrid.mobile&referrer=${encodeURIComponent(referrer)}`
         
         // Attempt to redirect to the Play Store
-        window.location.href = intentUrl
+        window.location.href = playStoreUrl
       }
     }
   }, [ref])
