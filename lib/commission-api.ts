@@ -32,8 +32,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              icon
-              badgeLabel
               commissionType
               commissionRate
               productType
@@ -83,8 +81,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              icon
-              badgeLabel
               commissionType
               commissionRate
               productType
@@ -126,8 +122,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              icon
-              badgeLabel
               commissionType
               commissionRate
               productType
@@ -169,8 +163,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              icon
-              badgeLabel
               commissionType
               commissionRate
               minAmount
@@ -207,8 +199,6 @@ export const commissionsApi = {
             data {
               id
               ruleName
-              icon
-              badgeLabel
               commissionType
               commissionRate
               minAmount

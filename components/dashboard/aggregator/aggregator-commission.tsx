@@ -1252,13 +1252,13 @@ export function AggregatorCommission() {
                       <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 md:gap-6">
                         {/* Prominent Medal Icon */}
                         <div className="flex-shrink-0 p-3 rounded-2xl bg-card border border-border/80 shadow-inner flex items-center justify-center">
-                          {getTierBigMedal(activeRule.icon || getTierIconFromBadgeLabel(activeRule.badgeLabel, activeRule.applicableFor) || activeRule.applicableFor)}
+                          {getTierBigMedal(getTierIconFromBadgeLabel(null, activeRule.applicableFor))}
                         </div>
 
                         {/* Header Info */}
                         <div className="space-y-1 text-center sm:text-left">
                           <CardTitle className="text-xl md:text-2xl font-bold text-foreground">
-                            Active Commission Tier: {activeRule.badgeLabel || activeRule.ruleName}
+                            Active Commission Tier: {activeRule.ruleName}
                           </CardTitle>
                           <CardDescription className="text-muted-foreground text-xs md:text-sm">
                             {activeRule.description || "You are mapped to this rule-based tier rate chart for all automatic payouts."}
@@ -1290,7 +1290,7 @@ export function AggregatorCommission() {
                             <CheckCircle className="w-3.5 h-3.5 mr-1" />
                             Active Plan
                           </Badge>
-                          {getTierBadge(activeRule.icon || getTierIconFromBadgeLabel(activeRule.badgeLabel, activeRule.applicableFor) || activeRule.applicableFor, activeRule.badgeLabel)}
+                          {getTierBadge(activeRule.applicableFor)}
                         </div>
                       </div>
                     </div>

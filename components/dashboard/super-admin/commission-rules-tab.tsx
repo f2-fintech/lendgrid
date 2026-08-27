@@ -197,7 +197,7 @@ export const getTierIconFromBadgeLabel = (badgeLabel?: string | null, applicable
         if (label.includes('apex')) return 'PLATINUM';
         if (label.includes('vanguard')) return 'VANGUARD';
     }
-    
+
     if (applicableFor) {
         const tier = applicableFor.toUpperCase();
         if (tier.includes('BRONZE')) return 'BRONZE';
@@ -207,7 +207,7 @@ export const getTierIconFromBadgeLabel = (badgeLabel?: string | null, applicable
         if (tier.includes('PLATINUM')) return 'PLATINUM';
         if (tier.includes('VANGUARD')) return 'VANGUARD';
     }
-    
+
     return 'GOLD'; // default fallback
 }
 
@@ -218,8 +218,6 @@ export const commissionRuleSchema = z.object({
         .min(3, "Rule name must be at least 3 characters")
         .max(100, "Rule name must be less than 100 characters"),
 
-    icon: z.string().nullable().optional(),
-    badgeLabel: z.string().nullable().optional(),
 
     productType: z
         .string()
@@ -349,8 +347,6 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
         resolver: zodResolver(commissionRuleSchema),
         defaultValues: {
             productType: "",
-            icon: null,
-            badgeLabel: null,
             commissionType: CommissionType.PERCENTAGE,
             commissionRate: undefined,
             minAmount: undefined,
@@ -467,8 +463,6 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                 priority: data.priority,
                 description: data.description,
                 lenderCommissions: filteredCommissions,
-                icon: data.icon || getTierIconFromBadgeLabel(data.badgeLabel, data.applicableFor),
-                badgeLabel: data.badgeLabel || null,
                 ...(editingRule && data.status && { status: data.status }), // Only include status when editing
             }
 
@@ -496,8 +490,6 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
         setEditingRule(null)
         reset({
             productType: "",
-            icon: isChannelPartner ? 'GOLD' : null,
-            badgeLabel: isChannelPartner ? 'Momentum' : null,
             commissionType: CommissionType.PERCENTAGE,
             commissionRate: undefined,
             minAmount: isChannelPartner ? 1000 : undefined,
@@ -524,8 +516,6 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
         setEditingRule(rule)
         setValue('ruleName', rule.ruleName)
         setValue('productType', rule.productType)
-        setValue('icon', rule.icon || null)
-        setValue('badgeLabel', rule.badgeLabel || null)
         setValue('commissionType', rule.commissionType)
         setValue('commissionRate', rule.commissionRate)
         setValue('minAmount', rule.minAmount)
@@ -800,103 +790,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                         )}
                                                     </div>
 
-                                                    <div>
-                                                        <Label htmlFor="badgeLabel" className="text-sm font-medium">
-                                                            Badge Label <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
-                                                        </Label>
-                                                        <Controller
-                                                            control={control}
-                                                            name="badgeLabel"
-                                                            render={({ field }) => (
-                                                                <Select value={field.value || 'NONE'} onValueChange={(val) => {
-                                                                    field.onChange(val === 'NONE' ? null : val);
-                                                                    if (val && val !== 'NONE') {
-                                                                        const mappedIcon = getTierIconFromBadgeLabel(val);
-                                                                        setValue('icon', mappedIcon, { shouldDirty: true });
-                                                                    }
-                                                                }}>
-                                                                    <SelectTrigger id="badgeLabel" className="mt-1.5 bg-background border-border h-10">
-                                                                        <SelectValue placeholder="No Label" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                                        <SelectItem value="NONE" className="cursor-pointer">
-                                                                            <span className="text-sm font-medium">No Label</span>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="Spark" className="cursor-pointer">Spark</SelectItem>
-                                                                        <SelectItem value="Pulse" className="cursor-pointer">Pulse</SelectItem>
-                                                                        <SelectItem value="Momentum" className="cursor-pointer">Momentum</SelectItem>
-                                                                        <SelectItem value="Catalyst" className="cursor-pointer">Catalyst</SelectItem>
-                                                                        <SelectItem value="Apex" className="cursor-pointer">Apex</SelectItem>
-                                                                        <SelectItem value="Vanguard" className="cursor-pointer">Vanguard</SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            )}
-                                                        />
-                                                    </div>
 
-                                                    <div>
-                                                        <Label htmlFor="icon" className="text-sm font-medium">
-                                                            Tier Icon <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
-                                                        </Label>
-                                                        <Controller
-                                                            control={control}
-                                                            name="icon"
-                                                            render={({ field }) => (
-                                                                <Select value={field.value || 'NONE'} onValueChange={(val) => field.onChange(val === 'NONE' ? null : val)}>
-                                                                    <SelectTrigger id="icon" className="mt-1.5 bg-background border-border h-10">
-                                                                        <SelectValue placeholder="No Icon" />
-                                                                    </SelectTrigger>
-                                                                    <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                                        <SelectItem value="NONE" className="cursor-pointer">
-                                                                            <span className="text-sm font-medium">No Icon</span>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="BRONZE" className="cursor-pointer">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <CustomMedalIcon tier="BRONZE" className="w-5 h-6 flex-shrink-0" />
-                                                                                <span>Spark Icon</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="SILVER" className="cursor-pointer">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <CustomMedalIcon tier="SILVER" className="w-5 h-6 flex-shrink-0" />
-                                                                                <span>Pulse Icon</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="GOLD" className="cursor-pointer">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <CustomMedalIcon tier="GOLD" className="w-5 h-6 flex-shrink-0" />
-                                                                                <span>Momentum Icon</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="DIAMOND" className="cursor-pointer">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <CustomMedalIcon tier="DIAMOND" className="w-5 h-6 flex-shrink-0" />
-                                                                                <span>Catalyst Icon</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="PLATINUM" className="cursor-pointer">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <CustomMedalIcon tier="PLATINUM" className="w-5 h-6 flex-shrink-0" />
-                                                                                <span>Apex Icon</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="VANGUARD" className="cursor-pointer">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <CustomMedalIcon tier="VANGUARD" className="w-5 h-6 flex-shrink-0" />
-                                                                                <span>Vanguard Icon</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                        <SelectItem value="DIAMOND_GEM" className="cursor-pointer">
-                                                                            <div className="flex items-center gap-2">
-                                                                                <CustomMedalIcon tier="DIAMOND_GEM" className="w-5 h-6 flex-shrink-0" />
-                                                                                <span>Diamond Gem Icon (Company Use)</span>
-                                                                            </div>
-                                                                        </SelectItem>
-                                                                    </SelectContent>
-                                                                </Select>
-                                                            )}
-                                                        />
-                                                    </div>
                                                 </div>
 
                                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1407,16 +1301,13 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                 <TableCell>
                                                     <div className="flex items-center gap-2">
                                                         {(() => {
-                                                            const tierIcon = rule.icon || getTierIconFromBadgeLabel(rule.badgeLabel, rule.applicableFor);
+                                                            const tierIcon = getTierIconFromBadgeLabel(null, rule.applicableFor);
                                                             return tierIcon ? (
                                                                 <CustomMedalIcon tier={tierIcon} className="w-5 h-6 flex-shrink-0" />
                                                             ) : null;
                                                         })()}
                                                         <div>
                                                             <p className="font-medium">{rule.ruleName}</p>
-                                                            {rule.badgeLabel && (
-                                                                <p className="text-xs text-muted-foreground">Label: {rule.badgeLabel}</p>
-                                                            )}
                                                         </div>
                                                     </div>
                                                 </TableCell>
