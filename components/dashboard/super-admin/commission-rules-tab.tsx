@@ -16,7 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { CreditCard, Plus, Search, Edit, Trash2, Settings, TrendingUp, Percent, AlertCircle, Info } from 'lucide-react'
+import { CreditCard, Plus, Search, Edit, Trash2, Settings, TrendingUp, Percent, AlertCircle, Info, ChevronDown, ChevronUp, FileText } from 'lucide-react'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
@@ -225,23 +225,25 @@ export const commissionRuleSchema = z.object({
         .string()
         .min(1, "Product type is required"),
 
-    commissionType: z.nativeEnum(CommissionType, {
-        required_error: "Commission type is required",
-    }),
+    commissionType: z.nativeEnum(CommissionType).optional(),
 
     commissionRate: z
-        .number({ invalid_type_error: "Commission rate is required" })
-        .positive("Must be greater than 0")
-        .max(100, "Rate cannot exceed 100%"),
+        .number({ invalid_type_error: "Commission rate must be a number" })
+        .min(0, "Rate cannot be negative")
+        .max(100, "Rate cannot exceed 100%")
+        .optional(),
 
+    // Amount range is optional for Channel Partner (injected as defaults in submit handler)
     minAmount: z
-        .number({ invalid_type_error: "Min amount is required" })
+        .number({ invalid_type_error: "Min amount must be a number" })
         .min(1000, "Minimum amount must be at least ₹1,000")
-        .positive(),
+        .positive()
+        .optional(),
 
     maxAmount: z
-        .number({ invalid_type_error: "Max amount is required" })
-        .positive(),
+        .number({ invalid_type_error: "Max amount must be a number" })
+        .positive()
+        .optional(),
 
     applicableFor: z.nativeEnum(ApplicableFor, {
         required_error: "Applicability is required",
@@ -268,7 +270,13 @@ export const commissionRuleSchema = z.object({
         })
     ).optional(),
 })
-    .refine((data) => data.maxAmount > data.minAmount, {
+    .refine((data) => {
+        // Only validate range cross-field when both are provided (Sourcer tab)
+        if (data.minAmount !== undefined && data.maxAmount !== undefined) {
+            return data.maxAmount > data.minAmount
+        }
+        return true
+    }, {
         message: "Max amount must be greater than Min amount",
         path: ["maxAmount"],
     })
@@ -289,6 +297,14 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
     const [dealLenders, setDealLenders] = useState<DealLender[]>([])
     const [viewingRule, setViewingRule] = useState<any>(null)
     const [isViewChartOpen, setIsViewChartOpen] = useState(false)
+    const [isTnCExpanded, setIsTnCExpanded] = useState(false)
+
+    const isChannelPartner = aggregatorType === AggregatorType.CHANNEL_PARTNER
+
+    const CP_PRODUCT_TYPES = [
+        'Personal Loan / Business Loan',
+        'Doctor Loan',
+    ]
 
     useEffect(() => {
         dealLendersApi.getDealLenders()
@@ -391,7 +407,25 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
     }
 
     const getApplicableForLabel = (value: ApplicableFor) => {
-        return value.replace('_AGGREGATORS', '').replace('_', ' ')
+        switch (value) {
+            case ApplicableFor.GOLD_AGGREGATORS: return 'Cat C — Gold'
+            case ApplicableFor.PLATINUM_AGGREGATORS: return 'Cat B — Platinum'
+            case ApplicableFor.MAGNUS_AGGREGATORS: return 'Cat A — Magnus'
+            default: return value ? value.replace('_AGGREGATORS', '').replace('_', ' ') : ''
+        }
+    }
+
+    const getApplicableForBadge = (value: ApplicableFor) => {
+        switch (value) {
+            case ApplicableFor.GOLD_AGGREGATORS:
+                return <Badge className="bg-amber-500/20 text-amber-300 border-amber-500/40">Cat C — Gold</Badge>
+            case ApplicableFor.PLATINUM_AGGREGATORS:
+                return <Badge className="bg-purple-500/20 text-purple-300 border-purple-500/40">Cat B — Platinum</Badge>
+            case ApplicableFor.MAGNUS_AGGREGATORS:
+                return <Badge className="bg-emerald-500/20 text-emerald-300 border-emerald-500/40">Cat A — Magnus</Badge>
+            default:
+                return <Badge variant="outline">{getApplicableForLabel(value)}</Badge>
+        }
     }
 
     const handlePageChange = async (newPage: number) => {
@@ -415,13 +449,19 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                     unsecuredRate: lc.unsecuredRate !== undefined && lc.unsecuredRate !== null && lc.unsecuredRate !== "" ? parseFloat(lc.unsecuredRate.toString()) : undefined,
                 }))
 
+            // Channel Partner GOLD rules: use user input, defaulting to 1,000 and 50,00,000 if blank
+            const resolvedMinAmount = data.minAmount ?? 1000
+            const resolvedMaxAmount = data.maxAmount ?? 5000000
+            const resolvedCommissionType = isChannelPartner ? CommissionType.PERCENTAGE : (data.commissionType || CommissionType.PERCENTAGE)
+            const resolvedCommissionRate = isChannelPartner ? 1.25 : (data.commissionRate ?? 0)
+
             const payload: CreateCommissionRuleInput = {
                 ruleName: data.ruleName,
                 productType: data.productType,
-                commissionType: data.commissionType,
-                commissionRate: data.commissionRate,
-                minAmount: data.minAmount,
-                maxAmount: data.maxAmount,
+                commissionType: resolvedCommissionType,
+                commissionRate: resolvedCommissionRate,
+                minAmount: resolvedMinAmount,
+                maxAmount: resolvedMaxAmount,
                 applicableFor: data.applicableFor,
                 aggregatorType: aggregatorType, // Auto-set based on active tab
                 priority: data.priority,
@@ -456,13 +496,14 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
         setEditingRule(null)
         reset({
             productType: "",
-            icon: null,
-            badgeLabel: null,
+            icon: isChannelPartner ? 'GOLD' : null,
+            badgeLabel: isChannelPartner ? 'Momentum' : null,
             commissionType: CommissionType.PERCENTAGE,
             commissionRate: undefined,
-            minAmount: undefined,
-            maxAmount: undefined,
-            applicableFor: ApplicableFor.ALL_AGGREGATORS,
+            minAmount: isChannelPartner ? 1000 : undefined,
+            maxAmount: isChannelPartner ? 5000000 : undefined,
+            // Pre-select GOLD for Channel Partner tab; leave as ALL for Sourcer
+            applicableFor: isChannelPartner ? ApplicableFor.GOLD_AGGREGATORS : ApplicableFor.ALL_AGGREGATORS,
             priority: 0,
             description: "",
             lenderCommissions: dealLenders.map(l => ({
@@ -649,257 +690,351 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                         </div>
                                     </CardHeader>
                                     <CardContent className="space-y-4">
-                                        {/* Rule Name, Badge Label & Icon Selection */}
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div>
-                                                <Label htmlFor="ruleName" className="text-sm font-medium">
-                                                    Rule Name <span className="text-red-400">*</span>
-                                                </Label>
-                                                <Input
-                                                    id="ruleName"
-                                                    {...register("ruleName")}
-                                                    className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="e.g., Personal Loan - Gold Tier"
-                                                />
-                                                {errors.ruleName && (
-                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                        <AlertCircle className="w-3 h-3" />
-                                                        {errors.ruleName.message}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            <div>
-                                                <Label htmlFor="badgeLabel" className="text-sm font-medium">
-                                                    Badge Label <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
-                                                </Label>
-                                                <Controller
-                                                    control={control}
-                                                    name="badgeLabel"
-                                                    render={({ field }) => (
-                                                        <Select value={field.value || 'NONE'} onValueChange={(val) => {
-                                                            field.onChange(val === 'NONE' ? null : val);
-                                                            if (val && val !== 'NONE') {
-                                                                const mappedIcon = getTierIconFromBadgeLabel(val);
-                                                                setValue('icon', mappedIcon, { shouldDirty: true });
-                                                            }
-                                                        }}>
-                                                            <SelectTrigger id="badgeLabel" className="mt-1.5 bg-background border-border h-10">
-                                                                <SelectValue placeholder="No Label" />
-                                                            </SelectTrigger>
-                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                                <SelectItem value="NONE" className="cursor-pointer">
-                                                                    <span className="text-sm font-medium">No Label</span>
-                                                                </SelectItem>
-                                                                <SelectItem value="Spark" className="cursor-pointer">Spark</SelectItem>
-                                                                <SelectItem value="Pulse" className="cursor-pointer">Pulse</SelectItem>
-                                                                <SelectItem value="Momentum" className="cursor-pointer">Momentum</SelectItem>
-                                                                <SelectItem value="Catalyst" className="cursor-pointer">Catalyst</SelectItem>
-                                                                <SelectItem value="Apex" className="cursor-pointer">Apex</SelectItem>
-                                                                <SelectItem value="Vanguard" className="cursor-pointer">Vanguard</SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <Label htmlFor="icon" className="text-sm font-medium">
-                                                    Tier Icon <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
-                                                </Label>
-                                                <Controller
-                                                    control={control}
-                                                    name="icon"
-                                                    render={({ field }) => (
-                                                        <Select value={field.value || 'NONE'} onValueChange={(val) => field.onChange(val === 'NONE' ? null : val)}>
-                                                            <SelectTrigger id="icon" className="mt-1.5 bg-background border-border h-10">
-                                                                <SelectValue placeholder="No Icon" />
-                                                            </SelectTrigger>
-                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                                <SelectItem value="NONE" className="cursor-pointer">
-                                                                    <span className="text-sm font-medium">No Icon</span>
-                                                                </SelectItem>
-                                                                <SelectItem value="BRONZE" className="cursor-pointer">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CustomMedalIcon tier="BRONZE" className="w-5 h-6 flex-shrink-0" />
-                                                                        <span>Spark Icon</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                                <SelectItem value="SILVER" className="cursor-pointer">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CustomMedalIcon tier="SILVER" className="w-5 h-6 flex-shrink-0" />
-                                                                        <span>Pulse Icon</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                                <SelectItem value="GOLD" className="cursor-pointer">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CustomMedalIcon tier="GOLD" className="w-5 h-6 flex-shrink-0" />
-                                                                        <span>Momentum Icon</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                                <SelectItem value="DIAMOND" className="cursor-pointer">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CustomMedalIcon tier="DIAMOND" className="w-5 h-6 flex-shrink-0" />
-                                                                        <span>Catalyst Icon</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                                <SelectItem value="PLATINUM" className="cursor-pointer">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CustomMedalIcon tier="PLATINUM" className="w-5 h-6 flex-shrink-0" />
-                                                                        <span>Apex Icon</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                                <SelectItem value="VANGUARD" className="cursor-pointer">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CustomMedalIcon tier="VANGUARD" className="w-5 h-6 flex-shrink-0" />
-                                                                        <span>Vanguard Icon</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                                <SelectItem value="DIAMOND_GEM" className="cursor-pointer">
-                                                                    <div className="flex items-center gap-2">
-                                                                        <CustomMedalIcon tier="DIAMOND_GEM" className="w-5 h-6 flex-shrink-0" />
-                                                                        <span>Diamond Gem Icon (Company Use)</span>
-                                                                    </div>
-                                                                </SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {/* Product Type */}
-                                            <div>
-                                                <Label htmlFor="productType" className="text-sm font-medium">
-                                                    Product Type <span className="text-red-400">*</span>
-                                                </Label>
-                                                <Input
-                                                    id="productType"
-                                                    {...register("productType")}
-                                                    className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="e.g., Personal Loan"
-                                                />
-                                                {errors.productType && (
-                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                        <AlertCircle className="w-3 h-3" />
-                                                        {errors.productType.message}
-                                                    </p>
-                                                )}
-                                            </div>
-
-                                            {/* Applicable For */}
-                                            <div>
-                                                <Label htmlFor="applicableFor" className="text-sm font-medium">
-                                                    Applicable For <span className="text-red-400">*</span>
-                                                </Label>
-                                                <Controller
-                                                    control={control}
-                                                    name="applicableFor"
-                                                    render={({ field }) => (
-                                                        <Select value={field.value} onValueChange={field.onChange}>
-                                                            <SelectTrigger id="applicableFor" className="mt-1.5 bg-background border-border">
-                                                                <SelectValue placeholder="Select tier" />
-                                                            </SelectTrigger>
-                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                                {Object.values(ApplicableFor).map((tier) => (
-                                                                    <SelectItem key={tier} value={tier} className="cursor-pointer">
-                                                                        {getApplicableForLabel(tier)}
-                                                                    </SelectItem>
-                                                                ))}
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                                />
-                                                {errors.applicableFor && (
-                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                        <AlertCircle className="w-3 h-3" />
-                                                        {errors.applicableFor.message}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-
-                                {/* Commission Configuration Card */}
-                                <Card className="border-border bg-card/50">
-                                    <CardHeader className="pb-4">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
-                                                <Percent className="w-4 h-4 text-blue-400" />
-                                            </div>
-                                            <div>
-                                                <CardTitle className="text-foreground text-lg">Commission Configuration</CardTitle>
-                                                <CardDescription className="text-xs">Set commission type and rate</CardDescription>
-                                            </div>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                            {/* Commission Type */}
-                                            <div>
-                                                <Label htmlFor="commissionType" className="text-sm font-medium">
-                                                    Commission Type <span className="text-red-400">*</span>
-                                                </Label>
-                                                <Controller
-                                                    control={control}
-                                                    name="commissionType"
-                                                    render={({ field }) => (
-                                                        <Select value={field.value} onValueChange={field.onChange}>
-                                                            <SelectTrigger id="commissionType" className="mt-1.5 bg-background border-border">
-                                                                <SelectValue placeholder="Select type" />
-                                                            </SelectTrigger>
-                                                            <SelectContent className="bg-popover border-border text-popover-foreground">
-                                                                <SelectItem className='cursor-pointer' value={CommissionType.PERCENTAGE}>
-                                                                    Percentage (%)
-                                                                </SelectItem>
-                                                                <SelectItem className='cursor-pointer' value={CommissionType.FLAT}>
-                                                                    Flat Amount (₹)
-                                                                </SelectItem>
-                                                            </SelectContent>
-                                                        </Select>
-                                                    )}
-                                                />
-                                            </div>
-
-                                            {/* Commission Rate */}
-                                            <div>
-                                                <Label htmlFor="commissionRate" className="text-sm font-medium">
-                                                    Commission Rate <span className="text-red-400">*</span>
-                                                </Label>
-                                                <div className="relative mt-1.5">
+                                        {/* Basic Fields: Clean grid without Badge Label / Tier Icon for Channel Partner */}
+                                        {isChannelPartner ? (
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                                {/* Rule Name */}
+                                                <div>
+                                                    <Label htmlFor="ruleName" className="text-sm font-medium">
+                                                        Rule Name <span className="text-red-400">*</span>
+                                                    </Label>
                                                     <Input
-                                                        id="commissionRate"
-                                                        type="number"
-                                                        step="0.01"
-                                                        {...register("commissionRate", { valueAsNumber: true })}
-                                                        className="bg-background border-border pr-10 focus:ring-2 focus:ring-primary/20"
-                                                        placeholder={commissionTypeWatch === CommissionType.PERCENTAGE ? "3.5" : "5000"}
+                                                        id="ruleName"
+                                                        {...register("ruleName")}
+                                                        className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                                        placeholder="e.g., Personal Loan / Business Loan"
                                                     />
-                                                    <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
-                                                        {commissionTypeWatch === CommissionType.PERCENTAGE ? '%' : '₹'}
-                                                    </span>
+                                                    {errors.ruleName && (
+                                                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            {errors.ruleName.message}
+                                                        </p>
+                                                    )}
                                                 </div>
-                                                {errors.commissionRate && (
-                                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                                        <AlertCircle className="w-3 h-3" />
-                                                        {errors.commissionRate.message}
-                                                    </p>
-                                                )}
-                                            </div>
-                                        </div>
 
-                                        <Alert className="bg-blue-500/10 border-blue-500/30">
-                                            <Info className="h-4 w-4 text-blue-400" />
-                                            <AlertDescription className="text-sm text-foreground">
-                                                {commissionTypeWatch === CommissionType.PERCENTAGE
-                                                    ? '💡 Commission will be calculated as a percentage of the loan amount'
-                                                    : '💡 Commission will be a fixed amount regardless of loan size'}
-                                            </AlertDescription>
-                                        </Alert>
+                                                {/* Product Type */}
+                                                <div>
+                                                    <Label htmlFor="productType" className="text-sm font-medium">
+                                                        Product Type <span className="text-red-400">*</span>
+                                                    </Label>
+                                                    <Controller
+                                                        control={control}
+                                                        name="productType"
+                                                        render={({ field }) => (
+                                                            <Select value={field.value} onValueChange={field.onChange}>
+                                                                <SelectTrigger id="productType" className="mt-1.5 bg-background border-border">
+                                                                    <SelectValue placeholder="Select product type" />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                    {CP_PRODUCT_TYPES.map((pt) => (
+                                                                        <SelectItem key={pt} value={pt} className="cursor-pointer">
+                                                                            {pt}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
+                                                    />
+                                                    {errors.productType && (
+                                                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            {errors.productType.message}
+                                                        </p>
+                                                    )}
+                                                </div>
+
+                                                {/* Applicable For / Category */}
+                                                <div>
+                                                    <Label htmlFor="applicableFor" className="text-sm font-medium">
+                                                        Category / Tier <span className="text-red-400">*</span>
+                                                    </Label>
+                                                    <Controller
+                                                        control={control}
+                                                        name="applicableFor"
+                                                        render={({ field }) => (
+                                                            <Select value={field.value} onValueChange={field.onChange}>
+                                                                <SelectTrigger id="applicableFor" className="mt-1.5 bg-background border-border">
+                                                                    <SelectValue placeholder="Select category" />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                    <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="cursor-pointer">
+                                                                        Cat C — Gold (Individual Partners)
+                                                                    </SelectItem>
+                                                                    <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="cursor-pointer">
+                                                                        Cat B — Platinum (DSA Partners &lt; 1 Cr/Month)
+                                                                    </SelectItem>
+                                                                    <SelectItem value={ApplicableFor.MAGNUS_AGGREGATORS} className="cursor-pointer">
+                                                                        Cat A — Magnus (Top DSA Partners)
+                                                                    </SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
+                                                    />
+                                                    {errors.applicableFor && (
+                                                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            {errors.applicableFor.message}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                {/* Rule Name, Badge Label & Icon Selection for Sourcer */}
+                                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                                    <div>
+                                                        <Label htmlFor="ruleName" className="text-sm font-medium">
+                                                            Rule Name <span className="text-red-400">*</span>
+                                                        </Label>
+                                                        <Input
+                                                            id="ruleName"
+                                                            {...register("ruleName")}
+                                                            className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                                            placeholder="e.g., Personal Loan - Gold Tier"
+                                                        />
+                                                        {errors.ruleName && (
+                                                            <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                                <AlertCircle className="w-3 h-3" />
+                                                                {errors.ruleName.message}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    <div>
+                                                        <Label htmlFor="badgeLabel" className="text-sm font-medium">
+                                                            Badge Label <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
+                                                        </Label>
+                                                        <Controller
+                                                            control={control}
+                                                            name="badgeLabel"
+                                                            render={({ field }) => (
+                                                                <Select value={field.value || 'NONE'} onValueChange={(val) => {
+                                                                    field.onChange(val === 'NONE' ? null : val);
+                                                                    if (val && val !== 'NONE') {
+                                                                        const mappedIcon = getTierIconFromBadgeLabel(val);
+                                                                        setValue('icon', mappedIcon, { shouldDirty: true });
+                                                                    }
+                                                                }}>
+                                                                    <SelectTrigger id="badgeLabel" className="mt-1.5 bg-background border-border h-10">
+                                                                        <SelectValue placeholder="No Label" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                        <SelectItem value="NONE" className="cursor-pointer">
+                                                                            <span className="text-sm font-medium">No Label</span>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="Spark" className="cursor-pointer">Spark</SelectItem>
+                                                                        <SelectItem value="Pulse" className="cursor-pointer">Pulse</SelectItem>
+                                                                        <SelectItem value="Momentum" className="cursor-pointer">Momentum</SelectItem>
+                                                                        <SelectItem value="Catalyst" className="cursor-pointer">Catalyst</SelectItem>
+                                                                        <SelectItem value="Apex" className="cursor-pointer">Apex</SelectItem>
+                                                                        <SelectItem value="Vanguard" className="cursor-pointer">Vanguard</SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )}
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <Label htmlFor="icon" className="text-sm font-medium">
+                                                            Tier Icon <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
+                                                        </Label>
+                                                        <Controller
+                                                            control={control}
+                                                            name="icon"
+                                                            render={({ field }) => (
+                                                                <Select value={field.value || 'NONE'} onValueChange={(val) => field.onChange(val === 'NONE' ? null : val)}>
+                                                                    <SelectTrigger id="icon" className="mt-1.5 bg-background border-border h-10">
+                                                                        <SelectValue placeholder="No Icon" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                        <SelectItem value="NONE" className="cursor-pointer">
+                                                                            <span className="text-sm font-medium">No Icon</span>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="BRONZE" className="cursor-pointer">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CustomMedalIcon tier="BRONZE" className="w-5 h-6 flex-shrink-0" />
+                                                                                <span>Spark Icon</span>
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="SILVER" className="cursor-pointer">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CustomMedalIcon tier="SILVER" className="w-5 h-6 flex-shrink-0" />
+                                                                                <span>Pulse Icon</span>
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="GOLD" className="cursor-pointer">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CustomMedalIcon tier="GOLD" className="w-5 h-6 flex-shrink-0" />
+                                                                                <span>Momentum Icon</span>
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="DIAMOND" className="cursor-pointer">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CustomMedalIcon tier="DIAMOND" className="w-5 h-6 flex-shrink-0" />
+                                                                                <span>Catalyst Icon</span>
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="PLATINUM" className="cursor-pointer">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CustomMedalIcon tier="PLATINUM" className="w-5 h-6 flex-shrink-0" />
+                                                                                <span>Apex Icon</span>
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="VANGUARD" className="cursor-pointer">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CustomMedalIcon tier="VANGUARD" className="w-5 h-6 flex-shrink-0" />
+                                                                                <span>Vanguard Icon</span>
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                        <SelectItem value="DIAMOND_GEM" className="cursor-pointer">
+                                                                            <div className="flex items-center gap-2">
+                                                                                <CustomMedalIcon tier="DIAMOND_GEM" className="w-5 h-6 flex-shrink-0" />
+                                                                                <span>Diamond Gem Icon (Company Use)</span>
+                                                                            </div>
+                                                                        </SelectItem>
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )}
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                    {/* Product Type */}
+                                                    <div>
+                                                        <Label htmlFor="productType" className="text-sm font-medium">
+                                                            Product Type <span className="text-red-400">*</span>
+                                                        </Label>
+                                                        <Input
+                                                            id="productType"
+                                                            {...register("productType")}
+                                                            className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                                            placeholder="e.g., Personal Loan"
+                                                        />
+                                                        {errors.productType && (
+                                                            <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                                <AlertCircle className="w-3 h-3" />
+                                                                {errors.productType.message}
+                                                            </p>
+                                                        )}
+                                                    </div>
+
+                                                    {/* Applicable For */}
+                                                    <div>
+                                                        <Label htmlFor="applicableFor" className="text-sm font-medium">
+                                                            Applicable For <span className="text-red-400">*</span>
+                                                        </Label>
+                                                        <Controller
+                                                            control={control}
+                                                            name="applicableFor"
+                                                            render={({ field }) => (
+                                                                <Select value={field.value} onValueChange={field.onChange}>
+                                                                    <SelectTrigger id="applicableFor" className="mt-1.5 bg-background border-border">
+                                                                        <SelectValue placeholder="Select tier" />
+                                                                    </SelectTrigger>
+                                                                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                        {Object.values(ApplicableFor).map((tier) => (
+                                                                            <SelectItem key={tier} value={tier} className="cursor-pointer">
+                                                                                {getApplicableForLabel(tier)}
+                                                                            </SelectItem>
+                                                                        ))}
+                                                                    </SelectContent>
+                                                                </Select>
+                                                            )}
+                                                        />
+                                                        {errors.applicableFor && (
+                                                            <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                                <AlertCircle className="w-3 h-3" />
+                                                                {errors.applicableFor.message}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
                                     </CardContent>
                                 </Card>
+
+                                {/* Commission Configuration Card — hidden for Channel Partner */}
+                                {!isChannelPartner && (
+                                    <Card className="border-border bg-card/50">
+                                        <CardHeader className="pb-4">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                                                    <Percent className="w-4 h-4 text-blue-400" />
+                                                </div>
+                                                <div>
+                                                    <CardTitle className="text-foreground text-lg">Commission Configuration</CardTitle>
+                                                    <CardDescription className="text-xs">Set commission type and rate</CardDescription>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="space-y-4">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {/* Commission Type */}
+                                                <div>
+                                                    <Label htmlFor="commissionType" className="text-sm font-medium">
+                                                        Commission Type <span className="text-red-400">*</span>
+                                                    </Label>
+                                                    <Controller
+                                                        control={control}
+                                                        name="commissionType"
+                                                        render={({ field }) => (
+                                                            <Select value={field.value} onValueChange={field.onChange}>
+                                                                <SelectTrigger id="commissionType" className="mt-1.5 bg-background border-border">
+                                                                    <SelectValue placeholder="Select type" />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="bg-popover border-border text-popover-foreground">
+                                                                    <SelectItem className='cursor-pointer' value={CommissionType.PERCENTAGE}>
+                                                                        Percentage (%)
+                                                                    </SelectItem>
+                                                                    <SelectItem className='cursor-pointer' value={CommissionType.FLAT}>
+                                                                        Flat Amount (₹)
+                                                                    </SelectItem>
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
+                                                    />
+                                                </div>
+
+                                                {/* Commission Rate */}
+                                                <div>
+                                                    <Label htmlFor="commissionRate" className="text-sm font-medium">
+                                                        Commission Rate <span className="text-red-400">*</span>
+                                                    </Label>
+                                                    <div className="relative mt-1.5">
+                                                        <Input
+                                                            id="commissionRate"
+                                                            type="number"
+                                                            step="0.01"
+                                                            {...register("commissionRate", { valueAsNumber: true })}
+                                                            className="bg-background border-border pr-10 focus:ring-2 focus:ring-primary/20"
+                                                            placeholder={commissionTypeWatch === CommissionType.PERCENTAGE ? "3.5" : "5000"}
+                                                        />
+                                                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground font-medium">
+                                                            {commissionTypeWatch === CommissionType.PERCENTAGE ? '%' : '₹'}
+                                                        </span>
+                                                    </div>
+                                                    {errors.commissionRate && (
+                                                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            {errors.commissionRate.message}
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            <Alert className="bg-blue-500/10 border-blue-500/30">
+                                                <Info className="h-4 w-4 text-blue-400" />
+                                                <AlertDescription className="text-sm text-foreground">
+                                                    {commissionTypeWatch === CommissionType.PERCENTAGE
+                                                        ? '💡 Commission will be calculated as a percentage of the loan amount'
+                                                        : '💡 Commission will be a fixed amount regardless of loan size'}
+                                                </AlertDescription>
+                                            </Alert>
+                                        </CardContent>
+                                    </Card>
+                                )}
 
                                 {/* Amount Range Card */}
                                 <Card className="border-border bg-card/50">
@@ -926,7 +1061,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                     type="number"
                                                     {...register("minAmount", { valueAsNumber: true })}
                                                     className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="100,000"
+                                                    placeholder="1,000"
                                                 />
                                                 {errors.minAmount && (
                                                     <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
@@ -946,7 +1081,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                     type="number"
                                                     {...register("maxAmount", { valueAsNumber: true })}
                                                     className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                                    placeholder="10,00,000"
+                                                    placeholder="50,00,000"
                                                 />
                                                 {errors.maxAmount && (
                                                     <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
@@ -973,14 +1108,20 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                         </div>
                                     </CardHeader>
                                     <CardContent>
+                                        {isChannelPartner && (
+                                            <p className="text-xs text-amber-400 mb-2 flex items-start gap-1">
+                                                <Info className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                                                For unsecured (Personal/Business/Doctor) loans, enter payout rates in the <strong className="ml-1">"Unsecured Loan Rate (%)"</strong> column. Secured rate column can be left blank for unsecured-only products.
+                                            </p>
+                                        )}
                                         <div className="border border-border rounded-lg overflow-hidden bg-background max-h-[300px] overflow-y-auto">
                                             <Table>
                                                 <TableHeader className="bg-muted/50 sticky top-0 z-10">
                                                     <TableRow className="border-border">
                                                         <TableHead className="w-2/5 font-semibold text-foreground bg-muted/50">Lender Name</TableHead>
                                                         <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Type</TableHead>
-                                                        <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Secured Rate (%)</TableHead>
-                                                        <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Unsecured Rate (%)</TableHead>
+                                                        <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Secured Loan Rate (%)</TableHead>
+                                                        <TableHead className="w-1/5 font-semibold text-foreground bg-muted/50">Unsecured Loan Rate (%)</TableHead>
                                                     </TableRow>
                                                 </TableHeader>
                                                 <TableBody>
@@ -1301,7 +1442,7 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                                     </p>
                                                 </TableCell>
                                                 <TableCell className="text-foreground">
-                                                    {getApplicableForLabel(rule.applicableFor)}
+                                                    {getApplicableForBadge(rule.applicableFor)}
                                                 </TableCell>
                                                 <TableCell>
                                                     <Badge className={getStatusColor(rule.status)}>
@@ -1386,6 +1527,71 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                     </CardContent>
                 </Card>
             </motion.div>
+
+            {/* Terms & Conditions — only shown on Channel Partner tab */}
+            {isChannelPartner && (
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                    <Card className="border-amber-500/30 bg-amber-500/5">
+                        <CardHeader
+                            className="cursor-pointer select-none"
+                            onClick={() => setIsTnCExpanded(prev => !prev)}
+                        >
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center">
+                                        <FileText className="w-5 h-5 text-amber-400" />
+                                    </div>
+                                    <div>
+                                        <CardTitle className="text-amber-300 text-base">Terms &amp; Conditions — Applicable for Pan India Location</CardTitle>
+                                        <CardDescription className="text-xs text-amber-300/60 mt-0.5">
+                                            F2 Fintech Channel Partner Payout Program 2026 — Click to {isTnCExpanded ? 'collapse' : 'expand'}
+                                        </CardDescription>
+                                    </div>
+                                </div>
+                                {isTnCExpanded ? (
+                                    <ChevronUp className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                                ) : (
+                                    <ChevronDown className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                                )}
+                            </div>
+                        </CardHeader>
+
+                        {isTnCExpanded && (
+                            <CardContent className="pt-0 space-y-4">
+                                {/* Note box */}
+                                <Alert className="bg-orange-500/10 border-orange-500/30">
+                                    <AlertCircle className="h-4 w-4 text-orange-400" />
+                                    <AlertDescription className="text-sm text-orange-200">
+                                        <strong>Note:</strong> Doctor Loan base cards for Bajaj Finserv, Tata Capital, CHOLA, L&amp;T Finance, Aditya Birla, Credit Saison, and Godrej Capital are pending bank confirmation. Rates shown reflect the standard tier rate and will be updated once bank-specific cards are received.
+                                    </AlertDescription>
+                                </Alert>
+
+                                <ol className="list-decimal list-outside ml-5 space-y-2 text-sm text-amber-100/80">
+                                    <li>This is our gross payout.</li>
+                                    <li>Payout may differ in case of SEP / OD / Surrogate / Top Up / LACR / SBL / BT / PreApp / GIL.</li>
+                                    <li>GST will be paid in excess to registered GST vendor after filing of GSTR-1.</li>
+                                    <li>Non-starter cases, bouncing, cancellation, multiple funding, BT etc. – payout will be recovered if recovered by bank for any reason.</li>
+                                    <li>In ICICI Bank: full payout will be reversed in the subsequent business cycle if the balance transfer cheque is not encashed within 90 days; no payout for cases sourced from ICICI group company employees; 50% payout for cases with loan tenor equal to or less than 12 months; any case done at 10.84% &amp; below will be paid 1% less payout from the applicable slab; no additional payment on insurance premium; nil payout for Defence cases (all armed forces) with CIBIL score &lt; 725.</li>
+                                    <li>HDFC government employee payout will only be received if minimum 10.01% of business is from government employees.</li>
+                                    <li>Payouts may change subject to changes in payout from banks / NBFCs and the same will be informed.</li>
+                                    <li>Payouts for case cancellation will be reversed in the subsequent payment cycle if payment has already been made.</li>
+                                    <li>Fullerton payout will be reduced by 1.00% in EB cases.</li>
+                                    <li>TDS deduction @2% (as per govt rule) is mandatory u/s 194H.</li>
+                                    <li>ICICI Bank is reversing payout of the complete loan amount if the BT cheque is not realised within 30 days of post disbursement from our payout; the same will be recovered from the partner.</li>
+                                    <li>Mentioned payout slabs are exclusively for loans disbursed during the partner's active month.</li>
+                                    <li>DSA Code to be assigned and updated by F2 Fintech on partner onboarding.</li>
+                                    <li>This card applies to registered DSA partners sourcing less than Rs. 1 crore of business per month (Cat B).</li>
+                                </ol>
+                            </CardContent>
+                        )}
+                    </Card>
+                </motion.div>
+            )}
+
             {/* View Rates Chart Dialog */}
             <Dialog open={isViewChartOpen} onOpenChange={setIsViewChartOpen}>
                 <DialogContent className="bg-background border-border text-foreground max-w-2xl max-h-[80vh] overflow-y-auto">

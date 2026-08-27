@@ -109,10 +109,9 @@ export enum CommissionStatus {
 
 export enum ApplicableFor {
   ALL_AGGREGATORS = 'ALL_AGGREGATORS',
-  BRONZE_AGGREGATORS = 'BRONZE_AGGREGATORS',
-  SILVER_AGGREGATORS = 'SILVER_AGGREGATORS',
   GOLD_AGGREGATORS = 'GOLD_AGGREGATORS',
-  DIAMOND_AGGREGATORS = 'DIAMOND_AGGREGATORS',
+  PLATINUM_AGGREGATORS = 'PLATINUM_AGGREGATORS',
+  MAGNUS_AGGREGATORS = 'MAGNUS_AGGREGATORS',
 }
 
 // USER & AUTH TYPES
@@ -441,10 +440,6 @@ export interface CommissionRule {
   status: RuleStatus;
   priority: number;
   description?: string;
-  effectiveFrom?: string;
-  effectiveTo?: string;
-  icon?: string;
-  badgeLabel?: string;
   lenderCommissions?: RuleLenderCommission[];
   createdAt: string;
   updatedAt: string;
@@ -510,8 +505,6 @@ export interface CreateCommissionRuleInput {
   description?: string;
   effectiveFrom?: Date;
   effectiveTo?: Date;
-  icon?: string;
-  badgeLabel?: string;
   lenderCommissions?: RuleLenderCommission[];
 }
 
@@ -523,8 +516,6 @@ export interface UpdateCommissionRuleInput {
   status?: RuleStatus;
   description?: string;
   priority?: number;
-  icon?: string;
-  badgeLabel?: string;
   lenderCommissions?: RuleLenderCommission[];
 }
 

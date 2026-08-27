@@ -385,28 +385,22 @@ function BusinessDetailsTab() {
                       <SelectValue placeholder="Select Aggregator Rank" />
                     </SelectTrigger>
                     <SelectContent className="bg-card border-border">
-                      <SelectItem value={ApplicableFor.BRONZE_AGGREGATORS} className="text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="w-4 h-4" />
-                          <span>{ApplicableFor.BRONZE_AGGREGATORS}</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value={ApplicableFor.SILVER_AGGREGATORS} className="text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Briefcase className="w-4 h-4" />
-                          <span>{ApplicableFor.SILVER_AGGREGATORS}</span>
-                        </div>
-                      </SelectItem>
                       <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
                         <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4" />
-                          <span>{ApplicableFor.GOLD_AGGREGATORS}</span>
+                          <Building className="w-4 h-4 text-amber-400" />
+                          <span>Cat C — Gold (Individual Partners)</span>
                         </div>
                       </SelectItem>
-                      <SelectItem value={ApplicableFor.DIAMOND_AGGREGATORS} className="text-foreground">
+                      <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
                         <div className="flex items-center gap-2">
-                          <Landmark className="w-4 h-4" />
-                          <span>{ApplicableFor.DIAMOND_AGGREGATORS}</span>
+                          <Building className="w-4 h-4 text-purple-400" />
+                          <span>Cat B — Platinum (DSA Partners &lt; 1 Cr/Month)</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value={ApplicableFor.MAGNUS_AGGREGATORS} className="text-foreground">
+                        <div className="flex items-center gap-2">
+                          <Landmark className="w-4 h-4 text-emerald-400" />
+                          <span>Cat A — Magnus (Top DSA Partners)</span>
                         </div>
                       </SelectItem>
                     </SelectContent>
