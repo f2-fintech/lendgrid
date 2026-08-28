@@ -1475,7 +1475,12 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                                     <li>ICICI Bank is reversing payout of the complete loan amount if the BT cheque is not realised within 30 days of post disbursement from our payout; the same will be recovered from the partner.</li>
                                     <li>Mentioned payout slabs are exclusively for loans disbursed during the partner's active month.</li>
                                     <li>DSA Code to be assigned and updated by F2 Fintech on partner onboarding.</li>
-                                    <li>This card applies to registered DSA partners sourcing less than Rs. 1 crore of business per month (Cat B).</li>
+                                    {filterApplicableFor === ApplicableFor.MAGNUS_AGGREGATORS && (
+                                        <li>This card applies to registered DSA partners sourcing more than Rs. 1 crore of business per month (Cat A Magnus).</li>
+                                    )}
+                                    {filterApplicableFor === ApplicableFor.PLATINUM_AGGREGATORS && (
+                                        <li>This card applies to registered DSA partners sourcing less than Rs. 1 crore of business per month (Cat B).</li>
+                                    )}
                                 </ol>
                             </CardContent>
                         )}
