@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, Search, Edit, Trash2, Landmark, CheckCircle, AlertCircle, XCircle, Loader2, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { TablePagination } from "@/components/ui/pagination"
 import { useToast } from "@/hooks/use-toast"
 import { dealLendersApi } from '@/lib/deal-lender-api'
 import { DealLender } from '@/lib/api-types'
@@ -19,6 +20,12 @@ export function DealLendersTab() {
   const [loading, setLoading] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
   const [filterType, setFilterType] = useState<string>('all')
+
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
+  const [total, setTotal] = useState(0)
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const tableTopRef = useRef<HTMLDivElement | null>(null)
   const { toast } = useToast()
 
   // Add/Edit modal state
@@ -34,11 +41,30 @@ export function DealLendersTab() {
   const [lenderToDelete, setLenderToDelete] = useState<DealLender | null>(null)
   const [deleting, setDeleting] = useState(false)
 
-  const loadLenders = async () => {
+  // Debounce search term to prevent excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchTerm)
+      setPage(1)
+    }, 350)
+    return () => clearTimeout(timer)
+  }, [searchTerm])
+
+  useEffect(() => {
+    setPage(1)
+  }, [filterType])
+
+  const loadLenders = useCallback(async () => {
     try {
       setLoading(true)
-      const data = await dealLendersApi.getAllDealLenders()
-      setLenders(data || [])
+      const res = await dealLendersApi.getAllDealLendersPaginated({
+        page,
+        limit: pageSize,
+        search: debouncedSearch || undefined,
+        type: filterType !== 'all' ? filterType : undefined,
+      })
+      setLenders(res.data || [])
+      setTotal(res.total || 0)
     } catch (err: any) {
       console.error("Failed to load deal lenders:", err)
       toast({
@@ -49,11 +75,22 @@ export function DealLendersTab() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize, debouncedSearch, filterType, toast])
 
   useEffect(() => {
     loadLenders()
-  }, [])
+  }, [loadLenders])
+
+  const handlePageChange = (newPage: number) => {
+    setPage(newPage)
+    tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size)
+    setPage(1)
+    tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+  }
 
   const handleOpenAdd = () => {
     setEditingLender(null)
@@ -150,14 +187,6 @@ export function DealLendersTab() {
     }
   }
 
-  const filteredLenders = useMemo(() => {
-    return lenders.filter(lender => {
-      const matchesSearch = lender.name.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchesType = filterType === 'all' || lender.type === filterType
-      return matchesSearch && matchesType
-    })
-  }, [lenders, searchTerm, filterType])
-
   const getTypeBadgeColor = (type: string) => {
     switch (type) {
       case 'bank': return 'bg-sky-500/10 text-sky-400 border-sky-500/20'
@@ -225,12 +254,13 @@ export function DealLendersTab() {
       {/* Lenders Table */}
       <Card className="bg-card border-border">
         <CardContent className="p-0">
-          {loading && lenders.length === 0 ? (
+          <div ref={tableTopRef} />
+          {loading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-3">
               <Loader2 className="w-8 h-8 animate-spin text-primary" />
               <p className="text-muted-foreground text-sm">Loading lenders...</p>
             </div>
-          ) : filteredLenders.length === 0 ? (
+          ) : lenders.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-center px-4">
               <div className="p-4 bg-muted rounded-full text-muted-foreground mb-4">
                 <Landmark className="w-8 h-8" />
@@ -260,7 +290,7 @@ export function DealLendersTab() {
                 </TableHeader>
                 <TableBody>
                   <AnimatePresence mode="popLayout">
-                    {filteredLenders.map((lender) => (
+                    {lenders.map((lender) => (
                       <TableRow key={lender.id} className="border-border hover:bg-muted/20 transition-colors">
                         <TableCell className="font-medium text-foreground py-3.5">
                           {lender.name}
@@ -309,6 +339,17 @@ export function DealLendersTab() {
                 </TableBody>
               </Table>
             </div>
+          )}
+
+          {!loading && (
+            <TablePagination
+              page={page}
+              pageSize={pageSize}
+              total={total}
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+              className="p-4 border-t border-border"
+            />
           )}
         </CardContent>
       </Card>

@@ -42,6 +42,45 @@ export const dealLendersApi = {
       status: (l.status || '').toLowerCase()
     } as any))),
 
+  getAllDealLendersPaginated: (params?: {
+    page?: number
+    limit?: number
+    search?: string
+    type?: string
+    status?: string
+  }) =>
+    gqlFetch<{ getAllDealLendersPaginated: { data: any[]; total: number; page: number; limit: number } }>({
+      query: `
+        query GetAllDealLendersPaginated($page: Int, $limit: Int, $search: String, $type: String, $status: String) {
+          getAllDealLendersPaginated(page: $page, limit: $limit, search: $search, type: $type, status: $status) {
+            data {
+              _id
+              name
+              type
+              status
+              createdAt
+              updatedAt
+            }
+            total
+            page
+            limit
+          }
+        }
+      `,
+      variables: params || {},
+    }).then(res => {
+      const result = res.getAllDealLendersPaginated || { data: [], total: 0, page: 1, limit: 10 }
+      return {
+        ...result,
+        data: (result.data || []).map(l => ({
+          ...l,
+          id: l._id,
+          type: (l.type || '').toLowerCase(),
+          status: (l.status || '').toLowerCase()
+        } as any))
+      }
+    }),
+
   createDealLender: (input: { name: string; type: string }) =>
     gqlFetch<{ createDealLender: any }>({
       query: `
