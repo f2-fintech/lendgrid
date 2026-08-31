@@ -636,7 +636,7 @@ export const MultiStepFormContent: React.FC<{
                         ) : (
                             <>
                                 {activeStep === 0 && (
-                                    <Step1Form onSubmit={handleStep1Submit} isLoading={isLoading} onBack={handleBackFromStep1} />
+                                    <Step1Form onSubmit={handleStep1Submit} isLoading={isLoading} onBack={handleBackFromStep1} apiBaseUrl={apiBaseUrl} />
                                 )}
                                 {activeStep === 1 && (
                                     <Step2Form

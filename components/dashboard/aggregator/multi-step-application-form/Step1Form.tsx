@@ -1,13 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, Loader2 } from 'lucide-react';
+import { Calendar, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { format, subYears } from 'date-fns';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { cn } from '@/lib/utils';
+import { getCompanyId } from '@/lib/http-client';
+import { getCookie } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -35,12 +37,18 @@ interface Step1FormProps {
   onSubmit: (data: Step1FormData, customerId: string) => Promise<void>;
   isLoading: boolean;
   onBack: () => void;
+  /** Base URL of the API (f2fintech-server or lendgrid-server proxy) */
+  apiBaseUrl: string;
 }
 
-export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBack }) => {
+export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBack, apiBaseUrl }) => {
   const { nextStep } = useFormContext();
   const { toast } = useToast();
   const [date, setDate] = useState<Date>();
+
+  // ── Duplicate-check state ─────────────────────────────────────────────────
+  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [isDuplicateChecking, setIsDuplicateChecking] = useState(false);
 
   const {
     register,
@@ -49,6 +57,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
     formState: { errors, isDirty },
     setValue,
     watch,
+    getValues,
   } = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
   });
@@ -56,7 +65,49 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
   const title = watch('title');
   const employmentType = watch('employment_type');
 
+  // ── Real-time duplicate check ─────────────────────────────────────────────
+  // Called on blur of the PAN field (once both mobile and PAN look complete).
+  const handlePanBlur = useCallback(async () => {
+    const contact = getValues('contact');
+    const pan = getValues('pan');
+
+    // Only fire if both fields pass basic format checks
+    const mobileOk = /^[0-9]{7,15}$/.test((contact || '').trim());
+    const panOk    = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((pan || '').trim().toUpperCase());
+    if (!mobileOk || !panOk) return;
+
+    setDuplicateError(null);
+    setIsDuplicateChecking(true);
+    try {
+      const token = getCookie('lendgrid_cookie');
+      const companyId = typeof window !== 'undefined' ? getCompanyId() : null;
+      const resolvedCompanyId = companyId && companyId !== 'all' ? String(companyId) : '';
+
+      const response = await fetch(`${apiBaseUrl}/check-duplicate-application`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(resolvedCompanyId ? { 'companyid': resolvedCompanyId } : {}),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ mobile: contact.trim(), pan: pan.trim().toUpperCase() }),
+      });
+
+      const result = await response.json();
+      if (result?.data?.isDuplicate) {
+        setDuplicateError(result.data.message);
+      }
+    } catch (err) {
+      // Network failure during check — silent fail, do not block the user
+      console.warn('[duplicate-check] Network error, skipping check:', err);
+    } finally {
+      setIsDuplicateChecking(false);
+    }
+  }, [apiBaseUrl, getValues]);
+
   const onFormSubmit = async (data: Step1FormData) => {
+    // Guard: block submit if a duplicate was detected
+    if (duplicateError) return;
     try {
       console.log('STEP 1 FORM DATA:', data);
       await onSubmit(data, '');
@@ -155,20 +206,54 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         {/* PAN */}
         <div>
           <Label htmlFor="pan" className=" text-foreground">PAN Card*</Label>
-          <Input
-            {...register('pan')}
-            className="bg-card border-border  text-foreground mt-2 uppercase"
-            placeholder="Enter PAN card number"
-            maxLength={10}
-            onChange={(e) => {
-              const upperValue = e.target.value.toUpperCase();
-              setValue('pan', upperValue, { shouldValidate: true });
-            }}
-          />
-          {errors.pan && (
+          <div className="relative">
+            <Input
+              {...register('pan')}
+              className="bg-card border-border text-foreground mt-2 uppercase pr-9"
+              placeholder="Enter PAN card number"
+              maxLength={10}
+              onChange={(e) => {
+                const upperValue = e.target.value.toUpperCase();
+                setValue('pan', upperValue, { shouldValidate: true });
+                // Clear any previous duplicate error when user edits PAN
+                if (duplicateError) setDuplicateError(null);
+              }}
+              onBlur={handlePanBlur}
+            />
+            {isDuplicateChecking && (
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 mt-1">
+                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+              </span>
+            )}
+          </div>
+          {errors.pan && !duplicateError && (
             <p className="text-red-400 text-sm mt-1">{errors.pan.message}</p>
           )}
         </div>
+
+        {/* Permanent inline duplicate-application error banner */}
+        <AnimatePresence>
+          {duplicateError && (
+            <motion.div
+              key="duplicate-banner"
+              initial={{ opacity: 0, y: -8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -8, scale: 0.98 }}
+              transition={{ duration: 0.25 }}
+              className="flex gap-3 items-start rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3"
+              role="alert"
+              aria-live="assertive"
+            >
+              <span className="mt-0.5 shrink-0">
+                <Clock className="h-5 w-5 text-red-400" />
+              </span>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-semibold text-red-400">Application Already Exists</span>
+                <span className="text-sm text-red-300 leading-snug">{duplicateError}</span>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Father's and Mother's Name */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -396,13 +481,19 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           </Button>
           <Button
             type="submit"
-            disabled={!isDirty || isLoading}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+            disabled={!isDirty || isLoading || !!duplicateError || isDuplicateChecking}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
+            title={duplicateError ? 'Application already exists — cannot proceed' : undefined}
           >
             {isLoading ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                 Submitting...
+              </>
+            ) : isDuplicateChecking ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                Checking...
               </>
             ) : (
               'Proceed To Next Step'
