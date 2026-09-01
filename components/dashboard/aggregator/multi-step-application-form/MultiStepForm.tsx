@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Check, Ban } from 'lucide-react';
 
@@ -281,6 +281,20 @@ export const MultiStepFormContent: React.FC<{
     const handleBackFromStep1 = () => {
         setShowStep0(true);       // show Step-0 again
     };
+
+    // Handler for the "Start Fresh" button in the duplicate banner
+    // Clears all form-related localStorage keys, resets context state,
+    // and returns the user to the Loan Details screen (Step-0) with empty fields.
+    const handleStartFresh = useCallback(() => {
+        localStorage.removeItem('activeStep');
+        localStorage.removeItem('loanFormCustomerId');
+        localStorage.removeItem('loanFormAppNumber');
+        localStorage.removeItem('loanFormData');
+        resetForm();
+        setShowStep0(true);
+        setCompletedSteps([]);
+        setSkippedSteps([]);
+    }, [resetForm]);
 
     // Step 1 Submit Handler
     // ─────────────────────────────────────────────────────────────────────────
@@ -636,7 +650,7 @@ export const MultiStepFormContent: React.FC<{
                         ) : (
                             <>
                                 {activeStep === 0 && (
-                                    <Step1Form onSubmit={handleStep1Submit} isLoading={isLoading} onBack={handleBackFromStep1} apiBaseUrl={apiBaseUrl} />
+                                    <Step1Form onSubmit={handleStep1Submit} isLoading={isLoading} onBack={handleBackFromStep1} apiBaseUrl={apiBaseUrl} onReset={handleStartFresh} />
                                 )}
                                 {activeStep === 1 && (
                                     <Step2Form

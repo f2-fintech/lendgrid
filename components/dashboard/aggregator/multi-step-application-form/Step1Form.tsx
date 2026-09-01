@@ -3,7 +3,7 @@
 import React, { useState, useCallback } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Calendar, Loader2, AlertTriangle, Clock } from 'lucide-react';
+import { Calendar, Loader2, Clock, RotateCcw } from 'lucide-react';
 import { format, subYears } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,6 +28,11 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 import { step1Schema, Step1FormData, indianStates } from './validation';
 import { useFormContext } from './FormContext';
@@ -39,15 +44,37 @@ interface Step1FormProps {
   onBack: () => void;
   /** Base URL of the API (f2fintech-server or lendgrid-server proxy) */
   apiBaseUrl: string;
+  /** Clears localStorage + resets form context, navigates back to Step-0 */
+  onReset: () => void;
 }
 
-export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBack, apiBaseUrl }) => {
+// Shape of the enriched duplicate info returned by the API
+interface DuplicateInfo {
+  message: string;
+  daysRemaining: number;
+  application: {
+    id: number;
+    application_no: number;
+    loan_type: string;
+    loan_category: string;
+    provider: string;
+    application_date: string;
+    is_picked: number;
+  };
+  ticket: {
+    id: number;
+    status: string;
+    created_at: string;
+  } | null;
+}
+
+export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBack, apiBaseUrl, onReset }) => {
   const { nextStep } = useFormContext();
   const { toast } = useToast();
   const [date, setDate] = useState<Date>();
 
   // ── Duplicate-check state ─────────────────────────────────────────────────
-  const [duplicateError, setDuplicateError] = useState<string | null>(null);
+  const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [isDuplicateChecking, setIsDuplicateChecking] = useState(false);
 
   const {
@@ -73,10 +100,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
     // Only fire if both fields pass basic format checks
     const mobileOk = /^[0-9]{7,15}$/.test((contact || '').trim());
-    const panOk    = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((pan || '').trim().toUpperCase());
+    const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((pan || '').trim().toUpperCase());
     if (!mobileOk || !panOk) return;
 
-    setDuplicateError(null);
+    setDuplicateInfo(null);
     setIsDuplicateChecking(true);
     try {
       const token = getCookie('lendgrid_cookie');
@@ -95,7 +122,12 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
       const result = await response.json();
       if (result?.data?.isDuplicate) {
-        setDuplicateError(result.data.message);
+        setDuplicateInfo({
+          message: result.data.message,
+          daysRemaining: result.data.daysRemaining,
+          application: result.data.application,
+          ticket: result.data.ticket ?? null,
+        });
       }
     } catch (err) {
       // Network failure during check — silent fail, do not block the user
@@ -107,7 +139,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
 
   const onFormSubmit = async (data: Step1FormData) => {
     // Guard: block submit if a duplicate was detected
-    if (duplicateError) return;
+    if (duplicateInfo) return;
     try {
       console.log('STEP 1 FORM DATA:', data);
       await onSubmit(data, '');
@@ -216,7 +248,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                 const upperValue = e.target.value.toUpperCase();
                 setValue('pan', upperValue, { shouldValidate: true });
                 // Clear any previous duplicate error when user edits PAN
-                if (duplicateError) setDuplicateError(null);
+                if (duplicateInfo) setDuplicateInfo(null);
               }}
               onBlur={handlePanBlur}
             />
@@ -226,30 +258,107 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
               </span>
             )}
           </div>
-          {errors.pan && !duplicateError && (
+          {errors.pan && !duplicateInfo && (
             <p className="text-red-400 text-sm mt-1">{errors.pan.message}</p>
           )}
         </div>
 
         {/* Permanent inline duplicate-application error banner */}
         <AnimatePresence>
-          {duplicateError && (
+          {duplicateInfo && (
             <motion.div
               key="duplicate-banner"
               initial={{ opacity: 0, y: -8, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -8, scale: 0.98 }}
               transition={{ duration: 0.25 }}
-              className="flex gap-3 items-start rounded-lg border border-red-500/40 bg-red-500/10 px-4 py-3"
+              className="rounded-lg border border-red-500/40 bg-red-500/10 overflow-hidden"
               role="alert"
               aria-live="assertive"
             >
-              <span className="mt-0.5 shrink-0">
-                <Clock className="h-5 w-5 text-red-400" />
-              </span>
-              <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-semibold text-red-400">Application Already Exists</span>
-                <span className="text-sm text-red-300 leading-snug">{duplicateError}</span>
+              {/* Banner header */}
+              <div className="flex items-center justify-between px-4 py-2.5 border-b border-red-500/20">
+                <div className="flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-red-400 shrink-0" />
+                  <span className="text-sm font-semibold text-red-400">Application Already Exists</span>
+                </div>
+                {/* Start Fresh button with tooltip */}
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      onClick={onReset}
+                      className="flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-red-300 border border-red-500/30 hover:bg-red-500/20 hover:text-red-200 transition-colors duration-150"
+                      aria-label="Start fresh — clear all form data and return to start"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" />
+                      Create New Application
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent>Create New Application</TooltipContent>
+                </Tooltip>
+              </div>
+
+              {/* Banner body — application details */}
+              <div className="px-4 py-3 space-y-2.5">
+                <p className="text-sm text-red-300 leading-snug">{duplicateInfo.message}</p>
+
+                {/* Details grid */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
+                  {/* Loan Type */}
+                  <div>
+                    <span className="text-muted-foreground">Loan Type</span>
+                    <p className="text-foreground font-medium capitalize">{duplicateInfo.application.loan_type || '—'}</p>
+                  </div>
+                  {/* Loan Category */}
+                  <div>
+                    <span className="text-muted-foreground">Category</span>
+                    <p className="text-foreground font-medium capitalize">{duplicateInfo.application.loan_category || '—'}</p>
+                  </div>
+                  {/* Provider */}
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Provider(s)</span>
+                    <p className="text-foreground font-medium">{duplicateInfo.application.provider || '—'}</p>
+                  </div>
+                  {/* Applied On */}
+                  <div>
+                    <span className="text-muted-foreground">Applied On</span>
+                    <p className="text-foreground font-medium">
+                      {duplicateInfo.application.application_date
+                        ? new Date(duplicateInfo.application.application_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                        : '—'}
+                    </p>
+                  </div>
+
+                  {/* Conditional: App No (not picked) vs Ticket ID (picked) */}
+                  {duplicateInfo.application.is_picked === 0 ? (
+                    <div>
+                      <span className="text-muted-foreground">Application No</span>
+                      <p className="text-amber-400 font-semibold font-mono">
+                        #{duplicateInfo.application.application_no}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">Search by this in admin panel</span>
+                    </div>
+                  ) : (
+                    <div>
+                      <span className="text-muted-foreground">Ticket ID</span>
+                      <p className="text-amber-400 font-semibold font-mono">
+                        {duplicateInfo.ticket ? `#${duplicateInfo.ticket.id}` : `App #${duplicateInfo.application.application_no}`}
+                      </p>
+                      <span className="text-[10px] text-muted-foreground">Search by this in admin panel</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Status chip (only when ticket exists) */}
+                {duplicateInfo.ticket && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <span className="text-xs text-muted-foreground">Status:</span>
+                    <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-medium text-amber-400 capitalize">
+                      {duplicateInfo.ticket.status}
+                    </span>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -481,9 +590,9 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           </Button>
           <Button
             type="submit"
-            disabled={!isDirty || isLoading || !!duplicateError || isDuplicateChecking}
+            disabled={!isDirty || isLoading || !!duplicateInfo || isDuplicateChecking}
             className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
-            title={duplicateError ? 'Application already exists — cannot proceed' : undefined}
+            title={duplicateInfo ? 'Application already exists — cannot proceed' : undefined}
           >
             {isLoading ? (
               <>
