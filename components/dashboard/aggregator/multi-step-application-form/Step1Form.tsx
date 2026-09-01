@@ -303,24 +303,37 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
               <div className="px-4 py-3 space-y-2.5">
                 <p className="text-sm text-red-300 leading-snug">{duplicateInfo.message}</p>
 
-                {/* Details grid */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs">
-                  {/* Loan Type */}
+                {/* Details grid — 3 rows × 2 columns, no orphaned cells */}
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                  {/* Row 1: Loan Type | Category */}
                   <div>
                     <span className="text-muted-foreground">Loan Type</span>
                     <p className="text-foreground font-medium capitalize">{duplicateInfo.application.loan_type || '—'}</p>
                   </div>
-                  {/* Loan Category */}
                   <div>
                     <span className="text-muted-foreground">Category</span>
                     <p className="text-foreground font-medium capitalize">{duplicateInfo.application.loan_category || '—'}</p>
                   </div>
-                  {/* Provider */}
-                  <div className="col-span-2">
+
+                  {/* Row 2: Provider | Status chip (when ticket exists, else empty cell) */}
+                  <div>
                     <span className="text-muted-foreground">Provider(s)</span>
                     <p className="text-foreground font-medium">{duplicateInfo.application.provider || '—'}</p>
                   </div>
-                  {/* Applied On */}
+                  <div>
+                    {duplicateInfo.ticket && (
+                      <>
+                        <span className="text-muted-foreground">Status</span>
+                        <div className="mt-0.5">
+                          <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-medium text-amber-400 capitalize">
+                            {duplicateInfo.ticket.status}
+                          </span>
+                        </div>
+                      </>
+                    )}
+                  </div>
+
+                  {/* Row 3: Applied On | App No or Ticket ID */}
                   <div>
                     <span className="text-muted-foreground">Applied On</span>
                     <p className="text-foreground font-medium">
@@ -329,13 +342,11 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                         : '—'}
                     </p>
                   </div>
-
-                  {/* Conditional: App No (not picked) vs Ticket ID (picked) */}
                   {duplicateInfo.application.is_picked === 0 ? (
                     <div>
                       <span className="text-muted-foreground">Application No</span>
                       <p className="text-amber-400 font-semibold font-mono">
-                        #{duplicateInfo.application.application_no}
+                        {duplicateInfo.application.application_no}
                       </p>
                       <span className="text-[10px] text-muted-foreground">Search by this in admin panel</span>
                     </div>
@@ -343,22 +354,12 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
                     <div>
                       <span className="text-muted-foreground">Ticket ID</span>
                       <p className="text-amber-400 font-semibold font-mono">
-                        {duplicateInfo.ticket ? `#${duplicateInfo.ticket.id}` : `App #${duplicateInfo.application.application_no}`}
+                        {duplicateInfo.ticket ? `${duplicateInfo.ticket.id}` : `App Number ${duplicateInfo.application.application_no}`}
                       </p>
                       <span className="text-[10px] text-muted-foreground">Search by this in admin panel</span>
                     </div>
                   )}
                 </div>
-
-                {/* Status chip (only when ticket exists) */}
-                {duplicateInfo.ticket && (
-                  <div className="flex items-center gap-2 pt-1">
-                    <span className="text-xs text-muted-foreground">Status:</span>
-                    <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-medium text-amber-400 capitalize">
-                      {duplicateInfo.ticket.status}
-                    </span>
-                  </div>
-                )}
               </div>
             </motion.div>
           )}
