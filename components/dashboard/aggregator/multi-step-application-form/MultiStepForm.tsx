@@ -539,10 +539,6 @@ export const MultiStepFormContent: React.FC<{
                     ? formData.providers
                     : ['Default Provider'];
 
-            // Single application record — all providers as comma-separated string
-            // (mirrors f2fintech-admin Step7Form's single-application pattern)
-            const providersString = activeProviders.join(', ');
-
             const primaryLoanType: string =
                 formData.loanType || 'personal loan';
 
@@ -550,38 +546,44 @@ export const MultiStepFormContent: React.FC<{
                 ? Number(String(formData.tenure).split(' ')[0])
                 : 5;
 
-            const finalAmount = Number(formData.amount || 100000);
+            for (const provider of activeProviders) {
+                const providerAmountRecord = formData.providerAmounts?.find((pa: any) => pa.provider === provider);
+                const finalAmount = providerAmountRecord && providerAmountRecord.amount 
+                    ? Number(providerAmountRecord.amount) 
+                    : Number(formData.amount || 100000);
 
-            const appNumber = generateApplicationNumber();
+                const appNumber = generateApplicationNumber();
 
-            const applicationPayload = {
-                customer_id: customerId,
-                application_no: appNumber,
-                amount: finalAmount,
-                tenure: numericTenure,
-                provider: providersString,
-                loan_type: primaryLoanType,
-                loan_category: formData.loanCategory || 'unsecured',
-                lead_type: formData.leadType || 'null',
-                existing_loans: JSON.stringify(
-                    (formData.existingLoans || []).map((l: any) => ({
-                        has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
-                        which_loan: l.whichLoan || null,
-                        loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
-                        running_emi: l.runningEmi ? Number(l.runningEmi) : null,
-                    }))
-                ),
-                case_type: formData.caseType || 'fresh',
-                source: 'lendgrid',
-                ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
-                ...(isOmsSalesSession && omsSalesUserId
-                    ? { applied_by: Number(omsSalesUserId) }
-                    : {}),
-                ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
-                ...(formData.referralCode?.trim() ? { referral_code: formData.referralCode.trim() } : {}),
-            };
+                const applicationPayload = {
+                    customer_id: customerId,
+                    application_no: appNumber,
+                    amount: finalAmount,
+                    tenure: numericTenure,
+                    provider: provider,
+                    loan_type: primaryLoanType,
+                    loan_category: formData.loanCategory || 'unsecured',
+                    lead_type: formData.leadType || 'null',
+                    existing_loans: JSON.stringify(
+                        (formData.existingLoans || []).map((l: any) => ({
+                            has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
+                            which_loan: l.whichLoan || null,
+                            loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
+                            running_emi: l.runningEmi ? Number(l.runningEmi) : null,
+                        }))
+                    ),
+                    case_type: formData.caseType || 'fresh',
+                    source: 'lendgrid',
+                    ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
+                    ...(isOmsSalesSession && omsSalesUserId
+                        ? { applied_by: Number(omsSalesUserId) }
+                        : {}),
+                    ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
+                    ...(formData.referralCode?.trim() ? { referral_code: formData.referralCode.trim() } : {}),
+                };
 
-            const applicationId = await createApplication(applicationPayload);
+                const applicationId = await createApplication(applicationPayload);
+                await createLoanTracking(applicationId);
+            }
 
             // Clear localStorage immediately after successful application creation
             // This ensures form data is cleared even if subsequent API calls fail
@@ -595,8 +597,6 @@ export const MultiStepFormContent: React.FC<{
             setShowStep0(true);
             setCompletedSteps([]);
             setSkippedSteps([]);
-
-            await createLoanTracking(applicationId);
 
             // Create ticket only if OMS is NOT enabled and NOT an OMS/sales session (matches Step 1's original guard)
             // if (!isOmsEnabled && !isOmsSalesSession) {
