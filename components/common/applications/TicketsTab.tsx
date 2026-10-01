@@ -20,7 +20,8 @@ import {
     IndianRupee,
     FileText,
     TrendingUp,
-    MapPin
+    MapPin,
+    RotateCcw
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -63,6 +64,7 @@ import { cn, decodeJwt, formatDateIndian, getCookie } from '@/lib/utils'
 import { useToast } from '@/hooks/use-toast'
 import { useGetTickets } from '@/hooks/use-tickets-rest'
 import { TicketHistoryData, useGetTicketHistory } from '@/hooks/use-ticket-histories-rest'
+import { useLoanProviders } from '@/hooks/use-loan-providers'
 import { FilterPanel } from '../FilterPanel'
 import { DateRange } from 'react-day-picker'
 import * as XLSX from 'xlsx'
@@ -72,18 +74,19 @@ import { apiFetch } from '@/lib/http-client'
 export const pretty = (v: string) => v?.toLowerCase()?.replace(/_/g, " ");
 
 export const STATUS_STYLE: Record<string, string> = {
-    "under credit review": "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    operations: "bg-sky-600/20 text-sky-400 border-sky-500/40",
-    "pendency in file": "bg-red-500/20 text-red-300 border-red-500/30",
-    "file send to banker": "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
-    hold: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-    "to be approved": "bg-green-500/20 text-green-300 border-green-500/30",
-    "to be disbursed": "bg-purple-500/20 text-purple-300 border-purple-500/30",
-    approved: "bg-lime-500/20 text-lime-300 border-lime-500/30",
-    disbursed: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-    rejected: "bg-red-600/20 text-red-400 border-red-600/30",
-    drop: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-    submitted: "bg-blue-500/20 text-blue-400 border-blue-500/30"
+    "under credit review": "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    operations: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    "pendency in file": "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    "file send to banker": "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+    hold: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+    "to be approved": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    "to be disbursed": "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    approved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    disbursed: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+    rejected: "bg-rose-600/15 text-rose-400 border-rose-600/30",
+    drop: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+    submitted: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    "carry forward": "bg-violet-500/15 text-violet-400 border-violet-500/30"
 };
 
 export const STATUS_META: Record<string, { icon: JSX.Element }> = {
@@ -432,60 +435,60 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
         <>
             {/* Main Table Row */}
             <motion.tr
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className={`border-border hover:bg-card/50 transition-colors ${isExpanded ? 'bg-card/30' : ''}`}
+                transition={{ duration: 0.2, delay: index * 0.03 }}
+                className={`border-b border-border/50 hover:bg-muted/40 transition-colors ${isExpanded ? 'bg-muted/20' : ''}`}
             >
-                <TableCell className="whitespace-nowrap font-medium">
+                <TableCell className="whitespace-nowrap font-mono text-xs font-semibold text-foreground/90 py-3.5">
                     F2FIN-{application.ticketId}
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-3.5">
                     <div className="flex items-center space-x-3 min-w-[180px]">
-                        <Avatar className="w-8 h-8 flex-shrink-0">
+                        <Avatar className="w-7 h-7 flex-shrink-0 ring-1 ring-border/50">
                             <AvatarImage src={application.avatar || "/placeholder.svg"} />
-                            <AvatarFallback className="bg-card text-foreground text-xs">
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold text-[10px]">
                                 {application.customerName.split(' ').map((n: string) => n[0]).join('')}
                             </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 max-w-[200px]">
-                            <p className="text-foreground font-medium truncate" title={application.customerName}>{application.customerName}</p>
-                            <p className="text-muted-foreground text-sm truncate" title={application.customerEmail}>{application.customerEmail}</p>
+                            <p className="font-semibold text-xs truncate text-foreground" title={application.customerName}>{application.customerName}</p>
+                            <p className="text-muted-foreground text-[11px] truncate" title={application.customerEmail}>{application.customerEmail}</p>
                         </div>
                     </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                    <p className="text-foreground font-medium">{formatCurrency(application.applicationAmount)}</p>
+                <TableCell className="whitespace-nowrap py-3.5">
+                    <p className="text-foreground font-semibold text-xs">{formatCurrency(application.applicationAmount)}</p>
                 </TableCell>
-                <TableCell className="hidden lg:table-cell whitespace-nowrap">
-                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                        <FileText className="w-3 h-3 mr-1" />
+                <TableCell className="hidden lg:table-cell whitespace-nowrap py-3.5">
+                    <Badge variant="outline" className="text-[11px] font-medium border-primary/25 bg-primary/5 text-primary py-0.5 px-2">
+                        <FileText className="w-3 h-3 mr-1 opacity-80" />
                         {application.loanCategory || 'N/A'}
                     </Badge>
                 </TableCell>
-                <TableCell className="hidden md:table-cell whitespace-nowrap">
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Phone className="w-3 h-3" />
-                        <span className="text-foreground">{application.customerContact || 'N/A'}</span>
+                <TableCell className="hidden md:table-cell whitespace-nowrap py-3.5">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Phone className="w-3 h-3 opacity-70" />
+                        <span className="text-foreground/90">{application.customerContact || 'N/A'}</span>
                     </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                    <p className="text-foreground font-medium">{application.applicationProvider}</p>
+                <TableCell className="whitespace-nowrap py-3.5">
+                    <p className="text-foreground/90 font-medium text-xs">{application.applicationProvider}</p>
                 </TableCell>
-                <TableCell className="hidden xl:table-cell">
-                    <div className="flex items-center gap-1.5 text-sm truncate max-w-[150px]" title={`${application.customerLocation}, ${application.customerState}`}>
-                        <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                        <span className="truncate text-foreground">{application.customerLocation}, {application.customerState}</span>
+                <TableCell className="hidden xl:table-cell whitespace-nowrap py-3.5">
+                    <div className="flex items-center gap-1.5 text-xs truncate max-w-[150px]" title={`${application.customerLocation}, ${application.customerState}`}>
+                        <MapPin className="w-3 h-3 text-muted-foreground/70 flex-shrink-0" />
+                        <span className="truncate text-foreground/90">{application.customerLocation}, {application.customerState}</span>
                     </div>
                 </TableCell>
-                <TableCell>
+                <TableCell className="whitespace-nowrap py-3.5">
                     <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger asChild>
                             <Badge
                                 onClick={isOmsEnabled ? undefined : onStatusClick}
                                 className={cn(
-                                    "inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border",
-                                    STATUS_STYLE[pretty(application.ticketStatus)],
+                                    "inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-medium rounded-full border",
+                                    STATUS_STYLE[pretty(application.ticketStatus)] || "bg-muted text-muted-foreground border-border",
                                     isOmsEnabled ? "cursor-not-allowed opacity-80" : "cursor-pointer"
                                 )}
                             >
@@ -498,29 +501,32 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                         </TooltipContent>
                     </Tooltip>
                 </TableCell>
-                <TableCell className="text-center">
-                    <div className="inline-flex items-center gap-1.5 bg-background/60 border-border rounded-lg px-2 py-1">
+                <TableCell className="text-center whitespace-nowrap py-3.5">
+                    <div className="inline-flex items-center gap-1">
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
+                                <button
+                                    type="button"
                                     onClick={onView}
-                                    className="h-8 w-8 text-blue hover: text-foreground hover:bg-blue-500/20"
+                                    className="p-1.5 rounded-lg text-primary hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer inline-flex items-center justify-center select-none"
                                 >
                                     <Eye className="w-4 h-4" />
-                                </Button>
+                                </button>
                             </TooltipTrigger>
-                            <TooltipContent>View</TooltipContent>
+                            <TooltipContent>View Ticket</TooltipContent>
                         </Tooltip>
 
                         <Tooltip>
                             <TooltipTrigger asChild>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
+                                <button
+                                    type="button"
                                     onClick={() => setIsExpanded(!isExpanded)}
-                                    className="h-8 w-8 text-amber-400 hover: text-foreground hover:bg-amber-500/20"
+                                    className={cn(
+                                        "p-1.5 rounded-lg transition-colors cursor-pointer inline-flex items-center justify-center select-none",
+                                        isExpanded
+                                            ? "text-primary bg-primary/15"
+                                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                                    )}
                                 >
                                     <motion.div
                                         animate={{ rotate: isExpanded ? 90 : 0 }}
@@ -528,9 +534,9 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                                     >
                                         <Clock className="w-4 h-4" />
                                     </motion.div>
-                                </Button>
+                                </button>
                             </TooltipTrigger>
-                            <TooltipContent>History</TooltipContent>
+                            <TooltipContent>View Work History</TooltipContent>
                         </Tooltip>
                     </div>
                 </TableCell>
@@ -623,6 +629,8 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
 interface ApplicationsGridProps {
     ticketsData: any[];
     isLoading: boolean;
+    hasFilters?: boolean;
+    onClearFilters?: () => void;
     onView: (app: any) => void;
     onDelete: (id: number) => void;
     onStatusClick: (app: any) => void;
@@ -630,10 +638,10 @@ interface ApplicationsGridProps {
     isOmsEnabled: boolean;
 }
 
-const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
+const ApplicationsGrid = ({ ticketsData, isLoading, hasFilters, onClearFilters, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
                 {[...Array(6)].map((_, i) => (
                     <CardSkeleton key={i} headerLines={2} bodyHeight={200} />
                 ))}
@@ -643,15 +651,38 @@ const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusCl
 
     if (!ticketsData || ticketsData.length === 0) {
         return (
-            <div className="text-center py-12">
-                <ClipboardList className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className=" text-muted-foreground text-lg">No ticketsData found</p>
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center select-none">
+                <div className="relative mb-4 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl scale-150 animate-pulse" />
+                    <div className="relative w-16 h-16 rounded-2xl bg-card border border-border/80 shadow-md flex items-center justify-center text-primary">
+                        <ClipboardList className="w-8 h-8 stroke-[1.5]" />
+                    </div>
+                </div>
+                <h3 className="text-base font-bold text-foreground tracking-tight mb-1.5">
+                    {hasFilters ? "No matching tickets found" : "No tickets available"}
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-5 leading-relaxed">
+                    {hasFilters
+                        ? "We couldn't find any tickets matching your search or active filters. Try adjusting or resetting them."
+                        : "There are currently no tickets assigned or processed in this view."}
+                </p>
+                {hasFilters && onClearFilters && (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onClearFilters}
+                        className="h-8 px-4 text-xs font-medium border-border/70 hover:bg-muted gap-2 rounded-lg"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                        Reset All Filters
+                    </Button>
+                )}
             </div>
         );
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             {ticketsData.map((ticket) => (
                 <ApplicationCard
                     key={ticket.ticketId}
@@ -667,7 +698,13 @@ const ApplicationsGrid = ({ ticketsData, isLoading, onView, onDelete, onStatusCl
     );
 };
 
-export function TicketsTab() {
+export function TicketsTab({
+    startDate,
+    endDate
+}: {
+    startDate?: string | null;
+    endDate?: string | null;
+} = {}) {
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
     const [searchTerm, setSearchTerm] = useState('')
     const [filterStatus, setFilterStatus] = useState('')
@@ -697,6 +734,7 @@ export function TicketsTab() {
     const token = getCookie("lendgrid_cookie")
     const decoded = decodeJwt(token)
     const isOmsEnabled = decoded?.isOmsEnabled ?? true
+    const { providerOptions } = useLoanProviders(1, 100)
 
     const [companyIdOverride, setCompanyIdOverride] = useState<string>(() => {
         if (typeof window === 'undefined') return ''
@@ -722,6 +760,14 @@ export function TicketsTab() {
         ? (decoded?.id ?? decoded?.userId ?? decoded?.sub ?? decoded?.salesUserId ?? decoded?.user_id ?? user?.omsUserId ?? user?.id)
         : (isAggregatorMember ? (decoded?.id || decoded?.sub || user?._id || user?.id) : undefined);
 
+    const effectiveStartDate = dateRange?.from
+        ? format(dateRange.from, 'yyyy-MM-dd HH:mm:ss')
+        : (startDate ? `${startDate} 00:00:00` : null);
+
+    const effectiveEndDate = dateRange?.to
+        ? format(dateRange.to, 'yyyy-MM-dd 23:59:59')
+        : (endDate ? `${endDate} 23:59:59` : null);
+
     // Fetch tickets New (REST + SWR), using f2fintech-admin-server api
     const {
         value: ticketsData,
@@ -732,8 +778,8 @@ export function TicketsTab() {
         page,
         pageSize,
         searchTerm,
-        dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd HH:mm:ss') : null,
-        dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd HH:mm:ss') : null,
+        effectiveStartDate,
+        effectiveEndDate,
         companyIdOverride || undefined,
         effectiveSalesUserId,
         filterStatus,
@@ -784,6 +830,16 @@ export function TicketsTab() {
     // if backend search does not cover all fields, however we rely on backend pagination so client filtering
     // shouldn't filter out things unless we know what we are doing.
     const filteredTickets = ticketsData?.results || [];
+
+    const hasActiveFilters = Boolean(searchTerm.trim() || filterStatus || filterLender || dateRange?.from);
+
+    const handleClearFilters = () => {
+        setSearchTerm('');
+        setFilterStatus('');
+        setFilterLender('');
+        setDateRange(undefined);
+        setPage(1);
+    };
 
     // Reset page when filters change
     useEffect(() => {
@@ -1003,48 +1059,63 @@ export function TicketsTab() {
 
     return (
         <div className="space-y-6 w-full min-w-0 max-w-full">
-            <div className="flex flex-col gap-6 w-full min-w-0" ref={tableTopRef}>
-                <div className="flex justify-between items-center bg-card/50 p-4 border border-border rounded-xl">
+            <div className="flex flex-col gap-5 w-full min-w-0" ref={tableTopRef}>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card/80 p-4 border border-border/70 rounded-xl shadow-sm">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-500/10 rounded-lg">
-                            <ClipboardList className="w-5 h-5 text-blue-500" />
+                        <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+                            <ClipboardList className="w-4.5 h-4.5" />
                         </div>
                         <div>
-                            <h2 className="text-xl font-bold text-foreground">Tickets Overview</h2>
-                            <p className="text-sm text-muted-foreground">Track and manage all loan tickets</p>
+                            <h2 className="text-base font-bold text-foreground tracking-tight">Tickets Overview</h2>
+                            <p className="text-xs text-muted-foreground">Track and manage all processed loan tickets</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2 p-1 bg-background/50 border border-border rounded-lg">
-                        <Button
-                            variant={viewMode === 'table' ? 'default' : 'ghost'}
-                            size="sm"
-                            onClick={() => setViewMode('table')}
-                            className={viewMode === 'table' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-muted-foreground"}
-                        >
-                            <List className="w-4 h-4 mr-1.5" /> Table
-                        </Button>
-                        <Button
-                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                            size="sm"
-                            onClick={() => setViewMode('grid')}
-                            className={viewMode === 'grid' ? "bg-blue-600 text-white hover:bg-blue-700" : "text-muted-foreground"}
-                        >
-                            <LayoutGrid className="w-4 h-4 mr-1.5" /> Grid
-                        </Button>
+                    <div className="flex items-center p-0.5 bg-muted/60 border border-border/60 rounded-lg self-end sm:self-auto">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('table')}
+                                    className={cn(
+                                        "p-1.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                        viewMode === 'table' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <List className="w-3.5 h-3.5" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" sideOffset={6}>Table View</TooltipContent>
+                        </Tooltip>
+
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={() => setViewMode('grid')}
+                                    className={cn(
+                                        "p-1.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                        viewMode === 'grid' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                    )}
+                                >
+                                    <LayoutGrid className="w-3.5 h-3.5" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent side="bottom" sideOffset={6}>Grid View</TooltipContent>
+                        </Tooltip>
                     </div>
                 </div>
 
                 <FilterPanel
                     searchTerm={searchTerm}
                     onSearchChange={setSearchTerm}
-                    searchPlaceholder="Search tickets..."
+                    searchPlaceholder="Search tickets by customer or lender..."
                     status={filterStatus}
                     onStatusChange={setFilterStatus}
                     statusOptions={[
                         { label: "Under Credit Review", value: "under credit review" },
                         { label: "Operations", value: "operations" },
                         { label: "Pendency in File", value: "pendency in file" },
-                        { label: "File Send to Banker", value: "file send to banker" },
+                        { label: "File Send To Banker", value: "file send to banker" },
                         { label: "Hold", value: "hold" },
                         { label: "To Be Approved", value: "to be approved" },
                         { label: "To Be Disbursed", value: "to be disbursed" },
@@ -1056,44 +1127,14 @@ export function TicketsTab() {
                     ]}
                     provider={filterLender}
                     onProviderChange={setFilterLender}
-                    providerOptions={[
-                        { label: "ABFL", value: "abfl" },
-                        { label: "Axis", value: "axis" },
-                        { label: "Bajaj Finance", value: "bajaj finance" },
-                        { label: "Bajaj Market", value: "bajaj market" },
-                        { label: "Bank of Baroda", value: "bank of baroda" },
-                        { label: "BOI", value: "boi" },
-                        { label: "Canara Bank", value: "canara bank" },
-                        { label: "Cholamandalam", value: "cholamandalam" },
-                        { label: "Credit Saison", value: "credit saison" },
-                        { label: "Deutsche Bank", value: "deutsche bank" },
-                        { label: "Godrej", value: "godrej" },
-                        { label: "HDFC", value: "hdfc" },
-                        { label: "HSBC Bank", value: "hsbc bank" },
-                        { label: "ICICI", value: "icici" },
-                        { label: "IDFC", value: "idfc" },
-                        { label: "Indusind", value: "indusind" },
-                        { label: "Incred", value: "incred" },
-                        { label: "Kotak Bank", value: "kotak bank" },
-                        { label: "L&T", value: "l&t" },
-                        { label: "Lending Kart", value: "lending kart" },
-                        { label: "Paysense", value: "paysense" },
-                        { label: "PNB", value: "pnb" },
-                        { label: "Poonawala", value: "poonawala" },
-                        { label: "SBI", value: "sbi" },
-                        { label: "Shriram", value: "shriram" },
-                        { label: "SMFG", value: "smfg" },
-                        { label: "Standard Chartered Bank", value: "standard chartered bank" },
-                        { label: "Tata", value: "tata" },
-                        { label: "YES Bank", value: "yes bank" }
-                    ]}
+                    providerOptions={providerOptions}
                     dateRange={dateRange}
                     onDateRangeChange={setDateRange}
                     onExport={handleExportToExcel}
                     isExporting={isExporting}
                 />
 
-                <Card className="border-border bg-card/50 w-full min-w-0 max-w-full overflow-hidden">
+                <Card className="professional-card w-full min-w-0 max-w-full overflow-hidden border-border/70 shadow-sm">
                     <CardContent className="p-0 w-full min-w-0">
                         {/* CONDITIONAL RENDERING: TABLE OR GRID */}
                         {viewMode === 'table' ? (
@@ -1102,35 +1143,69 @@ export function TicketsTab() {
                                     <TableSkeleton columns={6} rows={pageSize} />
                                 ) : (
                                     <Table>
-                                        <TableHeader className="bg-muted border-b-2 border-border">
-                                            <TableRow>
-                                                <TableHead className="whitespace-nowrap">Ticket ID</TableHead>
-                                                <TableHead className="whitespace-nowrap">Customer</TableHead>
-                                                <TableHead className="whitespace-nowrap">Loan Amount</TableHead>
-                                                <TableHead className="hidden lg:table-cell whitespace-nowrap">Product Type</TableHead>
-                                                <TableHead className="hidden md:table-cell whitespace-nowrap">Contact</TableHead>
-                                                <TableHead className="whitespace-nowrap">Lender</TableHead>
-                                                <TableHead className="hidden xl:table-cell whitespace-nowrap">Location</TableHead>
-                                                <TableHead className="whitespace-nowrap">Status</TableHead>
-                                                <TableHead className="text-center whitespace-nowrap">Actions</TableHead>
+                                        <TableHeader className="bg-muted/40 border-b border-border">
+                                            <TableRow className="hover:bg-transparent">
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Ticket ID</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Customer</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Loan Amount</TableHead>
+                                                <TableHead className="hidden lg:table-cell text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Product Type</TableHead>
+                                                <TableHead className="hidden md:table-cell text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Contact</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Lender</TableHead>
+                                                <TableHead className="hidden xl:table-cell text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Location</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Status</TableHead>
+                                                <TableHead className="text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredTickets?.map((ticket, index) => (
-                                                <ApplicationTableRow
-                                                    key={ticket.ticketId}
-                                                    application={ticket}
-                                                    index={index}
-                                                    onView={() => {
-                                                        setSelectedApplication(ticket)
-                                                        setIsViewDialogOpen(true)
-                                                    }}
-                                                    onDelete={() => handleDelete(ticket.ticketId)}
-                                                    onStatusClick={() => handleStatusClick(ticket)}
-                                                    formatCurrency={formatCurrency}
-                                                    isOmsEnabled={isOmsEnabled}
-                                                />
-                                            ))}
+                                            {filteredTickets && filteredTickets.length > 0 ? (
+                                                filteredTickets.map((ticket, index) => (
+                                                    <ApplicationTableRow
+                                                        key={ticket.ticketId}
+                                                        application={ticket}
+                                                        index={index}
+                                                        onView={() => {
+                                                            setSelectedApplication(ticket)
+                                                            setIsViewDialogOpen(true)
+                                                        }}
+                                                        onDelete={() => handleDelete(ticket.ticketId)}
+                                                        onStatusClick={() => handleStatusClick(ticket)}
+                                                        formatCurrency={formatCurrency}
+                                                        isOmsEnabled={isOmsEnabled}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <TableRow className="hover:bg-transparent">
+                                                    <TableCell colSpan={9} className="h-72 text-center p-0">
+                                                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center select-none">
+                                                            <div className="relative mb-4 flex items-center justify-center">
+                                                                <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl scale-150 animate-pulse" />
+                                                                <div className="relative w-16 h-16 rounded-2xl bg-card border border-border/80 shadow-md flex items-center justify-center text-primary">
+                                                                    <ClipboardList className="w-8 h-8 stroke-[1.5]" />
+                                                                </div>
+                                                            </div>
+                                                            <h3 className="text-base font-bold text-foreground tracking-tight mb-1.5">
+                                                                {hasActiveFilters ? "No matching tickets found" : "No tickets available"}
+                                                            </h3>
+                                                            <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-5 leading-relaxed">
+                                                                {hasActiveFilters
+                                                                    ? "We couldn't find any tickets matching your search or active filters. Try adjusting or resetting them."
+                                                                    : "There are currently no tickets assigned or processed in this view."}
+                                                            </p>
+                                                            {hasActiveFilters && (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={handleClearFilters}
+                                                                    className="h-8 px-4 text-xs font-medium border-border/70 hover:bg-muted gap-2 rounded-lg"
+                                                                >
+                                                                    <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                    Reset All Filters
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
                                         </TableBody>
                                     </Table>
                                 )}
@@ -1140,6 +1215,8 @@ export function TicketsTab() {
                             <ApplicationsGrid
                                 ticketsData={filteredTickets || []}
                                 isLoading={isTableLoading}
+                                hasFilters={hasActiveFilters}
+                                onClearFilters={handleClearFilters}
                                 onView={(ticket) => {
                                     setSelectedApplication(ticket);
                                     setIsViewDialogOpen(true);
@@ -1150,14 +1227,16 @@ export function TicketsTab() {
                                 isOmsEnabled={isOmsEnabled}
                             />
                         )}
-                        <TablePagination
-                            page={page}
-                            pageSize={pageSize}
-                            total={total}
-                            onPageChange={handlePageChange}
-                            onPageSizeChange={handlePageSizeChange}
-                            className="p-4"
-                        />
+                        <div className="px-4 pb-4">
+                            <TablePagination
+                                page={page}
+                                pageSize={pageSize}
+                                total={total}
+                                onPageChange={handlePageChange}
+                                onPageSizeChange={handlePageSizeChange}
+                                className="mt-4"
+                            />
+                        </div>
                     </CardContent>
                 </Card>
             </div>

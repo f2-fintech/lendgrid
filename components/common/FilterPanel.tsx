@@ -121,19 +121,21 @@ export function FilterPanel({
                 variant="outline"
                 role="combobox"
                 aria-expanded={openProvider}
-                className="w-full md:w-[200px] justify-between bg-background border-border font-normal"
+                className="w-full md:w-[200px] justify-between bg-card/80 border-border/80 text-foreground text-xs font-medium rounded-lg shadow-sm"
               >
-                {provider
-                  ? providerOptions.find((p) => p.value === provider)?.label
-                  : "All Lenders"}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                <span className="truncate">
+                  {provider
+                    ? providerOptions.find((p) => p.value.toLowerCase() === provider.toLowerCase())?.label || provider
+                    : "All Lenders"}
+                </span>
+                <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0">
+            <PopoverContent className="w-[200px] p-0 z-50 bg-card border border-border shadow-xl">
               <Command>
-                <CommandInput placeholder="Search lender..." />
-                <CommandList>
-                  <CommandEmpty>No lender found.</CommandEmpty>
+                <CommandInput placeholder="Search lender..." className="text-xs h-9" />
+                <CommandList className="max-h-56">
+                  <CommandEmpty className="py-3 text-xs text-muted-foreground text-center">No lender found.</CommandEmpty>
                   <CommandGroup>
                     <CommandItem
                       value="all"
@@ -153,16 +155,17 @@ export function FilterPanel({
                     {providerOptions.map((opt) => (
                       <CommandItem
                         key={opt.value}
-                        value={opt.value}
-                        onSelect={(currentValue) => {
-                          onProviderChange(currentValue === provider ? "" : currentValue)
+                        value={opt.label}
+                        onSelect={() => {
+                          onProviderChange(provider?.toLowerCase() === opt.value.toLowerCase() ? "" : opt.value)
                           setOpenProvider(false)
                         }}
+                        className="text-xs cursor-pointer"
                       >
                         <Check
                           className={cn(
                             "mr-2 h-4 w-4",
-                            provider === opt.value ? "opacity-100" : "opacity-0"
+                            provider?.toLowerCase() === opt.value.toLowerCase() ? "opacity-100" : "opacity-0"
                           )}
                         />
                         {opt.label}

@@ -455,12 +455,12 @@ function AppSidebar({
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton size="lg">
-                  <Avatar className="h-8 w-8 rounded-lg">
+                  <Avatar className="h-8 w-8 rounded-lg ring-1 ring-border/50">
                     <AvatarImage
                       src={user?.profilePicture || ""}
                       alt={displayName}
                     />
-                    <AvatarFallback className="rounded-lg bg-accent text-accent-foreground">
+                    <AvatarFallback className="rounded-lg bg-primary/15 text-primary font-bold text-xs">
                       {initials}
                     </AvatarFallback>
                   </Avatar>

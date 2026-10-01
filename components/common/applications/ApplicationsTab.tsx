@@ -22,7 +22,10 @@ import {
     IndianRupee,
     CreditCard,
     MapPin,
-    Briefcase
+    Briefcase,
+    RotateCcw,
+    Check,
+    ChevronsUpDown
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -47,13 +50,18 @@ import {
     DialogTrigger
 } from '@/components/ui/dialog'
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue
-} from '@/components/ui/select'
-
+    Popover,
+    PopoverContent,
+    PopoverTrigger
+} from "@/components/ui/popover"
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList
+} from "@/components/ui/command"
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -64,23 +72,25 @@ import { useToast } from '@/hooks/use-toast'
 import { useCreateApplication, useUpdateApplication } from '@/hooks/use-applications'
 import { ApplicationStatus } from '@/lib'
 import { useApplicationsRest } from '@/hooks/use-applications-rest'
+import { useLoanProviders } from '@/hooks/use-loan-providers'
 import { cn, decodeJwt, getCookie } from '@/lib/utils'
 
 export const pretty = (v: string) => v?.toLowerCase()?.replace(/_/g, " ");
 
 export const STATUS_STYLE: Record<string, string> = {
-    "under credit review": "bg-amber-500/20 text-amber-300 border-amber-500/30",
-    operations: "bg-sky-600/20 text-sky-400 border-sky-500/40",
-    "pendency in file": "bg-red-500/20 text-red-300 border-red-500/30",
-    "file send to banker": "bg-indigo-500/20 text-indigo-300 border-indigo-500/30",
-    hold: "bg-yellow-500/20 text-yellow-300 border-yellow-500/30",
-    "to be approved": "bg-green-500/20 text-green-300 border-green-500/30",
-    "to be disbursed": "bg-purple-500/20 text-purple-300 border-purple-500/30",
-    approved: "bg-lime-500/20 text-lime-300 border-lime-500/30",
-    disbursed: "bg-cyan-500/20 text-cyan-300 border-cyan-500/30",
-    rejected: "bg-red-600/20 text-red-400 border-red-600/30",
-    drop: "bg-orange-500/20 text-orange-300 border-orange-500/30",
-    submitted: "bg-blue text-foreground border-blue-500/30"
+    "under credit review": "bg-amber-500/15 text-amber-400 border-amber-500/30",
+    operations: "bg-sky-500/15 text-sky-400 border-sky-500/30",
+    "pendency in file": "bg-rose-500/15 text-rose-400 border-rose-500/30",
+    "file send to banker": "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
+    hold: "bg-yellow-500/15 text-yellow-400 border-yellow-500/30",
+    "to be approved": "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    "to be disbursed": "bg-purple-500/15 text-purple-400 border-purple-500/30",
+    approved: "bg-emerald-500/15 text-emerald-400 border-emerald-500/30",
+    disbursed: "bg-cyan-500/15 text-cyan-400 border-cyan-500/30",
+    rejected: "bg-rose-600/15 text-rose-400 border-rose-600/30",
+    drop: "bg-orange-500/15 text-orange-400 border-orange-500/30",
+    submitted: "bg-blue-500/15 text-blue-400 border-blue-500/30",
+    "carry forward": "bg-violet-500/15 text-violet-400 border-violet-500/30"
 };
 
 export const STATUS_META: Record<string, { icon: JSX.Element }> = {
@@ -394,67 +404,67 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, formatCurre
         <>
             {/* Main Table Row */}
             <motion.tr
-                initial={{ opacity: 0, x: -20 }}
+                initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className={`border-border hover:bg-card/50 transition-colors ${isExpanded ? 'bg-card/30' : ''}`}
+                transition={{ duration: 0.2, delay: index * 0.03 }}
+                className={`border-b border-border/50 hover:bg-muted/40 transition-colors ${isExpanded ? 'bg-muted/20' : ''}`}
             >
-                <TableCell className="whitespace-nowrap font-medium">
+                <TableCell className="whitespace-nowrap font-mono text-xs font-semibold text-foreground/90 py-3.5">
                     {application.applicationNumber}
                 </TableCell>
-                <TableCell>
+                <TableCell className="py-3.5">
                     <div className="flex items-center space-x-3 min-w-[180px]">
-                        <Avatar className="w-8 h-8 flex-shrink-0">
+                        <Avatar className="w-7 h-7 flex-shrink-0 ring-1 ring-border/50">
                             <AvatarImage src={application.avatar || "/placeholder.svg"} />
-                            <AvatarFallback className="bg-card text-foreground text-xs">
+                            <AvatarFallback className="bg-primary/10 text-primary font-bold text-[10px]">
                                 {application.customerName.split(' ').map((n: string) => n[0]).join('')}
                             </AvatarFallback>
                         </Avatar>
                         <div className="min-w-0 max-w-[200px]">
-                            <p className="font-medium truncate text-foreground" title={application.customerName}>{application.customerName}</p>
-                            <p className="text-muted-foreground text-sm truncate" title={application.customerEmail}>{application.customerEmail}</p>
+                            <p className="font-semibold text-xs truncate text-foreground" title={application.customerName}>{application.customerName}</p>
+                            <p className="text-muted-foreground text-[11px] truncate" title={application.customerEmail}>{application.customerEmail}</p>
                         </div>
                     </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                    <p className="text-foreground font-medium">{formatCurrency(application.applicationAmount)}</p>
+                <TableCell className="whitespace-nowrap py-3.5">
+                    <p className="text-foreground font-semibold text-xs">{formatCurrency(application.applicationAmount)}</p>
                 </TableCell>
 
                 {/* Product Type Column */}
-                <TableCell className="hidden lg:table-cell whitespace-nowrap">
-                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
-                        <FileText className="w-3 h-3 mr-1" />
+                <TableCell className="hidden lg:table-cell whitespace-nowrap py-3.5">
+                    <Badge variant="outline" className="text-[11px] font-medium border-primary/25 bg-primary/5 text-primary py-0.5 px-2">
+                        <FileText className="w-3 h-3 mr-1 opacity-80" />
                         {application.loanType?.replace('_', ' ') || 'N/A'}
                     </Badge>
                 </TableCell>
 
                 {/* Contact Column */}
-                <TableCell className="hidden md:table-cell whitespace-nowrap">
-                    <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                        <Phone className="w-3 h-3" />
-                        <span className="text-foreground">{application.customerContact || 'N/A'}</span>
+                <TableCell className="hidden md:table-cell whitespace-nowrap py-3.5">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Phone className="w-3 h-3 opacity-70" />
+                        <span className="text-foreground/90">{application.customerContact || 'N/A'}</span>
                     </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
-                    <p className="text-foreground font-medium">{application.applicationProvider}</p>
+                <TableCell className="whitespace-nowrap py-3.5">
+                    <p className="text-foreground/90 font-medium text-xs">{application.applicationProvider}</p>
                 </TableCell>
 
                 {/* Location Column */}
-                <TableCell className="hidden xl:table-cell whitespace-nowrap">
-                    <div className="flex items-center gap-1.5 text-sm truncate max-w-[150px]" title={`${application.customerLocation}, ${application.customerState}`}>
-                        <MapPin className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                        <span className="truncate text-foreground">
+                <TableCell className="hidden xl:table-cell whitespace-nowrap py-3.5">
+                    <div className="flex items-center gap-1.5 text-xs truncate max-w-[150px]" title={`${application.customerLocation}, ${application.customerState}`}>
+                        <MapPin className="w-3 h-3 text-muted-foreground/70 flex-shrink-0" />
+                        <span className="truncate text-foreground/90">
                             {application.customerLocation}, {application.customerState}
                         </span>
                     </div>
                 </TableCell>
-                <TableCell className="whitespace-nowrap">
+                <TableCell className="whitespace-nowrap py-3.5">
                     <Tooltip>
-                        <TooltipTrigger>
+                        <TooltipTrigger asChild>
                             <Badge
                                 className={cn(
-                                    `inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-full border ${isOmsEnabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'}`,
-                                    STATUS_STYLE[pretty(application.loanStatus)]
+                                    `inline-flex items-center gap-1 px-2.5 py-0.5 text-[11px] font-medium rounded-full border ${isOmsEnabled ? 'cursor-not-allowed opacity-80' : 'cursor-pointer'}`,
+                                    STATUS_STYLE[pretty(application.loanStatus)] || "bg-muted text-muted-foreground border-border"
                                 )}
                             >
                                 {getStatusIcon(application.loanStatus)}
@@ -464,30 +474,22 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, formatCurre
                         <TooltipContent>Status Managed By OMS</TooltipContent>
                     </Tooltip>
                 </TableCell>
-                <TableCell className="text-muted-foreground whitespace-nowrap">
+                <TableCell className="text-muted-foreground text-xs whitespace-nowrap py-3.5">
                     {application.applicationDate}
                 </TableCell>
-                <TableCell className="text-center whitespace-nowrap">
-                    <div className="inline-flex items-center gap-1.5 bg-background/60 border-border rounded-lg px-2 py-1">
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button onClick={onView} className="text-blue cursor-pointer hover:text-foreground">
-                                    <Eye className="w-4 h-4 mr-2 " />
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>View</TooltipContent>
-                        </Tooltip>
-                        {/* <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-              onClick={onDelete} 
-              className="text-red-400 cursor-pointer hover: text-foreground">
-                <Trash2 className="w-4 h-4 mr-2" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete</TooltipContent>
-          </Tooltip> */}
-                    </div>
+                <TableCell className="text-center whitespace-nowrap py-3.5">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <button
+                                type="button"
+                                onClick={onView}
+                                className="p-1.5 rounded-lg text-primary hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer inline-flex items-center justify-center select-none"
+                            >
+                                <Eye className="w-4 h-4" />
+                            </button>
+                        </TooltipTrigger>
+                        <TooltipContent>View Application</TooltipContent>
+                    </Tooltip>
                 </TableCell>
             </motion.tr>
         </>
@@ -498,16 +500,19 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, formatCurre
 interface ApplicationsGridProps {
     applications: any[];
     isLoading: boolean;
+    hasFilters?: boolean;
+    onClearFilters?: () => void;
+    onCreateClick?: () => void;
     onView: (app: any) => void;
     onDelete: (id: string) => void;
     formatCurrency: (amount: number) => string;
     isOmsEnabled: boolean;
 }
 
-const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
+const ApplicationsGrid = ({ applications, isLoading, hasFilters, onClearFilters, onCreateClick, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
     if (isLoading) {
         return (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
                 {[...Array(6)].map((_, i) => (
                     <CardSkeleton key={i} headerLines={2} bodyHeight={200} />
                 ))}
@@ -517,15 +522,47 @@ const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, formatCur
 
     if (!applications || applications.length === 0) {
         return (
-            <div className="text-center py-12">
-                <FileText className="w-16 h-16 text-gray-600 mx-auto mb-4" />
-                <p className=" text-muted-foreground text-lg">No applications found</p>
+            <div className="flex flex-col items-center justify-center py-16 px-4 text-center select-none">
+                <div className="relative mb-4 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl scale-150 animate-pulse" />
+                    <div className="relative w-16 h-16 rounded-2xl bg-card border border-border/80 shadow-md flex items-center justify-center text-primary">
+                        <FileText className="w-8 h-8 stroke-[1.5]" />
+                    </div>
+                </div>
+                <h3 className="text-base font-bold text-foreground tracking-tight mb-1.5">
+                    {hasFilters ? "No matching applications found" : "No applications available"}
+                </h3>
+                <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-5 leading-relaxed">
+                    {hasFilters
+                        ? "We couldn't find any applications matching your search or active filters. Try adjusting or resetting them."
+                        : "There are currently no loan applications created or assigned in this view."}
+                </p>
+                {hasFilters && onClearFilters ? (
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={onClearFilters}
+                        className="h-8 px-4 text-xs font-medium border-border/70 hover:bg-muted gap-2 rounded-lg"
+                    >
+                        <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                        Reset All Filters
+                    </Button>
+                ) : onCreateClick ? (
+                    <Button
+                        size="sm"
+                        onClick={onCreateClick}
+                        className="h-8 px-4 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 rounded-lg shadow-sm"
+                    >
+                        <Plus className="w-3.5 h-3.5" />
+                        Create Application
+                    </Button>
+                ) : null}
             </div>
         );
     }
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
             {applications.map((application) => (
                 <ApplicationCard
                     key={application.applicationId}
@@ -540,10 +577,18 @@ const ApplicationsGrid = ({ applications, isLoading, onView, onDelete, formatCur
     );
 };
 
-export function AggregatorApplications() {
+export function AggregatorApplications({
+    startDate,
+    endDate
+}: {
+    startDate?: string | null;
+    endDate?: string | null;
+} = {}) {
     const [viewMode, setViewMode] = useState<'table' | 'grid'>('table')
     const [searchTerm, setSearchTerm] = useState('')
     const [filterLender, setFilterLender] = useState('')
+    const [openProvider, setOpenProvider] = useState(false)
+    const { providerOptions: lenderOptions } = useLoanProviders(1, 100)
 
     const [selectedApplication, setSelectedApplication] = useState<any>(null)
     const [selectedLenderId, setSelectedLenderId] = useState("")
@@ -610,6 +655,8 @@ export function AggregatorApplications() {
         companyIdOverride: companyIdOverride || undefined,
         salesUserId: effectiveSalesUserId,
         aggregatorId: effectiveAggregatorId,
+        startDate: startDate || undefined,
+        endDate: endDate || undefined,
     })
     const total = applications?.count || 0
 
@@ -628,6 +675,14 @@ export function AggregatorApplications() {
     }, [applications?.results, searchTerm, filterLender])
 
     // Reset page when filters change
+    const hasActiveFilters = Boolean(searchTerm.trim() || (filterLender && filterLender !== 'all'))
+
+    const handleClearFilters = () => {
+        setSearchTerm('')
+        setFilterLender('')
+        setPage(1)
+    }
+
     useEffect(() => {
         setPage(1)
     }, [searchTerm, filterLender])
@@ -719,100 +774,166 @@ export function AggregatorApplications() {
         <div className="space-y-6 w-full min-w-0 max-w-full">
             {/* Filters */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.4 }}
-                className="flex flex-col sm:flex-row gap-4 w-full"
+                transition={{ duration: 0.3, delay: 0.1 }}
+                className="flex flex-col sm:flex-row gap-3 w-full"
             >
                 <div className="relative flex-1 w-full min-w-0">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                    <Search className="absolute left-3.5 top-1/2 transform -translate-y-1/2 text-muted-foreground/70 w-4 h-4" />
                     <Input
-                        placeholder="Search applications..."
+                        placeholder="Search applications by customer or lender..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 bg-background/50 border-border text-foreground w-full"
+                        className="pl-10 h-9.5 bg-card/80 border-border/80 text-foreground text-xs placeholder:text-muted-foreground/60 w-full rounded-lg shadow-sm focus-visible:ring-1 focus-visible:ring-primary/40 focus-visible:border-primary/50"
                     />
+                    {searchTerm && (
+                        <button
+                            type="button"
+                            onClick={() => setSearchTerm('')}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                        >
+                            <X className="w-3.5 h-3.5" />
+                        </button>
+                    )}
                 </div>
-                <Select value={filterLender} onValueChange={setFilterLender}>
-                    <SelectTrigger className="w-full sm:w-48 bg-background/50 border-border text-foreground flex-shrink-0">
-                        <SelectValue placeholder="All Lenders" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Lenders</SelectItem>
-                        {applications?.results?.map((app, idx) => (
-                            <SelectItem key={idx} value={app.applicationProvider}>{app.applicationProvider}</SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
+                <Popover open={openProvider} onOpenChange={setOpenProvider}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="outline"
+                            role="combobox"
+                            aria-expanded={openProvider}
+                            className="w-full sm:w-56 h-9.5 justify-between bg-card/80 border-border/80 text-foreground text-xs font-medium rounded-lg shadow-sm flex-shrink-0"
+                        >
+                            <span className="truncate">
+                                {filterLender && filterLender !== 'all'
+                                    ? lenderOptions.find((p) => p.value.toLowerCase() === filterLender.toLowerCase())?.label || filterLender
+                                    : "All Lenders"}
+                            </span>
+                            <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-56 p-0 z-50 bg-card border border-border shadow-xl">
+                        <Command>
+                            <CommandInput placeholder="Search lender..." className="text-xs h-9" />
+                            <CommandList className="max-h-56">
+                                <CommandEmpty className="py-3 text-xs text-muted-foreground text-center">No lender found.</CommandEmpty>
+                                <CommandGroup>
+                                    <CommandItem
+                                        value="all"
+                                        onSelect={() => {
+                                            setFilterLender("")
+                                            setOpenProvider(false)
+                                        }}
+                                        className="text-xs cursor-pointer"
+                                    >
+                                        <Check
+                                            className={cn(
+                                                "mr-2 h-3.5 w-3.5",
+                                                !filterLender || filterLender === "" || filterLender === "all" ? "opacity-100" : "opacity-0"
+                                            )}
+                                        />
+                                        All Lenders
+                                    </CommandItem>
+                                    {lenderOptions.map((opt) => (
+                                        <CommandItem
+                                            key={opt.value}
+                                            value={opt.label}
+                                            onSelect={() => {
+                                                setFilterLender(filterLender.toLowerCase() === opt.value.toLowerCase() ? "" : opt.value)
+                                                setOpenProvider(false)
+                                            }}
+                                            className="text-xs cursor-pointer"
+                                        >
+                                            <Check
+                                                className={cn(
+                                                    "mr-2 h-3.5 w-3.5",
+                                                    filterLender?.toLowerCase() === opt.value.toLowerCase() ? "opacity-100" : "opacity-0"
+                                                )}
+                                            />
+                                            {opt.label}
+                                        </CommandItem>
+                                    ))}
+                                </CommandGroup>
+                            </CommandList>
+                        </Command>
+                    </PopoverContent>
+                </Popover>
             </motion.div>
 
             {/* Applications Table/Grid with View Toggle */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 15 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.5 }}
+                transition={{ duration: 0.3, delay: 0.2 }}
                 className="w-full min-w-0"
             >
-                <Card className="professional-card w-full min-w-0 max-w-full overflow-hidden">
-                    <CardHeader>
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div className={`h-12 rounded-lg flex items-center justify-center text-blue`}>
-                                <FileText className="w-6 h-6 mr-3" />
+                <Card className="professional-card w-full min-w-0 max-w-full overflow-hidden border-border/70 shadow-sm">
+                    <CardHeader className="py-4 px-5 border-b border-border/50">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary shadow-sm flex-shrink-0">
+                                    <FileText className="w-4.5 h-4.5" />
+                                </div>
                                 <div>
-                                    <CardTitle className="text-foreground mb-1"> {isOmsEnabled ? 'Fresh Applications' : 'Loan Applications'}</CardTitle>
-                                    <CardDescription className="text-muted-foreground">
-                                        Track and manage loan applications
+                                    <CardTitle className="text-base font-bold text-foreground tracking-tight">
+                                        {isOmsEnabled ? 'Fresh Applications' : 'Loan Applications'}
+                                    </CardTitle>
+                                    <CardDescription className="text-xs text-muted-foreground">
+                                        Track and manage fresh incoming loan applications
                                     </CardDescription>
                                 </div>
                             </div>
-                            {/* VIEW TOGGLE BUTTONS */}
-                            <div className="flex items-center gap-2 sm:gap-3 bg-background/50 rounded-lg p-1 w-full sm:w-auto overflow-x-auto">
+
+                            {/* Actions & View Toggle */}
+                            <div className="flex items-center gap-2 self-end sm:self-auto">
                                 <Button
+                                    size="sm"
                                     onClick={() => router.push('/aggregator/applications/new')}
-                                    className="bg-primary hover:bg-primary/90 text-primary-foreground whitespace-nowrap h-8 sm:h-10 px-3 sm:px-4 flex-1 sm:flex-none"
+                                    className="h-8 px-4 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 rounded-lg shadow-sm"
                                 >
-                                    <Plus className="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" />
-                                    <span className="text-xs sm:text-sm">Create Application</span>
+                                    <Plus className="w-3.5 h-3.5" />
+                                    <span>Create Application</span>
                                 </Button>
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant={viewMode === 'table' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setViewMode('table')}
-                                            className={`${viewMode === 'table'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
-                                                : ' text-muted-foreground hover: text-foreground'
-                                                }`}
-                                        >
-                                            <List className="w-4 h-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Table View</TooltipContent>
-                                </Tooltip>
+                                <div className="flex items-center p-0.5 bg-muted/60 border border-border/60 rounded-lg">
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewMode('table')}
+                                                className={cn(
+                                                    "p-1.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                                    viewMode === 'table' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                <List className="w-3.5 h-3.5" />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" sideOffset={6}>Table View</TooltipContent>
+                                    </Tooltip>
 
-                                <Tooltip>
-                                    <TooltipTrigger asChild>
-                                        <Button
-                                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                                            size="sm"
-                                            onClick={() => setViewMode('grid')}
-                                            className={`${viewMode === 'grid'
-                                                ? 'bg-gradient-to-r from-blue-600 to-cyan-500  text-foreground'
-                                                : ' text-muted-foreground hover: text-foreground'
-                                                }`}
-                                        >
-                                            <LayoutGrid className="w-4 h-4" />
-                                        </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>Grid View</TooltipContent>
-                                </Tooltip>
+                                    <Tooltip>
+                                        <TooltipTrigger asChild>
+                                            <button
+                                                type="button"
+                                                onClick={() => setViewMode('grid')}
+                                                className={cn(
+                                                    "p-1.5 rounded-md text-xs font-medium transition-all cursor-pointer",
+                                                    viewMode === 'grid' ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                                                )}
+                                            >
+                                                <LayoutGrid className="w-3.5 h-3.5" />
+                                            </button>
+                                        </TooltipTrigger>
+                                        <TooltipContent side="bottom" sideOffset={6}>Grid View</TooltipContent>
+                                    </Tooltip>
+                                </div>
                             </div>
                         </div>
                     </CardHeader>
 
-                    <CardContent>
+                    <CardContent className="p-0">
                         <div ref={tableTopRef} />
                         {/* CONDITIONAL RENDERING: TABLE OR GRID */}
                         {viewMode === 'table' ? (
@@ -821,35 +942,78 @@ export function AggregatorApplications() {
                                     <TableSkeleton columns={6} rows={pageSize} />
                                 ) : (
                                     <Table>
-                                        <TableHeader className="bg-muted border-b-2 border-border">
-                                            <TableRow>
-                                                <TableHead className="whitespace-nowrap">Application Number</TableHead>
-                                                <TableHead className="whitespace-nowrap">Customer</TableHead>
-                                                <TableHead className="whitespace-nowrap">Loan Amount</TableHead>
-                                                <TableHead className="hidden lg:table-cell whitespace-nowrap">Product Type</TableHead>
-                                                <TableHead className="hidden md:table-cell whitespace-nowrap">Contact</TableHead>
-                                                <TableHead className="whitespace-nowrap">Lender</TableHead>
-                                                <TableHead className="hidden xl:table-cell whitespace-nowrap">Location</TableHead>
-                                                <TableHead className="whitespace-nowrap">Status</TableHead>
-                                                <TableHead className="whitespace-nowrap">Created</TableHead>
-                                                <TableHead className="text-center whitespace-nowrap">Actions</TableHead>
+                                        <TableHeader className="bg-muted/40 border-b border-border">
+                                            <TableRow className="hover:bg-transparent">
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">App #</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Customer</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Loan Amount</TableHead>
+                                                <TableHead className="hidden lg:table-cell text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Product Type</TableHead>
+                                                <TableHead className="hidden md:table-cell text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Contact</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Lender</TableHead>
+                                                <TableHead className="hidden xl:table-cell text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Location</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Status</TableHead>
+                                                <TableHead className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Created</TableHead>
+                                                <TableHead className="text-center text-[11px] font-bold uppercase tracking-wider text-muted-foreground whitespace-nowrap py-3">Actions</TableHead>
                                             </TableRow>
                                         </TableHeader>
                                         <TableBody>
-                                            {filteredApplications?.map((application, index) => (
-                                                <ApplicationTableRow
-                                                    key={application.applicationId}
-                                                    application={application}
-                                                    index={index}
-                                                    onView={() => {
-                                                        setSelectedApplication(application)
-                                                        setIsViewDialogOpen(true)
-                                                    }}
-                                                    onDelete={() => handleDelete(application.applicationId)}
-                                                    formatCurrency={formatCurrency}
-                                                    isOmsEnabled={isOmsEnabled}
-                                                />
-                                            ))}
+                                            {filteredApplications && filteredApplications.length > 0 ? (
+                                                filteredApplications.map((application, index) => (
+                                                    <ApplicationTableRow
+                                                        key={application.applicationId}
+                                                        application={application}
+                                                        index={index}
+                                                        onView={() => {
+                                                            setSelectedApplication(application)
+                                                            setIsViewDialogOpen(true)
+                                                        }}
+                                                        onDelete={() => handleDelete(application.applicationId)}
+                                                        formatCurrency={formatCurrency}
+                                                        isOmsEnabled={isOmsEnabled}
+                                                    />
+                                                ))
+                                            ) : (
+                                                <TableRow className="hover:bg-transparent">
+                                                    <TableCell colSpan={10} className="h-72 text-center p-0">
+                                                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center select-none">
+                                                            <div className="relative mb-4 flex items-center justify-center">
+                                                                <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl scale-150 animate-pulse" />
+                                                                <div className="relative w-16 h-16 rounded-2xl bg-card border border-border/80 shadow-md flex items-center justify-center text-primary">
+                                                                    <FileText className="w-8 h-8 stroke-[1.5]" />
+                                                                </div>
+                                                            </div>
+                                                            <h3 className="text-base font-bold text-foreground tracking-tight mb-1.5">
+                                                                {hasActiveFilters ? "No matching applications found" : "No applications available"}
+                                                            </h3>
+                                                            <p className="text-xs text-muted-foreground max-w-sm mx-auto mb-5 leading-relaxed">
+                                                                {hasActiveFilters
+                                                                    ? "We couldn't find any applications matching your search or active filters. Try adjusting or resetting them."
+                                                                    : "There are currently no loan applications created or assigned in this view."}
+                                                            </p>
+                                                            {hasActiveFilters ? (
+                                                                <Button
+                                                                    variant="outline"
+                                                                    size="sm"
+                                                                    onClick={handleClearFilters}
+                                                                    className="h-8 px-4 text-xs font-medium border-border/70 hover:bg-muted gap-2 rounded-lg"
+                                                                >
+                                                                    <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
+                                                                    Reset All Filters
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    size="sm"
+                                                                    onClick={() => router.push('/aggregator/applications/new')}
+                                                                    className="h-8 px-4 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 rounded-lg shadow-sm"
+                                                                >
+                                                                    <Plus className="w-3.5 h-3.5" />
+                                                                    Create Application
+                                                                </Button>
+                                                            )}
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                            )}
                                         </TableBody>
                                     </Table>
                                 )}
@@ -859,6 +1023,9 @@ export function AggregatorApplications() {
                             <ApplicationsGrid
                                 applications={filteredApplications || []}
                                 isLoading={isTableLoading}
+                                hasFilters={hasActiveFilters}
+                                onClearFilters={handleClearFilters}
+                                onCreateClick={() => router.push('/aggregator/applications/new')}
                                 onView={(app) => {
                                     setSelectedApplication(app);
                                     setIsViewDialogOpen(true);
@@ -868,14 +1035,16 @@ export function AggregatorApplications() {
                                 isOmsEnabled={isOmsEnabled}
                             />
                         )}
-                        <TablePagination
-                            page={page}
-                            pageSize={pageSize}
-                            total={total}
-                            onPageChange={handlePageChange}
-                            onPageSizeChange={handlePageSizeChange}
-                            className="mt-4"
-                        />
+                        <div className="px-4 pb-4">
+                            <TablePagination
+                                page={page}
+                                pageSize={pageSize}
+                                total={total}
+                                onPageChange={handlePageChange}
+                                onPageSizeChange={handlePageSizeChange}
+                                className="mt-4"
+                            />
+                        </div>
                     </CardContent>
                 </Card>
             </motion.div>

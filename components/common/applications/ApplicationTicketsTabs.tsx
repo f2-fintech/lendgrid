@@ -1,7 +1,7 @@
 'use client'
 
 import { FileText, ClipboardList } from 'lucide-react'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { cn } from '@/lib/utils'
 
 interface Props {
     activeTab: 'applications' | 'tickets'
@@ -10,28 +10,34 @@ interface Props {
 
 export function ApplicationTicketsTabs({ activeTab, onChange }: Props) {
     return (
-        <Tabs
-            value={activeTab}
-            onValueChange={(v) => onChange(v as 'applications' | 'tickets')}
-            className="w-full"
-        >
-            <TabsList className="grid w-full grid-cols-2 bg-background/50 border-border">
-                <TabsTrigger
-                    value="applications"
-                    className="text-base font-medium data-[state=active]:bg-gradient-to-r from-blue to-cyan-500"
-                >
-                    <FileText className="w-5 h-5 mr-2" />
-                    Applications
-                </TabsTrigger>
+        <div className="flex items-center gap-1.5 p-1 bg-card/80 border border-border/80 rounded-xl w-fit shadow-sm backdrop-blur-sm">
+            <button
+                type="button"
+                onClick={() => onChange('applications')}
+                className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 select-none cursor-pointer",
+                    activeTab === 'applications'
+                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+            >
+                <FileText className="w-4 h-4" />
+                <span>Fresh Applications</span>
+            </button>
 
-                <TabsTrigger
-                    value="tickets"
-                    className="text-base font-medium data-[state=active]:bg-gradient-to-r from-blue to-cyan-500"
-                >
-                    <ClipboardList className="w-5 h-5 mr-2" />
-                    Tickets
-                </TabsTrigger>
-            </TabsList>
-        </Tabs>
+            <button
+                type="button"
+                onClick={() => onChange('tickets')}
+                className={cn(
+                    "flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 select-none cursor-pointer",
+                    activeTab === 'tickets'
+                        ? "bg-primary text-primary-foreground shadow-sm shadow-primary/30"
+                        : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                )}
+            >
+                <ClipboardList className="w-4 h-4" />
+                <span>Tickets</span>
+            </button>
+        </div>
     )
 }

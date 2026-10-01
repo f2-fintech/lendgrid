@@ -10,6 +10,8 @@ type UseApplicationsProps = {
     enabled?: boolean
     companyIdOverride?: string
     salesUserId?: string | number
+    startDate?: string | null
+    endDate?: string | null
 }
 
 export interface CustomerApplication {
@@ -51,12 +53,17 @@ export function useApplicationsRest({
     enabled = true,
     companyIdOverride,
     salesUserId,
+    startDate,
+    endDate,
 }: UseApplicationsProps) {
     const params = new URLSearchParams({
         page: String(page),
         limit: String(limit),
     })
 
+    if (companyIdOverride && companyIdOverride !== 'all') {
+        params.append('companyId', String(companyIdOverride));
+    }
     // if (aggregatorId) params.append('appliedBy', aggregatorId)
     if (salesUserId) {
         const isNumeric = /^\d+$/.test(String(salesUserId));
@@ -68,8 +75,10 @@ export function useApplicationsRest({
     }
     if (status) params.append('status', status)
     if (search) params.append('search', search)
+    if (startDate) params.append('startDate', startDate)
+    if (endDate) params.append('endDate', endDate)
 
-    const key = enabled ? `/get-customer-loan-applications?${params}&_cid=${companyIdOverride ?? ''}` : null
+    const key = enabled ? `/get-customer-loan-applications?${params.toString()}&_cid=${companyIdOverride ?? ''}` : null
 
     const { data, error, isLoading, mutate } = useSWR<{
         statusCode: number

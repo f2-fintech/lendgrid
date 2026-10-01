@@ -5,7 +5,12 @@ import { ApplicationTicketsTabs } from '@/components/common/applications/Applica
 import { AggregatorApplications } from '@/components/common/applications/ApplicationsTab'
 import { TicketsTab } from '@/components/common/applications/TicketsTab'
 
-export function AggregatorMemberApplications() {
+interface AggregatorMemberApplicationsProps {
+  startDate?: string | null;
+  endDate?: string | null;
+}
+
+export function AggregatorMemberApplications({ startDate, endDate }: AggregatorMemberApplicationsProps = {}) {
   const [activeTab, setActiveTab] = useState<'applications' | 'tickets'>('applications')
 
   return (
@@ -16,9 +21,9 @@ export function AggregatorMemberApplications() {
       />
 
       {activeTab === 'applications' ? (
-        <AggregatorApplications />
+        <AggregatorApplications startDate={startDate} endDate={endDate} />
       ) : (
-        <TicketsTab />
+        <TicketsTab startDate={startDate} endDate={endDate} />
       )}
     </div>
   )
