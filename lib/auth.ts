@@ -44,11 +44,24 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 				const decodedRole = decoded?.role ? mapRole(decoded.role) : null
 				if (decodedRole) setRole(decodedRole)
 
-				const profileResp: any = await usersApi.profile()
-				const fetchedRole = profileResp?.profile?.role ? mapRole(profileResp.profile.role) : undefined
+				let fetchedRole = undefined;
 
-				setUser(profileResp?.profile)
-				if (fetchedRole) setRole(fetchedRole)
+				// Bypass usersApi.profile for OMS staff as they don't exist in Lendgrid DB
+				if (decodedRole === 'lendgrid_sales') {
+					setUser({
+						username: decoded?.username || decoded?.name || decoded?.first_name || 'OMS Staff',
+						email: decoded?.email || '',
+						role: decoded?.role,
+						omsUserId: decoded?.id || decoded?.sub
+					});
+					fetchedRole = 'lendgrid_sales';
+				} else {
+					const profileResp: any = await usersApi.profile()
+					fetchedRole = profileResp?.profile?.role ? mapRole(profileResp.profile.role) : undefined
+
+					setUser(profileResp?.profile)
+					if (fetchedRole) setRole(fetchedRole)
+				}
 
 				if (requiredRole) {
 					const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole]
