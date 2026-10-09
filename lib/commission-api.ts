@@ -261,6 +261,7 @@ export const commissionsApi = {
             id
             ticketId
             aggregatorId
+            aggregatorName
             companyId
             disbursedAmount
             disbursedDate
@@ -293,6 +294,9 @@ export const commissionsApi = {
             paidBy
           }
           total
+          calculatedCount
+          completedCount
+          totalAmount
           page
           limit
           pages

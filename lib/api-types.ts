@@ -98,13 +98,13 @@ export enum RuleStatus {
 }
 
 export enum CommissionStatus {
-  PENDING = 'PENDING',
   CALCULATED = 'CALCULATED',
   APPROVED = 'APPROVED',
   PAID = 'PAID',
+  DISPUTED = 'DISPUTED',
   REJECTED = 'REJECTED',
   CANCELLED = 'CANCELLED',
-  DISPUTED = 'DISPUTED',
+  PENDING = 'PENDING',
 }
 
 export enum ApplicableFor {
@@ -561,6 +561,9 @@ export interface PaginatedCommissionTransactions {
   message: string;
   data: CommissionTransaction[];
   total: number;
+  calculatedCount?: number;
+  completedCount?: number;
+  totalAmount?: number;
   page: number;
   limit: number;
   pages: number;

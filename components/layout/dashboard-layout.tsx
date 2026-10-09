@@ -497,7 +497,7 @@ function AppSidebar({
                 )}
                 <DropdownMenuItem
                   onClick={handleLogout}
-                  className="text-destructive cursor-pointer"
+                  className="text-destructive focus:bg-destructive/15 focus:text-destructive cursor-pointer"
                 >
                   <LogOut className="w-4 h-4 mr-2" />
                   Logout

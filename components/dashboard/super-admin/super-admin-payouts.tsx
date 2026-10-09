@@ -22,7 +22,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import { useCommissionTransactions, useUpdateCommissionStatus } from '@/hooks/use-commissions'
 import { useToast } from '@/hooks/use-toast'
-import { uploadToS3 } from '@/lib/utils'
+import { capitalizeEachWord, uploadToS3 } from '@/lib/utils'
 
 export function SuperAdminPayouts() {
   const [searchTerm, setSearchTerm] = useState('')
@@ -118,20 +118,20 @@ export function SuperAdminPayouts() {
   }
 
   const getAvailableStatuses = (currentStatus: string, allowAllForAdmin: boolean = true) => {
-    // For admins, show all statuses except current one
+    // For admins, show all statuses except current one in lifecycle order
     if (allowAllForAdmin) {
-      const allStatuses = ['CALCULATED', 'APPROVED', 'PAID', 'REJECTED', 'CANCELLED', 'DISPUTED']
+      const allStatuses = ['CALCULATED', 'APPROVED', 'PAID', 'DISPUTED', 'REJECTED', 'CANCELLED']
       return allStatuses.filter(status => status !== currentStatus)
     }
 
     // Standard workflow transitions
     const transitions: Record<string, string[]> = {
-      'CALCULATED': ['APPROVED', 'REJECTED', 'CANCELLED', 'DISPUTED'],
-      'APPROVED': ['PAID', 'CANCELLED', 'DISPUTED'],
+      'CALCULATED': ['APPROVED', 'DISPUTED', 'REJECTED', 'CANCELLED'],
+      'APPROVED': ['PAID', 'DISPUTED', 'CANCELLED'],
       'PAID': ['DISPUTED'],
+      'DISPUTED': ['APPROVED', 'REJECTED', 'CANCELLED'],
       'REJECTED': ['CALCULATED'],
       'CANCELLED': [],
-      'DISPUTED': ['APPROVED', 'REJECTED'],
     }
     return transitions[currentStatus] || []
   }
@@ -261,24 +261,22 @@ export function SuperAdminPayouts() {
     tableTopRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
   }
 
-  // Calculate metrics
+  // Calculate metrics from server-aggregated totals
   const metrics = useMemo(() => {
-    if (!transactionsData?.data) {
+    if (!transactionsData) {
       return {
         totalPayouts: 0,
-        pendingPayouts: 0,
+        calculatedPayouts: 0,
         completedPayouts: 0,
         totalAmount: 0
       }
     }
 
     return {
-      totalPayouts: transactionsData.total,
-      pendingPayouts: transactionsData.data.filter(t =>
-        ['PENDING', 'CALCULATED', 'APPROVED'].includes(t.status)
-      ).length,
-      completedPayouts: transactionsData.data.filter(t => t.status === 'PAID').length,
-      totalAmount: transactionsData.data.reduce((sum, t) => sum + t.finalCommission, 0)
+      totalPayouts: transactionsData.total || 0,
+      calculatedPayouts: transactionsData.calculatedCount ?? 0,
+      completedPayouts: transactionsData.completedCount ?? 0,
+      totalAmount: transactionsData.totalAmount ?? 0,
     }
   }, [transactionsData])
 
@@ -339,10 +337,17 @@ export function SuperAdminPayouts() {
             subtitle=""
           />
           <MetricCard
-            title="Pending Payouts"
-            value={metrics.pendingPayouts}
+            title="Total Amount"
+            value={formatCurrency(metrics.totalAmount)}
+            icon={IndianRupee}
+            color="metric-card-primary"
+            subtitle=""
+          />
+          <MetricCard
+            title="Auto-calculated Payouts"
+            value={metrics.calculatedPayouts}
             icon={Clock}
-            color="metric-card-warning"
+            color="metric-card-accent"
             subtitle=""
           />
           <MetricCard
@@ -350,13 +355,6 @@ export function SuperAdminPayouts() {
             value={metrics.completedPayouts}
             icon={FileCheck}
             color="metric-card-success"
-            subtitle=""
-          />
-          <MetricCard
-            title="Total Amount"
-            value={formatCurrency(metrics.totalAmount)}
-            icon={IndianRupee}
-            color="metric-card-primary"
             subtitle=""
           />
         </div>
@@ -378,17 +376,17 @@ export function SuperAdminPayouts() {
                 </CardDescription>
               </div>
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
-                <Button 
-                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/graphql', '')}/commissions/export/dsa-billing`, '_blank')} 
-                  variant="outline" 
+                <Button
+                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/graphql', '')}/commissions/export/dsa-billing`, '_blank')}
+                  variant="outline"
                   className="bg-background border-border text-foreground hover:bg-muted whitespace-nowrap"
                 >
                   <FileText className="w-4 h-4 mr-2" />
                   DSA Billing Excel
                 </Button>
-                <Button 
-                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/graphql', '')}/commissions/export/summary`, '_blank')} 
-                  variant="outline" 
+                <Button
+                  onClick={() => window.open(`${process.env.NEXT_PUBLIC_API_BASE_URL?.replace('/graphql', '')}/commissions/export/summary`, '_blank')}
+                  variant="outline"
                   className="bg-background border-border text-foreground hover:bg-muted whitespace-nowrap"
                 >
                   <FileCheck className="w-4 h-4 mr-2" />
@@ -397,10 +395,10 @@ export function SuperAdminPayouts() {
                 <div className="relative w-full sm:w-auto">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
-                    placeholder="Search by ticket ID..."
+                    placeholder="Search by ticket ID or aggregator..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-background border-border text-foreground w-full sm:w-64"
+                    className="pl-10 bg-background border-border text-foreground w-full sm:w-72"
                   />
                 </div>
                 <Select value={filterStatus} onValueChange={setFilterStatus}>
@@ -409,11 +407,12 @@ export function SuperAdminPayouts() {
                   </SelectTrigger>
                   <SelectContent className="bg-popover border-border text-popover-foreground">
                     <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="PAID">Paid</SelectItem>
-                    <SelectItem value="APPROVED">Approved</SelectItem>
-                    <SelectItem value="CALCULATED">Calculated</SelectItem>
-                    <SelectItem value="REJECTED">Rejected</SelectItem>
-                    <SelectItem value="CANCELLED">Cancelled</SelectItem>
+                    <SelectItem value="CALCULATED">CALCULATED</SelectItem>
+                    <SelectItem value="APPROVED">APPROVED</SelectItem>
+                    <SelectItem value="PAID">PAID</SelectItem>
+                    <SelectItem value="DISPUTED">DISPUTED</SelectItem>
+                    <SelectItem value="REJECTED">REJECTED</SelectItem>
+                    <SelectItem value="CANCELLED">CANCELLED</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -423,12 +422,13 @@ export function SuperAdminPayouts() {
             <div ref={tableTopRef} />
             <div className="overflow-hidden professional-table pb-4 w-full">
               {isLoading ? (
-                <TableSkeleton columns={7} rows={pageSize} />
+                <TableSkeleton columns={8} rows={pageSize} />
               ) : (
                 <Table className="min-w-[1000px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Ticket ID</TableHead>
+                      <TableHead>Aggregator</TableHead>
                       <TableHead>Product Type</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Cashback</TableHead>
@@ -455,7 +455,15 @@ export function SuperAdminPayouts() {
                             <p className="text-foreground font-medium">F2FIN-{payout.ticketId}</p>
                           </TableCell>
                           <TableCell>
-                            <p className="text-foreground">{payout.loanType}</p>
+                            <p className="text-foreground font-medium">{capitalizeEachWord(payout.aggregatorName) || 'N/A'}</p>
+                            {payout.aggregatorType && (
+                              <span className="text-xs text-muted-foreground capitalize">
+                                {payout.aggregatorType.toLowerCase().replace(/_/g, ' ')}
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            <p className="text-foreground">{capitalizeEachWord(payout.loanType)}</p>
                           </TableCell>
                           <TableCell>
                             {formatCurrency(payout.disbursedAmount)}
@@ -595,12 +603,22 @@ export function SuperAdminPayouts() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="flex items-start gap-3">
+                    <div className="bg-primary/10 p-2 rounded-lg mt-1">
+                      <User className="w-4 h-4 text-primary" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-xs text-muted-foreground mb-1">Aggregator Name</p>
+                      <p className="text-foreground font-semibold">{capitalizeEachWord(selectedPayout.aggregatorName) || 'N/A'}</p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-3">
                     <div className="bg-blue-500/10 p-2 rounded-lg mt-1">
                       <FileText className="w-4 h-4 text-blue-400" />
                     </div>
                     <div className="flex-1">
                       <p className="text-xs text-muted-foreground mb-1">Product Type</p>
-                      <p className="text-foreground font-semibold">{selectedPayout.loanType}</p>
+                      <p className="text-foreground font-semibold">{capitalizeEachWord(selectedPayout.loanType)}</p>
                     </div>
                   </div>
 
