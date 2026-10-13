@@ -5,9 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export type TablePaginationProps = {
-  page: number
-  pageSize: number
-  total: number
+  page?: number
+  currentPage?: number
+  pageSize?: number
+  total?: number
+  totalItems?: number
   pageSizeOptions?: number[]
   onPageChange: (page: number) => void | Promise<void>
   onPageSizeChange?: (size: number) => void | Promise<void>
@@ -15,17 +17,22 @@ export type TablePaginationProps = {
 }
 
 export function TablePagination({
-  page,
-  pageSize,
-  total,
+  page: propPage,
+  currentPage,
+  pageSize = 10,
+  total: propTotal,
+  totalItems,
   pageSizeOptions = [5, 10, 20],
   onPageChange,
   onPageSizeChange,
   className,
 }: TablePaginationProps) {
-  const totalPages = Math.max(1, Math.ceil(total / pageSize))
-  const start = total === 0 ? 0 : (page - 1) * pageSize + 1
-  const end = Math.min(total, page * pageSize)
+  const page = Math.max(1, Number(propPage ?? currentPage ?? 1) || 1)
+  const total = Math.max(0, Number(propTotal ?? totalItems ?? 0) || 0)
+  const safePageSize = Math.max(1, Number(pageSize) || 10)
+  const totalPages = Math.max(1, Math.ceil(total / safePageSize))
+  const start = total === 0 ? 0 : (page - 1) * safePageSize + 1
+  const end = Math.min(total, page * safePageSize)
 
   return (
     <div

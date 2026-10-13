@@ -1434,19 +1434,19 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-lg bg-amber-500/15 flex items-center justify-center">
-                                        <FileText className="w-5 h-5 text-amber-400" />
+                                        <FileText className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                                     </div>
                                     <div>
-                                        <CardTitle className="text-amber-300 text-base">Terms &amp; Conditions — Applicable for Pan India Location</CardTitle>
-                                        <CardDescription className="text-xs text-amber-300/60 mt-0.5">
+                                        <CardTitle className="text-amber-950 dark:text-amber-300 text-base font-semibold">Terms &amp; Conditions — Applicable for Pan India Location</CardTitle>
+                                        <CardDescription className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 font-medium">
                                             F2 Fintech Channel Partner Payout Program 2026 — Click to {isTnCExpanded ? 'collapse' : 'expand'}
                                         </CardDescription>
                                     </div>
                                 </div>
                                 {isTnCExpanded ? (
-                                    <ChevronUp className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                                    <ChevronUp className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                                 ) : (
-                                    <ChevronDown className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                                    <ChevronDown className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
                                 )}
                             </div>
                         </CardHeader>
@@ -1455,13 +1455,13 @@ export function CommissionRulesTab({ aggregatorType }: CommissionRulesTabProps) 
                             <CardContent className="pt-0 space-y-4">
                                 {/* Note box */}
                                 <Alert className="bg-orange-500/10 border-orange-500/30">
-                                    <AlertCircle className="h-4 w-4 text-orange-400" />
-                                    <AlertDescription className="text-sm text-orange-200">
-                                        <strong>Note:</strong> Doctor Loan base cards for Bajaj Finserv, Tata Capital, CHOLA, L&amp;T Finance, Aditya Birla, Credit Saison, and Godrej Capital are pending bank confirmation. Rates shown reflect the standard tier rate and will be updated once bank-specific cards are received.
+                                    <AlertCircle className="h-4 w-4 text-orange-600 dark:text-orange-400 mt-0.5" />
+                                    <AlertDescription className="text-sm text-slate-900 dark:text-slate-100 leading-relaxed">
+                                        <strong className="font-semibold text-amber-950 dark:text-amber-300">Note:</strong> Doctor Loan base cards for Bajaj Finserv, Tata Capital, CHOLA, L&amp;T Finance, Aditya Birla, Credit Saison, and Godrej Capital are pending bank confirmation. Rates shown reflect the standard tier rate and will be updated once bank-specific cards are received.
                                     </AlertDescription>
                                 </Alert>
 
-                                <ol className="list-decimal list-outside ml-5 space-y-2 text-sm text-amber-100/80">
+                                <ol className="list-decimal list-outside ml-5 space-y-2.5 text-sm text-slate-900 dark:text-slate-100 marker:text-amber-600 dark:marker:text-amber-400 leading-relaxed">
                                     <li>This is our gross payout.</li>
                                     <li>Payout may differ in case of SEP / OD / Surrogate / Top Up / LACR / SBL / BT / PreApp / GIL.</li>
                                     <li>GST will be paid in excess to registered GST vendor after filing of GSTR-1.</li>

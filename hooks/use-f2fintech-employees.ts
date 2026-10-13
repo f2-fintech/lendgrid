@@ -85,6 +85,9 @@ export interface F2FintechEmployee {
  * Transformed employee for component consumption
  */
 export interface TransformedEmployee {
+    _id?: string
+    first_name?: string
+    last_name?: string
     employeeId: string
     name: string
     email: string
@@ -127,8 +130,11 @@ const API_BASE_URL = 'https://hrms.f2fintech.in'
  */
 function transformEmployee(employee: F2FintechEmployee): TransformedEmployee {
     return {
+        _id: employee._id,
+        first_name: employee.first_name,
+        last_name: employee.last_name,
         employeeId: employee.code || employee._id,
-        name: `${employee.first_name} ${employee.last_name}`.trim(),
+        name: `${employee.first_name || ''} ${employee.last_name || ''}`.trim() || employee.email,
         email: employee.email,
         workEmail: employee.work_email,
         phone: employee.contact,

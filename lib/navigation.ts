@@ -21,6 +21,7 @@ export const navigationPaths = {
     settings: '/super-admin/settings',
     f2fintechEmployees: '/super-admin/f2fintech-employees',
     salesUsers: '/super-admin/sales-users',
+    omsReferrals: '/super-admin/oms-referrals',
     deletionRequests: '/super-admin/deletion-requests',
     dataUploads: '/super-admin/data'
   },

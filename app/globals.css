@@ -102,7 +102,7 @@ body,
     --secondary-foreground: 210 40% 98%;
 
     /* Muted Backgrounds */
-    --muted: 217 33% 17%;
+    --muted: 217 33% 13%;
     --muted-foreground: 215 20% 65%;
 
     /* Accent - Gold */
@@ -118,8 +118,8 @@ body,
     --destructive-foreground: 210 40% 98%;
 
     /* Borders */
-    --border: 217 33% 17%;
-    --input: 217 33% 17%;
+    --border: 217 25% 32%;
+    --input: 217 25% 32%;
     --ring: 217 91% 60%;
 
     /* Chart Colors - Dark Mode */
@@ -136,7 +136,7 @@ body,
     --sidebar-primary-foreground: 222 47% 11%;
     --sidebar-accent: 217 33% 17%;
     --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217 33% 17%;
+    --sidebar-border: 217 25% 32%;
     --sidebar-ring: 217 91% 60%;
   }
 }
@@ -299,11 +299,11 @@ body,
 
 /* Table Styles */
 .professional-table {
-  @apply bg-card rounded-xl overflow-hidden shadow-sm;
+  @apply bg-card rounded-xl overflow-hidden shadow-sm border border-border;
 }
 
 .professional-table th {
-  @apply bg-muted text-muted-foreground font-semibold border-b border-border;
+  @apply bg-muted/70 text-muted-foreground font-semibold border-b border-border dark:bg-slate-900/60;
 }
 
 .professional-table td {
@@ -311,7 +311,7 @@ body,
 }
 
 .professional-table tr:hover {
-  @apply bg-muted/50;
+  @apply bg-muted/50 dark:bg-white/[0.04];
 }
 
 /* Loading Spinner */

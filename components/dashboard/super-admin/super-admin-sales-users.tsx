@@ -474,7 +474,12 @@ export function SuperAdminSalesUsers() {
                             <div className="h-28 bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700 relative">
                                 <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]"></div>
                                 <div className="absolute top-4 left-6">
-                                    <h2 className="text-white/90 text-sm font-medium tracking-wider uppercase">Profile Overview</h2>
+                                    <DialogTitle asChild>
+                                        <h2 className="text-white/90 text-sm font-medium tracking-wider uppercase">Profile Overview</h2>
+                                    </DialogTitle>
+                                    <DialogDescription className="sr-only">
+                                        Sales team member profile details and account information
+                                    </DialogDescription>
                                 </div>
                                 <Button
                                     variant="ghost"
@@ -503,11 +508,8 @@ export function SuperAdminSalesUsers() {
                                             <div className="flex flex-col items-start">
                                                 <h3 className="text-2xl font-bold text-foreground tracking-tight leading-none mb-2">{selectedMemberForDetails.username.charAt(0).toUpperCase() + selectedMemberForDetails.username.slice(1)}</h3>
                                                 <div className="flex items-center gap-2 -ml-2.5">
-                                                    <Badge variant="secondary" className="bg-blue-500/10 text-blue-500 border-none hover:bg-blue-500/20 transition-colors">
-                                                        LendGrid Sales
-                                                    </Badge>
-                                                    <span className="text-xs text-muted-foreground">•</span>
-                                                    <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Member ID: #{selectedMemberForDetails._id?.toString().slice(0, 4) || "0000"}</span>
+                                                    <span className="text-xs text-muted-foreground"></span>
+                                                    <span className="text-xs text-muted-foreground font-medium tracking-wider">Member ID: {selectedMemberForDetails._id}</span>
                                                 </div>
                                             </div>
                                             <Badge className={`px-4 py-1 text-xs font-bold uppercase tracking-widest ${STATUS_STYLE[selectedMemberForDetails.status]}`}>
@@ -539,7 +541,7 @@ export function SuperAdminSalesUsers() {
                                         </div>
                                         <div className="flex-1">
                                             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mb-1">Contact Number</p>
-                                            <p className="text-sm font-semibold text-foreground">{selectedMemberForDetails.contact}</p>
+                                            <p className="text-sm font-semibold text-foreground">{selectedMemberForDetails.contact || '---'}</p>
                                         </div>
                                     </div>
 

@@ -21,6 +21,7 @@ import {
   GraduationCap,
   ExternalLink,
   Database,
+  Share2,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
@@ -114,14 +115,19 @@ const navigationConfig = {
           icon: Users,
         },
         {
-          title: "F2fintech Employees",
-          url: navigationPaths.superAdmin.f2fintechEmployees,
-          icon: Users,
+          title: "OMS Referrals",
+          url: navigationPaths.superAdmin.omsReferrals,
+          icon: Share2,
         },
         {
           title: "Deletion Requests",
           url: navigationPaths.superAdmin.deletionRequests,
           icon: Trash2,
+        },
+        {
+          title: "F2fintech Employees",
+          url: navigationPaths.superAdmin.f2fintechEmployees,
+          icon: Users,
         },
       ],
     },

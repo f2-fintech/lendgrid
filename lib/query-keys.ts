@@ -136,4 +136,14 @@ export const queryKeys = {
         all: ['settings'] as const,
         get: () => [...queryKeys.settings.all, 'get'] as const,
     },
+
+    // OMS Referrals
+    omsReferrals: {
+        all: ['omsReferrals'] as const,
+        list: (params?: { page?: number; limit?: number; searchTerm?: string }) =>
+            [...queryKeys.omsReferrals.all, 'list', params] as const,
+        myCode: () => [...queryKeys.omsReferrals.all, 'myCode'] as const,
+        partners: (omsEmployeeId?: string) =>
+            [...queryKeys.omsReferrals.all, 'partners', omsEmployeeId] as const,
+    },
 } as const
