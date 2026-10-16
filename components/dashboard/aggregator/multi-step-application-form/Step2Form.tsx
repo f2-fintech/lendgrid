@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Upload, X, FileText, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { cn } from '@/lib/utils';
 import {
     Select,
     SelectContent,
@@ -17,6 +18,13 @@ import {
 } from '@/components/ui/select';
 import { useFormContext } from './FormContext';
 import { useToast } from '@/hooks/use-toast';
+import {
+    getFieldKeys,
+    getHeading,
+    getSubheading,
+    STEP2_FIELD_LABELS,
+} from './formConstants';
+import { focusAndScrollToField, validatePartnerDetails } from './validation';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -25,6 +33,8 @@ import { useToast } from '@/hooks/use-toast';
 interface FilePreview {
     file: File | null;
     preview: string;
+    uploadedUrl?: string | null;
+    uploadedName?: string | null;
 }
 
 type FilesState = Record<string, FilePreview>;
@@ -37,92 +47,295 @@ interface Step2FormProps {
     onBack: () => void;
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Helpers to build the initial files state for each loan type / entity
-// ─────────────────────────────────────────────────────────────────────────────
-
-const emptyFile = (): FilePreview => ({ file: null, preview: '' });
-
-const personalLoanFields: string[] = [
-    'form16',
-    'itr',
-    'salarySlip',
-    'banking',
-];
-
-const soleProprietorshipFields: string[] = [
-    'computationOfIncome',
-    'financials',
-    'udhyamCertificate',
-    'gst',
-    'itr',
-    'banking',
-];
-
-const privateLimitedFields: string[] = [
-    'banking',
-    'form26as',
-    'itr',
-    'financials',
-    'gst',
-    'listOfDirectors',
-    'listOfShareholders',
-    'aoa',
-    'moa',
-    'udhyam',
-    'companyPan',
-    'directorsKyc',
-];
-
-const partnershipFields: string[] = [
-    'partnershipDeed',
-    'banking',
-    'udhyam',
-    'gst',
-    'financials',
-    'computationOfIncome',
-];
-
-const professionalLoanFields: string[] = [
-    'ugCertificate',
-    'pgCertificate',
-    'registration',
-    'banking',
-    'itr',
-    'computationOfIncome',
-];
-
-const fieldLabels: Record<string, string> = {
-    form16: 'Form 16',
-    itr: 'ITR',
-    salarySlip: '3 Months Salary Slip',
-    banking: 'Banking (Multiple Files)',
-    computationOfIncome: '2 Year Computation of Income',
-    financials: '2 Financials (P/L, B/S)',
-    udhyamCertificate: 'Udhyam Certificate',
-    udhyam: 'Udhyam',
-    gst: 'GST',
-    form26as: 'Form 26 AS',
-    listOfDirectors: 'List of Directors',
-    listOfShareholders: 'List of Shareholders',
-    aoa: 'Article of Association (AOA)',
-    moa: 'Memorandum of Association (MOA)',
-    companyPan: 'Company PAN ID',
-    directorsKyc: 'Directors KYC',
-    partnershipDeed: 'Partnership Deed',
-    ugCertificate: 'UG Certificate (MBBS, BDS, BAMS, BHMS)',
-    pgCertificate: 'PG Certificate (MD, MS, MCH)',
-    registration: 'Registration',
-};
-
-
+const emptyFile = (): FilePreview => ({ file: null, preview: '', uploadedUrl: null, uploadedName: null });
 
 function buildFilesState(fieldKeys: string[]): FilesState {
-    return Object.fromEntries(fieldKeys.map((k) => [k, emptyFile()]));
+    let cached: Record<string, { url: string; name: string }> = {};
+    if (typeof window !== 'undefined') {
+        try {
+            const raw = localStorage.getItem('step2UploadedDocs');
+            if (raw) cached = JSON.parse(raw);
+        } catch (e) {}
+    }
+    return Object.fromEntries(
+        fieldKeys.map((k) => [
+            k,
+            {
+                file: null,
+                preview: cached[k]?.url || '',
+                uploadedUrl: cached[k]?.url || null,
+                uploadedName: cached[k]?.name || null,
+            },
+        ])
+    );
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Component
+// Standalone Sub-components (Defined OUTSIDE Step2Form to prevent re-mounting
+// flicker/shivering on every keystroke)
+// ─────────────────────────────────────────────────────────────────────────────
+
+interface FileUploadBoxProps {
+    label: string;
+    field: string;
+    required?: boolean;
+    fileData: FilePreview;
+    onFileChange: (e: React.ChangeEvent<HTMLInputElement>, field: string) => void;
+    onRemoveFile: (field: string) => void;
+}
+
+const FileUploadBox: React.FC<FileUploadBoxProps> = ({
+    label,
+    field,
+    required = false,
+    fileData,
+    onFileChange,
+    onRemoveFile,
+}) => {
+    const inputId = `step2-file-${field}`;
+    const isImage = Boolean(
+        fileData.file?.type.startsWith('image/') ||
+        fileData.uploadedUrl?.match(/\.(jpg|jpeg|png|webp|gif)($|\?|#)/i)
+    );
+    const isPdf = Boolean(
+        fileData.file?.type === 'application/pdf' ||
+        fileData.uploadedUrl?.match(/\.pdf($|\?|#)/i)
+    );
+
+    const isOptional = typeof label === 'string' && label.includes('(Optional)');
+    const cleanLabel = typeof label === 'string'
+        ? label.replace(/\*\s*\(Mandatory\)/gi, '').replace(/\(Optional\)/gi, '').replace(/\*/g, '').trim()
+        : label;
+
+    const hasContent = Boolean(fileData.preview || fileData.uploadedUrl);
+
+    return (
+        <div id={`slot-${field}`} className="space-y-2">
+            <Label className="text-foreground text-sm font-semibold flex items-center gap-1.5 flex-wrap">
+                <span>{cleanLabel}</span>
+                {required && !isOptional && (
+                    <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
+                        * (Mandatory)
+                    </span>
+                )}
+                {isOptional && (
+                    <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>
+                        (Optional)
+                    </span>
+                )}
+            </Label>
+
+            {!hasContent ? (
+                <div
+                    className="border-2 border-dashed border-border/80 rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer bg-card/40 hover:bg-card/60"
+                    onClick={() => document.getElementById(inputId)?.click()}
+                >
+                    <Upload className="w-8 h-8 mx-auto mb-2 text-slate-300 dark:text-slate-200" />
+                    <p className="text-sm font-semibold text-slate-200 dark:text-slate-100">Click to upload document</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-300 mt-1">PDF, JPG, PNG, DOC (Max 10MB)</p>
+                    <input
+                        id={inputId}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                        onChange={(e) => onFileChange(e, field)}
+                        className="hidden"
+                    />
+                </div>
+            ) : (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.98 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="relative bg-background/50 border-2 border-border rounded-lg overflow-hidden"
+                >
+                    {isImage ? (
+                        <img
+                            src={fileData.preview || fileData.uploadedUrl || ''}
+                            alt={cleanLabel}
+                            className="w-full h-36 object-contain bg-black/10"
+                        />
+                    ) : isPdf ? (
+                        <div className="w-full h-36 flex flex-col items-center justify-center bg-black/10">
+                            <FileText className="w-12 h-12 text-blue-400 mb-2" />
+                            <p className="text-slate-100 text-sm font-semibold">PDF Document</p>
+                        </div>
+                    ) : (
+                        <div className="flex items-center justify-center h-36 bg-black/10">
+                            <FileText className="w-12 h-12 text-slate-300" />
+                        </div>
+                    )}
+
+                    <div className="p-2.5 bg-background/90 flex items-center justify-between border-t border-border">
+                        <p
+                            className="text-xs font-medium text-slate-100 truncate max-w-[200px]"
+                            title={fileData.file?.name || fileData.uploadedName || 'Uploaded Document'}
+                        >
+                            {fileData.file?.name || fileData.uploadedName || 'Uploaded Document'}
+                        </p>
+                        {fileData.uploadedUrl && !fileData.file ? (
+                            <span className="text-[11px] font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                ✓ Uploaded
+                            </span>
+                        ) : (
+                            <span className="text-[10px] text-slate-300">
+                                {fileData.file ? (fileData.file.size / 1024 / 1024).toFixed(2) + ' MB' : ''}
+                            </span>
+                        )}
+                    </div>
+
+                    <button
+                        type="button"
+                        onClick={() => onRemoveFile(field)}
+                        className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full p-1.5 transition-colors shadow-sm"
+                        title="Remove file"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </motion.div>
+            )}
+        </div>
+    );
+};
+
+interface PersonRowsProps {
+    label: string;
+    numPersons: number;
+    isLlp: boolean;
+    shouldShowEmail?: boolean;
+    personDetails: Array<{ name: string; email: string; aadhaar: string; pan: string; mobile: string }>;
+    onNumPersonsChange: (val: string) => void;
+    onUpdatePerson: (idx: number, field: 'name' | 'email' | 'aadhaar' | 'pan' | 'mobile', value: string) => void;
+}
+
+const PersonRows: React.FC<PersonRowsProps> = ({
+    label,
+    numPersons,
+    isLlp,
+    shouldShowEmail = true,
+    personDetails,
+    onNumPersonsChange,
+    onUpdatePerson,
+}) => (
+    <div className="space-y-4 pt-4 border-t border-border mt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <Label className="text-foreground font-semibold">Number of {label}s</Label>
+            <div className="w-48">
+                <Select value={numPersons > 0 ? String(numPersons) : ''} onValueChange={onNumPersonsChange}>
+                    <SelectTrigger className="bg-card border-border text-foreground">
+                        <SelectValue placeholder={`Select ${label.toLowerCase()} count`} />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover border-border text-popover-foreground">
+                        {Array.from({ length: 10 }, (_, i) => i + (isLlp ? 2 : 1)).map((n) => (
+                            <SelectItem key={n} value={String(n)} className="focus:bg-accent cursor-pointer">
+                                {n} {label}s
+                            </SelectItem>
+                        ))}
+                    </SelectContent>
+                </Select>
+            </div>
+        </div>
+
+        {personDetails.map((person, idx) => (
+            <div key={idx} className="border border-border/80 bg-card/40 rounded-xl p-5 space-y-4 shadow-sm">
+                <div className="inline-flex">
+                    <span className="inline-flex items-center text-[#3949ab] dark:text-[#93c5fd] font-bold bg-[#eef2ff] dark:bg-[#1e293b] border border-[#e0e7ff] dark:border-[#334155] px-2.5 py-1 rounded-md text-xs tracking-[0.2px] uppercase">
+                        {label} #{idx + 1}
+                    </span>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                        <Label htmlFor={`person_${idx}_name`} className="text-foreground text-xs font-medium">
+                            {label.includes('Director') ? 'Director Name (As per PAN)' : `${label} Name (As per PAN)`}{' '}
+                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
+                                * (Mandatory)
+                            </span>
+                        </Label>
+                        <Input
+                            id={`person_${idx}_name`}
+                            value={person.name}
+                            onChange={(e) => onUpdatePerson(idx, 'name', e.target.value)}
+                            className="bg-card border-border text-foreground"
+                            placeholder="Full Name as per PAN"
+                        />
+                    </div>
+
+                    {shouldShowEmail && (
+                        <div className="space-y-1">
+                            <Label htmlFor={`person_${idx}_email`} className="text-foreground text-xs font-medium">
+                                Email ID{' '}
+                                <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
+                                    * (Mandatory)
+                                </span>
+                            </Label>
+                            <Input
+                                id={`person_${idx}_email`}
+                                value={person.email}
+                                onChange={(e) => onUpdatePerson(idx, 'email', e.target.value)}
+                                className="bg-card border-border text-foreground"
+                                placeholder="Email address"
+                                type="email"
+                            />
+                        </div>
+                    )}
+
+                    <div className="space-y-1">
+                        <Label htmlFor={`person_${idx}_aadhaar`} className="text-foreground text-xs font-medium">
+                            Aadhaar Number{' '}
+                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
+                                * (Mandatory)
+                            </span>
+                        </Label>
+                        <Input
+                            id={`person_${idx}_aadhaar`}
+                            value={person.aadhaar}
+                            onChange={(e) => onUpdatePerson(idx, 'aadhaar', e.target.value.replace(/\D/g, ''))}
+                            className="bg-card border-border text-foreground"
+                            placeholder="12-digit Aadhaar"
+                            maxLength={12}
+                        />
+                    </div>
+
+                    <div className="space-y-1">
+                        <Label htmlFor={`person_${idx}_pan`} className="text-foreground text-xs font-medium">
+                            PAN Number{' '}
+                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
+                                * (Mandatory)
+                            </span>
+                        </Label>
+                        <Input
+                            id={`person_${idx}_pan`}
+                            value={person.pan}
+                            onChange={(e) => onUpdatePerson(idx, 'pan', e.target.value.toUpperCase())}
+                            className="bg-card border-border text-foreground uppercase"
+                            placeholder="10-digit PAN"
+                            maxLength={10}
+                        />
+                    </div>
+
+                    <div className={cn("space-y-1", shouldShowEmail ? "col-span-1 md:col-span-2" : "")}>
+                        <Label htmlFor={`person_${idx}_mobile`} className="text-foreground text-xs font-medium">
+                            Mobile Number{' '}
+                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
+                                * (Mandatory)
+                            </span>
+                        </Label>
+                        <Input
+                            id={`person_${idx}_mobile`}
+                            value={person.mobile}
+                            onChange={(e) => onUpdatePerson(idx, 'mobile', e.target.value.replace(/\D/g, ''))}
+                            className="bg-card border-border text-foreground"
+                            placeholder="10-digit Mobile number"
+                            maxLength={10}
+                            type="tel"
+                        />
+                    </div>
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Main Step2Form Component
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSkip, onBack }) => {
@@ -131,57 +344,149 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
 
     const loanType = formData.loanType || '';
     const entityType = formData.businessEntityType || '';
+    const employmentType = formData.employment_type || '';
 
-    // ── Determine which file keys apply ──────────────────────────────────────
-    const getFieldKeys = (): string[] => {
-        if (loanType === 'personal loan') return personalLoanFields;
-        if (loanType === 'business loan') {
-            if (entityType === 'sole_proprietorship') return soleProprietorshipFields;
-            if (entityType === 'private_limited') return privateLimitedFields;
-            if (entityType === 'partnership') return partnershipFields;
-            return []; // entity not yet chosen (shouldn't happen — blocked in Step0)
-        }
-        if (loanType === 'professional loan') return professionalLoanFields;
-        // Fallback (secured loans etc.) — single bank-statement upload
-        return ['bank statement'];
-    };
+    // ── Determine which file keys apply dynamically ──────────────────────────
+    const fieldKeys = getFieldKeys(loanType, entityType, employmentType);
 
-    const fieldKeys = getFieldKeys();
-
-    // ── Files state ───────────────────────────────────────────────────────────
+    // ── Files state (initialized from localStorage step2UploadedDocs if available) ──
     const [files, setFiles] = useState<FilesState>(() => buildFilesState(fieldKeys));
 
-    // Reset files state when loan type / entity changes
+    // Reset/rebuild files state when loan type / entity / employment changes
     useEffect(() => {
-        setFiles(buildFilesState(getFieldKeys()));
+        setFiles(buildFilesState(getFieldKeys(loanType, entityType, employmentType)));
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [loanType, entityType]);
+    }, [loanType, entityType, employmentType]);
 
-    // ── Text fields state (personal loan only) ────────────────────────────────
-    const [textFields, setTextFields] = useState<TextFieldsState>({
-        bankingPassword: '',
+    // ── Bank Statement Password ───────────────────────────────────────────────
+    const [isPdfProtected, setIsPdfProtected] = useState<boolean>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                return (
+                    localStorage.getItem('step2IsPdfProtected') === 'true' ||
+                    Boolean(localStorage.getItem('step2BankingPassword'))
+                );
+            } catch (e) {}
+        }
+        return false;
     });
 
-    // ── Dynamic director / partner rows (business loan) ───────────────────────
-    const [numPersons, setNumPersons] = useState<number>(0);
+    const [textFields, setTextFields] = useState<TextFieldsState>(() => {
+        let bankingPassword = '';
+        if (typeof window !== 'undefined') {
+            try {
+                bankingPassword = localStorage.getItem('step2BankingPassword') || '';
+            } catch (e) {}
+        }
+        return { bankingPassword };
+    });
+
+    const handlePasswordChange = useCallback((val: string) => {
+        setTextFields((prev) => ({ ...prev, bankingPassword: val }));
+        try {
+            localStorage.setItem('step2BankingPassword', val);
+        } catch (e) {}
+    }, []);
+
+    const handleProtectedCheckboxChange = useCallback((checked: boolean) => {
+        setIsPdfProtected(checked);
+        try {
+            localStorage.setItem('step2IsPdfProtected', String(checked));
+        } catch (e) {}
+    }, []);
+
+    // ── Dynamic director / partner rows (business loan: pvt ltd, llp, partnership) ─
+    const isBusinessEntityWithPartners =
+        loanType === 'business loan' &&
+        (entityType === 'private_limited' || entityType === 'llp' || entityType === 'partnership');
+    const isLlp = loanType === 'business loan' && entityType === 'llp';
+    const defaultNumPersons = isLlp ? 2 : 0;
+
+    const [numPersons, setNumPersons] = useState<number>(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const raw = localStorage.getItem('step2NumPersons');
+                if (raw) {
+                    const parsed = parseInt(raw, 10);
+                    if (!isNaN(parsed) && parsed > 0) return parsed;
+                }
+            } catch (e) {}
+        }
+        return defaultNumPersons;
+    });
+
     const [personDetails, setPersonDetails] = useState<
-        { aadhaar: string; pan: string; mobile: string }[]
-    >([]);
+        { name: string; email: string; aadhaar: string; pan: string; mobile: string }[]
+    >(() => {
+        if (typeof window !== 'undefined') {
+            try {
+                const raw = localStorage.getItem('step2PersonDetails');
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+                }
+            } catch (e) {}
+        }
+        return Array.from({ length: defaultNumPersons }, () => ({
+            name: '',
+            email: '',
+            aadhaar: '',
+            pan: '',
+            mobile: '',
+        }));
+    });
+
+    // Synchronize minimum 2 partners for LLP
+    useEffect(() => {
+        if (isLlp && numPersons < 2) {
+            setNumPersons(2);
+            setPersonDetails((prev) => {
+                if (prev.length < 2) {
+                    const next = Array.from(
+                        { length: 2 },
+                        (_, i) => prev[i] || { name: '', email: '', aadhaar: '', pan: '', mobile: '' }
+                    );
+                    try {
+                        localStorage.setItem('step2PersonDetails', JSON.stringify(next));
+                        localStorage.setItem('step2NumPersons', '2');
+                    } catch (e) {}
+                    return next;
+                }
+                return prev;
+            });
+        }
+    }, [isLlp, numPersons]);
 
     const handleNumPersonsChange = (val: string) => {
         const n = parseInt(val, 10) || 0;
         setNumPersons(n);
-        setPersonDetails(
-            Array.from({ length: n }, (_, i) => personDetails[i] || { aadhaar: '', pan: '', mobile: '' })
+        const updated = Array.from(
+            { length: n },
+            (_, i) => personDetails[i] || { name: '', email: '', aadhaar: '', pan: '', mobile: '' }
         );
+        setPersonDetails(updated);
+        try {
+            localStorage.setItem('step2NumPersons', String(n));
+            localStorage.setItem('step2PersonDetails', JSON.stringify(updated));
+        } catch (e) {}
     };
 
-    const updatePerson = (idx: number, field: 'aadhaar' | 'pan' | 'mobile', value: string) => {
-        setPersonDetails((prev) => prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p)));
+    const updatePerson = (
+        idx: number,
+        field: 'name' | 'email' | 'aadhaar' | 'pan' | 'mobile',
+        value: string
+    ) => {
+        setPersonDetails((prev) => {
+            const next = prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p));
+            try {
+                localStorage.setItem('step2PersonDetails', JSON.stringify(next));
+            } catch (e) {}
+            return next;
+        });
     };
 
     // ── File change helpers ───────────────────────────────────────────────────
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, field: string) => {
+    const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>, field: string) => {
         const file = e.target.files?.[0];
         if (!file) return;
         if (file.size > 10 * 1024 * 1024) {
@@ -189,209 +494,159 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
             return;
         }
         const preview = URL.createObjectURL(file);
-        setFiles((prev) => ({ ...prev, [field]: { file, preview } }));
-    };
+        setFiles((prev) => ({
+            ...prev,
+            [field]: { file, preview, uploadedName: file.name, uploadedUrl: null },
+        }));
+    }, [toast]);
 
-    const handleRemoveFile = (field: string) => {
-        if (files[field]?.preview) URL.revokeObjectURL(files[field].preview);
-        setFiles((prev) => ({ ...prev, [field]: emptyFile() }));
-    };
+    const handleRemoveFile = useCallback((field: string) => {
+        setFiles((prev) => {
+            const existing = prev[field];
+            if (existing?.preview && existing.file) {
+                URL.revokeObjectURL(existing.preview);
+            }
+            return { ...prev, [field]: emptyFile() };
+        });
+
+        try {
+            const raw = localStorage.getItem('step2UploadedDocs');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                delete parsed[field];
+                localStorage.setItem('step2UploadedDocs', JSON.stringify(parsed));
+            }
+        } catch (e) {}
+    }, []);
 
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            Object.values(files).forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+            Object.values(files).forEach((f) => {
+                if (f.preview && f.file) URL.revokeObjectURL(f.preview);
+            });
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // ── Upload ────────────────────────────────────────────────────────────────
+    // ── Check mandatory requirements ──────────────────────────────────────────
+    const hasMandatoryFields = fieldKeys.some((k) =>
+        (STEP2_FIELD_LABELS[k] || '').includes('* (Mandatory)')
+    );
+
+    // ── Upload / Proceed ──────────────────────────────────────────────────────
     const handleUpload = async () => {
+        // 1. Mandatory check: at least ANY 1 document must be provided (uploaded or selected)
+        const hasAnyDocument = Object.values(files).some(
+            (v) => v.file !== null || Boolean(v.uploadedUrl)
+        );
+        if (!hasAnyDocument) {
+            toast({
+                title: 'Document Required',
+                description: 'Please select at least one document to upload.',
+                variant: 'destructive',
+            });
+            const firstSlotKey = fieldKeys[0];
+            if (firstSlotKey) {
+                focusAndScrollToField(`slot-${firstSlotKey}`);
+            }
+            return;
+        }
+
+        // 2. Bank password check
+        if (isPdfProtected && (!textFields.bankingPassword || !textFields.bankingPassword.trim())) {
+            toast({
+                title: 'Password Required',
+                description: 'Please enter the PDF password for your protected bank statement.',
+                variant: 'destructive',
+            });
+            focusAndScrollToField('banking-password-input');
+            return;
+        }
+
+        // 3. Partner / Director checks if applicable
+        if (numPersons > 0) {
+            const personLabel = (entityType === 'llp' || entityType === 'private_limited') ? 'Director' : 'Partner';
+            const validation = validatePartnerDetails(personDetails, {
+                label: personLabel,
+                requireEmail: entityType !== 'partnership',
+            });
+            if (!validation.isValid) {
+                toast({
+                    title: 'Incomplete Details',
+                    description: validation.error || 'Please fill partner/director details correctly.',
+                    variant: 'destructive',
+                });
+                if (validation.fieldId) {
+                    focusAndScrollToField(validation.fieldId);
+                }
+                return;
+            }
+        }
+
+        const activeFiles = Object.entries(files).filter(([, v]) => v.file !== null);
+
+        // If no new local files are queued, but all required files were previously uploaded, proceed cleanly!
+        if (activeFiles.length === 0) {
+            const hasUploaded = Object.values(files).some((v) => Boolean(v.uploadedUrl));
+            if (hasUploaded) {
+                const allTextFields: TextFieldsState = {
+                    ...textFields,
+                    bankingPassword: isPdfProtected ? (textFields.bankingPassword || '').trim() : '',
+                    ...(numPersons > 0 ? { personDetails: JSON.stringify(personDetails) } : {}),
+                };
+                if (isPdfProtected) {
+                    localStorage.setItem('step2BankingPassword', (textFields.bankingPassword || '').trim());
+                    localStorage.setItem('step2IsPdfProtected', 'true');
+                }
+                toast({ title: 'Success', description: 'Documents verified. Proceeding...' });
+                nextStep();
+                return;
+            }
+        }
+
         try {
             const namedFiles: Record<string, File | null> = Object.fromEntries(
                 Object.entries(files).map(([k, v]) => [k, v.file])
             );
 
-            // Merge person details into textFields
+            // Merge person details and cleaned password into textFields
             const allTextFields: TextFieldsState = {
                 ...textFields,
+                bankingPassword: isPdfProtected ? (textFields.bankingPassword || '').trim() : '',
                 ...(numPersons > 0 ? { personDetails: JSON.stringify(personDetails) } : {}),
             };
 
             await onSubmit(namedFiles, allTextFields);
 
-            Object.values(files).forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+            if (isPdfProtected) {
+                localStorage.setItem('step2BankingPassword', (textFields.bankingPassword || '').trim());
+                localStorage.setItem('step2IsPdfProtected', 'true');
+            }
+
+            Object.values(files).forEach((f) => {
+                if (f.preview && f.file) URL.revokeObjectURL(f.preview);
+            });
 
             toast({ title: 'Success', description: 'Documents uploaded successfully' });
-            setTimeout(() => nextStep(), 2000);
+            setTimeout(() => nextStep(), 1500);
         } catch {
             toast({ title: 'Error', description: 'Failed to upload documents', variant: 'destructive' });
         }
     };
 
     const handleSkip = () => {
-        Object.values(files).forEach((f) => { if (f.preview) URL.revokeObjectURL(f.preview); });
+        Object.values(files).forEach((f) => {
+            if (f.preview && f.file) URL.revokeObjectURL(f.preview);
+        });
         if (onSkip) onSkip();
         else nextStep();
     };
 
-    const hasAnyFile = Object.values(files).some((f) => f.file !== null);
+    const hasAnyContent = Object.values(files).some((f) => f.file !== null || Boolean(f.uploadedUrl));
 
-    // ── FileUploadBox — exact same pattern as Step3Form ───────────────────────
-    const FileUploadBox = ({
-        label,
-        field,
-        required = false,
-    }: {
-        label: string;
-        field: string;
-        required?: boolean;
-    }) => {
-        const fileData = files[field] ?? emptyFile();
-        const isPdf = fileData.file?.type === 'application/pdf';
-        const inputId = `step2-file-${field}`;
-
-        return (
-            <div className="space-y-2">
-                <Label className="text-foreground">
-                    {label}
-                    {required && <span className="text-red-400 ml-0.5">*</span>}
-                </Label>
-
-                {!fileData.preview ? (
-                    <div
-                        className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
-                        onClick={() => document.getElementById(inputId)?.click()}
-                    >
-                        <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground">Click to upload</p>
-                        <input
-                            id={inputId}
-                            type="file"
-                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                            onChange={(e) => handleFileChange(e, field)}
-                            className="hidden"
-                        />
-                    </div>
-                ) : (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.9 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className="relative bg-background/50 border-2 border-border rounded-lg overflow-hidden"
-                    >
-                        {fileData.file?.type.startsWith('image/') ? (
-                            <img src={fileData.preview} alt={label} className="w-full h-40 object-contain bg-black/5" />
-                        ) : isPdf ? (
-                            <div className="w-full h-40 flex flex-col items-center justify-center bg-black/5">
-                                <FileText className="w-12 h-12 text-blue-400 mb-2" />
-                                <p className="text-foreground text-sm">PDF Document</p>
-                            </div>
-                        ) : (
-                            <div className="flex items-center justify-center h-40 bg-black/5">
-                                <FileText className="w-12 h-12 text-muted-foreground" />
-                            </div>
-                        )}
-
-                        <div className="p-2 bg-background/80">
-                            <p className="text-sm text-muted-foreground truncate">{fileData.file?.name}</p>
-                        </div>
-
-                        <button
-                            type="button"
-                            onClick={() => handleRemoveFile(field)}
-                            className="absolute top-2 right-2 bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
-                        >
-                            <X className="w-4 h-4" />
-                        </button>
-                    </motion.div>
-                )}
-            </div>
-        );
-    };
-
-    // ── Section heading helper ────────────────────────────────────────────────
-    const SectionHeading = ({ title }: { title: string }) => (
-        <h3 className="text-sm font-semibold text-primary uppercase tracking-wide border-b border-border pb-2 mb-4">
-            {title}
-        </h3>
-    );
-
-    // ── Dynamic per-person rows (directors / partners) ────────────────────────
-    const PersonRows = ({ label }: { label: string }) => (
-        <div className="space-y-4">
-            <div className="space-y-2">
-                <Label className="text-foreground">Number of {label}s</Label>
-                <Select value={numPersons > 0 ? String(numPersons) : ''} onValueChange={handleNumPersonsChange}>
-                    <SelectTrigger className="bg-card border-border text-foreground">
-                        <SelectValue placeholder={`Select number of ${label.toLowerCase()}s`} />
-                    </SelectTrigger>
-                    <SelectContent className="bg-popover border-border text-popover-foreground">
-                        {Array.from({ length: 10 }, (_, i) => i + 1).map((n) => (
-                            <SelectItem key={n} value={String(n)} className="focus:bg-accent cursor-pointer">
-                                {n}
-                            </SelectItem>
-                        ))}
-                    </SelectContent>
-                </Select>
-            </div>
-
-            {personDetails.map((person, idx) => (
-                <div key={idx} className="border-2 border-primary/30 bg-card/50 rounded-xl p-5 space-y-4 shadow-sm">
-                    <div className="inline-flex">
-                        <span className="text-xs font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-md uppercase tracking-widest shadow-sm">
-                            {label} #{idx + 1}
-                        </span>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-                        <div className="space-y-1">
-                            <Label className="text-foreground text-sm">Aadhaar Number</Label>
-                            <Input
-                                value={person.aadhaar}
-                                onChange={(e) => updatePerson(idx, 'aadhaar', e.target.value)}
-                                className="bg-card border-border text-foreground"
-                                placeholder="12-digit Aadhaar"
-                                maxLength={12}
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-foreground text-sm">PAN Number</Label>
-                            <Input
-                                value={person.pan}
-                                onChange={(e) => updatePerson(idx, 'pan', e.target.value.toUpperCase())}
-                                className="bg-card border-border text-foreground uppercase"
-                                placeholder="ABCDE1234F"
-                                maxLength={10}
-                            />
-                        </div>
-                        <div className="space-y-1">
-                            <Label className="text-foreground text-sm">Mobile Number</Label>
-                            <Input
-                                value={person.mobile}
-                                onChange={(e) => updatePerson(idx, 'mobile', e.target.value)}
-                                className="bg-card border-border text-foreground"
-                                placeholder="10-digit mobile"
-                                maxLength={10}
-                                type="tel"
-                            />
-                        </div>
-                    </div>
-
-                    {/* Dynamic File Uploads for each partner/director */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-4 pt-4 border-t border-border border-dashed">
-                        <FileUploadBox label="Aadhaar Document" field={`person_${idx}_aadhaar`} />
-                        <FileUploadBox label="PAN Document" field={`person_${idx}_pan`} />
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-
-    // ── Determine page heading ────────────────────────────────────────────────
-    const pageHeading =
-        loanType === 'personal loan' ? 'Personal Loan Documents'
-            : loanType === 'business loan' ? 'Business Loan Documents'
-                : loanType === 'professional loan' ? 'Professional Loan Documents'
-                    : 'Statement Upload';
+    const headingText = getHeading(loanType, entityType);
+    const subheadingText = getSubheading(loanType, entityType);
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
@@ -399,153 +654,88 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="w-full max-w-3xl mx-auto space-y-6"
+            className="w-full max-w-4xl mx-auto space-y-6"
         >
             {/* Header */}
             <div className="text-center space-y-2">
                 <h2 className="text-3xl font-bold text-foreground">
-                    {loanType === 'personal loan' ? (
-                        <>Personal Loan <span className="text-accent">Documents</span></>
-                    ) : loanType === 'business loan' ? (
-                        <>Business Loan <span className="text-accent">Documents</span></>
-                    ) : loanType === 'professional loan' ? (
-                        <>Professional Loan <span className="text-accent">Documents</span></>
-                    ) : (
-                        <>Statement <span className="text-accent">Upload</span></>
-                    )}
+                    {headingText.split(' Documents')[0]} <span className="text-accent">Documents</span>
                 </h2>
-                <p className="text-muted-foreground">Step 2/4</p>
-                {loanType === 'business loan' && entityType && (
-                    <p className="text-sm text-muted-foreground">
-                        Entity:{' '}
-                        <span className="text-accent font-medium">
-                            {entityType === 'sole_proprietorship' ? 'Sole Proprietorship'
-                                : entityType === 'private_limited' ? 'Private Limited'
-                                    : 'Partnership Firm'}
-                        </span>
+                <p className="text-muted-foreground text-sm">Step 2/4</p>
+                {subheadingText && (
+                    <p className="text-xs text-muted-foreground max-w-xl mx-auto">
+                        {subheadingText}
                     </p>
                 )}
             </div>
 
             <Card className="bg-card/50 border-border p-6 space-y-6">
-
-                {/* ── PERSONAL LOAN ───────────────────────────────────────────── */}
-                {loanType === 'personal loan' && (
-                    <>
-                        <SectionHeading title="Required Documents" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="Form 16" field="form16" />
-                            <FileUploadBox label="ITR" field="itr" />
-                            <FileUploadBox label="3 Months Salary Slip" field="salarySlip" />
-                            <FileUploadBox label="Banking (Multiple Files)" field="banking" />
-                        </div>
-
-
-                    </>
-                )}
-
-                {/* ── BUSINESS LOAN — SOLE PROPRIETORSHIP ────────────────────── */}
-                {loanType === 'business loan' && entityType === 'sole_proprietorship' && (
-                    <>
-                        <SectionHeading title="Sole Proprietorship Documents" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="2 Year Computation of Income" field="computationOfIncome" />
-                            <FileUploadBox label="2 Financials (P/L, B/S)" field="financials" />
-                            <FileUploadBox label="Udhyam Certificate" field="udhyamCertificate" />
-                            <FileUploadBox label="GST" field="gst" />
-                            <FileUploadBox label="2 Year ITR" field="itr" />
-                            <FileUploadBox label="1 Year Banking" field="banking" />
-                        </div>
-                    </>
-                )}
-
-                {/* ── BUSINESS LOAN — PRIVATE LIMITED ────────────────────────── */}
-                {loanType === 'business loan' && entityType === 'private_limited' && (
-                    <>
-                        <SectionHeading title="Private Limited Documents" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="1 Year Banking" field="banking" />
-                            <FileUploadBox label="Form 26 AS" field="form26as" />
-                            <FileUploadBox label="2 Year ITR" field="itr" />
-                            <FileUploadBox label="2 Year Financials (P/L, B/S)" field="financials" />
-                            <FileUploadBox label="GST" field="gst" />
-                            <FileUploadBox label="List of Directors" field="listOfDirectors" />
-                            <FileUploadBox label="List of Shareholders" field="listOfShareholders" />
-                            <FileUploadBox label="Article of Association (AOA)" field="aoa" />
-                            <FileUploadBox label="Memorandum of Association (MOA)" field="moa" />
-                            <FileUploadBox label="Udhyam" field="udhyam" />
-                            <FileUploadBox label="Company PAN ID" field="companyPan" />
-                            <FileUploadBox label="Directors KYC" field="directorsKyc" />
-                        </div>
-
-                        {/* Dynamic: Number of Directors */}
-                        <div className="pt-2">
-                            <SectionHeading title="Director Details" />
-                            <PersonRows label="Director" />
-                        </div>
-                    </>
-                )}
-
-                {/* ── BUSINESS LOAN — PARTNERSHIP ─────────────────────────────── */}
-                {loanType === 'business loan' && entityType === 'partnership' && (
-                    <>
-                        <SectionHeading title="Partnership Firm Documents" />
-
-                        {/* Dynamic: Number of Partners */}
-                        <PersonRows label="Partner" />
-
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
-                            <FileUploadBox label="Partnership Deed" field="partnershipDeed" />
-                            <FileUploadBox label="1 Year Banking" field="banking" />
-                            <FileUploadBox label="Udhyam" field="udhyam" />
-                            <FileUploadBox label="GST" field="gst" />
-                            <FileUploadBox label="2 Year Financials" field="financials" />
-                            <FileUploadBox label="2 Year Computation of Income" field="computationOfIncome" />
-                        </div>
-                    </>
-                )}
-
-                {/* ── PROFESSIONAL LOAN ───────────────────────────────────────── */}
-                {loanType === 'professional loan' && (
-                    <>
-                        <SectionHeading title="Degree & Registration Documents" />
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <FileUploadBox label="UG Certificate (MBBS, BDS, BAMS, BHMS)" field="ugCertificate" />
-                            <FileUploadBox label="PG Certificate (MD, MS, MCH)" field="pgCertificate" />
-                            <FileUploadBox label="Registration" field="registration" />
-                            <FileUploadBox label="Banking" field="banking" />
-                            <FileUploadBox label="ITR" field="itr" />
-                            <FileUploadBox label="Computation of Income" field="computationOfIncome" />
-                        </div>
-                    </>
-                )}
-
-                {/* ── FALLBACK (secured / other loans) ────────────────────────── */}
-                {loanType !== 'personal loan' &&
-                    loanType !== 'business loan' &&
-                    loanType !== 'professional loan' && (
-                        <>
-                            <p className="text-sm text-muted-foreground mb-4">
-                                Upload your recent 6 months Bank Statement.{' '}
-                                Maximum File Upload Limit is <span className="text-accent">10</span>
-                            </p>
-                            <FileUploadBox label="Bank Statement" field="banking" />
-                        </>
-                    )}
-
-                {/* ── SHARED FIELDS ─────────────────────────────────────────────── */}
-                {(fieldKeys.includes('banking') || fieldKeys.includes('bank statement')) && (
-                    <div className="pt-4 border-t border-border mt-4 mb-4">
-                        <SectionHeading title="Bank Statement Password" />
-                        <div className="space-y-2 max-w-md">
-                            <Input
-                                value={textFields.bankingPassword || ''}
-                                onChange={(e) => setTextFields((prev) => ({ ...prev, bankingPassword: e.target.value }))}
-                                className="bg-card border-border text-foreground"
-                                placeholder="Enter PDF password if protected"
-                                type="text"
+                {/* Dynamic Loan-Type Documents Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {fieldKeys.map((key) => {
+                        const rawLabel = STEP2_FIELD_LABELS[key] || key;
+                        const isMandatory = rawLabel.includes('* (Mandatory)');
+                        return (
+                            <FileUploadBox
+                                key={key}
+                                label={rawLabel}
+                                field={key}
+                                required={isMandatory}
+                                fileData={files[key] || emptyFile()}
+                                onFileChange={handleFileChange}
+                                onRemoveFile={handleRemoveFile}
                             />
+                        );
+                    })}
+                </div>
+
+                {/* Director / Partner Rows for Business Loans */}
+                {isBusinessEntityWithPartners && (
+                    <PersonRows
+                        label={entityType === 'private_limited' || entityType === 'llp' ? 'Director' : 'Partner'}
+                        numPersons={numPersons}
+                        isLlp={isLlp}
+                        shouldShowEmail={entityType !== 'partnership'}
+                        personDetails={personDetails}
+                        onNumPersonsChange={handleNumPersonsChange}
+                        onUpdatePerson={updatePerson}
+                    />
+                )}
+
+                {/* Bank Statement Password Checkbox & Input */}
+                {(fieldKeys.includes('banking') || fieldKeys.includes('bank statement')) && (
+                    <div className="pt-4 border-t border-border mt-4 space-y-3">
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id="is-pdf-protected"
+                                checked={isPdfProtected}
+                                onChange={(e) => handleProtectedCheckboxChange(e.target.checked)}
+                                className="h-4 w-4 rounded border-border text-primary focus:ring-primary cursor-pointer accent-primary"
+                            />
+                            <Label htmlFor="is-pdf-protected" className="text-foreground cursor-pointer font-medium text-sm">
+                                Is your bank statement PDF password protected?
+                            </Label>
                         </div>
+
+                        {isPdfProtected && (
+                            <div className="space-y-1.5 max-w-md pt-1">
+                                <Label className="text-foreground text-xs font-medium">
+                                    PDF Password{' '}
+                                    <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
+                                        * (Mandatory)
+                                    </span>
+                                </Label>
+                                <Input
+                                    id="banking-password-input"
+                                    value={textFields.bankingPassword || ''}
+                                    onChange={(e) => handlePasswordChange(e.target.value)}
+                                    className="bg-card border-border text-foreground"
+                                    placeholder="Enter bank statement PDF password"
+                                    type="text"
+                                />
+                            </div>
+                        )}
                     </div>
                 )}
 
@@ -553,6 +743,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                 <div className="flex justify-between items-center pt-4">
                     <Button
                         variant="outline"
+                        type="button"
                         onClick={onBack}
                         className="border-border text-foreground hover:bg-muted"
                     >
@@ -560,19 +751,23 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     </Button>
 
                     <div className="flex gap-3">
-                        <Button
-                            variant="ghost"
-                            onClick={handleSkip}
-                            disabled={hasAnyFile}
-                            className="text-muted-foreground hover:text-foreground"
-                        >
-                            Skip
-                        </Button>
+                        {!hasMandatoryFields && (
+                            <Button
+                                variant="ghost"
+                                type="button"
+                                onClick={handleSkip}
+                                disabled={hasAnyContent}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                Skip
+                            </Button>
+                        )}
 
                         <Button
+                            type="button"
                             onClick={handleUpload}
-                            disabled={!hasAnyFile || isLoading}
-                            className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                            disabled={isLoading}
+                            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6"
                         >
                             {isLoading ? (
                                 <>
@@ -580,7 +775,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                                     Uploading...
                                 </>
                             ) : (
-                                'Upload'
+                                'Upload & Proceed'
                             )}
                         </Button>
                     </div>

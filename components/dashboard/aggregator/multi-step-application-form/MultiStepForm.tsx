@@ -18,6 +18,7 @@ import { Step2Form } from './Step2Form';
 import { Step3Form } from './Step3Form';
 import { Step4Form } from './Step4Form';
 import { Step1FormData, Step4FormData } from './validation';
+import { DOC_KEY_TO_DB_TYPE, COAPP_DOC_KEY_TO_DB_TYPE } from './formConstants';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyId } from '@/lib/http-client';
 import { decodeJwt, getCookie } from '@/lib/utils';
@@ -41,7 +42,7 @@ const allSteps = [
     { id: -1, name: 'Loan Details', icon: '💰' },
     { id: 0, name: 'Basic Details', icon: '📋' },
     { id: 1, name: 'Documents Upload', icon: '📄' },
-    { id: 2, name: 'Profile & Proof', icon: '🆔' },
+    { id: 2, name: 'Core Documents', icon: '🆔' },
     { id: 3, name: 'Additional Details', icon: '💼' },
 ];
 
@@ -115,9 +116,55 @@ export const MultiStepFormContent: React.FC<{
         const savedAppNumber = localStorage.getItem('loanFormAppNumber');
         const savedFormData = localStorage.getItem('loanFormData');
         const savedActiveStep = localStorage.getItem('activeStep');
+        const savedCompleted = localStorage.getItem('loanFormCompletedSteps');
+        const savedSkipped = localStorage.getItem('loanFormSkippedSteps');
 
+        let initialSkipped: number[] = [];
+        if (savedSkipped) {
+            try {
+                initialSkipped = JSON.parse(savedSkipped);
+                setSkippedSteps(initialSkipped);
+            } catch (e) {
+                console.error('Error parsing saved skipped steps', e);
+            }
+        }
+
+        let initialCompleted: number[] = [];
+        if (savedCompleted) {
+            try {
+                initialCompleted = JSON.parse(savedCompleted);
+            } catch (e) {
+                console.error('Error parsing saved completed steps', e);
+            }
+        }
+
+        const parsedStep = savedActiveStep ? parseInt(savedActiveStep, 10) : 0;
         if (savedActiveStep) {
-            setActiveStep(parseInt(savedActiveStep, 10));
+            setActiveStep(parsedStep);
+        }
+
+        // Backfill completed steps prior to activeStep if not recorded
+        if (!isNaN(parsedStep) && parsedStep > 0) {
+            for (let s = 0; s < parsedStep; s++) {
+                if (!initialCompleted.includes(s) && !initialSkipped.includes(s)) {
+                    initialCompleted.push(s);
+                }
+            }
+        }
+
+        // Reconcile with draft keys if present
+        if (savedCustomerId || localStorage.getItem('step1CustomerDraft')) {
+            if (!initialCompleted.includes(0)) initialCompleted.push(0);
+        }
+        if (localStorage.getItem('step2UploadedDocs') || localStorage.getItem('step2BankingPassword')) {
+            if (!initialCompleted.includes(1) && !initialSkipped.includes(1)) initialCompleted.push(1);
+        }
+        if (localStorage.getItem('step3UploadedDocs')) {
+            if (!initialCompleted.includes(2) && !initialSkipped.includes(2)) initialCompleted.push(2);
+        }
+
+        if (initialCompleted.length > 0) {
+            setCompletedSteps(initialCompleted);
         }
 
         if (savedCustomerId) setCustomerId(savedCustomerId);
@@ -137,6 +184,22 @@ export const MultiStepFormContent: React.FC<{
         setIsHydrated(true);
     }, []);
 
+    // Keep completedSteps in sync with activeStep transitions (e.g. forward navigation)
+    useEffect(() => {
+        if (!isHydrated || showStep0) return;
+        if (activeStep > 0) {
+            setCompletedSteps((prev) => {
+                const needed: number[] = [];
+                for (let s = 0; s < activeStep; s++) {
+                    if (!prev.includes(s) && !skippedSteps.includes(s)) {
+                        needed.push(s);
+                    }
+                }
+                return needed.length > 0 ? [...prev, ...needed] : prev;
+            });
+        }
+    }, [activeStep, showStep0, skippedSteps, isHydrated]);
+
     useEffect(() => {
         if (!isHydrated) return;
         localStorage.setItem('activeStep', activeStep.toString());
@@ -149,7 +212,9 @@ export const MultiStepFormContent: React.FC<{
         if (Object.keys(formData).length > 0) {
             localStorage.setItem('loanFormData', JSON.stringify(formData));
         }
-    }, [activeStep, customerId, applicationNumber, formData, isHydrated]);
+        localStorage.setItem('loanFormCompletedSteps', JSON.stringify(completedSteps));
+        localStorage.setItem('loanFormSkippedSteps', JSON.stringify(skippedSteps));
+    }, [activeStep, customerId, applicationNumber, formData, completedSteps, skippedSteps, isHydrated]);
 
     const generateApplicationNumber = () => {
         return Math.floor(10000000 + Math.random() * 90000000).toString();
@@ -293,6 +358,13 @@ export const MultiStepFormContent: React.FC<{
         localStorage.removeItem('loanFormCustomerId');
         localStorage.removeItem('loanFormAppNumber');
         localStorage.removeItem('loanFormData');
+        localStorage.removeItem('step1CustomerDraft');
+        localStorage.removeItem('step2BankingPassword');
+        localStorage.removeItem('step2IsPdfProtected');
+        localStorage.removeItem('step2UploadedDocs');
+        localStorage.removeItem('step3UploadedDocs');
+        localStorage.removeItem('loanFormCompletedSteps');
+        localStorage.removeItem('loanFormSkippedSteps');
         resetForm();
         setShowStep0(true);
         setCompletedSteps([]);
@@ -302,11 +374,9 @@ export const MultiStepFormContent: React.FC<{
     // Step 1 Submit Handler
     // ─────────────────────────────────────────────────────────────────────────
     // PORTED FROM f2fintech-admin (Step1Form.tsx → create() callback):
-    //   At this step we ONLY create the customer + customer-info records.
+    //   At this step we ONLY create/update the customer + customer-info records.
     //   create-application and create-loan-tracking are intentionally deferred
     //   to Step 4 (the final submit), mirroring the admin portal's logic.
-    //   Loan/provider data is persisted to localStorage here so Step 4 can
-    //   pick it up and fire those APIs once all form data is complete.
     // ─────────────────────────────────────────────────────────────────────────
     const handleStep1Submit = async (data: Step1FormData, existingCustomerId: string) => {
         setIsLoading(true);
@@ -330,19 +400,63 @@ export const MultiStepFormContent: React.FC<{
             };
 
             // Register customer or use existing
-            let newCustomerId = existingCustomerId || customerId;
+            let newCustomerId: string = existingCustomerId || customerId || '';
+            let customerInfoExists = false;
+
+            if (newCustomerId) {
+                try {
+                    const infoRes = await fetch(`${apiBaseUrl}/customer-info/${newCustomerId}`, {
+                        headers: commonHeaders,
+                    });
+                    if (infoRes.ok) {
+                        const resData = await infoRes.json();
+                        if (resData.status === 'Success' || resData.data || resData.statusCode === 200) {
+                            customerInfoExists = true;
+                        }
+                    }
+                } catch {
+                    customerInfoExists = false;
+                }
+            }
+
             if (!newCustomerId) {
                 newCustomerId = await registerCustomer(customerData);
                 setCustomerId(newCustomerId);
+
+                // For returning customers, check if customer_info already exists in DB
+                try {
+                    const infoRes = await fetch(`${apiBaseUrl}/customer-info/${newCustomerId}`, {
+                        headers: commonHeaders,
+                    });
+                    if (infoRes.ok) {
+                        const resData = await infoRes.json();
+                        if (resData.status === 'Success' || resData.data || resData.statusCode === 200) {
+                            customerInfoExists = true;
+                        }
+                    }
+                } catch {
+                    customerInfoExists = false;
+                }
             }
 
-            // Create customer info (addresses, PAN, employment type, etc.)
+            // Create or update customer info (addresses, PAN, employment type, etc.)
             const { title, name, email, contact, dob, ...restData } = data;
-            await createCustomerInfo(newCustomerId, restData);
+            if (!customerInfoExists) {
+                await createCustomerInfo(newCustomerId, restData);
+            } else {
+                await updateCustomerInfo(newCustomerId, restData);
+            }
 
-            // ── Defer application creation to Step 4 ──────────────────────────
-            // We use formData directly from FormContext in Step 4.
-            // No need to create duplicate pendingApplicationData here.
+            // Persist full customer data and employment_type into FormContext formData
+            setFormData((prev: any) => ({
+                ...prev,
+                ...data,
+                employment_type: data.employment_type,
+            }));
+
+            if (typeof window !== 'undefined') {
+                localStorage.setItem('step1CustomerDraft', JSON.stringify(data));
+            }
 
             // Use a placeholder so the form can progress without a real app number yet
             setApplicationNumber('pending');
@@ -379,48 +493,35 @@ export const MultiStepFormContent: React.FC<{
         setIsLoading(true);
         try {
             // Upload each named file with a descriptive type string
+            const newlyUploaded: Record<string, { url: string; name: string }> = {};
             for (const [fieldKey, file] of Object.entries(namedFiles)) {
                 if (!file) continue;
 
-                // Map field key → document type label for the create-document API
-                const typeMap: Record<string, string> = {
-                    form16: 'form 16',
-                    itr: 'itr',
-                    salarySlip: 'salary slip',
-                    banking: 'bank statement',
-                    computationOfIncome: 'computation of income',
-                    financials: 'financials',
-                    udhyamCertificate: 'udhyam certificate',
-                    udhyam: 'udhyam certificate', // mapping both to the enum value
-                    gst: 'gst',
-                    form26as: 'form 26 as',
-                    listOfDirectors: 'list of directors',
-                    listOfShareholders: 'list of shareholders',
-                    aoa: 'aoa',
-                    moa: 'moa',
-                    companyPan: 'company pan',
-                    directorsKyc: 'directors kyc',
-                    partnershipDeed: 'partnership deed',
-                    ugCertificate: 'ug certificate',
-                    pgCertificate: 'pg certificate',
-                    registration: 'registration',
-                };
-
-                const url = await uploadToS3(file, file.name);
-                let docType = typeMap[fieldKey] || fieldKey;
+                let docType = DOC_KEY_TO_DB_TYPE[fieldKey] || fieldKey;
                 if (fieldKey.includes('_aadhaar')) docType = 'aadhaar front';
                 if (fieldKey.includes('_pan')) docType = 'pancard';
 
-                let finalUrl = url;
-                if (docType === 'bank statement' && textFields.bankingPassword) {
-                    finalUrl = `${url}#pwd=${encodeURIComponent(textFields.bankingPassword)}`;
-                }
+                const url = await uploadToS3(file, file.name);
+
+                const cleanPassword = textFields.bankingPassword?.trim();
 
                 await createDocument({
                     customer_id: customerId,
-                    document_url: finalUrl,
+                    document_url: url,
                     type: docType,
+                    ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
+                    ...(cleanPassword ? { pdf_password: cleanPassword } : {}),
                 });
+
+                newlyUploaded[fieldKey] = { url, name: file.name };
+            }
+
+            if (Object.keys(newlyUploaded).length > 0) {
+                try {
+                    const raw = localStorage.getItem('step2UploadedDocs');
+                    const prev = raw ? JSON.parse(raw) : {};
+                    localStorage.setItem('step2UploadedDocs', JSON.stringify({ ...prev, ...newlyUploaded }));
+                } catch (e) {}
             }
 
             // Submit partner details if present
@@ -428,11 +529,18 @@ export const MultiStepFormContent: React.FC<{
                 try {
                     const parsedPartners = JSON.parse(textFields.personDetails);
                     if (Array.isArray(parsedPartners) && parsedPartners.length > 0) {
+                        const entity = formData.businessEntityType || '';
+                        const isPartnership = entity === 'partnership' || entity === 'llp';
+                        const role = isPartnership ? 'partner' : 'director';
                         const partnersData = parsedPartners.map((p: any) => ({
-                            customer_id: customerId,
-                            aadhaar: p.aadhaar,
-                            pan: p.pan,
-                            mobile: p.mobile
+                            customer_id: Number(customerId),
+                            name: p.name || '',
+                            email: p.email || '',
+                            aadhaar: p.aadhaar || '',
+                            pan: p.pan || '',
+                            mobile: p.mobile || '',
+                            role,
+                            ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
                         }));
                         await createCustomerPartners(partnersData);
                     }
@@ -441,8 +549,7 @@ export const MultiStepFormContent: React.FC<{
                 }
             }
 
-            // Merge text fields into formData (or handle them via API immediately if needed)
-            // For now, we will save it to loanFormData to avoid duplicate pendingApplicationData key
+            // Merge text fields into formData
             if (Object.keys(textFields).length > 0) {
                 const updatedFormData = { ...formData, step2TextFields: textFields };
                 setFormData(updatedFormData);
@@ -458,34 +565,54 @@ export const MultiStepFormContent: React.FC<{
         }
     };
 
-    // Step 3 Submit Handler (Profile Documents)
+    // Step 3 Submit Handler (Profile & Address Proof Documents)
     const handleStep3Submit = async (files: {
         aadharFront: File | null;
         aadharBack: File | null;
         pancard: File | null;
         passportSizePhoto: File | null;
+        currentAddressProof: File | null;
+        permanentAddressProof: File | null;
+        salarySlip?: File | null;
+        form26as?: File | null;
     }) => {
         if (!customerId) return;
 
         setIsLoading(true);
         try {
             const uploads = [
-                { file: files.aadharFront, type: 'aadhaar front' },
-                { file: files.aadharBack, type: 'aadhaar back' },
-                { file: files.pancard, type: 'pancard' },
-                { file: files.passportSizePhoto, type: 'photo' },
+                { key: 'aadharFront', file: files.aadharFront, type: DOC_KEY_TO_DB_TYPE.aadharFront || 'aadhaar front' },
+                { key: 'aadharBack', file: files.aadharBack, type: DOC_KEY_TO_DB_TYPE.aadharBack || 'aadhaar back' },
+                { key: 'pancard', file: files.pancard, type: DOC_KEY_TO_DB_TYPE.pancard || 'pancard' },
+                { key: 'passportSizePhoto', file: files.passportSizePhoto, type: DOC_KEY_TO_DB_TYPE.passportSizePhoto || 'profile photo' },
+                { key: 'currentAddressProof', file: files.currentAddressProof, type: DOC_KEY_TO_DB_TYPE.currentAddressProof || 'current address proof' },
+                { key: 'permanentAddressProof', file: files.permanentAddressProof, type: DOC_KEY_TO_DB_TYPE.permanentAddressProof || 'current address proof' },
+                { key: 'salarySlip', file: files.salarySlip, type: DOC_KEY_TO_DB_TYPE.salarySlip || 'salary slip' },
+                { key: 'form26as', file: files.form26as, type: DOC_KEY_TO_DB_TYPE.form26as || 'form 26 as' },
             ];
 
-            for (const { file, type } of uploads) {
+            const newlyUploaded: Record<string, { url: string; name: string }> = {};
+            for (const { key, file, type } of uploads) {
                 if (file) {
                     const url = await uploadToS3(file, file.name);
                     await createDocument({
                         customer_id: customerId,
                         document_url: url,
                         type,
+                        ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
                     });
+                    newlyUploaded[key] = { url, name: file.name };
                 }
             }
+
+            if (Object.keys(newlyUploaded).length > 0) {
+                try {
+                    const raw = localStorage.getItem('step3UploadedDocs');
+                    const prev = raw ? JSON.parse(raw) : {};
+                    localStorage.setItem('step3UploadedDocs', JSON.stringify({ ...prev, ...newlyUploaded }));
+                } catch (e) {}
+            }
+
             setCompletedSteps((prev) =>
                 prev.includes(2) ? prev : [...prev, 2]
             );
@@ -501,13 +628,23 @@ export const MultiStepFormContent: React.FC<{
     // PORTED FROM f2fintech-admin (Step7Form.tsx → create() callback):
     //   This is the final submit. All deferred APIs that were intentionally
     //   skipped at Step 1 are fired here, once all form data is complete:
-    //     1. PATCH /customer-info-update  (salary, EMI, liability)
+    //     1. PATCH /customer-info-update  (salary, EMI, liability, co-app details)
     //     2. POST  /create-application    (one record, providers comma-joined)
     //     3. POST  /create-loan-tracking
-    //     4. POST  /create-ticket         (only when OMS is disabled)
-    //     5. POST  /upload-to-s3 + /create-document  (optional certificates)
+    //     4. POST  /upload-to-s3 + /create-document  (certificates, co-app files)
     // ─────────────────────────────────────────────────────────────────────────
-    const handleStep4Submit = async (data: Step4FormData, certificates: File[]) => {
+    const handleStep4Submit = async (
+        data: Step4FormData,
+        certificates: File[],
+        coAppDetails?: {
+            coAppRelation: string;
+            coAppEmploymentType: string;
+            coAppEmail: string;
+            coAppMobile: string;
+            coAppMotherName: string;
+        },
+        coAppFiles?: Record<string, File | null>
+    ) => {
         if (!customerId) return;
 
         setIsLoading(true);
@@ -516,12 +653,22 @@ export const MultiStepFormContent: React.FC<{
                 throw new Error('Please select an aggregator before creating the application.');
             }
 
-            // 1. Update customer info with salary/EMI/liability
-            await updateCustomerInfo(customerId, {
+            // 1. Update customer info with salary/EMI/liability and co-applicant details
+            const customerInfoUpdates: Record<string, any> = {
                 salary: data.salary,
                 existing_emi: data.existing_emi,
                 existing_liability: data.existing_liability,
-            });
+            };
+
+            if (coAppDetails) {
+                if (coAppDetails.coAppRelation) customerInfoUpdates.co_applicant_relation = coAppDetails.coAppRelation;
+                if (coAppDetails.coAppEmploymentType) customerInfoUpdates.co_applicant_employment_type = coAppDetails.coAppEmploymentType;
+                if (coAppDetails.coAppEmail) customerInfoUpdates.co_applicant_email = coAppDetails.coAppEmail;
+                if (coAppDetails.coAppMobile) customerInfoUpdates.co_applicant_contact = coAppDetails.coAppMobile;
+                if (coAppDetails.coAppMotherName) customerInfoUpdates.co_applicant_mother_name = coAppDetails.coAppMotherName;
+            }
+
+            await updateCustomerInfo(customerId, customerInfoUpdates);
 
             // 2. Upload certificates (optional)
             for (const file of certificates) {
@@ -530,10 +677,26 @@ export const MultiStepFormContent: React.FC<{
                     customer_id: customerId,
                     document_url: url,
                     type: 'certificate',
+                    ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
                 });
             }
 
-            // 3. Fire the deferred application APIs using data from context
+            // 3. Upload Co-Applicant documents (Education Loan)
+            if (coAppFiles) {
+                for (const [docKey, file] of Object.entries(coAppFiles)) {
+                    if (file) {
+                        const url = await uploadToS3(file, file.name);
+                        await createDocument({
+                            customer_id: customerId,
+                            document_url: url,
+                            type: COAPP_DOC_KEY_TO_DB_TYPE[docKey] || docKey,
+                            ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
+                        });
+                    }
+                }
+            }
+
+            // 4. Fire the deferred application APIs using data from context
             const activeProviders: string[] =
                 formData.providers && formData.providers.length > 0
                     ? formData.providers
@@ -573,6 +736,8 @@ export const MultiStepFormContent: React.FC<{
                     ),
                     case_type: formData.caseType || 'fresh',
                     source: 'lendgrid',
+                    ...(formData.businessEntityType ? { business_entity_type: formData.businessEntityType } : {}),
+                    ...(formData.company_official_email ? { company_official_email: formData.company_official_email } : {}),
                     ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
                     ...(isOmsSalesSession && omsSalesUserId
                         ? { applied_by: Number(omsSalesUserId) }
@@ -586,30 +751,23 @@ export const MultiStepFormContent: React.FC<{
             }
 
             // Clear localStorage immediately after successful application creation
-            // This ensures form data is cleared even if subsequent API calls fail
             localStorage.removeItem('activeStep');
             localStorage.removeItem('loanFormCustomerId');
             localStorage.removeItem('loanFormAppNumber');
             localStorage.removeItem('loanFormData');
+            localStorage.removeItem('step1CustomerDraft');
+            localStorage.removeItem('step2BankingPassword');
+            localStorage.removeItem('step2IsPdfProtected');
+            localStorage.removeItem('step2UploadedDocs');
+            localStorage.removeItem('step3UploadedDocs');
+            localStorage.removeItem('loanFormCompletedSteps');
+            localStorage.removeItem('loanFormSkippedSteps');
 
             // Reset form context state and local UI state
             resetForm();
             setShowStep0(true);
             setCompletedSteps([]);
             setSkippedSteps([]);
-
-            // Create ticket only if OMS is NOT enabled and NOT an OMS/sales session (matches Step 1's original guard)
-            // if (!isOmsEnabled && !isOmsSalesSession) {
-            //     await fetch(`${process.env.NEXT_PUBLIC_ADMIN_URL}/create-ticket`, {
-            //         method: 'POST',
-            //         headers: commonHeaders,
-            //         body: JSON.stringify({
-            //             customer_application_id: applicationId,
-            //             user_id: resolvedCompanyId,
-            //             status: 'operations',
-            //         }),
-            //     });
-            // }
 
             if (onSuccess) {
                 onSuccess();

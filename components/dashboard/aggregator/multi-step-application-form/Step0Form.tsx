@@ -58,7 +58,9 @@ const loanTypes = {
     unsecured: [
         { value: 'personal loan', label: 'Personal Loan' },
         { value: 'business loan', label: 'Business Loan' },
-        { value: 'professional loan', label: 'Professional Loan' },
+        { value: 'doctor', label: 'Doctor (MBBS, BDS, BAMS, BHMS) Loan' },
+        { value: 'ca_cs_cma', label: 'CA/CS/CMA Loan' },
+        { value: 'professional loan', label: 'Professional Loan (Other)' },
         { value: 'education loan', label: 'Education Loan' },
         { value: 'just inquiry', label: 'Just Inquiry' },
     ],
@@ -112,6 +114,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
             existingLoans: formData.existingLoans || [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
             caseType: formData.caseType || 'fresh',
             businessEntityType: formData.businessEntityType || '',
+            company_official_email: formData.company_official_email || '',
         },
     });
 
@@ -143,6 +146,8 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
         const unsecuredTypes = [
             'personal loan',
             'business loan',
+            'doctor',
+            'ca_cs_cma',
             'professional loan',
             'education loan',
             'just inquiry',
@@ -159,9 +164,10 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
         const category = getLoanCategory(value);
         setValue('loanCategory', category);
         setValue('tenure', ''); // Reset tenure when loan type changes
-        // Clear entity type if switching away from business loan
+        // Clear entity type & email if switching away from business loan
         if (value !== 'business loan') {
             setValue('businessEntityType', '');
+            setValue('company_official_email', '');
         }
     };
 
@@ -290,32 +296,71 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
                 {/* Business Entity Type — only shown for Business Loan */}
                 {loanType === 'business loan' && (
-                    <div>
-                        <Label className="text-foreground">Type of Business Entity*</Label>
-                        <Controller
-                            control={control}
-                            name="businessEntityType"
-                            render={({ field }) => (
-                                <Select value={field.value || ''} onValueChange={field.onChange}>
-                                    <SelectTrigger className="bg-card border-border text-foreground mt-2">
-                                        <SelectValue placeholder="Select entity type" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-popover border-border text-popover-foreground">
-                                        <SelectItem value="sole_proprietorship" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
-                                            Sole Proprietorship
-                                        </SelectItem>
-                                        <SelectItem value="private_limited" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
-                                            Private Limited
-                                        </SelectItem>
-                                        <SelectItem value="partnership" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
-                                            Partnership Firm
-                                        </SelectItem>
-                                    </SelectContent>
-                                </Select>
+                    <div className="space-y-4">
+                        <div>
+                            <Label className="text-foreground">Type of Business Entity*</Label>
+                            <Controller
+                                control={control}
+                                name="businessEntityType"
+                                render={({ field }) => (
+                                    <Select
+                                        value={field.value || ''}
+                                        onValueChange={(val) => {
+                                            field.onChange(val);
+                                            if (val !== 'private_limited' && val !== 'llp') {
+                                                setValue('company_official_email', '');
+                                            }
+                                        }}
+                                    >
+                                        <SelectTrigger className="bg-card border-border text-foreground mt-2">
+                                            <SelectValue placeholder="Select entity type" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover border-border text-popover-foreground">
+                                            <SelectItem value="sole_proprietorship" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                                Sole Proprietorship
+                                            </SelectItem>
+                                            <SelectItem value="private_limited" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                                Private Limited
+                                            </SelectItem>
+                                            <SelectItem value="llp" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                                Limited Liability Partnership (LLP)
+                                            </SelectItem>
+                                            <SelectItem value="huf" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                                HUF (Hindu Undivided Family)
+                                            </SelectItem>
+                                            <SelectItem value="partnership" className="focus:bg-accent focus:text-accent-foreground cursor-pointer">
+                                                Partnership Firm
+                                            </SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                )}
+                            />
+                            {loanType === 'business loan' && !businessEntityType && (
+                                <p className="text-sm text-amber-400 mt-1.5">Please select a business entity type to continue</p>
                             )}
-                        />
-                        {loanType === 'business loan' && !businessEntityType && (
-                            <p className="text-sm text-amber-400 mt-1.5">Please select a business entity type to continue</p>
+                        </div>
+
+                        {/* Company Official Email — required for Pvt Ltd & LLP */}
+                        {(businessEntityType === 'private_limited' || businessEntityType === 'llp') && (
+                            <div>
+                                <Label className="text-foreground">Company Official Email ID*</Label>
+                                <Input
+                                    type="email"
+                                    placeholder="e.g. contact@yourcompany.com"
+                                    value={watch('company_official_email') || ''}
+                                    onChange={(e) => setValue('company_official_email', e.target.value, { shouldValidate: true })}
+                                    className="bg-card border-border text-foreground mt-2"
+                                />
+                                {errors.company_official_email && (
+                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {errors.company_official_email.message}
+                                    </p>
+                                )}
+                                <p className="text-xs text-muted-foreground mt-1">
+                                    Official email address registered with Ministry of Corporate Affairs (MCA) / GST
+                                </p>
+                            </div>
                         )}
                     </div>
                 )}

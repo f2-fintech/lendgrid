@@ -48,6 +48,8 @@ export function useCreateApplication() {
             localStorage.removeItem('loanFormCustomerId');
             localStorage.removeItem('loanFormAppNumber');
             localStorage.removeItem('loanFormData');
+            localStorage.removeItem('loanFormCompletedSteps');
+            localStorage.removeItem('loanFormSkippedSteps');
             
             queryClient.invalidateQueries({ queryKey: queryKeys.applications.all })
             toast({

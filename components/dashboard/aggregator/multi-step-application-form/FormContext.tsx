@@ -17,8 +17,18 @@ interface FormContextType {
         providerAmounts: { provider: string; amount: string }[];
         existingLoans: { hasRunningLoans: string; whichLoan: string; loanAmount: string; runningEmi: string }[];
         caseType: string;
-        businessEntityType: string; // 'sole_proprietorship' | 'private_limited' | 'partnership' | ''
+        businessEntityType: string;
+        company_official_email?: string;
+        employment_type?: string;
         referralCode?: string;
+        step2TextFields?: { bankingPassword?: string; personDetails?: string };
+        coAppDetails?: {
+            coAppRelation?: string;
+            coAppEmploymentType?: string;
+            coAppEmail?: string;
+            coAppMobile?: string;
+            coAppMotherName?: string;
+        };
     };
     setFormData: (data: any) => void;
     nextStep: () => void;
@@ -52,7 +62,17 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         existingLoans: [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
         caseType: 'fresh',
         businessEntityType: '',
+        company_official_email: '',
+        employment_type: '',
         referralCode: '',
+        step2TextFields: {} as { bankingPassword?: string; personDetails?: string },
+        coAppDetails: {} as {
+            coAppRelation?: string;
+            coAppEmploymentType?: string;
+            coAppEmail?: string;
+            coAppMobile?: string;
+            coAppMotherName?: string;
+        },
     });
 
     const nextStep = useCallback(() => {
@@ -78,7 +98,11 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
             existingLoans: [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
             caseType: 'fresh',
             businessEntityType: '',
+            company_official_email: '',
+            employment_type: '',
             referralCode: '',
+            step2TextFields: {},
+            coAppDetails: {},
         });
     }, []);
 

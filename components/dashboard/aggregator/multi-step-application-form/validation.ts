@@ -40,7 +40,26 @@ export const step0Schema = z.object({
     caseType: z.string().trim().optional(),
 
     businessEntityType: z.string().optional(),
+
+    company_official_email: z
+        .string()
+        .trim()
+        .email('Invalid company official email address')
+        .optional()
+        .or(z.literal('')),
 }).superRefine((data, ctx) => {
+    if (
+        data.loanType === 'business loan' &&
+        (data.businessEntityType === 'private_limited' || data.businessEntityType === 'llp')
+    ) {
+        if (!data.company_official_email || !data.company_official_email.trim()) {
+            ctx.addIssue({
+                code: z.ZodIssueCode.custom,
+                message: 'Company official email is required for Private Limited / LLP',
+                path: ['company_official_email'],
+            });
+        }
+    }
     if (data.existingLoans) {
         data.existingLoans.forEach((loan, index) => {
             if (loan.hasRunningLoans === 'yes') {
@@ -209,17 +228,19 @@ export const step2Schema = z.object({
 
 export type Step2FormData = z.infer<typeof step2Schema>;
 
-// Step 3: Profile Details (Aadhar, PAN, Photo)
+// Step 3: Profile Details (Aadhar, PAN, Photo, Address Proofs)
 export const step3Schema = z.object({
-    aadharFront: z.instanceof(File, { message: 'Aadhar front is required' }),
+    aadharFront: z.instanceof(File, { message: 'Aadhaar front is required' }),
     aadharBack: z.instanceof(File).optional(),
     pancard: z.instanceof(File).optional(),
     passportSizePhoto: z.instanceof(File).optional(),
+    currentAddressProof: z.instanceof(File).optional(),
+    permanentAddressProof: z.instanceof(File).optional(),
 });
 
 export type Step3FormData = z.infer<typeof step3Schema>;
 
-// Step 4: Additional Details
+// Step 4: Additional Details & Education Loan Co-Applicant
 export const step4Schema = z.object({
     salary: z
         .string()
@@ -239,6 +260,186 @@ export const step4Schema = z.object({
         .refine((val) => !val || !isNaN(Number(val)), 'Must be a valid number'),
 
     certificates: z.array(z.instanceof(File)).optional(),
+
+    coAppRelation: z.string().optional(),
+    coAppEmploymentType: z.string().optional(),
+    coAppEmail: z.string().trim().email('Invalid email address').optional().or(z.literal('')),
+    coAppMobile: z.string().trim().optional(),
+    coAppMotherName: z.string().trim().optional(),
 });
 
 export type Step4FormData = z.infer<typeof step4Schema>;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Regex Constants
+// ─────────────────────────────────────────────────────────────────────────────
+export const panRegExp = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+export const emailRegExp = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Focus & Smooth Scroll Helper (Matches OMS with smooth easeInOutCubic scroll)
+// ─────────────────────────────────────────────────────────────────────────────
+export const focusAndScrollToField = (identifier: string, scrollDuration = 650) => {
+    if (typeof window === 'undefined' || !identifier) return;
+    const el =
+        document.getElementById(identifier) ||
+        document.querySelector(`[name="${identifier}"]`) ||
+        document.querySelector(`[data-field="${identifier}"]`) ||
+        document.querySelector(`.${identifier}`);
+
+    if (el) {
+        const focusable =
+            el.matches('input, select, textarea, button, [tabindex]')
+                ? el
+                : el.querySelector('input, select, textarea, button, [tabindex]') || el;
+
+        // Calculate target Y coordinate centered in the screen
+        const targetRect = el.getBoundingClientRect();
+        const targetY = Math.max(
+            0,
+            window.pageYOffset + targetRect.top - window.innerHeight / 2 + targetRect.height / 2
+        );
+        const startY = window.pageYOffset;
+        const distance = targetY - startY;
+
+        // If already in view and distance is tiny, just focus gently
+        if (Math.abs(distance) < 20) {
+            try {
+                (focusable as HTMLElement).focus({ preventScroll: true });
+            } catch (_) {
+                (focusable as HTMLElement).focus();
+            }
+            return;
+        }
+
+        let startTime: number | null = null;
+        const easeInOutCubic = (t: number) =>
+            t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+
+        const animateScroll = (currentTime: number) => {
+            if (startTime === null) startTime = currentTime;
+            const elapsed = currentTime - startTime;
+            const progress = Math.min(elapsed / scrollDuration, 1);
+            const ease = easeInOutCubic(progress);
+
+            window.scrollTo(0, startY + distance * ease);
+
+            if (elapsed < scrollDuration) {
+                requestAnimationFrame(animateScroll);
+            } else {
+                try {
+                    (focusable as HTMLElement).focus({ preventScroll: true });
+                } catch (_) {
+                    (focusable as HTMLElement).focus();
+                }
+            }
+        };
+
+        requestAnimationFrame(animateScroll);
+    }
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Partner / Director Validation Helper
+// ─────────────────────────────────────────────────────────────────────────────
+export const validatePartnerDetails = (
+    personDetails: { name?: string; email?: string; aadhaar?: string; pan?: string; mobile?: string }[],
+    options?: { requireEmail?: boolean; label?: string }
+): { isValid: boolean; error?: string; fieldId?: string } => {
+    if (!Array.isArray(personDetails) || personDetails.length === 0) {
+        return { isValid: true };
+    }
+
+    const label = options?.label || 'Partner';
+    const requireEmail = Boolean(options?.requireEmail);
+
+    for (let i = 0; i < personDetails.length; i++) {
+        const p = personDetails[i] || {};
+        const prefix = `${label} #${i + 1}`;
+
+        if (!p.name || !p.name.trim()) {
+            return {
+                isValid: false,
+                error: `${prefix}: Please enter full name as per PAN.`,
+                fieldId: `person_${i}_name`,
+            };
+        }
+        if (p.name.trim().length < 2) {
+            return {
+                isValid: false,
+                error: `${prefix}: Name must be at least 2 characters.`,
+                fieldId: `person_${i}_name`,
+            };
+        }
+        if (requireEmail) {
+            if (!p.email || !p.email.trim()) {
+                return {
+                    isValid: false,
+                    error: `${prefix}: Please enter Email ID.`,
+                    fieldId: `person_${i}_email`,
+                };
+            }
+            if (!emailRegExp.test(p.email.trim())) {
+                return {
+                    isValid: false,
+                    error: `${prefix}: Invalid Email ID format.`,
+                    fieldId: `person_${i}_email`,
+                };
+            }
+        } else if (p.email && p.email.trim() && !emailRegExp.test(p.email.trim())) {
+            return {
+                isValid: false,
+                error: `${prefix}: Invalid Email ID format.`,
+                fieldId: `person_${i}_email`,
+            };
+        }
+        if (!p.aadhaar || !p.aadhaar.trim()) {
+            return {
+                isValid: false,
+                error: `${prefix}: Please enter 12-digit Aadhaar number.`,
+                fieldId: `person_${i}_aadhaar`,
+            };
+        }
+        const cleanAadhaar = p.aadhaar.replace(/\s+/g, '');
+        if (!/^\d{12}$/.test(cleanAadhaar)) {
+            return {
+                isValid: false,
+                error: `${prefix}: Aadhaar number must be exactly 12 digits.`,
+                fieldId: `person_${i}_aadhaar`,
+            };
+        }
+        if (!p.pan || !p.pan.trim()) {
+            return {
+                isValid: false,
+                error: `${prefix}: Please enter 10-digit PAN number.`,
+                fieldId: `person_${i}_pan`,
+            };
+        }
+        const cleanPan = p.pan.trim().toUpperCase();
+        if (!panRegExp.test(cleanPan)) {
+            return {
+                isValid: false,
+                error: `${prefix}: Invalid PAN format (e.g. ABCDE1234F).`,
+                fieldId: `person_${i}_pan`,
+            };
+        }
+        if (!p.mobile || !p.mobile.trim()) {
+            return {
+                isValid: false,
+                error: `${prefix}: Please enter 10-digit mobile number.`,
+                fieldId: `person_${i}_mobile`,
+            };
+        }
+        const cleanMobile = p.mobile.replace(/\s+/g, '');
+        if (!/^[6-9]\d{9}$/.test(cleanMobile)) {
+            return {
+                isValid: false,
+                error: `${prefix}: Mobile number must be a valid 10-digit number starting with 6, 7, 8, or 9.`,
+                fieldId: `person_${i}_mobile`,
+            };
+        }
+    }
+
+    return { isValid: true };
+};
+

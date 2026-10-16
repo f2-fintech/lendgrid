@@ -41,10 +41,13 @@ export const MobileStepper: React.FC<FormStepperProps> = ({
             >
                 {allSteps.map((step, idx) => {
                     const isActive = showStep0 ? idx === 0 : idx === activeStep + 1;
+                    const stepId = idx - 1;
+                    const isSkipped = !showStep0 && idx > 0 && skippedSteps.includes(stepId);
                     const isCompleted = showStep0
                         ? false
-                        : idx === 0 || (idx > 0 && completedSteps.includes(idx - 1));
-                    const isSkipped = !showStep0 && idx > 0 && skippedSteps.includes(idx - 1);
+                        : idx === 0
+                            ? true
+                            : !isActive && !isSkipped && (completedSteps.includes(stepId) || stepId < activeStep);
 
                     return (
                         <div key={step.id} className="flex items-center flex-shrink-0 snap-center">

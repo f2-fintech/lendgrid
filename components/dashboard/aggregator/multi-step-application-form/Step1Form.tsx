@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Calendar, Loader2, Clock, RotateCcw } from 'lucide-react';
@@ -69,14 +69,35 @@ interface DuplicateInfo {
 }
 
 export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBack, apiBaseUrl, onReset }) => {
-  const { nextStep } = useFormContext();
+  const { formData, setFormData, nextStep, customerId } = useFormContext();
   const { toast } = useToast();
-  const [date, setDate] = useState<Date>();
+
+  const getInitialDraft = () => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('step1CustomerDraft');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {}
+    }
+    return {};
+  };
+
+  const initialDraft = getInitialDraft();
+
+  const [date, setDate] = useState<Date | undefined>(() => {
+    const rawDob = (formData as any).dob || initialDraft.dob;
+    if (rawDob) {
+      const parsed = new Date(rawDob);
+      if (!isNaN(parsed.getTime())) return parsed;
+    }
+    return undefined;
+  });
 
   // ── Duplicate-check state ─────────────────────────────────────────────────
   const [duplicateInfo, setDuplicateInfo] = useState<DuplicateInfo | null>(null);
   const [isDuplicateChecking, setIsDuplicateChecking] = useState(false);
 
+  const rawFormData: any = formData;
   const {
     register,
     control,
@@ -87,10 +108,83 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
     getValues,
   } = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
+    defaultValues: {
+      title: (rawFormData.title || initialDraft.title || '') as any,
+      name: rawFormData.name || initialDraft.name || '',
+      contact: rawFormData.contact || initialDraft.contact || '',
+      email: rawFormData.email || initialDraft.email || '',
+      pan: rawFormData.pan || initialDraft.pan || '',
+      father_name: rawFormData.father_name || initialDraft.father_name || '',
+      mother_name: rawFormData.mother_name || initialDraft.mother_name || '',
+      working_address: rawFormData.working_address || initialDraft.working_address || '',
+      permanent_address: rawFormData.permanent_address || initialDraft.permanent_address || '',
+      current_address: rawFormData.current_address || initialDraft.current_address || '',
+      city: rawFormData.city || initialDraft.city || '',
+      state: (rawFormData.state || initialDraft.state || '') as any,
+      employment_type: (rawFormData.employment_type || initialDraft.employment_type || '') as any,
+      dob: (rawFormData.dob ? new Date(rawFormData.dob) : (initialDraft.dob ? new Date(initialDraft.dob) : undefined)) as any,
+    },
   });
 
   const title = watch('title');
   const employmentType = watch('employment_type');
+
+  // ── Real-time Auto-Save Observer ──────────────────────────────────────────
+  // Subscribes to keystrokes & input changes without triggering component re-renders.
+  // Debounced by 300ms to save seamlessly to localStorage.
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    const subscription = watch((values) => {
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        if (typeof window !== 'undefined') {
+          const hasCustomerData =
+            Boolean(values.title) ||
+            Boolean(values.name) ||
+            Boolean(values.contact) ||
+            Boolean(values.email) ||
+            Boolean(values.pan) ||
+            Boolean(values.father_name) ||
+            Boolean(values.mother_name) ||
+            Boolean(values.working_address) ||
+            Boolean(values.permanent_address) ||
+            Boolean(values.current_address) ||
+            Boolean(values.city) ||
+            Boolean(values.state) ||
+            Boolean(values.employment_type) ||
+            Boolean(values.dob);
+
+          if (hasCustomerData) {
+            try {
+              localStorage.setItem('step1CustomerDraft', JSON.stringify(values));
+            } catch (e) {
+              console.warn('[auto-save] Failed to save draft:', e);
+            }
+          }
+        }
+      }, 300);
+    });
+
+    // Immediate flush on page refresh / unload
+    const handleBeforeUnload = () => {
+      if (typeof window !== 'undefined') {
+        const currentVals = getValues();
+        const hasData = Object.values(currentVals).some(Boolean);
+        if (hasData) {
+          try {
+            localStorage.setItem('step1CustomerDraft', JSON.stringify(currentVals));
+          } catch (e) {}
+        }
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      clearTimeout(timer);
+      subscription.unsubscribe();
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [watch, getValues]);
 
   // ── Real-time duplicate check ─────────────────────────────────────────────
   // Called on blur of the PAN field (once both mobile and PAN look complete).
@@ -102,6 +196,24 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
     const mobileOk = /^[0-9]{7,15}$/.test((contact || '').trim());
     const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((pan || '').trim().toUpperCase());
     if (!mobileOk || !panOk) return;
+
+    // Resolve selected providers: from context first, then fallback to localStorage
+    let providersToSend: string[] = [];
+    if (formData?.providers && Array.isArray(formData.providers) && formData.providers.length > 0) {
+      providersToSend = formData.providers;
+    } else if (typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('loanFormData');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed?.providers) && parsed.providers.length > 0) {
+            providersToSend = parsed.providers;
+          }
+        }
+      } catch (e) {
+        console.warn('[duplicate-check] Failed to parse providers from localStorage:', e);
+      }
+    }
 
     setDuplicateInfo(null);
     setIsDuplicateChecking(true);
@@ -117,7 +229,11 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           ...(resolvedCompanyId ? { 'companyid': resolvedCompanyId } : {}),
           ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({ mobile: contact.trim(), pan: pan.trim().toUpperCase() }),
+        body: JSON.stringify({
+          mobile: contact.trim(),
+          pan: pan.trim().toUpperCase(),
+          ...(providersToSend.length > 0 ? { providers: providersToSend } : {}),
+        }),
       });
 
       const result = await response.json();
@@ -135,14 +251,17 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
     } finally {
       setIsDuplicateChecking(false);
     }
-  }, [apiBaseUrl, getValues]);
+  }, [apiBaseUrl, getValues, formData?.providers]);
 
   const onFormSubmit = async (data: Step1FormData) => {
     // Guard: block submit if a duplicate was detected
     if (duplicateInfo) return;
     try {
-      console.log('STEP 1 FORM DATA:', data);
-      await onSubmit(data, '');
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('step1CustomerDraft', JSON.stringify(data));
+      }
+      setFormData((prev: any) => ({ ...prev, ...data }));
+      await onSubmit(data, customerId || '');
       nextStep();
     } catch (error: any) {
       toast({
@@ -583,15 +702,23 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
         {/* Action Buttons */}
         <div className="flex justify-around items-center pt-4">
           <Button
+            type="button"
             variant="outline"
-            onClick={() => onBack()}
-            className="border-border  text-foreground hover:bg-muted"
+            onClick={() => {
+              const currentVals = getValues();
+              if (typeof window !== 'undefined') {
+                localStorage.setItem('step1CustomerDraft', JSON.stringify(currentVals));
+              }
+              setFormData((prev: any) => ({ ...prev, ...currentVals }));
+              onBack();
+            }}
+            className="border-border text-foreground hover:bg-muted"
           >
             Back
           </Button>
           <Button
             type="submit"
-            disabled={!isDirty || isLoading || !!duplicateInfo || isDuplicateChecking}
+            disabled={isLoading || !!duplicateInfo || isDuplicateChecking}
             className="bg-primary hover:bg-primary/90 text-primary-foreground disabled:opacity-50"
             title={duplicateInfo ? 'Application already exists — cannot proceed' : undefined}
           >
