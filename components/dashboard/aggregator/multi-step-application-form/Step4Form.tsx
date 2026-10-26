@@ -162,26 +162,12 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
   }, []);
 
   const onFormSubmit = async (data: Step4FormData) => {
-    // Validate Co-Applicant mandatory fields if Education Loan
+    // Validate Co-Applicant mobile if Education Loan
     if (isEducationLoan) {
       if (coAppMobile && coAppMobile.length !== 10) {
         toast({
           title: 'Invalid Mobile',
           description: 'Co-applicant mobile number must be exactly 10 digits',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      // Check if at least 1 co-applicant document is uploaded (matching Step3Form & OMS Step7Form)
-      const hasAnyCoAppDoc = Object.values(coAppFiles).some(
-        (slot) => slot.file !== null || Boolean(slot.preview)
-      );
-
-      if (!hasAnyCoAppDoc) {
-        toast({
-          title: 'Document Required',
-          description: 'Please upload at least 1 Co-Applicant document before completing the application.',
           variant: 'destructive',
         });
         return;
@@ -253,11 +239,6 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
       <div className="space-y-2">
         <Label className="text-foreground text-xs font-medium flex items-center gap-1.5 flex-wrap">
           <span>{cleanLabel}</span>
-          {required && !isOptional && (
-            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-              * (Mandatory)
-            </span>
-          )}
           {isOptional && (
             <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>
               (Optional)
@@ -506,15 +487,15 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
 
             <div className="pt-4 border-t border-border mt-4">
               <h4 className="text-xs font-semibold text-primary uppercase tracking-wide mb-3">
-                Co-Applicant Mandatory Documents
+                Co-Applicant Documents
               </h4>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <CoAppUploadBox fieldKey="coAppAadhaar" label="Co-Applicant Aadhaar Card" required />
-                <CoAppUploadBox fieldKey="coAppPan" label="Co-Applicant PAN Card" required />
-                <CoAppUploadBox fieldKey="coAppCancelledCheque" label="Cancelled Cheque" required />
-                <CoAppUploadBox fieldKey="coAppForm16" label="Form 16 Part A-B (2 Yrs)" required />
-                <CoAppUploadBox fieldKey="coAppSalarySlips" label="3 Months Salary Slips" required />
-                <CoAppUploadBox fieldKey="coAppIdCard" label="Company / Govt ID Card" required />
+                <CoAppUploadBox fieldKey="coAppAadhaar" label="Co-Applicant Aadhaar Card" required={false} />
+                <CoAppUploadBox fieldKey="coAppPan" label="Co-Applicant PAN Card" required={false} />
+                <CoAppUploadBox fieldKey="coAppCancelledCheque" label="Cancelled Cheque" required={false} />
+                <CoAppUploadBox fieldKey="coAppForm16" label="Form 16 Part A-B (2 Yrs)" required={false} />
+                <CoAppUploadBox fieldKey="coAppSalarySlips" label="3 Months Salary Slips" required={false} />
+                <CoAppUploadBox fieldKey="coAppIdCard" label="Company / Govt ID Card" required={false} />
               </div>
             </div>
           </Card>

@@ -8,6 +8,7 @@ import { FormProvider } from '@/components/dashboard/aggregator/multi-step-appli
 import { MultiStepFormContent } from '@/components/dashboard/aggregator/multi-step-application-form/MultiStepForm';
 import { ThemeLogo } from '@/components/theme-logo';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { normalizeApiUrl } from '@/lib/utils';
 
 const GET_AGGREGATOR_BY_COMPANY_ID = `
   query GetAggregatorByCompanyId($companyId: Int!) {
@@ -142,7 +143,7 @@ function ApplyPageContent() {
             <div className="max-w-6xl mx-auto p-6">
                 <FormProvider>
                     <MultiStepFormContent
-                        apiBaseUrl={process.env.NEXT_PUBLIC_WEB_URL || ''}
+                        apiBaseUrl={normalizeApiUrl(process.env.NEXT_PUBLIC_WEB_URL || '')}
                         providers={PROVIDERS}
                         onClose={() => (window.location.href = '/')}
                         onSuccess={() => (window.location.href = '/')}

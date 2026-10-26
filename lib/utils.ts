@@ -61,21 +61,52 @@ export function createPublicFilePath(file: File, folder: string = "uploads") {
   return `/${folder}/${time}-${cleanName}`;
 }
 
+/**
+ * Normalizes an API URL to always ensure it has the /api/v1 prefix
+ * and removes any trailing /graphql if mistakenly passed.
+ */
+export function normalizeApiUrl(url: string | undefined): string {
+  if (!url) return '';
+  let clean = url.trim().replace(/\/+$/, '');
+  clean = clean.replace(/\/graphql$/i, '');
+  if (!clean.endsWith('/api/v1')) {
+    clean = `${clean}/api/v1`;
+  }
+  return clean;
+}
+
 export const uploadToS3 = async (file: File, folder: string): Promise<string> => {
+  const safeFolderName = (folder || file.name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+  const uniqueKey = `${Date.now()}_${safeFolderName}`;
   const formData = new FormData();
   formData.append("document", file);
-  formData.append("folder", folder);
+  formData.append("folder", `document/${uniqueKey}`);
 
-  const response = await fetch(`${process.env.NEXT_PUBLIC_WEB_URL}/upload-to-s3`, {
+  const baseUrl = normalizeApiUrl(process.env.NEXT_PUBLIC_WEB_URL);
+  const response = await fetch(`${baseUrl}/upload-to-s3`, {
     method: "POST",
     body: formData,
   });
 
   if (!response.ok) {
-    throw new Error("Failed to upload image");
+    let msg = "Failed to upload file";
+    try {
+      const err = await response.json();
+      msg = err.msg || err.message || msg;
+    } catch {
+      if (response.status === 413) {
+        msg = "File is too large. Please upload files under 15MB.";
+      } else {
+        msg = `Failed to upload file (HTTP ${response.status})`;
+      }
+    }
+    throw new Error(msg);
   }
 
   const result = await response.json();
+  if (!result?.data) {
+    throw new Error(result?.msg || result?.message || 'No file URL returned from upload server');
+  }
   return result.data; // S3 public URL
 };
 

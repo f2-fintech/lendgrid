@@ -7,6 +7,8 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
+import { getCookie, normalizeApiUrl } from '@/lib/utils';
+import { getCompanyId } from '@/lib/http-client';
 import { useFormContext } from './FormContext';
 import { useToast } from '@/hooks/use-toast';
 import { focusAndScrollToField } from './validation';
@@ -67,7 +69,7 @@ function buildInitialStep3Files(): Record<Step3FilesKey, FilePreview> {
     try {
       const raw = localStorage.getItem('step3UploadedDocs');
       if (raw) cached = JSON.parse(raw);
-    } catch (e) {}
+    } catch (e) { }
   }
   const result: any = {};
   DEFAULT_STEP3_KEYS.forEach((k) => {
@@ -124,11 +126,6 @@ const FileUploadBox: React.FC<Step3FileUploadBoxProps> = ({
     <div id={`slot-${field}`} className="space-y-2">
       <Label className="text-foreground text-sm font-semibold flex items-center gap-1.5 flex-wrap">
         <span>{cleanLabel}</span>
-        {required && !isOptional && (
-          <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-            * (Mandatory)
-          </span>
-        )}
         {isOptional && <span className="text-slate-400 text-xs font-medium">(Optional)</span>}
       </Label>
       {hint && (
@@ -211,10 +208,94 @@ const FileUploadBox: React.FC<Step3FileUploadBoxProps> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSkip }) => {
-  const { nextStep, prevStep } = useFormContext();
+  const { nextStep, prevStep, customerId } = useFormContext();
   const { toast } = useToast();
 
   const [files, setFiles] = useState<Record<Step3FilesKey, FilePreview>>(() => buildInitialStep3Files());
+
+  // Auto-fetch existing customer KYC documents if in edit mode (customerId present)
+  useEffect(() => {
+    const activeCustId = customerId || (typeof window !== 'undefined' ? localStorage.getItem('loanFormCustomerId') : null);
+    if (!activeCustId) return;
+
+    let cachedDocs: any = null;
+    try {
+      const raw = localStorage.getItem('step3UploadedDocs');
+      if (raw) cachedDocs = JSON.parse(raw);
+    } catch (e) {}
+
+    if (cachedDocs && Object.keys(cachedDocs).length > 0) {
+      setFiles(buildInitialStep3Files());
+      return;
+    }
+
+    const fetchExistingKycDocs = async () => {
+      try {
+        const companyId = getCompanyId();
+        const token = getCookie('lendgrid_cookie');
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json',
+          ...(companyId ? { 'companyid': String(companyId) } : {}),
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        };
+        const apiBase = normalizeApiUrl(process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:8080');
+        const res = await fetch(`${apiBase}/get-customer-documents/${activeCustId}`, { headers });
+        if (res.ok) {
+          const json = await res.json();
+          const docs = json?.data || json;
+          if (Array.isArray(docs) && docs.length > 0) {
+            setFiles((prev) => {
+              const updated = { ...prev };
+              const cacheToSave: Record<string, { url: string; name: string }> = {};
+
+              docs.forEach((d: any) => {
+                const url = d.document_url;
+                const type = (d.type || '').toLowerCase().trim();
+                if (!url) return;
+                const fileName = url.split('/').pop() || 'Uploaded Document';
+
+                if (type === 'aadhaar front' || type === 'aadhar front' || type === 'aadhaar card') {
+                  updated.aadharFront = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                  cacheToSave.aadharFront = { url, name: fileName };
+                } else if (type === 'aadhaar back' || type === 'aadhar back') {
+                  updated.aadharBack = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                  cacheToSave.aadharBack = { url, name: fileName };
+                } else if (type === 'pancard' || type === 'pan card' || type === 'pan') {
+                  updated.pancard = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                  cacheToSave.pancard = { url, name: fileName };
+                } else if (type === 'profile photo' || type === 'passport photo' || type === 'photo') {
+                  updated.passportSizePhoto = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                  cacheToSave.passportSizePhoto = { url, name: fileName };
+                } else if (type === 'salary slip' || type === 'salary_slip') {
+                  updated.salarySlip = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                  cacheToSave.salarySlip = { url, name: fileName };
+                } else if (type === 'form 26as' || type === 'form26as') {
+                  updated.form26as = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                  cacheToSave.form26as = { url, name: fileName };
+                } else if (type === 'current address proof' || type === 'address proof' || type === 'electricity bill') {
+                  if (!updated.currentAddressProof?.uploadedUrl) {
+                    updated.currentAddressProof = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                    cacheToSave.currentAddressProof = { url, name: fileName };
+                  } else if (!updated.permanentAddressProof?.uploadedUrl) {
+                    updated.permanentAddressProof = { file: null, preview: url, uploadedUrl: url, uploadedName: fileName };
+                    cacheToSave.permanentAddressProof = { url, name: fileName };
+                  }
+                }
+              });
+
+              if (Object.keys(cacheToSave).length > 0) {
+                localStorage.setItem('step3UploadedDocs', JSON.stringify(cacheToSave));
+              }
+              return updated;
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Error fetching existing KYC docs in Step3Form:', err);
+      }
+    };
+    fetchExistingKycDocs();
+  }, [customerId]);
 
   const [sameAsCurrentAddress, setSameAsCurrentAddress] = useState<boolean>(false);
 
@@ -292,38 +373,16 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
         }
         localStorage.setItem('step3UploadedDocs', JSON.stringify(parsed));
       }
-    } catch (e) {}
+    } catch (e) { }
   }, [sameAsCurrentAddress]);
 
   const handleUpload = async () => {
-    // Validation rule: at least ANY 1 document must be provided (uploaded or selected)
-    const hasAnyDocument = Object.values(files).some(
-      (slot) => slot.file !== null || Boolean(slot.uploadedUrl)
-    );
-
-    if (!hasAnyDocument) {
-      toast({
-        title: 'Document Required',
-        description: 'Please select at least one document to upload.',
-        variant: 'destructive',
-      });
-      focusAndScrollToField('slot-aadharFront');
-      return;
-    }
-
     const activeFiles = Object.entries(files).filter(([, v]) => v.file !== null);
 
-    // If no new files were selected, but documents were previously uploaded, advance directly
+    // If no new files were selected, advance directly
     if (activeFiles.length === 0) {
-      const hasUploaded = Object.values(files).some((v) => Boolean(v.uploadedUrl));
-      if (hasUploaded) {
-        toast({
-          title: 'Success',
-          description: 'Core documents verified. Proceeding...',
-        });
-        nextStep();
-        return;
-      }
+      nextStep();
+      return;
     }
 
     try {
@@ -352,10 +411,10 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
       setTimeout(() => {
         nextStep();
       }, 1500);
-    } catch {
+    } catch (error: any) {
       toast({
-        title: 'Error',
-        description: 'Failed to upload documents',
+        title: 'Upload Failed',
+        description: error?.message || 'Failed to upload documents. Please check file sizes and formats.',
         variant: 'destructive',
       });
     }
@@ -519,21 +578,34 @@ export const Step3Form: React.FC<Step3FormProps> = ({ onSubmit, isLoading, onSki
             Back
           </Button>
 
-          <Button
-            type="button"
-            onClick={handleUpload}
-            disabled={isLoading}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6"
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Uploading...
-              </>
-            ) : (
-              'Upload & Proceed'
+          <div className="flex gap-3">
+            {onSkip && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={onSkip}
+                className="border-amber-500/40 text-amber-500 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-400"
+              >
+                Skip Documents
+              </Button>
             )}
-          </Button>
+
+            <Button
+              type="button"
+              onClick={handleUpload}
+              disabled={isLoading}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Uploading...
+                </>
+              ) : (
+                'Upload & Proceed'
+              )}
+            </Button>
+          </div>
         </div>
       </Card>
     </motion.div>

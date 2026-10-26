@@ -8,7 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { cn } from '@/lib/utils';
+import { cn, getCookie, normalizeApiUrl } from '@/lib/utils';
+import { getCompanyId } from '@/lib/http-client';
 import {
     Select,
     SelectContent,
@@ -23,6 +24,7 @@ import {
     getHeading,
     getSubheading,
     STEP2_FIELD_LABELS,
+    DOC_KEY_TO_DB_TYPE,
 } from './formConstants';
 import { focusAndScrollToField, validatePartnerDetails } from './validation';
 
@@ -55,7 +57,7 @@ function buildFilesState(fieldKeys: string[]): FilesState {
         try {
             const raw = localStorage.getItem('step2UploadedDocs');
             if (raw) cached = JSON.parse(raw);
-        } catch (e) {}
+        } catch (e) { }
     }
     return Object.fromEntries(
         fieldKeys.map((k) => [
@@ -113,11 +115,6 @@ const FileUploadBox: React.FC<FileUploadBoxProps> = ({
         <div id={`slot-${field}`} className="space-y-2">
             <Label className="text-foreground text-sm font-semibold flex items-center gap-1.5 flex-wrap">
                 <span>{cleanLabel}</span>
-                {required && !isOptional && (
-                    <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-                        * (Mandatory)
-                    </span>
-                )}
                 {isOptional && (
                     <span style={{ color: '#64748b', fontSize: '11px', fontWeight: 500 }}>
                         (Optional)
@@ -244,10 +241,7 @@ const PersonRows: React.FC<PersonRowsProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
                         <Label htmlFor={`person_${idx}_name`} className="text-foreground text-xs font-medium">
-                            {label.includes('Director') ? 'Director Name (As per PAN)' : `${label} Name (As per PAN)`}{' '}
-                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-                                * (Mandatory)
-                            </span>
+                            {label.includes('Director') ? 'Director Name (As per PAN)' : `${label} Name (As per PAN)`}
                         </Label>
                         <Input
                             id={`person_${idx}_name`}
@@ -261,10 +255,7 @@ const PersonRows: React.FC<PersonRowsProps> = ({
                     {shouldShowEmail && (
                         <div className="space-y-1">
                             <Label htmlFor={`person_${idx}_email`} className="text-foreground text-xs font-medium">
-                                Email ID{' '}
-                                <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-                                    * (Mandatory)
-                                </span>
+                                Email ID
                             </Label>
                             <Input
                                 id={`person_${idx}_email`}
@@ -279,10 +270,7 @@ const PersonRows: React.FC<PersonRowsProps> = ({
 
                     <div className="space-y-1">
                         <Label htmlFor={`person_${idx}_aadhaar`} className="text-foreground text-xs font-medium">
-                            Aadhaar Number{' '}
-                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-                                * (Mandatory)
-                            </span>
+                            Aadhaar Number
                         </Label>
                         <Input
                             id={`person_${idx}_aadhaar`}
@@ -296,10 +284,7 @@ const PersonRows: React.FC<PersonRowsProps> = ({
 
                     <div className="space-y-1">
                         <Label htmlFor={`person_${idx}_pan`} className="text-foreground text-xs font-medium">
-                            PAN Number{' '}
-                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-                                * (Mandatory)
-                            </span>
+                            PAN Number
                         </Label>
                         <Input
                             id={`person_${idx}_pan`}
@@ -313,10 +298,7 @@ const PersonRows: React.FC<PersonRowsProps> = ({
 
                     <div className={cn("space-y-1", shouldShowEmail ? "col-span-1 md:col-span-2" : "")}>
                         <Label htmlFor={`person_${idx}_mobile`} className="text-foreground text-xs font-medium">
-                            Mobile Number{' '}
-                            <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-                                * (Mandatory)
-                            </span>
+                            Mobile Number
                         </Label>
                         <Input
                             id={`person_${idx}_mobile`}
@@ -339,7 +321,7 @@ const PersonRows: React.FC<PersonRowsProps> = ({
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSkip, onBack }) => {
-    const { formData, nextStep } = useFormContext();
+    const { formData, nextStep, customerId } = useFormContext();
     const { toast } = useToast();
 
     const loanType = formData.loanType || '';
@@ -358,6 +340,59 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [loanType, entityType, employmentType]);
 
+    // Auto-fetch existing customer documents if in edit mode (customerId present)
+    useEffect(() => {
+        const activeCustId = customerId || (typeof window !== 'undefined' ? localStorage.getItem('loanFormCustomerId') : null);
+        if (!activeCustId) return;
+
+        let cachedDocs: any = null;
+        try {
+            const raw = localStorage.getItem('step2UploadedDocs');
+            if (raw) cachedDocs = JSON.parse(raw);
+        } catch (e) {}
+
+        if (cachedDocs && Object.keys(cachedDocs).length > 0) {
+            setFiles(buildFilesState(fieldKeys));
+            return;
+        }
+
+        const fetchExistingDocs = async () => {
+            try {
+                const companyId = getCompanyId();
+                const token = getCookie('lendgrid_cookie');
+                const headers: Record<string, string> = {
+                    'Content-Type': 'application/json',
+                    ...(companyId ? { 'companyid': String(companyId) } : {}),
+                    ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+                };
+                const apiBase = normalizeApiUrl(process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:8080');
+                const res = await fetch(`${apiBase}/get-customer-documents/${activeCustId}`, { headers });
+                if (res.ok) {
+                    const json = await res.json();
+                    const docs = json?.data || json;
+                    if (Array.isArray(docs) && docs.length > 0) {
+                        const cacheToSave: Record<string, { url: string; name: string }> = {};
+                        fieldKeys.forEach((key) => {
+                            const dbType = DOC_KEY_TO_DB_TYPE[key]?.toLowerCase() || key.toLowerCase();
+                            const matched = docs.find((d: any) => (d.type || '').toLowerCase().trim() === dbType.trim());
+                            if (matched && matched.document_url) {
+                                const fileName = matched.document_url.split('/').pop() || 'Uploaded Document';
+                                cacheToSave[key] = { url: matched.document_url, name: fileName };
+                            }
+                        });
+                        if (Object.keys(cacheToSave).length > 0) {
+                            localStorage.setItem('step2UploadedDocs', JSON.stringify(cacheToSave));
+                            setFiles(buildFilesState(fieldKeys));
+                        }
+                    }
+                }
+            } catch (err) {
+                console.warn('Error fetching docs in Step2Form:', err);
+            }
+        };
+        fetchExistingDocs();
+    }, [customerId, loanType, entityType, employmentType]);
+
     // ── Bank Statement Password ───────────────────────────────────────────────
     const [isPdfProtected, setIsPdfProtected] = useState<boolean>(() => {
         if (typeof window !== 'undefined') {
@@ -366,7 +401,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     localStorage.getItem('step2IsPdfProtected') === 'true' ||
                     Boolean(localStorage.getItem('step2BankingPassword'))
                 );
-            } catch (e) {}
+            } catch (e) { }
         }
         return false;
     });
@@ -376,7 +411,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
         if (typeof window !== 'undefined') {
             try {
                 bankingPassword = localStorage.getItem('step2BankingPassword') || '';
-            } catch (e) {}
+            } catch (e) { }
         }
         return { bankingPassword };
     });
@@ -385,14 +420,14 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
         setTextFields((prev) => ({ ...prev, bankingPassword: val }));
         try {
             localStorage.setItem('step2BankingPassword', val);
-        } catch (e) {}
+        } catch (e) { }
     }, []);
 
     const handleProtectedCheckboxChange = useCallback((checked: boolean) => {
         setIsPdfProtected(checked);
         try {
             localStorage.setItem('step2IsPdfProtected', String(checked));
-        } catch (e) {}
+        } catch (e) { }
     }, []);
 
     // ── Dynamic director / partner rows (business loan: pvt ltd, llp, partnership) ─
@@ -410,7 +445,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     const parsed = parseInt(raw, 10);
                     if (!isNaN(parsed) && parsed > 0) return parsed;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
         return defaultNumPersons;
     });
@@ -425,7 +460,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     const parsed = JSON.parse(raw);
                     if (Array.isArray(parsed) && parsed.length > 0) return parsed;
                 }
-            } catch (e) {}
+            } catch (e) { }
         }
         return Array.from({ length: defaultNumPersons }, () => ({
             name: '',
@@ -449,7 +484,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     try {
                         localStorage.setItem('step2PersonDetails', JSON.stringify(next));
                         localStorage.setItem('step2NumPersons', '2');
-                    } catch (e) {}
+                    } catch (e) { }
                     return next;
                 }
                 return prev;
@@ -468,7 +503,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
         try {
             localStorage.setItem('step2NumPersons', String(n));
             localStorage.setItem('step2PersonDetails', JSON.stringify(updated));
-        } catch (e) {}
+        } catch (e) { }
     };
 
     const updatePerson = (
@@ -480,7 +515,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
             const next = prev.map((p, i) => (i === idx ? { ...p, [field]: value } : p));
             try {
                 localStorage.setItem('step2PersonDetails', JSON.stringify(next));
-            } catch (e) {}
+            } catch (e) { }
             return next;
         });
     };
@@ -516,7 +551,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                 delete parsed[field];
                 localStorage.setItem('step2UploadedDocs', JSON.stringify(parsed));
             }
-        } catch (e) {}
+        } catch (e) { }
     }, []);
 
     // Cleanup on unmount
@@ -536,24 +571,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
 
     // ── Upload / Proceed ──────────────────────────────────────────────────────
     const handleUpload = async () => {
-        // 1. Mandatory check: at least ANY 1 document must be provided (uploaded or selected)
-        const hasAnyDocument = Object.values(files).some(
-            (v) => v.file !== null || Boolean(v.uploadedUrl)
-        );
-        if (!hasAnyDocument) {
-            toast({
-                title: 'Document Required',
-                description: 'Please select at least one document to upload.',
-                variant: 'destructive',
-            });
-            const firstSlotKey = fieldKeys[0];
-            if (firstSlotKey) {
-                focusAndScrollToField(`slot-${firstSlotKey}`);
-            }
-            return;
-        }
-
-        // 2. Bank password check
+        // 1. Bank password check
         if (isPdfProtected && (!textFields.bankingPassword || !textFields.bankingPassword.trim())) {
             toast({
                 title: 'Password Required',
@@ -564,7 +582,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
             return;
         }
 
-        // 3. Partner / Director checks if applicable
+        // 2. Partner / Director checks if applicable
         if (numPersons > 0) {
             const personLabel = (entityType === 'llp' || entityType === 'private_limited') ? 'Director' : 'Partner';
             const validation = validatePartnerDetails(personDetails, {
@@ -586,23 +604,19 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
 
         const activeFiles = Object.entries(files).filter(([, v]) => v.file !== null);
 
-        // If no new local files are queued, but all required files were previously uploaded, proceed cleanly!
+        // If no new local files are queued, advance cleanly!
         if (activeFiles.length === 0) {
-            const hasUploaded = Object.values(files).some((v) => Boolean(v.uploadedUrl));
-            if (hasUploaded) {
-                const allTextFields: TextFieldsState = {
-                    ...textFields,
-                    bankingPassword: isPdfProtected ? (textFields.bankingPassword || '').trim() : '',
-                    ...(numPersons > 0 ? { personDetails: JSON.stringify(personDetails) } : {}),
-                };
-                if (isPdfProtected) {
-                    localStorage.setItem('step2BankingPassword', (textFields.bankingPassword || '').trim());
-                    localStorage.setItem('step2IsPdfProtected', 'true');
-                }
-                toast({ title: 'Success', description: 'Documents verified. Proceeding...' });
-                nextStep();
-                return;
+            const allTextFields: TextFieldsState = {
+                ...textFields,
+                bankingPassword: isPdfProtected ? (textFields.bankingPassword || '').trim() : '',
+                ...(numPersons > 0 ? { personDetails: JSON.stringify(personDetails) } : {}),
+            };
+            if (isPdfProtected) {
+                localStorage.setItem('step2BankingPassword', (textFields.bankingPassword || '').trim());
+                localStorage.setItem('step2IsPdfProtected', 'true');
             }
+            nextStep();
+            return;
         }
 
         try {
@@ -630,8 +644,12 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
 
             toast({ title: 'Success', description: 'Documents uploaded successfully' });
             setTimeout(() => nextStep(), 1500);
-        } catch {
-            toast({ title: 'Error', description: 'Failed to upload documents', variant: 'destructive' });
+        } catch (error: any) {
+            toast({
+                title: 'Upload Failed',
+                description: error?.message || 'Failed to upload documents',
+                variant: 'destructive',
+            });
         }
     };
 
@@ -674,13 +692,12 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {fieldKeys.map((key) => {
                         const rawLabel = STEP2_FIELD_LABELS[key] || key;
-                        const isMandatory = rawLabel.includes('* (Mandatory)');
                         return (
                             <FileUploadBox
                                 key={key}
                                 label={rawLabel}
                                 field={key}
-                                required={isMandatory}
+                                required={false}
                                 fileData={files[key] || emptyFile()}
                                 onFileChange={handleFileChange}
                                 onRemoveFile={handleRemoveFile}
@@ -721,10 +738,7 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                         {isPdfProtected && (
                             <div className="space-y-1.5 max-w-md pt-1">
                                 <Label className="text-foreground text-xs font-medium">
-                                    PDF Password{' '}
-                                    <span style={{ color: '#e05353', fontSize: '11px', fontWeight: 500, letterSpacing: '0.2px' }}>
-                                        * (Mandatory)
-                                    </span>
+                                    PDF Password
                                 </Label>
                                 <Input
                                     id="banking-password-input"
@@ -751,15 +765,14 @@ export const Step2Form: React.FC<Step2FormProps> = ({ onSubmit, isLoading, onSki
                     </Button>
 
                     <div className="flex gap-3">
-                        {!hasMandatoryFields && (
+                        {onSkip && (
                             <Button
-                                variant="ghost"
+                                variant="outline"
                                 type="button"
-                                onClick={handleSkip}
-                                disabled={hasAnyContent}
-                                className="text-muted-foreground hover:text-foreground"
+                                onClick={onSkip}
+                                className="border-amber-500/40 text-amber-500 dark:text-amber-400 hover:bg-amber-500/10 hover:text-amber-400"
                             >
-                                Skip
+                                Skip Documents
                             </Button>
                         )}
 

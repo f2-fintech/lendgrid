@@ -106,6 +106,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
     setValue,
     watch,
     getValues,
+    reset,
   } = useForm<Step1FormData>({
     resolver: zodResolver(step1Schema),
     defaultValues: {
@@ -122,12 +123,100 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
       city: rawFormData.city || initialDraft.city || '',
       state: (rawFormData.state || initialDraft.state || '') as any,
       employment_type: (rawFormData.employment_type || initialDraft.employment_type || '') as any,
-      dob: (rawFormData.dob ? new Date(rawFormData.dob) : (initialDraft.dob ? new Date(initialDraft.dob) : undefined)) as any,
+      dob: (rawFormData.dob && !isNaN(new Date(rawFormData.dob).getTime()) ? new Date(rawFormData.dob) : (initialDraft.dob && !isNaN(new Date(initialDraft.dob).getTime()) ? new Date(initialDraft.dob) : undefined)) as any,
     },
   });
 
   const title = watch('title');
   const employmentType = watch('employment_type');
+
+  // ── Auto-Hydrate from Draft or Backend on Mount ──────────────────────────
+  useEffect(() => {
+    const draft = getInitialDraft();
+    const activeCustId = customerId || (typeof window !== 'undefined' ? localStorage.getItem('loanFormCustomerId') : null);
+
+    const applyDraftValues = (data: any) => {
+      const parsedDob = data.dob && !isNaN(new Date(data.dob).getTime()) ? new Date(data.dob) : undefined;
+      reset({
+        title: (data.title || '') as any,
+        name: data.name || '',
+        contact: data.contact || '',
+        email: data.email || '',
+        pan: data.pan || '',
+        father_name: data.father_name || '',
+        mother_name: data.mother_name || '',
+        working_address: data.working_address || '',
+        permanent_address: data.permanent_address || '',
+        current_address: data.current_address || '',
+        city: data.city || '',
+        state: (data.state || '') as any,
+        employment_type: (data.employment_type || '') as any,
+        dob: parsedDob as any,
+      });
+      if (parsedDob) setDate(parsedDob);
+    };
+
+    if (draft && (draft.name || draft.contact || draft.pan)) {
+      applyDraftValues({ ...rawFormData, ...draft });
+      return;
+    }
+
+    if (activeCustId) {
+      const fetchCustomerDetails = async () => {
+        try {
+          const companyId = getCompanyId();
+          const token = getCookie('lendgrid_cookie');
+          const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            ...(companyId ? { 'companyid': String(companyId) } : {}),
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          };
+
+          const [infoRes, custRes] = await Promise.allSettled([
+            fetch(`${apiBaseUrl}/customer-info/${activeCustId}`, { headers }),
+            fetch(`${apiBaseUrl}/get-customer/${activeCustId}`, { headers })
+          ]);
+
+          const combined: Record<string, any> = {};
+          if (custRes.status === 'fulfilled' && custRes.value.ok) {
+            const custJson = await custRes.value.json();
+            const cust = custJson?.data || custJson;
+            if (cust) {
+              combined.name = cust.name;
+              combined.email = cust.email;
+              combined.contact = cust.contact;
+            }
+          }
+          if (infoRes.status === 'fulfilled' && infoRes.value.ok) {
+            const infoJson = await infoRes.value.json();
+            const info = infoJson?.data || infoJson;
+            if (info) {
+              combined.title = info.title;
+              combined.pan = info.pan;
+              combined.father_name = info.father_name;
+              combined.mother_name = info.mother_name;
+              combined.working_address = info.working_address;
+              combined.permanent_address = info.permanent_address;
+              combined.current_address = info.current_address;
+              combined.city = info.city;
+              combined.state = info.state;
+              combined.employment_type = info.employment_type;
+              combined.dob = info.dob;
+            }
+          }
+          if (Object.keys(combined).length > 0) {
+            applyDraftValues(combined);
+            try {
+              localStorage.setItem('step1CustomerDraft', JSON.stringify(combined));
+            } catch (e) {}
+          }
+        } catch (e) {
+          console.warn('Failed to auto-fetch customer info in Step1Form:', e);
+        }
+      };
+      fetchCustomerDetails();
+    }
+  }, [customerId, apiBaseUrl]);
 
   // ── Real-time Auto-Save Observer ──────────────────────────────────────────
   // Subscribes to keystrokes & input changes without triggering component re-renders.

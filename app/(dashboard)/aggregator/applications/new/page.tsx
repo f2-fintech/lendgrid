@@ -1,6 +1,7 @@
 "use client";
 
 import { useAuth } from '@/lib/auth';
+import { normalizeApiUrl } from '@/lib/utils';
 import MultiStepFormPage from '@/components/dashboard/aggregator/multi-step-application-form/MultiStepFormPage';
 
 export default function NewApplicationPage() {
@@ -17,8 +18,8 @@ export default function NewApplicationPage() {
     // For aggregator_member, route requests through lendgrid-server proxy (NEXT_PUBLIC_API_BASE_URL).
     // For other roles (like OMS Sales), route directly to f2fintech-server (NEXT_PUBLIC_WEB_URL).
     const apiBaseUrl = role === 'aggregator_member'
-        ? (process.env.NEXT_PUBLIC_API_BASE_URL ? `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/v1` : 'http://localhost:4000/api/v1')
-        : (process.env.NEXT_PUBLIC_WEB_URL || '');
+        ? normalizeApiUrl(process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000')
+        : normalizeApiUrl(process.env.NEXT_PUBLIC_WEB_URL || 'http://localhost:8080');
 
     return (
         <MultiStepFormPage

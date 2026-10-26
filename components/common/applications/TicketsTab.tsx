@@ -21,9 +21,11 @@ import {
     FileText,
     TrendingUp,
     MapPin,
-    RotateCcw
+    RotateCcw,
+    Copy
 } from 'lucide-react'
 
+import { CloneApplicationDialog } from './CloneApplicationDialog'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -129,13 +131,15 @@ const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType
 interface ApplicationCardProps {
     application: any;
     onView: () => void;
+    onClone?: () => void;
     onDelete: () => void;
     onStatusClick: () => void;
     formatCurrency: (amount: number) => string;
     isOmsEnabled: boolean;
+    canClone?: boolean;
 }
 
-const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationCardProps) => {
+const ApplicationCard = ({ application, onView, onClone, onDelete, onStatusClick, formatCurrency, isOmsEnabled, canClone }: ApplicationCardProps) => {
     // State to toggle between details and history
     const [showHistory, setShowHistory] = useState(false);
 
@@ -270,35 +274,37 @@ const ApplicationCard = ({ application, onView, onDelete, onStatusClick, formatC
                                 </TooltipContent>
                             </Tooltip>
 
-                            {/* Action Buttons - 50/50 Split */}
-                            <div className="grid grid-cols-2 gap-2">
+                            {/* Action Buttons */}
+                            <div className={cn("grid gap-2", canClone && onClone ? "grid-cols-3" : "grid-cols-2")}>
                                 <Button
                                     onClick={onView}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-background/50 border-border text-foreground hover:text-foreground hover:bg-blue-500/10 hover:border-blue-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-foreground hover:text-foreground hover:bg-blue-500/10 hover:border-blue-500/50 transition-all text-xs"
                                 >
-                                    <Eye className="w-4 h-4 mr-1.5" />
+                                    <Eye className="w-3.5 h-3.5 mr-1" />
                                     View
                                 </Button>
 
-                                {/* <Button
-                  onClick={onDelete}
-                  variant="outline"
-                  size="sm"
-                  className="w-full bg-background/50 border-border text-red-400 hover: text-foreground hover:bg-red-600/20 hover:border-red-500/50 transition-all"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button> */}
+                                {canClone && onClone && (
+                                    <Button
+                                        onClick={onClone}
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full bg-amber-500/10 border-amber-500/30 text-amber-500 hover:text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 transition-all text-xs"
+                                    >
+                                        <Copy className="w-3.5 h-3.5 mr-1" />
+                                        Clone
+                                    </Button>
+                                )}
 
                                 <Button
                                     onClick={() => setShowHistory(true)}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-background/50 border-border text-cyan-400 hover:text-foreground hover:bg-cyan-600/10 hover:border-cyan-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-cyan-400 hover:text-foreground hover:bg-cyan-600/10 hover:border-cyan-500/50 transition-all text-xs"
                                 >
-                                    <Clock className="w-4 h-4 mr-1.5" />
+                                    <Clock className="w-3.5 h-3.5 mr-1" />
                                     History
                                 </Button>
                             </div>
@@ -405,13 +411,15 @@ interface ApplicationTableRowProps {
     application: any;
     index: number;
     onView: () => void;
+    onClone?: () => void;
     onDelete: () => void;
     onStatusClick: () => void;
     formatCurrency: (amount: number) => string;
     isOmsEnabled: boolean;
+    canClone?: boolean;
 }
 
-const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationTableRowProps) => {
+const ApplicationTableRow = ({ application, index, onView, onClone, onDelete, onStatusClick, formatCurrency, isOmsEnabled, canClone }: ApplicationTableRowProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     // Fetch ticket history only when expanded
@@ -515,6 +523,21 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, onStatusCli
                             </TooltipTrigger>
                             <TooltipContent>View Ticket</TooltipContent>
                         </Tooltip>
+
+                        {canClone && onClone && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        onClick={onClone}
+                                        className="p-1.5 rounded-lg text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer inline-flex items-center justify-center select-none"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Clone / Edit with Different Provider</TooltipContent>
+                            </Tooltip>
+                        )}
 
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -632,13 +655,15 @@ interface ApplicationsGridProps {
     hasFilters?: boolean;
     onClearFilters?: () => void;
     onView: (app: any) => void;
+    onClone?: (app: any) => void;
     onDelete: (id: number) => void;
     onStatusClick: (app: any) => void;
     formatCurrency: (amount: number) => string;
     isOmsEnabled: boolean;
+    canClone?: boolean;
 }
 
-const ApplicationsGrid = ({ ticketsData, isLoading, hasFilters, onClearFilters, onView, onDelete, onStatusClick, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
+const ApplicationsGrid = ({ ticketsData, isLoading, hasFilters, onClearFilters, onView, onClone, onDelete, onStatusClick, formatCurrency, isOmsEnabled, canClone }: ApplicationsGridProps) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
@@ -688,10 +713,12 @@ const ApplicationsGrid = ({ ticketsData, isLoading, hasFilters, onClearFilters, 
                     key={ticket.ticketId}
                     application={ticket}
                     onView={() => onView(ticket)}
+                    onClone={() => onClone?.(ticket)}
                     onDelete={() => onDelete(ticket.ticketId)}
                     onStatusClick={() => onStatusClick(ticket)}
                     formatCurrency={formatCurrency}
                     isOmsEnabled={isOmsEnabled}
+                    canClone={canClone}
                 />
             ))}
         </div>
@@ -713,6 +740,8 @@ export function TicketsTab({
     const [isExporting, setIsExporting] = useState(false)
 
     const [selectedApplication, setSelectedApplication] = useState<any>(null)
+    const [cloneTarget, setCloneTarget] = useState<any | null>(null)
+    const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false)
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
 
     const [page, setPage] = useState(1)
@@ -755,6 +784,20 @@ export function TicketsTab({
     const roleLower = String(decoded?.role || user?.role || '').toLowerCase();
     const isSalesUser = (decoded?.source === 'oms' && roleLower === 'sales') || roleLower === 'sales' || roleLower === 'lendgrid_sales';
     const isAggregatorMember = roleLower === 'aggregator_member';
+    const isAggregatorAdmin = roleLower === 'aggregator_admin';
+    const canClone = Boolean(
+        isSalesUser ||
+        isOmsEnabled ||
+        decoded?.source === 'oms' ||
+        roleLower === 'sales' ||
+        roleLower === 'lendgrid_sales' ||
+        isAggregatorAdmin
+    );
+
+    const handleOpenClone = (ticket: any) => {
+        setCloneTarget(ticket);
+        setIsCloneDialogOpen(true);
+    };
 
     const effectiveSalesUserId = isSalesUser
         ? (decoded?.id ?? decoded?.userId ?? decoded?.sub ?? decoded?.salesUserId ?? decoded?.user_id ?? user?.omsUserId ?? user?.id)
@@ -1167,10 +1210,12 @@ export function TicketsTab({
                                                             setSelectedApplication(ticket)
                                                             setIsViewDialogOpen(true)
                                                         }}
+                                                        onClone={() => handleOpenClone(ticket)}
                                                         onDelete={() => handleDelete(ticket.ticketId)}
                                                         onStatusClick={() => handleStatusClick(ticket)}
                                                         formatCurrency={formatCurrency}
                                                         isOmsEnabled={isOmsEnabled}
+                                                        canClone={canClone}
                                                     />
                                                 ))
                                             ) : (
@@ -1221,10 +1266,12 @@ export function TicketsTab({
                                     setSelectedApplication(ticket);
                                     setIsViewDialogOpen(true);
                                 }}
+                                onClone={handleOpenClone}
                                 onDelete={handleDelete}
                                 onStatusClick={handleStatusClick}
                                 formatCurrency={formatCurrency}
                                 isOmsEnabled={isOmsEnabled}
+                                canClone={canClone}
                             />
                         )}
                         <div className="px-4 pb-4">
@@ -1285,6 +1332,20 @@ export function TicketsTab({
                                         </Badge>
                                     )}
                                 </div>
+
+                                {canClone && (
+                                    <Button
+                                        type="button"
+                                        size="sm"
+                                        onClick={() => {
+                                            handleOpenClone(selectedApplication);
+                                        }}
+                                        className="bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 border border-amber-500/30 font-medium text-xs gap-1.5 rounded-lg shadow-sm"
+                                    >
+                                        <Copy className="w-3.5 h-3.5" />
+                                        <span>Clone / Edit with Different Provider</span>
+                                    </Button>
+                                )}
                             </div>
 
                             {/* Customer Information Card */}
@@ -1680,6 +1741,16 @@ export function TicketsTab({
                     </div>
                 </DialogContent>
             </Dialog>
+
+            {/* Clone Application Dialog */}
+            <CloneApplicationDialog
+                open={isCloneDialogOpen}
+                onOpenChange={setIsCloneDialogOpen}
+                application={cloneTarget}
+                onSuccess={() => {
+                    refetch();
+                }}
+            />
         </div>
     )
 }

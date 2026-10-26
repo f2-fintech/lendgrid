@@ -21,7 +21,7 @@ import { Step1FormData, Step4FormData } from './validation';
 import { DOC_KEY_TO_DB_TYPE, COAPP_DOC_KEY_TO_DB_TYPE } from './formConstants';
 import { useToast } from '@/hooks/use-toast';
 import { getCompanyId } from '@/lib/http-client';
-import { decodeJwt, getCookie } from '@/lib/utils';
+import { decodeJwt, getCookie, normalizeApiUrl } from '@/lib/utils';
 import { DesktopStepper } from './DesktopStepper';
 import { MobileStepper } from './MobileStepper';
 
@@ -57,6 +57,7 @@ export const MultiStepFormContent: React.FC<{
     guestIsOmsEnabled?: boolean;
     guestSource?: string;
 }> = ({ apiBaseUrl, providers, onClose, onSuccess, guestCompanyId, aggregatorProfileId, guestIsOmsEnabled, guestSource }) => {
+    const activeBaseUrl = normalizeApiUrl(apiBaseUrl);
     const {
         activeStep,
         setActiveStep,
@@ -172,9 +173,29 @@ export const MultiStepFormContent: React.FC<{
         if (savedFormData) {
             try {
                 const parsed = JSON.parse(savedFormData);
+                if (parsed.amount) {
+                    const cleanAmt = String(parsed.amount).includes('.')
+                        ? String(parsed.amount).split('.')[0].replace(/[^0-9]/g, '')
+                        : String(parsed.amount).replace(/[^0-9]/g, '');
+                    parsed.amount = cleanAmt;
+                    if (Array.isArray(parsed.providerAmounts)) {
+                        parsed.providerAmounts = parsed.providerAmounts.map((pa: any) => ({
+                            ...pa,
+                            amount: String(pa.amount).includes('.')
+                                ? String(pa.amount).split('.')[0].replace(/[^0-9]/g, '')
+                                : String(pa.amount).replace(/[^0-9]/g, '')
+                        }));
+                    }
+                }
                 if (parsed.amount && parsed.loanType && parsed.tenure && parsed.providers?.length > 0) {
-                    setFormData(JSON.parse(savedFormData));
-                    setShowStep0(false);
+                    setFormData(parsed);
+                    const shouldStartAtStep0 = localStorage.getItem('startAtStep0') === 'true';
+                    if (shouldStartAtStep0) {
+                        localStorage.removeItem('startAtStep0');
+                        setShowStep0(true);
+                    } else {
+                        setShowStep0(false);
+                    }
                 }
             } catch (e) {
                 console.error('Error parsing saved form data', e);
@@ -222,7 +243,7 @@ export const MultiStepFormContent: React.FC<{
 
     // API call to register customer
     const registerCustomer = async (customerData: any) => {
-        const response = await fetch(`${apiBaseUrl}/create-customer`, {
+        const response = await fetch(`${activeBaseUrl}/create-customer`, {
             method: 'POST',
             headers: commonHeaders,
             body: JSON.stringify(customerData),
@@ -240,7 +261,7 @@ export const MultiStepFormContent: React.FC<{
 
     // API call to create customer info
     const createCustomerInfo = async (customerId: string | null, infoData: any) => {
-        await fetch(`${apiBaseUrl}/create-customer-info`, {
+        await fetch(`${activeBaseUrl}/create-customer-info`, {
             method: 'POST',
             headers: commonHeaders,
             body: JSON.stringify({
@@ -256,7 +277,7 @@ export const MultiStepFormContent: React.FC<{
 
     // API call to create application
     const createApplication = async (appData: any) => {
-        const response = await fetch(`${apiBaseUrl}/create-application`, {
+        const response = await fetch(`${activeBaseUrl}/create-application`, {
             method: 'POST',
             headers: commonHeaders,
             body: JSON.stringify(appData),
@@ -266,8 +287,33 @@ export const MultiStepFormContent: React.FC<{
         return result.data.applicationId;
     };
 
+    // API call to update existing application
+    const updateApplication = async (appId: string | number, appData: any) => {
+        let response = await fetch(`${activeBaseUrl}/update-application/${appId}`, {
+            method: 'PATCH',
+            headers: commonHeaders,
+            body: JSON.stringify(appData),
+        });
+
+        if (!response.ok) {
+            response = await fetch(`${activeBaseUrl}/update-application`, {
+                method: 'POST',
+                headers: commonHeaders,
+                body: JSON.stringify({ ...appData, applicationId: appId }),
+            });
+        }
+
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            throw new Error(err.message || 'Failed to update application');
+        }
+
+        const result = await response.json();
+        return result?.data?.applicationId || appId;
+    };
+
     const createLoanTracking = async (applicationId: string) => {
-        const response = await fetch(`${apiBaseUrl}/create-loan-tracking`, {
+        const response = await fetch(`${activeBaseUrl}/create-loan-tracking`, {
             method: 'POST',
             headers: commonHeaders,
             body: JSON.stringify({
@@ -285,11 +331,13 @@ export const MultiStepFormContent: React.FC<{
 
     // API call to upload to S3
     const uploadToS3 = async (file: File, folder: string) => {
+        const safeFolderName = (folder || file.name || 'file').replace(/[^a-zA-Z0-9._-]/g, '_');
+        const uniqueKey = `${Date.now()}_${safeFolderName}`;
         const formData = new FormData();
         formData.append('document', file);
-        formData.append('folder', `document/${folder}`);
+        formData.append('folder', `document/${uniqueKey}`);
 
-        const response = await fetch(`${apiBaseUrl}/upload-to-s3`, {
+        const response = await fetch(`${activeBaseUrl}/upload-to-s3`, {
             method: 'POST',
             headers: {
                 ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -297,23 +345,60 @@ export const MultiStepFormContent: React.FC<{
             body: formData,
         });
 
+        if (!response.ok) {
+            let errorText = 'Upload failed';
+            try {
+                const errData = await response.json();
+                errorText = errData.msg || errData.message || `Upload failed with status ${response.status}`;
+            } catch {
+                if (response.status === 413) {
+                    errorText = 'File is too large. Please upload files under 15MB or compress your document.';
+                } else if (response.status === 404) {
+                    errorText = 'Upload endpoint not found (404). Please contact support.';
+                } else {
+                    errorText = `Upload error (${response.status})`;
+                }
+            }
+            throw new Error(errorText);
+        }
+
         const result = await response.json();
+        if (!result?.data) {
+            throw new Error(result?.msg || result?.message || 'Upload server did not return a valid file URL');
+        }
         return result.data;
     };
 
     // API call to create document record
     const createDocument = async (documentData: any) => {
-        await fetch(`${apiBaseUrl}/create-document`, {
+        const payload = {
+            ...documentData,
+            company_id: documentData.company_id || (resolvedCompanyId ? String(resolvedCompanyId) : undefined),
+        };
+
+        const response = await fetch(`${activeBaseUrl}/create-document`, {
             method: 'POST',
             headers: commonHeaders,
-            body: JSON.stringify(documentData),
+            body: JSON.stringify(payload),
         });
-        console.log('CREATE DOCUMENT:', documentData);
+
+        if (!response.ok) {
+            let errMsg = 'Failed to save document record';
+            try {
+                const errJson = await response.json();
+                errMsg = errJson.msg || errJson.message || errMsg;
+            } catch {
+                errMsg = `Failed to save document (HTTP ${response.status})`;
+            }
+            console.error('CREATE DOCUMENT ERROR:', errMsg, payload);
+            throw new Error(errMsg);
+        }
+        console.log('CREATE DOCUMENT SUCCESS:', payload);
     };
 
     // API call to create customer partners
     const createCustomerPartners = async (partnersData: any[]) => {
-        const response = await fetch(`${apiBaseUrl}/create-customer-partners`, {
+        const response = await fetch(`${activeBaseUrl}/create-customer-partners`, {
             method: 'POST',
             headers: commonHeaders,
             body: JSON.stringify(partnersData),
@@ -327,7 +412,7 @@ export const MultiStepFormContent: React.FC<{
 
     // API call to update customer info
     const updateCustomerInfo = async (customerId: string, updates: any) => {
-        await fetch(`${apiBaseUrl}/customer-info-update`, {
+        await fetch(`${activeBaseUrl}/customer-info-update`, {
             method: 'PATCH',
             headers: commonHeaders,
             body: JSON.stringify({
@@ -365,6 +450,9 @@ export const MultiStepFormContent: React.FC<{
         localStorage.removeItem('step3UploadedDocs');
         localStorage.removeItem('loanFormCompletedSteps');
         localStorage.removeItem('loanFormSkippedSteps');
+        localStorage.removeItem('editingApplicationId');
+        localStorage.removeItem('editingApplicationNumber');
+        localStorage.removeItem('originalProvider');
         resetForm();
         setShowStep0(true);
         setCompletedSteps([]);
@@ -709,48 +797,96 @@ export const MultiStepFormContent: React.FC<{
                 ? Number(String(formData.tenure).split(' ')[0])
                 : 5;
 
+            const editingAppId = localStorage.getItem('editingApplicationId');
+            const originalProvider = localStorage.getItem('originalProvider');
+
             for (const provider of activeProviders) {
                 const providerAmountRecord = formData.providerAmounts?.find((pa: any) => pa.provider === provider);
                 const finalAmount = providerAmountRecord && providerAmountRecord.amount 
                     ? Number(providerAmountRecord.amount) 
                     : Number(formData.amount || 100000);
 
-                const appNumber = generateApplicationNumber();
+                const isSameAsOriginal = Boolean(
+                    editingAppId &&
+                    originalProvider &&
+                    provider.trim().toLowerCase() === originalProvider.trim().toLowerCase()
+                );
 
-                const applicationPayload = {
-                    customer_id: customerId,
-                    application_no: appNumber,
-                    amount: finalAmount,
-                    tenure: numericTenure,
-                    provider: provider,
-                    loan_type: primaryLoanType,
-                    loan_category: formData.loanCategory || 'unsecured',
-                    lead_type: formData.leadType || 'null',
-                    existing_loans: JSON.stringify(
-                        (formData.existingLoans || []).map((l: any) => ({
-                            has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
-                            which_loan: l.whichLoan || null,
-                            loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
-                            running_emi: l.runningEmi ? Number(l.runningEmi) : null,
-                        }))
-                    ),
-                    case_type: formData.caseType || 'fresh',
-                    source: 'lendgrid',
-                    ...(formData.businessEntityType ? { business_entity_type: formData.businessEntityType } : {}),
-                    ...(formData.company_official_email ? { company_official_email: formData.company_official_email } : {}),
-                    ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
-                    ...(isOmsSalesSession && omsSalesUserId
-                        ? { applied_by: Number(omsSalesUserId) }
-                        : {}),
-                    ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
-                    ...(formData.referralCode?.trim() ? { referral_code: formData.referralCode.trim() } : {}),
-                };
+                if (isSameAsOriginal && editingAppId) {
+                    // Provider is same: Update existing application!
+                    const updatePayload = {
+                        applicationId: Number(editingAppId),
+                        amount: finalAmount,
+                        tenure: numericTenure,
+                        provider: provider,
+                        loan_type: primaryLoanType,
+                        loan_category: formData.loanCategory || 'unsecured',
+                        lead_type: formData.leadType || null,
+                        existing_loans: JSON.stringify(
+                            (formData.existingLoans || []).map((l: any) => ({
+                                has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
+                                which_loan: l.whichLoan || null,
+                                loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
+                                running_emi: l.runningEmi ? Number(l.runningEmi) : null,
+                            }))
+                        ),
+                        case_type: formData.caseType || 'fresh',
+                        ...(formData.businessEntityType ? { business_entity_type: formData.businessEntityType } : {}),
+                        ...(formData.company_official_email ? { company_official_email: formData.company_official_email } : {}),
+                        ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
+                        ...(formData.referralCode?.trim() ? { referral_code: formData.referralCode.trim() } : {}),
+                    };
 
-                const applicationId = await createApplication(applicationPayload);
-                await createLoanTracking(applicationId);
+                    await updateApplication(editingAppId, updatePayload);
+                    toast({
+                        title: 'Application Updated 🎉',
+                        description: `Existing application successfully updated with ${provider}.`,
+                        className: 'bg-emerald-600 text-white border-none'
+                    });
+                } else {
+                    // Provider changed or fresh: Create new application!
+                    const appNumber = generateApplicationNumber();
+
+                    const applicationPayload = {
+                        customer_id: customerId,
+                        application_no: appNumber,
+                        amount: finalAmount,
+                        tenure: numericTenure,
+                        provider: provider,
+                        loan_type: primaryLoanType,
+                        loan_category: formData.loanCategory || 'unsecured',
+                        lead_type: formData.leadType || 'null',
+                        existing_loans: JSON.stringify(
+                            (formData.existingLoans || []).map((l: any) => ({
+                                has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
+                                which_loan: l.whichLoan || null,
+                                loan_amount: l.loanAmount ? Number(l.loanAmount) : null,
+                                running_emi: l.runningEmi ? Number(l.runningEmi) : null,
+                            }))
+                        ),
+                        case_type: formData.caseType || 'fresh',
+                        source: 'lendgrid',
+                        ...(formData.businessEntityType ? { business_entity_type: formData.businessEntityType } : {}),
+                        ...(formData.company_official_email ? { company_official_email: formData.company_official_email } : {}),
+                        ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
+                        ...(isOmsSalesSession && omsSalesUserId
+                            ? { applied_by: Number(omsSalesUserId) }
+                            : {}),
+                        ...(aggregatorProfileId ? { aggregator_id: aggregatorProfileId } : {}),
+                        ...(formData.referralCode?.trim() ? { referral_code: formData.referralCode.trim() } : {}),
+                    };
+
+                    const applicationId = await createApplication(applicationPayload);
+                    await createLoanTracking(applicationId);
+                    toast({
+                        title: 'Application Created 🎉',
+                        description: `New application #${appNumber} created with ${provider}.`,
+                        className: 'bg-emerald-600 text-white border-none'
+                    });
+                }
             }
 
-            // Clear localStorage immediately after successful application creation
+            // Clear localStorage immediately after successful application creation / update
             localStorage.removeItem('activeStep');
             localStorage.removeItem('loanFormCustomerId');
             localStorage.removeItem('loanFormAppNumber');
@@ -762,6 +898,9 @@ export const MultiStepFormContent: React.FC<{
             localStorage.removeItem('step3UploadedDocs');
             localStorage.removeItem('loanFormCompletedSteps');
             localStorage.removeItem('loanFormSkippedSteps');
+            localStorage.removeItem('editingApplicationId');
+            localStorage.removeItem('editingApplicationNumber');
+            localStorage.removeItem('originalProvider');
 
             // Reset form context state and local UI state
             resetForm();
@@ -796,7 +935,26 @@ export const MultiStepFormContent: React.FC<{
             </div>
 
             {/* Left Side - Form Content */}
-            <div className="flex-1 lg:pr-4">
+            <div className="flex-1 lg:pr-4 space-y-4">
+                {isHydrated && typeof window !== 'undefined' && localStorage.getItem('editingApplicationId') && (
+                    <div className="p-3.5 bg-blue-500/10 border border-blue-500/30 rounded-xl flex items-center justify-between gap-3 text-xs">
+                        <div className="flex items-center gap-2 text-foreground">
+                            <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+                            <span>
+                                Editing Application <strong className="font-mono font-semibold">#{localStorage.getItem('editingApplicationNumber') || localStorage.getItem('editingApplicationId')}</strong> (Lender: <strong>{localStorage.getItem('originalProvider') || 'N/A'}</strong>). Same lender updates existing application; changing lender creates a new application.
+                            </span>
+                        </div>
+                        <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleStartFresh}
+                            className="h-7 text-[11px] text-muted-foreground hover:text-foreground shrink-0"
+                        >
+                            Cancel / New Application
+                        </Button>
+                    </div>
+                )}
                 <AnimatePresence mode="wait">
                     <motion.div
                         key={showStep0 ? 'step0' : activeStep}
@@ -810,7 +968,7 @@ export const MultiStepFormContent: React.FC<{
                         ) : (
                             <>
                                 {activeStep === 0 && (
-                                    <Step1Form onSubmit={handleStep1Submit} isLoading={isLoading} onBack={handleBackFromStep1} apiBaseUrl={apiBaseUrl} onReset={handleStartFresh} />
+                                    <Step1Form onSubmit={handleStep1Submit} isLoading={isLoading} onBack={handleBackFromStep1} apiBaseUrl={activeBaseUrl} onReset={handleStartFresh} />
                                 )}
                                 {activeStep === 1 && (
                                     <Step2Form

@@ -100,6 +100,7 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
         handleSubmit: handleFormSubmit,
         watch,
         setValue,
+        reset,
         formState: { errors },
     } = useForm<Step0FormData>({
         resolver: zodResolver(step0Schema),
@@ -117,6 +118,28 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
             company_official_email: formData.company_official_email || '',
         },
     });
+
+    // Sync formData updates if prefilled
+    useEffect(() => {
+        if (formData && Object.keys(formData).length > 0) {
+            const cleanAmt = formData.amount
+                ? (String(formData.amount).includes('.') ? String(formData.amount).split('.')[0].replace(/[^0-9]/g, '') : String(formData.amount).replace(/[^0-9]/g, ''))
+                : '';
+            reset({
+                amount: cleanAmt,
+                loanType: formData.loanType || '',
+                loanCategory: formData.loanCategory || '',
+                tenure: formData.tenure || '',
+                leadType: formData.leadType || '',
+                providers: formData.providers || [],
+                providerAmounts: formData.providerAmounts || [],
+                existingLoans: formData.existingLoans || [{ hasRunningLoans: '', whichLoan: '', loanAmount: '', runningEmi: '' }],
+                caseType: formData.caseType || 'fresh',
+                businessEntityType: formData.businessEntityType || '',
+                company_official_email: formData.company_official_email || '',
+            });
+        }
+    }, [formData, reset]);
 
     // Watch form values for reactive updates
     const amount = watch('amount');

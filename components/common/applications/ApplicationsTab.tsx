@@ -25,7 +25,8 @@ import {
     Briefcase,
     RotateCcw,
     Check,
-    ChevronsUpDown
+    ChevronsUpDown,
+    Copy
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -74,6 +75,7 @@ import { ApplicationStatus } from '@/lib'
 import { useApplicationsRest } from '@/hooks/use-applications-rest'
 import { useLoanProviders } from '@/hooks/use-loan-providers'
 import { cn, decodeJwt, getCookie } from '@/lib/utils'
+import { CloneApplicationDialog } from './CloneApplicationDialog'
 
 export const pretty = (v: string) => v?.toLowerCase()?.replace(/_/g, " ");
 
@@ -133,12 +135,14 @@ const InfoLine = ({ icon: Icon, label, value, color }: { icon: React.ElementType
 interface ApplicationCardProps {
     application: any;
     onView: () => void;
+    onClone?: () => void;
     onDelete: () => void;
     formatCurrency: (amount: number) => string;
     isOmsEnabled: boolean;
+    canClone?: boolean;
 }
 
-const ApplicationCard = ({ application, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationCardProps) => {
+const ApplicationCard = ({ application, onView, onClone, onDelete, formatCurrency, isOmsEnabled, canClone }: ApplicationCardProps) => {
     // State to toggle between details and history
     const [showHistory, setShowHistory] = useState(false);
 
@@ -255,37 +259,29 @@ const ApplicationCard = ({ application, onView, onDelete, formatCurrency, isOmsE
                                 </TooltipContent>
                             </Tooltip>
 
-                            {/* Action Buttons - 50/50 Split */}
-                            <div className="grid grid-cols-1 gap-2">
+                            {/* Action Buttons */}
+                            <div className={cn("grid gap-2", canClone && onClone ? "grid-cols-2" : "grid-cols-1")}>
                                 <Button
                                     onClick={onView}
                                     variant="outline"
                                     size="sm"
-                                    className="w-full bg-background/50 border-border text-foreground hover:text-foreground hover:bg-blue-500/10 hover:border-blue-500/50 transition-all"
+                                    className="w-full bg-background/50 border-border text-foreground hover:text-foreground hover:bg-blue-500/10 hover:border-blue-500/50 transition-all text-xs"
                                 >
-                                    <Eye className="w-4 h-4 mr-1.5" />
+                                    <Eye className="w-3.5 h-3.5 mr-1.5" />
                                     View Details
                                 </Button>
 
-                                {/* <Button
-                  onClick={onDelete}
-                  variant="outline"
-                  size="sm"
-                  className="w-full bg-background/50 border-border text-red-400 hover: text-foreground hover:bg-red-600/20 hover:border-red-500/50 transition-all"
-                >
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete
-                </Button> */}
-
-                                {/* <Button
-                                    onClick={() => setShowHistory(true)}
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full bg-background/50 border-border text-cyan-400 hover: text-foreground hover:bg-cyan-600/20 hover:border-cyan-500/50 transition-all"
-                                >
-                                    <Clock className="w-4 h-4 mr-1" />
-                                    History
-                                </Button> */}
+                                {canClone && onClone && (
+                                    <Button
+                                        onClick={onClone}
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full bg-amber-500/10 border-amber-500/30 text-amber-500 hover:text-amber-400 hover:bg-amber-500/20 hover:border-amber-500/50 transition-all text-xs"
+                                    >
+                                        <Copy className="w-3.5 h-3.5 mr-1.5" />
+                                        Clone / Edit
+                                    </Button>
+                                )}
                             </div>
                         </div>
                     </motion.div>
@@ -392,12 +388,14 @@ interface ApplicationTableRowProps {
     application: any;
     index: number;
     onView: () => void;
+    onClone?: () => void;
     onDelete: () => void;
     formatCurrency: (amount: number) => string;
     isOmsEnabled: boolean;
+    canClone?: boolean;
 }
 
-const ApplicationTableRow = ({ application, index, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationTableRowProps) => {
+const ApplicationTableRow = ({ application, index, onView, onClone, onDelete, formatCurrency, isOmsEnabled, canClone }: ApplicationTableRowProps) => {
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
@@ -478,18 +476,35 @@ const ApplicationTableRow = ({ application, index, onView, onDelete, formatCurre
                     {application.applicationDate}
                 </TableCell>
                 <TableCell className="text-center whitespace-nowrap py-3.5">
-                    <Tooltip>
-                        <TooltipTrigger asChild>
-                            <button
-                                type="button"
-                                onClick={onView}
-                                className="p-1.5 rounded-lg text-primary hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer inline-flex items-center justify-center select-none"
-                            >
-                                <Eye className="w-4 h-4" />
-                            </button>
-                        </TooltipTrigger>
-                        <TooltipContent>View Application</TooltipContent>
-                    </Tooltip>
+                    <div className="flex items-center justify-center gap-1">
+                        <Tooltip>
+                            <TooltipTrigger asChild>
+                                <button
+                                    type="button"
+                                    onClick={onView}
+                                    className="p-1.5 rounded-lg text-primary hover:text-primary hover:bg-primary/10 transition-colors cursor-pointer inline-flex items-center justify-center select-none"
+                                >
+                                    <Eye className="w-4 h-4" />
+                                </button>
+                            </TooltipTrigger>
+                            <TooltipContent>View Application</TooltipContent>
+                        </Tooltip>
+
+                        {canClone && onClone && (
+                            <Tooltip>
+                                <TooltipTrigger asChild>
+                                    <button
+                                        type="button"
+                                        onClick={onClone}
+                                        className="p-1.5 rounded-lg text-amber-500 hover:text-amber-400 hover:bg-amber-500/10 transition-colors cursor-pointer inline-flex items-center justify-center select-none"
+                                    >
+                                        <Copy className="w-4 h-4" />
+                                    </button>
+                                </TooltipTrigger>
+                                <TooltipContent>Clone / Edit with Different Provider</TooltipContent>
+                            </Tooltip>
+                        )}
+                    </div>
                 </TableCell>
             </motion.tr>
         </>
@@ -504,12 +519,14 @@ interface ApplicationsGridProps {
     onClearFilters?: () => void;
     onCreateClick?: () => void;
     onView: (app: any) => void;
+    onClone?: (app: any) => void;
     onDelete: (id: string) => void;
     formatCurrency: (amount: number) => string;
     isOmsEnabled: boolean;
+    canClone?: boolean;
 }
 
-const ApplicationsGrid = ({ applications, isLoading, hasFilters, onClearFilters, onCreateClick, onView, onDelete, formatCurrency, isOmsEnabled }: ApplicationsGridProps) => {
+const ApplicationsGrid = ({ applications, isLoading, hasFilters, onClearFilters, onCreateClick, onView, onClone, onDelete, formatCurrency, isOmsEnabled, canClone }: ApplicationsGridProps) => {
     if (isLoading) {
         return (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
@@ -568,9 +585,11 @@ const ApplicationsGrid = ({ applications, isLoading, hasFilters, onClearFilters,
                     key={application.applicationId}
                     application={application}
                     onView={() => onView(application)}
+                    onClone={() => onClone?.(application)}
                     onDelete={() => onDelete(application.applicationId)}
                     formatCurrency={formatCurrency}
                     isOmsEnabled={isOmsEnabled}
+                    canClone={canClone}
                 />
             ))}
         </div>
@@ -591,6 +610,8 @@ export function AggregatorApplications({
     const { providerOptions: lenderOptions } = useLoanProviders(1, 100)
 
     const [selectedApplication, setSelectedApplication] = useState<any>(null)
+    const [cloneTarget, setCloneTarget] = useState<any | null>(null)
+    const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false)
     const [selectedLenderId, setSelectedLenderId] = useState("")
     const [selectedProduct, setSelectedProduct] = useState<any | null>(null)
     const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
@@ -636,6 +657,19 @@ export function AggregatorApplications({
     const isSalesUser = (decoded?.source === 'oms' && roleLower === 'sales') || roleLower === 'sales' || roleLower === 'lendgrid_sales';
     const isAggregatorMember = roleLower === 'aggregator_member';
     const isAggregatorAdmin = roleLower === 'aggregator_admin';
+    const canClone = Boolean(
+        isSalesUser ||
+        isOmsEnabled ||
+        decoded?.source === 'oms' ||
+        roleLower === 'sales' ||
+        roleLower === 'lendgrid_sales' ||
+        isAggregatorAdmin
+    );
+
+    const handleOpenClone = (app: any) => {
+        setCloneTarget(app)
+        setIsCloneDialogOpen(true)
+    }
 
     const effectiveSalesUserId = isSalesUser
         ? (decoded?.id ?? decoded?.userId ?? decoded?.sub ?? decoded?.salesUserId ?? decoded?.user_id ?? user?.omsUserId ?? user?.id)
@@ -967,9 +1001,11 @@ export function AggregatorApplications({
                                                             setSelectedApplication(application)
                                                             setIsViewDialogOpen(true)
                                                         }}
+                                                        onClone={() => handleOpenClone(application)}
                                                         onDelete={() => handleDelete(application.applicationId)}
                                                         formatCurrency={formatCurrency}
                                                         isOmsEnabled={isOmsEnabled}
+                                                        canClone={canClone}
                                                     />
                                                 ))
                                             ) : (
@@ -1030,9 +1066,11 @@ export function AggregatorApplications({
                                     setSelectedApplication(app);
                                     setIsViewDialogOpen(true);
                                 }}
+                                onClone={handleOpenClone}
                                 onDelete={handleDelete}
                                 formatCurrency={formatCurrency}
                                 isOmsEnabled={isOmsEnabled}
+                                canClone={canClone}
                             />
                         )}
                         <div className="px-4 pb-4">
@@ -1094,6 +1132,20 @@ export function AggregatorApplications({
                                             </Badge>
                                         )}
                                     </div>
+
+                                    {canClone && (
+                                        <Button
+                                            type="button"
+                                            size="sm"
+                                            onClick={() => {
+                                                handleOpenClone(selectedApplication)
+                                            }}
+                                            className="bg-amber-500/15 hover:bg-amber-500/25 text-amber-500 border border-amber-500/30 font-medium text-xs gap-1.5 rounded-lg shadow-sm"
+                                        >
+                                            <Copy className="w-3.5 h-3.5" />
+                                            <span>Clone / Edit with Different Provider</span>
+                                        </Button>
+                                    )}
                                 </div>
 
                                 {/* Customer Information Card */}
@@ -1278,6 +1330,16 @@ export function AggregatorApplications({
                     )}
                 </DialogContent>
             </Dialog>
+
+            {/* Clone Application Dialog */}
+            <CloneApplicationDialog
+                open={isCloneDialogOpen}
+                onOpenChange={setIsCloneDialogOpen}
+                application={cloneTarget}
+                onSuccess={() => {
+                    refetch();
+                }}
+            />
         </div>
     )
 }
