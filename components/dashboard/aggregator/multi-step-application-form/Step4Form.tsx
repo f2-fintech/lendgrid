@@ -101,10 +101,30 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
   const {
     register,
     handleSubmit,
-    formState: { errors, isDirty },
+    formState: { errors },
+    reset,
   } = useForm<Step4FormData>({
     resolver: zodResolver(step4Schema),
+    defaultValues: {
+      salary: (formData as any)?.salary || (typeof window !== 'undefined' ? localStorage.getItem('step4Salary') || '' : ''),
+      existing_emi: (formData as any)?.existing_emi || (typeof window !== 'undefined' ? localStorage.getItem('step4ExistingEmi') || '' : ''),
+      existing_liability: (formData as any)?.existing_liability || (typeof window !== 'undefined' ? localStorage.getItem('step4ExistingLiability') || '' : ''),
+    }
   });
+
+  useEffect(() => {
+    const savedSalary = (formData as any)?.salary || (typeof window !== 'undefined' ? localStorage.getItem('step4Salary') || '' : '');
+    const savedEmi = (formData as any)?.existing_emi || (typeof window !== 'undefined' ? localStorage.getItem('step4ExistingEmi') || '' : '');
+    const savedLiability = (formData as any)?.existing_liability || (typeof window !== 'undefined' ? localStorage.getItem('step4ExistingLiability') || '' : '');
+
+    if (savedSalary || savedEmi || savedLiability) {
+      reset({
+        salary: savedSalary,
+        existing_emi: savedEmi,
+        existing_liability: savedLiability,
+      });
+    }
+  }, [formData, reset]);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(event.target.files || []);
@@ -596,7 +616,7 @@ export const Step4Form: React.FC<Step4FormProps> = ({ onSubmit, isLoading }) => 
 
           <Button
             type="submit"
-            disabled={!isDirty || isLoading}
+            disabled={isLoading}
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-6"
           >
             {isLoading ? (

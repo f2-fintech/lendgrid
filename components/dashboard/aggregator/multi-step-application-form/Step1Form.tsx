@@ -326,7 +326,13 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
       });
 
       const result = await response.json();
+      const editingAppId = typeof window !== 'undefined' ? localStorage.getItem('editingApplicationId') : null;
       if (result?.data?.isDuplicate) {
+        const dupAppId = String(result.data.application?.id || '');
+        if (editingAppId && dupAppId === String(editingAppId)) {
+          setDuplicateInfo(null);
+          return;
+        }
         setDuplicateInfo({
           message: result.data.message,
           daysRemaining: result.data.daysRemaining,
@@ -343,8 +349,11 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
   }, [apiBaseUrl, getValues, formData?.providers]);
 
   const onFormSubmit = async (data: Step1FormData) => {
-    // Guard: block submit if a duplicate was detected
-    if (duplicateInfo) return;
+    const editingAppId = typeof window !== 'undefined' ? localStorage.getItem('editingApplicationId') : null;
+    // Guard: block submit if a duplicate was detected for another application
+    if (duplicateInfo && (!editingAppId || String(duplicateInfo.application?.id) !== String(editingAppId))) {
+      return;
+    }
     try {
       if (typeof window !== 'undefined') {
         localStorage.setItem('step1CustomerDraft', JSON.stringify(data));

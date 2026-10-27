@@ -427,30 +427,63 @@ export function CloneApplicationDialog({
 
     setIsPreFilling(true);
     try {
-      const cleanAmount = sanitizeAmount(loanAmount || application.applicationAmount || '500000');
+      const cleanAmount = sanitizeAmount(loanAmount || application.applicationAmount || application.amount || '500000');
+      
+      let parsedExistingLoans = [{ hasRunningLoans: 'no', whichLoan: '', loanAmount: '', runningEmi: '' }];
+      const rawExisting = application.existingLoans || application.existing_loans;
+      if (rawExisting) {
+        try {
+          const arr = typeof rawExisting === 'string' ? JSON.parse(rawExisting) : rawExisting;
+          if (Array.isArray(arr) && arr.length > 0) {
+            parsedExistingLoans = arr.map((item: any) => ({
+              hasRunningLoans: item.has_running_loans === 1 || item.hasRunningLoans === 'yes' ? 'yes' : 'no',
+              whichLoan: item.which_loan || item.whichLoan || '',
+              loanAmount: item.loan_amount ? String(item.loan_amount) : (item.loanAmount ? String(item.loanAmount) : ''),
+              runningEmi: item.running_emi ? String(item.running_emi) : (item.runningEmi ? String(item.runningEmi) : '')
+            }));
+          }
+        } catch (e) {}
+      }
+
+      const resolvedLeadType = (leadType && leadType !== 'null')
+        ? leadType
+        : (application.leadType && application.leadType !== 'null'
+            ? application.leadType
+            : (application.lead_type && application.lead_type !== 'null' ? application.lead_type : ''));
+
       const prefillData = {
         amount: cleanAmount,
-        tenure: `${tenure || application.applicationTenure || 5} Years`,
-        loanType: loanType || application.loanType || 'personal loan',
-        loanCategory: loanCategory || application.loanCategory || 'unsecured',
-        leadType: leadType || application.leadType || 'null',
+        tenure: `${tenure || application.applicationTenure || application.tenure || 5} Years`,
+        loanType: loanType || application.loanType || application.loan_type || 'personal loan',
+        loanCategory: loanCategory || application.loanCategory || application.loan_category || 'unsecured',
+        leadType: resolvedLeadType,
         providers: [selectedProvider],
         providerAmounts: [{ provider: selectedProvider, amount: cleanAmount }],
-        existingLoans: [{ hasRunningLoans: 'no', whichLoan: '', loanAmount: '', runningEmi: '' }],
-        caseType: caseType || 'fresh',
-        businessEntityType: '',
-        referralCode: referralCode || application.referralCode || ''
+        existingLoans: parsedExistingLoans,
+        caseType: application.case_type || application.caseType || caseType || 'fresh',
+        businessEntityType: application.business_entity_type || application.businessEntityType || '',
+        company_official_email: application.company_official_email || '',
+        referralCode: referralCode || application.referralCode || application.referral_code || ''
       };
 
+      let initialCustomerName = (application.customerName || '').trim();
+      let detectedTitle = (application.customerDesignation === 'doctor' ? 'Dr' : 'Mr');
+      const titleMatch = initialCustomerName.match(/^(Mr|Mrs|Miss|Dr|Ca)\.?\s+(.*)$/i);
+      if (titleMatch) {
+        detectedTitle = titleMatch[1].charAt(0).toUpperCase() + titleMatch[1].slice(1).toLowerCase();
+        if (detectedTitle === 'Ca') detectedTitle = 'Ca';
+        initialCustomerName = titleMatch[2].trim();
+      }
+
       const step1Draft: Record<string, any> = {
-        name: application.customerName || '',
+        name: initialCustomerName,
         email: application.customerEmail || '',
         contact: application.customerContact || '',
         pan: application.customerPAN || '',
         city: application.customerLocation || '',
         state: application.customerState || '',
         employment_type: application.customerDesignation || 'salaried',
-        title: (application.customerDesignation === 'doctor' ? 'Dr' : 'Mr'),
+        title: detectedTitle,
         permanent_address: application.customerLocation || '',
         working_address: application.customerLocation || '',
         current_address: application.customerLocation || '',
@@ -489,6 +522,10 @@ export function CloneApplicationDialog({
               if (info.state) step1Draft.state = info.state;
               if (info.employment_type) step1Draft.employment_type = info.employment_type;
               if (info.dob) step1Draft.dob = info.dob;
+
+              if (info.salary) localStorage.setItem('step4Salary', String(info.salary));
+              if (info.existing_emi) localStorage.setItem('step4ExistingEmi', String(info.existing_emi));
+              if (info.existing_liability) localStorage.setItem('step4ExistingLiability', String(info.existing_liability));
             }
           }
 
@@ -496,9 +533,17 @@ export function CloneApplicationDialog({
             const custJson = await custRes.value.json();
             const cust = custJson?.data || custJson;
             if (cust) {
-              if (cust.name) step1Draft.name = cust.name;
+              let custName = (cust.name || '').trim();
+              const custTitleMatch = custName.match(/^(Mr|Mrs|Miss|Dr|Ca)\.?\s+(.*)$/i);
+              if (custTitleMatch) {
+                step1Draft.title = custTitleMatch[1].charAt(0).toUpperCase() + custTitleMatch[1].slice(1).toLowerCase();
+                if (step1Draft.title === 'Ca') step1Draft.title = 'Ca';
+                custName = custTitleMatch[2].trim();
+              }
+              if (custName) step1Draft.name = custName;
               if (cust.email) step1Draft.email = cust.email;
               if (cust.contact) step1Draft.contact = cust.contact;
+              if (cust.dob) step1Draft.dob = cust.dob;
             }
           }
 

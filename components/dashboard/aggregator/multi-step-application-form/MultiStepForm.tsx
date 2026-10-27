@@ -259,6 +259,40 @@ export const MultiStepFormContent: React.FC<{
         return result.data.id;
     };
 
+    // API call to update customer table (name, email, contact, dob, etc.)
+    const updateCustomer = async (custId: string | number, custData: any) => {
+        try {
+            let response = await fetch(`${activeBaseUrl}/update-customer/${custId}`, {
+                method: 'PATCH',
+                headers: commonHeaders,
+                body: JSON.stringify({ id: Number(custId), ...custData }),
+            });
+
+            if (!response.ok) {
+                response = await fetch(`${activeBaseUrl}/update-customer`, {
+                    method: 'PATCH',
+                    headers: commonHeaders,
+                    body: JSON.stringify({ id: Number(custId), ...custData }),
+                });
+            }
+
+            if (!response.ok) {
+                response = await fetch(`${activeBaseUrl}/update-customer`, {
+                    method: 'POST',
+                    headers: commonHeaders,
+                    body: JSON.stringify({ id: Number(custId), ...custData }),
+                });
+            }
+
+            if (!response.ok) {
+                const err = await response.json().catch(() => ({}));
+                console.warn('[updateCustomer] Warning updating customer:', err);
+            }
+        } catch (err: any) {
+            console.warn('[updateCustomer] Network error updating customer:', err.message);
+        }
+    };
+
     // API call to create customer info
     const createCustomerInfo = async (customerId: string | null, infoData: any) => {
         await fetch(`${activeBaseUrl}/create-customer-info`, {
@@ -453,6 +487,9 @@ export const MultiStepFormContent: React.FC<{
         localStorage.removeItem('editingApplicationId');
         localStorage.removeItem('editingApplicationNumber');
         localStorage.removeItem('originalProvider');
+        localStorage.removeItem('step4Salary');
+        localStorage.removeItem('step4ExistingEmi');
+        localStorage.removeItem('step4ExistingLiability');
         resetForm();
         setShowStep0(true);
         setCompletedSteps([]);
@@ -474,15 +511,17 @@ export const MultiStepFormContent: React.FC<{
             }
 
             const randomFourDigit = 8462;
+            const cleanName = (data.name || '').replace(/^(Mr|Mrs|Miss|Dr|Ca)\.?\s+/i, '').trim();
+            const fullName = data.title ? `${data.title} ${cleanName}` : (data.name || '').trim();
 
             // Prepare customer data
             const customerData = {
                 title: data.title,
-                name: `${data.title} ${data.name}`,
+                name: fullName,
                 email: data.email,
                 contact: data.contact,
                 dob: data.dob,
-                password: `${data.name.replace(/\s/g, '')}@${randomFourDigit}`,
+                password: `${cleanName.replace(/\s/g, '')}@${randomFourDigit}`,
                 status: 'active',
                 ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
             };
@@ -492,6 +531,15 @@ export const MultiStepFormContent: React.FC<{
             let customerInfoExists = false;
 
             if (newCustomerId) {
+                // Update customer table with new name, email, contact, dob
+                await updateCustomer(newCustomerId, {
+                    name: fullName,
+                    email: data.email,
+                    contact: data.contact,
+                    dob: data.dob,
+                    ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {}),
+                });
+
                 try {
                     const infoRes = await fetch(`${apiBaseUrl}/customer-info/${newCustomerId}`, {
                         headers: commonHeaders,
@@ -529,16 +577,22 @@ export const MultiStepFormContent: React.FC<{
 
             // Create or update customer info (addresses, PAN, employment type, etc.)
             const { title, name, email, contact, dob, ...restData } = data;
+            const customerInfoData = {
+                ...restData,
+                title: data.title,
+                ...(resolvedCompanyId ? { company_id: Number(resolvedCompanyId) } : {})
+            };
             if (!customerInfoExists) {
-                await createCustomerInfo(newCustomerId, restData);
+                await createCustomerInfo(newCustomerId, customerInfoData);
             } else {
-                await updateCustomerInfo(newCustomerId, restData);
+                await updateCustomerInfo(newCustomerId, customerInfoData);
             }
 
             // Persist full customer data and employment_type into FormContext formData
             setFormData((prev: any) => ({
                 ...prev,
                 ...data,
+                name: fullName,
                 employment_type: data.employment_type,
             }));
 
@@ -802,15 +856,18 @@ export const MultiStepFormContent: React.FC<{
 
             for (const provider of activeProviders) {
                 const providerAmountRecord = formData.providerAmounts?.find((pa: any) => pa.provider === provider);
-                const finalAmount = providerAmountRecord && providerAmountRecord.amount 
+                const finalAmount = Number(formData.amount) || (providerAmountRecord && providerAmountRecord.amount 
                     ? Number(providerAmountRecord.amount) 
-                    : Number(formData.amount || 100000);
+                    : 100000);
 
                 const isSameAsOriginal = Boolean(
                     editingAppId &&
                     originalProvider &&
                     provider.trim().toLowerCase() === originalProvider.trim().toLowerCase()
                 );
+
+                const cleanCategory = formData.loanCategory && formData.loanCategory !== 'null' ? formData.loanCategory : 'unsecured';
+                const cleanLeadType = formData.leadType && formData.leadType !== 'null' ? formData.leadType : null;
 
                 if (isSameAsOriginal && editingAppId) {
                     // Provider is same: Update existing application!
@@ -820,8 +877,8 @@ export const MultiStepFormContent: React.FC<{
                         tenure: numericTenure,
                         provider: provider,
                         loan_type: primaryLoanType,
-                        loan_category: formData.loanCategory || 'unsecured',
-                        lead_type: formData.leadType || null,
+                        loan_category: cleanCategory,
+                        lead_type: cleanLeadType,
                         existing_loans: JSON.stringify(
                             (formData.existingLoans || []).map((l: any) => ({
                                 has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
@@ -854,8 +911,8 @@ export const MultiStepFormContent: React.FC<{
                         tenure: numericTenure,
                         provider: provider,
                         loan_type: primaryLoanType,
-                        loan_category: formData.loanCategory || 'unsecured',
-                        lead_type: formData.leadType || 'null',
+                        loan_category: cleanCategory,
+                        lead_type: cleanLeadType,
                         existing_loans: JSON.stringify(
                             (formData.existingLoans || []).map((l: any) => ({
                                 has_running_loans: l.hasRunningLoans === 'yes' ? 1 : 0,
@@ -901,6 +958,9 @@ export const MultiStepFormContent: React.FC<{
             localStorage.removeItem('editingApplicationId');
             localStorage.removeItem('editingApplicationNumber');
             localStorage.removeItem('originalProvider');
+            localStorage.removeItem('step4Salary');
+            localStorage.removeItem('step4ExistingEmi');
+            localStorage.removeItem('step4ExistingLiability');
 
             // Reset form context state and local UI state
             resetForm();

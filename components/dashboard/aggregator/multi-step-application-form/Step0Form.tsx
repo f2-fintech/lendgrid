@@ -223,7 +223,24 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
     // Handle form submission with React Hook Form
     const onFormSubmit = (data: Step0FormData) => {
-        setFormData(data);
+        const updatedProviderAmounts = (data.providers || []).map((p) => {
+            const existing = data.providerAmounts?.find((pa) => pa.provider === p);
+            return {
+                provider: p,
+                amount: existing?.amount || data.amount
+            };
+        });
+        const fullStep0Data = {
+            ...data,
+            providerAmounts: updatedProviderAmounts
+        };
+        setFormData((prev: any) => ({ ...prev, ...fullStep0Data }));
+        if (typeof window !== 'undefined') {
+            try {
+                const currentStored = JSON.parse(localStorage.getItem('loanFormData') || '{}');
+                localStorage.setItem('loanFormData', JSON.stringify({ ...currentStored, ...fullStep0Data }));
+            } catch (e) {}
+        }
         onSubmit();
     };
 
@@ -250,7 +267,16 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                         <Input
                             type="text"
                             value={amount}
-                            onChange={(e) => setValue('amount', e.target.value)}
+                            onChange={(e) => {
+                                const val = e.target.value;
+                                setValue('amount', val);
+                                if (selectedProviders?.length > 0) {
+                                    setValue('providerAmounts', selectedProviders.map((p) => ({
+                                        provider: p,
+                                        amount: val
+                                    })));
+                                }
+                            }}
                             className="bg-card border-border text-foreground pl-10 focus:ring-2 focus:ring-primary/20"
                             placeholder="Enter amount"
                         />
