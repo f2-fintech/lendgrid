@@ -16,6 +16,7 @@ import {
   CreditCard,
   CheckCircle2,
   AlertCircle,
+  AlertTriangle,
   Sparkles,
   ArrowRight,
   ExternalLink,
@@ -134,6 +135,14 @@ export function CloneApplicationDialog({
   const [referralCode, setReferralCode] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isPreFilling, setIsPreFilling] = useState<boolean>(false);
+  const [duplicateInfo, setDuplicateInfo] = useState<{
+    isDuplicate: boolean;
+    message: string;
+    daysRemaining?: number;
+    application?: any;
+    ticket?: any;
+  } | null>(null);
+  const [isCheckingDuplicate, setIsCheckingDuplicate] = useState<boolean>(false);
 
   // Combine provider options from API with standard fallback (case-insensitive deduplication)
   const allProviders = useMemo(() => {
@@ -176,6 +185,99 @@ export function CloneApplicationDialog({
     }
   }, [open, targetAppId]);
 
+  // Real-time duplicate check whenever selectedProvider changes
+  useEffect(() => {
+    if (!open || !application || !selectedProvider) {
+      setDuplicateInfo(null);
+      setIsCheckingDuplicate(false);
+      return;
+    }
+
+    let isCancelled = false;
+    const checkDuplicate = async () => {
+      setIsCheckingDuplicate(true);
+      try {
+        const token = getCookie('lendgrid_cookie');
+        const companyId = getCompanyId();
+        const mobile = (application.customerContact || application.contact || application.customerPhone || '').trim();
+        const pan = (application.customerPAN || application.pan || application.customerPan || '').trim().toUpperCase();
+        const appId = application.applicationId || application.id || application.customer_application_id;
+        const customerId = application.customerId || application.customer_id;
+
+        const bodyData = {
+          customerId: customerId ? Number(customerId) : undefined,
+          mobile: mobile || undefined,
+          pan: pan || undefined,
+          providers: [selectedProvider.trim()],
+          excludeApplicationId: appId ? Number(appId) : undefined,
+        };
+
+        const lendgridServerUrl = process.env.NEXT_PUBLIC_API_BASE_URL
+          ? `${process.env.NEXT_PUBLIC_API_BASE_URL.replace(/\/graphql\/?$/, '')}/api/v1`
+          : 'http://localhost:4000/api/v1';
+
+        let dupData: any = null;
+        try {
+          const resp = await fetch(`${lendgridServerUrl}/check-duplicate-application`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              ...(companyId && companyId !== 'all' ? { companyid: String(companyId) } : {}),
+              ...(token ? { Authorization: `Bearer ${token}` } : {})
+            },
+            body: JSON.stringify(bodyData)
+          });
+          if (resp.ok) {
+            const json = await resp.json();
+            dupData = json?.data;
+          }
+        } catch (e) {}
+
+        if (!dupData) {
+          const f2ServerUrl = process.env.NEXT_PUBLIC_WEB_URL
+            ? `${process.env.NEXT_PUBLIC_WEB_URL.replace(/\/api\/v1\/?$/, '')}/api/v1`
+            : 'http://localhost:8080/api/v1';
+
+          try {
+            const resp = await fetch(`${f2ServerUrl}/check-duplicate-application`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(companyId && companyId !== 'all' ? { companyid: String(companyId) } : {}),
+                ...(token ? { Authorization: `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify(bodyData)
+            });
+            if (resp.ok) {
+              const json = await resp.json();
+              dupData = json?.data;
+            }
+          } catch (e) {}
+        }
+
+        if (!isCancelled) {
+          if (dupData?.isDuplicate) {
+            setDuplicateInfo(dupData);
+          } else {
+            setDuplicateInfo(null);
+          }
+        }
+      } catch (err) {
+        console.warn('[CloneApplicationDialog] Duplicate check failed:', err);
+      } finally {
+        if (!isCancelled) {
+          setIsCheckingDuplicate(false);
+        }
+      }
+    };
+
+    const timer = setTimeout(checkDuplicate, 250);
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [open, selectedProvider, targetAppId, application?.customerId]);
+
   if (!application) return null;
 
   const currentProvider = application.applicationProvider || application.provider || 'Not Specified';
@@ -198,6 +300,15 @@ export function CloneApplicationDialog({
       toast({
         title: 'Lender Required',
         description: 'Please select a lender/provider.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    if (duplicateInfo?.isDuplicate) {
+      toast({
+        title: 'Duplicate Application Detected',
+        description: duplicateInfo.message || `An application with lender "${selectedProvider}" already exists for this customer within 30 days.`,
         variant: 'destructive'
       });
       return;
@@ -273,8 +384,14 @@ export function CloneApplicationDialog({
           });
           if (resp.ok) {
             updated = true;
+          } else if (resp.status === 409) {
+            const errData = await resp.json().catch(() => ({}));
+            if (errData.data?.isDuplicate) setDuplicateInfo(errData.data);
+            throw new Error(errData.message || `An application with lender "${selectedProvider}" already exists for this customer within 30 days.`);
           }
-        } catch (e) {}
+        } catch (e: any) {
+          if (e.message && e.message.includes('already exists')) throw e;
+        }
 
         if (!updated) {
           const f2ServerUrl = process.env.NEXT_PUBLIC_WEB_URL
@@ -287,7 +404,7 @@ export function CloneApplicationDialog({
             body: JSON.stringify(updatePayload)
           });
 
-          if (!resp.ok) {
+          if (!resp.ok && resp.status !== 409) {
             resp = await fetch(`${f2ServerUrl}/update-application`, {
               method: 'POST',
               headers: commonHeaders,
@@ -297,7 +414,8 @@ export function CloneApplicationDialog({
 
           if (!resp.ok) {
             const errData = await resp.json().catch(() => ({}));
-            throw new Error(errData.message || 'Failed to update application');
+            if (errData.data?.isDuplicate) setDuplicateInfo(errData.data);
+            throw new Error(errData.message || (resp.status === 409 ? `An application with lender "${selectedProvider}" already exists within 30 days.` : 'Failed to update application'));
           }
         }
 
@@ -356,8 +474,13 @@ export function CloneApplicationDialog({
           const resData = await resp.json();
           createdAppId = resData?.data?.applicationId;
           success = true;
+        } else if (resp.status === 409) {
+          const errData = await resp.json().catch(() => ({}));
+          if (errData.data?.isDuplicate) setDuplicateInfo(errData.data);
+          throw new Error(errData.message || `An application with lender "${selectedProvider}" already exists for this customer within 30 days.`);
         }
-      } catch (err) {
+      } catch (err: any) {
+        if (err.message && err.message.includes('already exists')) throw err;
         // Fallback to direct create-application
       }
 
@@ -375,7 +498,8 @@ export function CloneApplicationDialog({
 
         if (!appResp.ok) {
           const errData = await appResp.json().catch(() => ({}));
-          throw new Error(errData.message || 'Failed to create cloned application');
+          if (errData.data?.isDuplicate) setDuplicateInfo(errData.data);
+          throw new Error(errData.message || (appResp.status === 409 ? `An application with lender "${selectedProvider}" already exists for this customer within 30 days.` : 'Failed to create cloned application'));
         }
 
         const appResult = await appResp.json();
@@ -760,6 +884,70 @@ export function CloneApplicationDialog({
                 ? 'Keeping the same lender will update this existing application in place without creating a duplicate.'
                 : 'Choosing a different lender will generate a brand new cloned application while keeping this existing one intact.'}
             </p>
+
+            {/* Duplicate Check Loading Indicator */}
+            {isCheckingDuplicate && (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground p-2.5 bg-muted/40 rounded-lg border border-border/50 animate-pulse">
+                <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
+                <span>Checking lender availability for this customer...</span>
+              </div>
+            )}
+
+            {/* Duplicate Application Alert Banner */}
+            {!isCheckingDuplicate && duplicateInfo?.isDuplicate && (
+              <div className="rounded-xl border border-destructive/50 bg-destructive/10 p-4 space-y-3 animate-in fade-in-50 duration-200">
+                <div className="flex items-start gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-destructive/20 text-destructive flex items-center justify-center shrink-0 mt-0.5">
+                    <AlertTriangle className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1 flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                      <h4 className="text-sm font-bold text-destructive flex items-center gap-1.5">
+                        Duplicate Application Detected
+                      </h4>
+                      {duplicateInfo.daysRemaining !== undefined && (
+                        <Badge variant="destructive" className="text-[11px] font-mono">
+                          {duplicateInfo.daysRemaining} {duplicateInfo.daysRemaining === 1 ? 'day' : 'days'} remaining
+                        </Badge>
+                      )}
+                    </div>
+                    <p className="text-xs text-foreground/90 font-medium leading-relaxed">
+                      {duplicateInfo.message || `An application with lender "${selectedProvider}" already exists for this customer within 30 days.`}
+                    </p>
+                  </div>
+                </div>
+
+                {duplicateInfo.application && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 p-2.5 rounded-lg bg-background/80 border border-border/80 text-xs">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Existing App No:</span>
+                      <span className="font-mono font-bold text-foreground">
+                        #{duplicateInfo.application.application_no}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Applied On:</span>
+                      <span className="font-medium text-foreground">
+                        {duplicateInfo.application.application_date
+                          ? new Date(duplicateInfo.application.application_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+                          : 'Recent'}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">Status:</span>
+                      <span className="font-medium text-foreground capitalize">
+                        {duplicateInfo.ticket?.status || (duplicateInfo.application.is_picked === 1 ? 'Under Review' : 'Submitted')}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-[11px] text-destructive flex items-center gap-1.5 font-medium">
+                  <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                  <span>Please select a different lender to clone or update this application.</span>
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Loan Details Configuration */}
@@ -891,9 +1079,12 @@ export function CloneApplicationDialog({
               type="button"
               size="sm"
               onClick={handleDirectClone}
-              disabled={isSubmitting || !selectedProvider}
-              className={`text-xs font-semibold text-white gap-1.5 shadow-sm ${
-                isSameProvider
+              disabled={isSubmitting || !selectedProvider || Boolean(duplicateInfo?.isDuplicate) || isCheckingDuplicate}
+              title={duplicateInfo?.isDuplicate ? 'Duplicate application exists with this lender' : undefined}
+              className={`text-xs font-semibold text-white gap-1.5 shadow-sm transition-all ${
+                Boolean(duplicateInfo?.isDuplicate)
+                  ? 'bg-destructive/70 hover:bg-destructive/70 cursor-not-allowed opacity-60'
+                  : isSameProvider
                   ? 'bg-blue-600 hover:bg-blue-700'
                   : 'bg-amber-600 hover:bg-amber-700'
               }`}
@@ -902,6 +1093,11 @@ export function CloneApplicationDialog({
                 <>
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
                   <span>{isSameProvider ? 'Updating Application...' : 'Cloning Application...'}</span>
+                </>
+              ) : duplicateInfo?.isDuplicate ? (
+                <>
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  <span>Duplicate Lender (Blocked)</span>
                 </>
               ) : isSameProvider ? (
                 <>

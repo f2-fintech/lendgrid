@@ -898,7 +898,7 @@ function DocumentUploadField({
 }
 
 // TAB 3: BANKING, KYC & DOCUMENTS
-function BankingKycDocumentsTab() {
+function BankingKycDocumentsTab({ hasRegisteredBusiness = true }: { hasRegisteredBusiness?: boolean }) {
   const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
   const { user } = useAuth()    // Get current user
   const kycStatus = watch("bankAndKyc.kycStatus")
@@ -1101,27 +1101,29 @@ function BankingKycDocumentsTab() {
             </div>
           </div>
 
-          <div>
-            <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Business Documents</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <DocumentUploadField
-                label="GST Certificate"
-                fieldName="documents.gstCertificate"
-                currentValue={watch("documents.gstCertificate")}
-                onFileSelect={(url) => setValue("documents.gstCertificate", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.gstCertificate", "")}
-                acceptTypes="image/*,application/pdf"
-              />
-              <DocumentUploadField
-                label="Certificate of Incorporation"
-                fieldName="documents.incorporationCertificate"
-                currentValue={watch("documents.incorporationCertificate")}
-                onFileSelect={(url) => setValue("documents.incorporationCertificate", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.incorporationCertificate", "")}
-                acceptTypes="image/*,application/pdf"
-              />
+          {hasRegisteredBusiness && (
+            <div>
+              <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Business Documents</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <DocumentUploadField
+                  label="GST Certificate"
+                  fieldName="documents.gstCertificate"
+                  currentValue={watch("documents.gstCertificate")}
+                  onFileSelect={(url) => setValue("documents.gstCertificate", url, { shouldDirty: true })}
+                  onRemove={() => setValue("documents.gstCertificate", "")}
+                  acceptTypes="image/*,application/pdf"
+                />
+                <DocumentUploadField
+                  label="Certificate of Incorporation"
+                  fieldName="documents.incorporationCertificate"
+                  currentValue={watch("documents.incorporationCertificate")}
+                  onFileSelect={(url) => setValue("documents.incorporationCertificate", url, { shouldDirty: true })}
+                  onRemove={() => setValue("documents.incorporationCertificate", "")}
+                  acceptTypes="image/*,application/pdf"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div>
             <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Banking Documents</h4>
@@ -1304,13 +1306,13 @@ export function AggregatorSettings() {
       ]
 
       const docs = (aggData as any)?.documents || {}
+      const isFreelance = aggData?.hasRegisteredBusiness === false
       documentsChecks = [
         Boolean(docs?.aadhaarFront),
         Boolean(docs?.aadhaarBack),
         Boolean(docs?.panCard),
-        Boolean(docs?.gstCertificate),
+        ...(isFreelance ? [] : [Boolean(docs?.gstCertificate), Boolean(docs?.incorporationCertificate)]),
         Boolean(docs?.bankStatement),
-        Boolean(docs?.incorporationCertificate),
         Boolean(docs?.cancelledCheque),
         Boolean(docs?.addressProof),
       ]
@@ -1488,7 +1490,7 @@ export function AggregatorSettings() {
 
           <TabsContent value="profile"><ProfileAndContactTab /></TabsContent>
           <TabsContent value="business"><BusinessDetailsTab /></TabsContent>
-          <TabsContent value="banking"><BankingKycDocumentsTab /></TabsContent>
+          <TabsContent value="banking"><BankingKycDocumentsTab hasRegisteredBusiness={aggData?.hasRegisteredBusiness !== false} /></TabsContent>
         </Tabs>
       </div>
     </FormProvider>

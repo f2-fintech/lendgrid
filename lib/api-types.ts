@@ -160,6 +160,7 @@ export type AggregatorProfile = {
   aggregatorType?: AggregatorType
   rank?: ApplicableFor
   businessType?: BusinessType
+  hasRegisteredBusiness?: boolean
   isOmsEnabled?: boolean
   yearOfEstablishment?: string
   registeredAddress?: string
@@ -202,6 +203,28 @@ export type AggregatorProfile = {
   user?: User
   kycApprovedByUser?: User
   teamMemberUsers?: User[]
+  // Sourcing & Referral fields
+  sourcingType?: 'DIRECT' | 'OMS' | 'AGGREGATOR'
+  omsReferredBy?: string
+  omsReferral?: {
+    _id?: string
+    employeeName?: string
+    employeeEmail?: string
+    employeeCode?: string
+    referralCode?: string
+    designation?: string
+  }
+  referredByAggregatorId?: string
+  referredByReferralCode?: string
+  referredByAggregator?: {
+    _id: string
+    companyName: string
+    referralCode?: string
+    user?: {
+      username?: string
+      email?: string
+    }
+  }
 }
 
 export type LenderCommission = {

@@ -198,6 +198,32 @@ export function AggregatorDashboard() {
     }
   };
 
+  const handlePartnerReferralShare = async () => {
+    try {
+      const code = aggData?.referralCode;
+      if (!code) {
+        toast({
+          title: "Error",
+          description: "Referral code not available.",
+          variant: "destructive"
+        });
+        return;
+      }
+      const partnerUrl = `${window.location.origin}/signup?ref=${code}&type=partner`;
+      await navigator.clipboard.writeText(partnerUrl);
+      toast({
+        title: "Partner Referral Link Copied!",
+        description: `Link copied: ${partnerUrl}. Independent channel partners signing up will be linked to you.`,
+      });
+    } catch (err) {
+      toast({
+        title: "Error",
+        description: "Failed to copy link.",
+        variant: "destructive"
+      });
+    }
+  };
+
   useEffect(() => {
     setPage(1)
   }, [searchTerm, filterStatus])
@@ -400,19 +426,34 @@ export function AggregatorDashboard() {
           <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Welcome back! Here's your performance overview.</p>
         </div>
-        <div className="flex flex-wrap gap-2 items-center sm:space-x-4 w-full sm:w-auto">
+        <div className="flex flex-wrap gap-2 items-center sm:space-x-3 w-full sm:w-auto">
+          <UITooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                onClick={handlePartnerReferralShare}
+                variant="outline"
+                className="border-primary/40 text-primary hover:bg-primary/10 shadow-sm transition-all active:scale-95 px-4 font-semibold"
+              >
+                <Share2 className="w-4 h-4 mr-2" />
+                Refer Partner
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Share link to onboard independent Channel Partners & earn commissions</p>
+            </TooltipContent>
+          </UITooltip>
           <UITooltip>
             <TooltipTrigger asChild>
               <Button 
                 onClick={handleShare}
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all active:scale-95 px-6"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md transition-all active:scale-95 px-5 font-semibold"
               >
                 <Share2 className="w-4 h-4 mr-2" />
                 Share
               </Button>
             </TooltipTrigger>
             <TooltipContent>
-              <p>Click here to share application creation link</p>
+              <p>Click here to share loan application creation link</p>
             </TooltipContent>
           </UITooltip>
           <Button variant="outline" className="border-border hidden sm:flex pointer-events-none">

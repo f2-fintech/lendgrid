@@ -329,7 +329,7 @@ export const MultiStepFormContent: React.FC<{
             body: JSON.stringify(appData),
         });
 
-        if (!response.ok) {
+        if (!response.ok && response.status !== 409) {
             response = await fetch(`${activeBaseUrl}/update-application`, {
                 method: 'POST',
                 headers: commonHeaders,
@@ -868,6 +868,40 @@ export const MultiStepFormContent: React.FC<{
 
                 const cleanCategory = formData.loanCategory && formData.loanCategory !== 'null' ? formData.loanCategory : 'unsecured';
                 const cleanLeadType = formData.leadType && formData.leadType !== 'null' ? formData.leadType : null;
+
+                // Pre-flight duplicate check safeguard before updating or creating
+                try {
+                    const draft = JSON.parse(localStorage.getItem('step1CustomerDraft') || '{}');
+                    const dupCheckResp = await fetch(`${activeBaseUrl}/check-duplicate-application`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            ...(resolvedCompanyId ? { 'companyid': String(resolvedCompanyId) } : {}),
+                            ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+                        },
+                        body: JSON.stringify({
+                            customerId: customerId ? Number(customerId) : undefined,
+                            mobile: draft.contact ? String(draft.contact).trim() : undefined,
+                            pan: draft.pan ? String(draft.pan).trim().toUpperCase() : undefined,
+                            providers: [provider],
+                            excludeApplicationId: editingAppId ? Number(editingAppId) : undefined,
+                        }),
+                    });
+                    if (dupCheckResp.ok) {
+                        const dupResult = await dupCheckResp.json();
+                        if (dupResult?.data?.isDuplicate) {
+                            toast({
+                                title: 'Duplicate Application Blocked',
+                                description: dupResult.data.message || `An application with lender "${provider}" already exists for this customer within 30 days.`,
+                                variant: 'destructive',
+                            });
+                            setIsSubmitting(false);
+                            return;
+                        }
+                    }
+                } catch (dupErr) {
+                    console.warn('[MultiStepForm] Duplicate check note:', dupErr);
+                }
 
                 if (isSameAsOriginal && editingAppId) {
                     // Provider is same: Update existing application!

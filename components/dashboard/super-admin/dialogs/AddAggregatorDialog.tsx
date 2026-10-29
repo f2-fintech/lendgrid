@@ -102,10 +102,8 @@ const schema = z
 
         companyName: z
             .string()
-            .min(2, "Company name must be at least 2 characters")
             .max(50, "Company name is too long")
-            .trim()
-            .toLowerCase(),
+            .optional(),
 
         aggregatorType: z.enum(['SOURCER', 'CHANNEL_PARTNER'], {
             required_error: 'Please select aggregator type',
@@ -147,6 +145,7 @@ export function AddAggregatorDialog({
 }) {
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+    const [hasCompany, setHasCompany] = useState(true);
     const [activeRules, setActiveRules] = useState<any[]>([]);
     const [selectedRule, setSelectedRule] = useState<any>(null);
     const [dealLenders, setDealLenders] = useState<any[]>([]);
@@ -235,7 +234,17 @@ export function AddAggregatorDialog({
     const onSubmit = async (data: FormValues) => {
         const DEFAULT_BASE_URL_REST = process.env.NEXT_PUBLIC_ADMIN_URL || 'http://localhost:3010/api/v1'
         try {
+            if (hasCompany && (!data.companyName || data.companyName.trim().length < 2)) {
+                toast({
+                    title: "Validation error",
+                    description: "Company name must be at least 2 characters",
+                    variant: "destructive",
+                });
+                return;
+            }
+
             const matchedRule = activeRules.find((r: any) => r.id === data.commissionRuleId);
+            const resolvedCompanyName = hasCompany ? data.companyName : data.fullName;
             const payload: Record<string, any> = {
                 username: data.fullName,
                 contact: data.contact,
@@ -243,7 +252,8 @@ export function AddAggregatorDialog({
                 password: data.password,
                 role: "AGGREGATOR_ADMIN",
                 // Aggregator Profile Fields
-                companyName: data.companyName,
+                companyName: resolvedCompanyName,
+                hasRegisteredBusiness: hasCompany,
                 aggregatorType: data.aggregatorType,
                 isOmsEnabled: true,
                 rank: matchedRule ? matchedRule.applicableFor : undefined,
@@ -352,24 +362,72 @@ export function AddAggregatorDialog({
                         </CardHeader>
                         <CardContent className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {/* Company Name */}
-                                <div>
-                                    <Label htmlFor="companyName" className="text-sm font-medium">
-                                        Company Name <span className="text-red-400">*</span>
-                                    </Label>
-                                    <Input
-                                        id="companyName"
-                                        {...register("companyName")}
-                                        className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
-                                        placeholder="e.g., Acme Corporation"
-                                    />
-                                    {errors.companyName && (
-                                        <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
-                                            <AlertCircle className="w-3 h-3" />
-                                            {errors.companyName.message}
-                                        </p>
-                                    )}
+                                {/* Has Registered Company Selection */}
+                                <div className="md:col-span-2 space-y-2">
+                                    <Label className="text-sm font-medium">Has Registered Company?</Label>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <button
+                                            type="button"
+                                            onClick={() => setHasCompany(true)}
+                                            className={`p-2.5 rounded-lg border text-left transition-all flex items-center gap-2 ${
+                                                hasCompany
+                                                    ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary'
+                                                    : 'border-border bg-background/50 text-muted-foreground'
+                                            }`}
+                                        >
+                                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${hasCompany ? 'border-primary' : 'border-muted-foreground'}`}>
+                                                {hasCompany && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-semibold text-foreground">Yes (Registered Company)</p>
+                                                <p className="text-[11px] text-muted-foreground">Firm, Pvt Ltd, LLP</p>
+                                            </div>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHasCompany(false)}
+                                            className={`p-2.5 rounded-lg border text-left transition-all flex items-center gap-2 ${
+                                                !hasCompany
+                                                    ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary'
+                                                    : 'border-border bg-background/50 text-muted-foreground'
+                                            }`}
+                                        >
+                                            <div className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${!hasCompany ? 'border-primary' : 'border-muted-foreground'}`}>
+                                                {!hasCompany && <div className="w-1.5 h-1.5 rounded-full bg-primary" />}
+                                            </div>
+                                            <div>
+                                                <p className="text-xs font-semibold text-foreground">No (Individual / Freelancer)</p>
+                                                <p className="text-[11px] text-muted-foreground">Uses User Full Name</p>
+                                            </div>
+                                        </button>
+                                    </div>
                                 </div>
+
+                                {/* Company Name */}
+                                {hasCompany ? (
+                                    <div>
+                                        <Label htmlFor="companyName" className="text-sm font-medium">
+                                            Company Name <span className="text-red-400">*</span>
+                                        </Label>
+                                        <Input
+                                            id="companyName"
+                                            {...register("companyName")}
+                                            className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20"
+                                            placeholder="e.g., Acme Corporation"
+                                        />
+                                        {errors.companyName && (
+                                            <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                                <AlertCircle className="w-3 h-3" />
+                                                {errors.companyName.message}
+                                            </p>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="p-3 rounded-lg bg-muted/40 border border-border/60 text-xs text-muted-foreground flex items-center gap-2">
+                                        <span className="text-primary font-bold">ℹ️ Note:</span>
+                                        <span>Company name will automatically be set to the user&apos;s full name. Business verification documents (like GST) will not be required.</span>
+                                    </div>
+                                )}
 
                                 {/* Aggregator Type */}
                                 <div>

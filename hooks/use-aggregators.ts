@@ -330,3 +330,34 @@ export function useDeleteAggregatorProfile() {
     },
   })
 }
+
+/**
+ * Super Admin: Assign referral source for an aggregator
+ */
+export function useAssignAggregatorReferral() {
+  const queryClient = useQueryClient()
+  const { toast } = useToast()
+
+  return useMutation({
+    mutationFn: (input: {
+      aggregatorProfileId: string
+      sourceType: 'OMS' | 'AGGREGATOR' | 'DIRECT'
+      omsEmployeeId?: string
+      referredByAggregatorId?: string
+    }) => aggregatorProfileApi.assignReferral(input),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.aggregators.all })
+      toast({
+        title: 'Referral Source Assigned',
+        description: 'Channel partner referral source updated successfully.',
+      })
+    },
+    onError: (error: Error) => {
+      toast({
+        title: 'Assignment Failed',
+        description: error.message || 'Failed to assign referral source',
+        variant: 'destructive',
+      })
+    },
+  })
+}

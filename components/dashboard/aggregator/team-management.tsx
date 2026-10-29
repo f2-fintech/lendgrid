@@ -354,8 +354,8 @@ export function TeamManagement() {
                                 </div>
                                 <CardContent className="p-4 sm:p-5 flex flex-col h-full justify-between relative z-10">
                                     <div className="flex items-center gap-2 mb-3 text-primary">
-                                        <LinkIcon className="w-5 h-5 opacity-90" />
-                                        <p className="text-sm font-semibold opacity-90 text-foreground">Referral Code</p>
+                                        <Users className="w-5 h-5 opacity-90" />
+                                        <p className="text-sm font-semibold opacity-90 text-foreground">Invite Team Member</p>
                                     </div>
                                     <div className="flex items-center gap-2 bg-background border border-border rounded-lg p-1.5 mb-4">
                                         <span className="text-sm font-mono font-bold tracking-wider px-2 flex-1 truncate text-foreground">
@@ -379,15 +379,15 @@ export function TeamManagement() {
                                     <Button
                                         className="w-full bg-primary text-primary-foreground hover:bg-primary/90 font-semibold h-9 shadow-sm"
                                         onClick={() => {
-                                            const url = `${window.location.origin}/signup?ref=${profile.referralCode}&c_name=${encodeURIComponent(companyName || '')}`;
+                                            const url = `${window.location.origin}/signup?ref=${profile.referralCode}&type=member&c_name=${encodeURIComponent(companyName || profile?.companyName || '')}`;
                                             navigator.clipboard.writeText(url)
                                             toast({
-                                                title: "Link Copied!",
-                                                description: "Onboarding link copied to clipboard",
+                                                title: "Team Invite Link Copied!",
+                                                description: "Staff invite link copied. New signups will join your team directly.",
                                             })
                                         }}
                                     >
-                                        Share Link
+                                        Copy Team Invite Link
                                     </Button>
                                 </CardContent>
                             </Card>

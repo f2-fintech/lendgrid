@@ -276,7 +276,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
   }, [watch, getValues]);
 
   // ── Real-time duplicate check ─────────────────────────────────────────────
-  // Called on blur of the PAN field (once both mobile and PAN look complete).
+  // Called on blur of PAN or Contact field, and auto-invoked when prefilled.
   const handlePanBlur = useCallback(async () => {
     const contact = getValues('contact');
     const pan = getValues('pan');
@@ -310,6 +310,7 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
       const token = getCookie('lendgrid_cookie');
       const companyId = typeof window !== 'undefined' ? getCompanyId() : null;
       const resolvedCompanyId = companyId && companyId !== 'all' ? String(companyId) : '';
+      const editingAppId = typeof window !== 'undefined' ? localStorage.getItem('editingApplicationId') : null;
 
       const response = await fetch(`${apiBaseUrl}/check-duplicate-application`, {
         method: 'POST',
@@ -322,23 +323,20 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
           mobile: contact.trim(),
           pan: pan.trim().toUpperCase(),
           ...(providersToSend.length > 0 ? { providers: providersToSend } : {}),
+          ...(editingAppId ? { excludeApplicationId: Number(editingAppId) || editingAppId } : {}),
         }),
       });
 
       const result = await response.json();
-      const editingAppId = typeof window !== 'undefined' ? localStorage.getItem('editingApplicationId') : null;
       if (result?.data?.isDuplicate) {
-        const dupAppId = String(result.data.application?.id || '');
-        if (editingAppId && dupAppId === String(editingAppId)) {
-          setDuplicateInfo(null);
-          return;
-        }
         setDuplicateInfo({
           message: result.data.message,
           daysRemaining: result.data.daysRemaining,
           application: result.data.application,
           ticket: result.data.ticket ?? null,
         });
+      } else {
+        setDuplicateInfo(null);
       }
     } catch (err) {
       // Network failure during check — silent fail, do not block the user
@@ -348,10 +346,25 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
     }
   }, [apiBaseUrl, getValues, formData?.providers]);
 
+  // Auto-run duplicate check on initial mount or when prefilled values / providers update
+  useEffect(() => {
+    const contact = getValues('contact');
+    const pan = getValues('pan');
+    const mobileOk = /^[0-9]{7,15}$/.test((contact || '').trim());
+    const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((pan || '').trim().toUpperCase());
+    if (mobileOk && panOk) {
+      handlePanBlur();
+    }
+  }, [handlePanBlur, formData?.providers]);
+
   const onFormSubmit = async (data: Step1FormData) => {
-    const editingAppId = typeof window !== 'undefined' ? localStorage.getItem('editingApplicationId') : null;
-    // Guard: block submit if a duplicate was detected for another application
-    if (duplicateInfo && (!editingAppId || String(duplicateInfo.application?.id) !== String(editingAppId))) {
+    // Guard: block submit if a duplicate was detected
+    if (duplicateInfo?.isDuplicate) {
+      toast({
+        title: 'Duplicate Application Detected',
+        description: duplicateInfo.message || 'An application already exists for this customer with the selected lender within 30 days.',
+        variant: 'destructive',
+      });
       return;
     }
     try {
@@ -432,6 +445,10 @@ export const Step1Form: React.FC<Step1FormProps> = ({ onSubmit, isLoading, onBac
               className="bg-card border-border  text-foreground mt-2"
               placeholder="Enter contact number"
               type="tel"
+              onBlur={(e) => {
+                register('contact').onBlur(e);
+                handlePanBlur();
+              }}
             />
             {errors.contact && (
               <p className="text-red-400 text-sm mt-1">{errors.contact.message}</p>

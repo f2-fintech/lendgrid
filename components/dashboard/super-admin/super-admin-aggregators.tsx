@@ -23,7 +23,8 @@ import {
   X,
   Trash2,
   UserCheck,
-  Percent
+  Percent,
+  Share2
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,6 +39,7 @@ import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
 
 import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
 import { AddTeamMemberDialog } from './dialogs/AddTeamMemberDialog'
+import { AssignReferralSourceDialog } from './dialogs/AssignReferralSourceDialog'
 import { useAggregators, useSearchAggregators, useUpdateAggregatorProfile } from '@/hooks/use-aggregators'
 import { useUpdateUser } from '@/hooks/use-users'
 import { AggregatorProfile } from '@/lib'
@@ -65,6 +67,8 @@ export function SuperAdminAggregators() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false)
   const [isOmsDialogOpen, setIsOmsDialogOpen] = useState(false)
+  const [isAssignReferralDialogOpen, setIsAssignReferralDialogOpen] = useState(false)
+  const [selectedAggregatorForReferral, setSelectedAggregatorForReferral] = useState<AggregatorProfile | null>(null)
   const [isAddTeamMemberDialogOpen, setIsAddTeamMemberDialogOpen] = useState(false)
   const [selectedAggregatorForTeam, setSelectedAggregatorForTeam] = useState<AggregatorProfile | null>(null)
 
@@ -130,6 +134,13 @@ export function SuperAdminAggregators() {
   useEffect(() => {
     setPage(1)
   }, [filterStatus])
+
+  useEffect(() => {
+    if (selectedAggregator) {
+      const updated = aggregators.find((a: AggregatorProfile) => a._id === selectedAggregator._id)
+      if (updated) setSelectedAggregator(updated)
+    }
+  }, [aggregators])
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('en-IN', {
@@ -427,12 +438,13 @@ export function SuperAdminAggregators() {
             <div ref={tableTopRef} />
             <div className="overflow-x-auto pb-4">
               {isTableLoading ? (
-                <TableSkeleton columns={8} rows={pageSize} />
+                <TableSkeleton columns={9} rows={pageSize} />
               ) : (
-                <div className="min-w-[1000px]">
-                  <div className="grid grid-cols-8 gap-2 py-4 px-4 bg-muted/50 rounded-t-lg font-medium text-muted-foreground text-sm">
+                <div className="min-w-[1100px]">
+                  <div className="grid grid-cols-9 gap-2 py-4 px-4 bg-muted/50 rounded-t-lg font-medium text-muted-foreground text-sm">
                     <div>Aggregator</div>
                     <div>Type</div>
+                    <div>Sourced By</div>
                     <div>Total Applications</div>
                     <div>Total Commission</div>
                     <div>Join Date</div>
@@ -447,7 +459,7 @@ export function SuperAdminAggregators() {
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: index * 0.05 }}
-                        className="grid grid-cols-8 gap-2 py-4 px-4 bg-card/30 hover:bg-card/50 rounded border-b border-border items-center"
+                        className="grid grid-cols-9 gap-2 py-4 px-4 bg-card/30 hover:bg-card/50 rounded border-b border-border items-center"
                       >
                         <div className="flex flex-col">
                           <p className="text-foreground font-medium truncate max-w-[200px]" title={aggregator.companyName}>
@@ -470,6 +482,85 @@ export function SuperAdminAggregators() {
                             <Badge className="bg-muted text-muted-foreground border border-border text-[10px] px-2 h-5">
                               Not Set
                             </Badge>
+                          )}
+                        </div>
+                        <div>
+                          {aggregator.sourcingType === 'OMS' || aggregator.omsReferredBy || aggregator.omsReferral ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedAggregatorForReferral(aggregator)
+                                    setIsAssignReferralDialogOpen(true)
+                                  }}
+                                  className="text-left group inline-flex max-w-full"
+                                >
+                                  <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 hover:bg-purple-500/30 transition-all text-[10px] px-2 py-0.5 cursor-pointer flex items-center gap-1 font-medium max-w-full">
+                                    <UserCheck className="w-3 h-3 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {aggregator.omsReferral?.employeeName || aggregator.omsReferredBy || 'OMS Staff'}
+                                    </span>
+                                  </Badge>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">{aggregator.omsReferral?.employeeName || aggregator.omsReferredBy || 'OMS Staff'}</p>
+                                <p className="text-xs text-muted-foreground">Code: {aggregator.omsReferral?.referralCode || aggregator.omsReferredBy}</p>
+                                {aggregator.omsReferral?.designation && (
+                                  <p className="text-[11px] text-muted-foreground">{aggregator.omsReferral.designation}</p>
+                                )}
+                                <p className="text-[10px] text-primary mt-1">Click to view/change referral source</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : aggregator.sourcingType === 'AGGREGATOR' || aggregator.referredByAggregatorId || aggregator.referredByReferralCode ? (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedAggregatorForReferral(aggregator)
+                                    setIsAssignReferralDialogOpen(true)
+                                  }}
+                                  className="text-left group inline-flex max-w-full"
+                                >
+                                  <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30 hover:bg-blue-500/30 transition-all text-[10px] px-2 py-0.5 cursor-pointer flex items-center gap-1 font-medium max-w-full">
+                                    <Building className="w-3 h-3 flex-shrink-0" />
+                                    <span className="truncate">
+                                      {aggregator.referredByAggregator?.companyName || aggregator.referredByReferralCode || 'Partner'}
+                                    </span>
+                                  </Badge>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p className="font-semibold">{aggregator.referredByAggregator?.companyName || 'Channel Partner'}</p>
+                                <p className="text-xs text-muted-foreground">Code: {aggregator.referredByReferralCode || aggregator.referredByAggregator?.referralCode}</p>
+                                {aggregator.referredByAggregator?.user?.email && (
+                                  <p className="text-[11px] text-muted-foreground">{aggregator.referredByAggregator.user.email}</p>
+                                )}
+                                <p className="text-[10px] text-primary mt-1">Click to view/change referral source</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setSelectedAggregatorForReferral(aggregator)
+                                    setIsAssignReferralDialogOpen(true)
+                                  }}
+                                  className="text-[11px] text-muted-foreground hover:text-primary transition-colors inline-flex items-center gap-1 py-0.5 px-2 rounded hover:bg-muted/40 border border-dashed border-border"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                  <span>Assign</span>
+                                </button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                <p>No referral source assigned.</p>
+                                <p className="text-xs text-muted-foreground">Click to assign an OMS Staff or Referring Partner.</p>
+                              </TooltipContent>
+                            </Tooltip>
                           )}
                         </div>
                         <ApplicationCountCell companyId={aggregator.companyId} />
@@ -805,6 +896,108 @@ export function SuperAdminAggregators() {
                 </div>
               </div>
 
+              {/* Sourcing & Referral Details */}
+              <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+                    <Share2 className="w-5 h-5" />
+                    Sourcing & Referral Information
+                  </h3>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="text-xs h-8 border-border hover:bg-muted"
+                    onClick={() => {
+                      setSelectedAggregatorForReferral(selectedAggregator)
+                      setIsAssignReferralDialogOpen(true)
+                    }}
+                  >
+                    <Edit className="w-3.5 h-3.5 mr-1" />
+                    Assign / Change Referrer
+                  </Button>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">Sourcing Channel</p>
+                    <div className="mt-1">
+                      {selectedAggregator.sourcingType === 'OMS' ? (
+                        <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                          OMS Staff Referral
+                        </Badge>
+                      ) : selectedAggregator.sourcingType === 'AGGREGATOR' ? (
+                        <Badge className="bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                          Channel Partner Referral
+                        </Badge>
+                      ) : (
+                        <Badge className="bg-muted text-muted-foreground border border-border">
+                          Direct Onboarding
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+
+                  {selectedAggregator.sourcingType === 'OMS' ? (
+                    <>
+                      <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">OMS Staff Member</p>
+                        <p className="text-foreground font-semibold">
+                          {selectedAggregator.omsReferral?.employeeName || 'OMS Employee'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedAggregator.omsReferral?.designation || selectedAggregator.omsReferral?.employeeCode || 'OMS Staff'}
+                        </p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">Referral Code Used</p>
+                        <p className="text-foreground font-mono font-semibold">
+                          {selectedAggregator.omsReferral?.referralCode || selectedAggregator.omsReferredBy || 'N/A'}
+                        </p>
+                      </div>
+                    </>
+                  ) : selectedAggregator.sourcingType === 'AGGREGATOR' ? (
+                    <>
+                      <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">Referring Partner</p>
+                        <p className="text-foreground font-semibold">
+                          {selectedAggregator.referredByAggregator?.companyName || 'Channel Partner'}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {selectedAggregator.referredByAggregator?.user?.email || 'No email recorded'}
+                        </p>
+                      </div>
+                      <div className="bg-muted/50 rounded-lg p-4 border border-border">
+                        <p className="text-xs text-muted-foreground mb-1">Referral Code Used</p>
+                        <p className="text-foreground font-mono font-semibold">
+                          {selectedAggregator.referredByReferralCode || selectedAggregator.referredByAggregator?.referralCode || 'N/A'}
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="bg-muted/50 rounded-lg p-4 border border-border md:col-span-2 flex items-center justify-between">
+                      <div>
+                        <p className="text-xs text-muted-foreground mb-1">No Referral Linked</p>
+                        <p className="text-sm text-foreground">
+                          This partner onboarded directly. You can assign an OMS staff member or referring partner above.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-4 pt-4 border-t border-border/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-muted-foreground">This Partner's Referral Code:</span>
+                    <span className="text-sm font-mono font-bold text-accent">
+                      {selectedAggregator.referralCode || 'Not Generated'}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Used when this partner invites sub-partners or team members.
+                  </p>
+                </div>
+              </div>
+
               {/* Performance Metrics */}
               <div className="bg-card/50 rounded-lg p-6 border border-border backdrop-blur-sm">
                 <h3 className="text-lg font-semibold mb-4 text-purple-400 flex items-center gap-2">
@@ -954,6 +1147,15 @@ export function SuperAdminAggregators() {
         isOpen={isAddDialogOpen}
         onClose={() => setIsAddDialogOpen(false)}
         refetch={refetch}
+      />
+
+      <AssignReferralSourceDialog
+        open={isAssignReferralDialogOpen}
+        onOpenChange={setIsAssignReferralDialogOpen}
+        aggregator={selectedAggregatorForReferral}
+        onSuccess={() => {
+          refetch()
+        }}
       />
 
       {/* Enable OMS Confirmation Dialog */}

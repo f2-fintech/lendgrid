@@ -1221,27 +1221,29 @@ function BankingKycDocumentsTab() {
                         </div>
                     </div>
 
-                    <div>
-                        <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Business Documents</h4>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <DocumentUploadField
-                                label="GST Certificate"
-                                fieldName="documents.gstCertificate"
-                                currentValue={watch("documents.gstCertificate")}
-                                onFileSelect={(url) => setValue("documents.gstCertificate", url, { shouldDirty: true, shouldValidate: true })}
-                                onRemove={() => setValue("documents.gstCertificate", "")}
-                                acceptTypes="image/*,application/pdf"
-                            />
-                            <DocumentUploadField
-                                label="Certificate of Incorporation"
-                                fieldName="documents.incorporationCertificate"
-                                currentValue={watch("documents.incorporationCertificate")}
-                                onFileSelect={(url) => setValue("documents.incorporationCertificate", url, { shouldDirty: true, shouldValidate: true })}
-                                onRemove={() => setValue("documents.incorporationCertificate", "")}
-                                acceptTypes="image/*,application/pdf"
-                            />
+                    {aggData?.hasRegisteredBusiness !== false && (
+                        <div>
+                            <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Business Documents</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <DocumentUploadField
+                                    label="GST Certificate"
+                                    fieldName="documents.gstCertificate"
+                                    currentValue={watch("documents.gstCertificate")}
+                                    onFileSelect={(url) => setValue("documents.gstCertificate", url, { shouldDirty: true, shouldValidate: true })}
+                                    onRemove={() => setValue("documents.gstCertificate", "")}
+                                    acceptTypes="image/*,application/pdf"
+                                />
+                                <DocumentUploadField
+                                    label="Certificate of Incorporation"
+                                    fieldName="documents.incorporationCertificate"
+                                    currentValue={watch("documents.incorporationCertificate")}
+                                    onFileSelect={(url) => setValue("documents.incorporationCertificate", url, { shouldDirty: true, shouldValidate: true })}
+                                    onRemove={() => setValue("documents.incorporationCertificate", "")}
+                                    acceptTypes="image/*,application/pdf"
+                                />
+                            </div>
                         </div>
-                    </div>
+                    )}
 
                     <div>
                         <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Banking Documents</h4>
@@ -1404,15 +1406,15 @@ export function AggregatorProfilePage({ id }: { id: string }) {
         ]
 
         const docs = (aggData as any)?.documents || {}
+        const isFreelance = aggData?.hasRegisteredBusiness === false
         const documentsChecks = [
             Boolean(docs?.aadhaarFront),
             Boolean(docs?.aadhaarBack),
             Boolean(docs?.panCard),
-            Boolean(docs?.gstCertificate),
-            Boolean(docs?.bankStatement),
-            Boolean(docs?.incorporationCertificate),
+            ...(isFreelance ? [] : [Boolean(docs?.gstCertificate), Boolean(docs?.incorporationCertificate)]),
             Boolean(docs?.bankStatement),
             Boolean(docs?.cancelledCheque),
+            Boolean(docs?.addressProof),
         ]
 
         const allChecks = [...profileChecks, ...businessChecks, ...bankChecks, ...documentsChecks]

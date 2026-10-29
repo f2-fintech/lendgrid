@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, Loader2, Smartphone } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Smartphone, Users, Building, Tag } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -48,6 +48,7 @@ const signupSchema = z.object({
     .trim(),
 
   companyName: z.string().optional(),
+  referralCode: z.string().optional(),
 
   password: z.string()
     .min(8, "Password Must Be 8 Characters Long")
@@ -80,10 +81,20 @@ declare global {
 export function SignupForm() {
   const searchParams = useSearchParams();
   const referralCode = searchParams.get('ref') || '';
+  const inviteType = searchParams.get('type') || '';
   const parentCompanyName = searchParams.get('c_name') || '';
+
+  // Differentiate between 3 flows:
+  // 1. OMS staff referral (OMS- prefix) -> Independent Channel Partner (AGGREGATOR_ADMIN)
+  // 2. Team member invite (type=member or c_name present without partner type) -> AGGREGATOR_MEMBER
+  // 3. Partner referral (AG- code and type!=member) -> Independent Channel Partner (AGGREGATOR_ADMIN)
+  const isOmsReferral = referralCode.toUpperCase().startsWith('OMS-');
+  const isMemberInvite = !isOmsReferral && (inviteType === 'member' || (Boolean(parentCompanyName) && inviteType !== 'partner'));
+  const isPartnerReferral = Boolean(referralCode) && !isMemberInvite;
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [hasCompany, setHasCompany] = useState<boolean>(true);
   const [isLoading, setIsLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
   const [turnstileLoaded, setTurnstileLoaded] = useState(false);
@@ -103,17 +114,17 @@ export function SignupForm() {
         setShowAppPrompt(true);
         
         // Attempt automatic deep link redirect
-        const deepLinkUrl = `lendgridmobile://signup?ref=${encodeURIComponent(referralCode)}&c_name=${encodeURIComponent(parentCompanyName)}`;
+        const deepLinkUrl = `lendgridmobile://signup?ref=${encodeURIComponent(referralCode)}&type=${encodeURIComponent(inviteType || (isMemberInvite ? 'member' : 'partner'))}&c_name=${encodeURIComponent(parentCompanyName)}`;
         const timer = setTimeout(() => {
           window.location.href = deepLinkUrl;
         }, 800);
         return () => clearTimeout(timer);
       }
     }
-  }, [referralCode, parentCompanyName]);
+  }, [referralCode, inviteType, isMemberInvite, parentCompanyName]);
 
   const handleOpenApp = () => {
-    const deepLinkUrl = `lendgridmobile://signup?ref=${encodeURIComponent(referralCode)}&c_name=${encodeURIComponent(parentCompanyName)}`;
+    const deepLinkUrl = `lendgridmobile://signup?ref=${encodeURIComponent(referralCode)}&type=${encodeURIComponent(inviteType || (isMemberInvite ? 'member' : 'partner'))}&c_name=${encodeURIComponent(parentCompanyName)}`;
     window.location.href = deepLinkUrl;
   };
   const registerMutation = useRegister();
@@ -128,8 +139,16 @@ export function SignupForm() {
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
     mode: 'onBlur',
-    defaultValues: {}
+    defaultValues: {
+      referralCode: referralCode || '',
+    }
   });
+
+  useEffect(() => {
+    if (referralCode) {
+      setValue('referralCode', referralCode);
+    }
+  }, [referralCode, setValue]);
 
   useEffect(() => {
     const roleParam = searchParams.get('role');
@@ -200,17 +219,37 @@ export function SignupForm() {
         lender: "LENDER_ADMIN",
       };
 
+      // Ensure company name is provided for independent channel partners who have a company
+      if (!isMemberInvite && hasCompany && (!data.companyName || !data.companyName.trim())) {
+        toast({
+          title: "Company name required",
+          description: "Please enter your registered firm or agency name.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      const resolvedCompanyName = isMemberInvite
+        ? (parentCompanyName || `${data.fullName}'s Agency`)
+        : hasCompany
+          ? data.companyName
+          : data.fullName;
+
+      const enteredReferralCode = (data.referralCode || referralCode || '').trim().toUpperCase();
+
       const payload = {
         username: data.fullName,
         contact: data.contact,
         email: data.email,
         password: data.password,
-        role: referralCode ? 'AGGREGATOR_MEMBER' : 'AGGREGATOR_ADMIN',
+        role: isMemberInvite ? 'AGGREGATOR_MEMBER' : 'AGGREGATOR_ADMIN',
         aggregatorType: 'CHANNEL_PARTNER',  // to allow backend to auto-create profile of aggregator
-        companyName: parentCompanyName || data.companyName,        // to allow backend to auto-create profile of aggregator
+        companyName: resolvedCompanyName,
+        hasRegisteredBusiness: isMemberInvite ? undefined : hasCompany,
         isOmsEnabled: true,
         fixedCommissionPercent: 0.75,
-        referralCode: referralCode ? referralCode : undefined,
+        referralCode: enteredReferralCode ? enteredReferralCode : undefined,
         captchaToken
       };
 
@@ -234,12 +273,12 @@ export function SignupForm() {
       }
 
       const { companyId } = result;
-      if (!referralCode && !companyId) {
+      if (!isMemberInvite && !companyId) {
         throw new Error("Aggregator profile not created");
       }
 
       // Create Company (REST Api) - Non-blocking (Skip if registering as member)
-      if (!referralCode) {
+      if (!isMemberInvite) {
         try {
           const companyRes = await fetch(`${DEFAULT_BASE_URL_REST}/companies`, {
             method: "POST",
@@ -265,15 +304,15 @@ export function SignupForm() {
           toast({
             title: "Company Sync Skipped",
             description: "Secondary server unavailable. Account created locally.",
-            variant: "destructive", // Using destructive to catch attention
+            variant: "destructive",
           });
         }
       }
 
-      if (referralCode) {
+      if (isMemberInvite) {
         toast({
-          title: "Agent created successfully!",
-          description: "Redirecting to login page...",
+          title: "Team Account Created!",
+          description: "You have joined the team. Redirecting to login...",
         });
         router.push(navigationPaths.login);
         return;
@@ -423,34 +462,145 @@ export function SignupForm() {
             {/* TWO-COLUMN GRID LAYOUT */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
 
-              {/* Referred By - Full Width - Only show if referralCode exists */}
-              {referralCode && (
-                <div className="space-y-1 md:col-span-2">
-                  <Label className="text-foreground font-medium">Referred By</Label>
-                  <Input
-                    className="h-11 rounded-xl bg-muted border border-border text-primary font-bold placeholder:text-muted-foreground focus-visible:ring-0 opacity-100"
-                    value={`${referralCode}${parentCompanyName ? ` (${parentCompanyName})` : ''}`}
-                    disabled={true}
-                  />
+              {/* Context Banners based on Flow */}
+              {isMemberInvite && (
+                <div className="p-3.5 rounded-xl bg-primary/10 border border-primary/20 flex items-center gap-3 md:col-span-2">
+                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center text-primary shrink-0">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">Team Member Invitation</p>
+                    <p className="text-sm font-medium text-foreground">
+                      You are joining <span className="font-bold text-primary">{parentCompanyName || 'Aggregator Agency'}</span> as an internal team member.
+                    </p>
+                  </div>
                 </div>
               )}
 
-              {/* Company Name - Full Width (Hide if member) */}
-              {!referralCode && (
+              {isOmsReferral && (
+                <div className="p-3.5 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center gap-3 md:col-span-2">
+                  <div className="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center text-purple-400 shrink-0">
+                    <Building className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-purple-400">OMS Staff Referral ({referralCode})</p>
+                    <p className="text-sm text-foreground">
+                      Enter your firm name below to register as an independent Channel Partner.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {isPartnerReferral && (
+                <div className="p-3.5 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center gap-3 md:col-span-2">
+                  <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center text-blue-400 shrink-0">
+                    <Building className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-blue-400">Partner Referral ({referralCode})</p>
+                    <p className="text-sm text-foreground">
+                      Referred by partner code <span className="font-bold font-mono text-primary">{referralCode}</span>. Enter your company name to establish your agency portal.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Registered Company vs Freelancer Selector */}
+              {!isMemberInvite && (
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-foreground font-medium">
+                    Do you have a registered company?
+                  </Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setHasCompany(true)}
+                      className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 ${
+                        hasCompany
+                          ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary'
+                          : 'border-border bg-background/50 text-muted-foreground hover:border-border/80'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${hasCompany ? 'border-primary' : 'border-muted-foreground'}`}>
+                        {hasCompany && <div className="w-2 h-2 rounded-full bg-primary" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">Yes, Registered Company</p>
+                        <p className="text-xs text-muted-foreground">Firm, Pvt Ltd, LLP, etc.</p>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setHasCompany(false)}
+                      className={`p-3 rounded-xl border text-left transition-all flex items-center gap-3 ${
+                        !hasCompany
+                          ? 'border-primary bg-primary/10 text-foreground ring-1 ring-primary'
+                          : 'border-border bg-background/50 text-muted-foreground hover:border-border/80'
+                      }`}
+                    >
+                      <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${!hasCompany ? 'border-primary' : 'border-muted-foreground'}`}>
+                        {!hasCompany && <div className="w-2 h-2 rounded-full bg-primary" />}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold text-foreground">No, I am a Freelancer</p>
+                        <p className="text-xs text-muted-foreground">Individual Channel Partner</p>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Company Name - Full Width (Visible & required if hasCompany, hidden for freelancer or member) */}
+              {!isMemberInvite && hasCompany && (
                 <div className="space-y-1 md:col-span-2">
                   <Label htmlFor="companyName" className="text-foreground font-medium">
-                    Company Name
+                    Company / Firm Name <span className="text-primary">*</span>
                   </Label>
                   <Input
                     id="companyName"
-                    {...register('companyName', { required: !referralCode ? 'Company name is required' : false })}
+                    {...register('companyName')}
                     className="h-11 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0"
-                    placeholder="Your Company Ltd."
+                    placeholder="e.g. Acme Financial Services"
                     disabled={isLoading}
                   />
                   {errors.companyName && (
                     <p className="text-destructive text-sm mt-1">{errors.companyName.message}</p>
                   )}
+                </div>
+              )}
+
+              {!isMemberInvite && !hasCompany && (
+                <div className="p-3 rounded-xl bg-muted/40 border border-border/60 md:col-span-2 text-xs text-muted-foreground flex items-center gap-2">
+                  <span className="text-primary font-bold text-sm">ℹ️</span>
+                  <span>Your account will be onboarded under your full name. Business verification documents (like GST & Incorporation certificate) will not be required.</span>
+                </div>
+              )}
+
+              {/* Referral Code - Visible for independent channel partners */}
+              {!isMemberInvite && (
+                <div className="space-y-1 md:col-span-2">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="referralCode" className="text-foreground font-medium flex items-center gap-1.5">
+                      <Tag className="w-3.5 h-3.5 text-primary" />
+                      Referral Code <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
+                    </Label>
+                    {referralCode && (
+                      <span className="text-[11px] text-primary font-medium bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
+                        Applied from link
+                      </span>
+                    )}
+                  </div>
+                  <Input
+                    id="referralCode"
+                    {...register('referralCode')}
+                    className="h-11 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground font-mono focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 uppercase"
+                    placeholder="e.g. AG-XXXXXX or OMS-XXXXXX"
+                    disabled={isLoading}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    If you have a referral code from a Channel Partner or OMS Staff, enter it here.
+                  </p>
                 </div>
               )}
 

@@ -105,6 +105,26 @@ export const aggregatorProfileApi = {
               }
               createdAt
               createdBy
+              sourcingType
+              omsReferredBy
+              omsReferral {
+                _id
+                employeeName
+                employeeCode
+                referralCode
+                designation
+              }
+              referredByAggregatorId
+              referredByReferralCode
+              referredByAggregator {
+                _id
+                companyName
+                referralCode
+                user {
+                  username
+                  email
+                }
+              }
               teamMemberUsers {
                 _id
                 username
@@ -154,6 +174,7 @@ export const aggregatorProfileApi = {
           isOmsEnabled
           rank
           businessType
+          hasRegisteredBusiness
           yearOfEstablishment
           registeredAddress
           city
@@ -196,6 +217,26 @@ export const aggregatorProfileApi = {
           }
           createdAt
           updatedAt
+          sourcingType
+          omsReferredBy
+          omsReferral {
+            _id
+            employeeName
+            employeeCode
+            referralCode
+            designation
+          }
+          referredByAggregatorId
+          referredByReferralCode
+          referredByAggregator {
+            _id
+            companyName
+            referralCode
+            user {
+              username
+              email
+            }
+          }
           user {
             _id
             username
@@ -492,5 +533,42 @@ export const aggregatorProfileApi = {
         }
       `,
       variables: { id },
+    }),
+
+  /**
+   * Super Admin: Assign or update referral source for an aggregator
+   */
+  assignReferral: (input: {
+    aggregatorProfileId: string
+    sourceType: 'OMS' | 'AGGREGATOR' | 'DIRECT'
+    omsEmployeeId?: string
+    referredByAggregatorId?: string
+  }) =>
+    gqlFetch<{ assignAggregatorReferral: AggregatorProfile }>({
+      query: `
+        mutation AssignAggregatorReferral($input: AssignAggregatorReferralInput!) {
+          assignAggregatorReferral(input: $input) {
+            _id
+            companyName
+            sourcingType
+            omsReferredBy
+            omsReferral {
+              _id
+              employeeName
+              employeeCode
+              referralCode
+              designation
+            }
+            referredByAggregatorId
+            referredByReferralCode
+            referredByAggregator {
+              _id
+              companyName
+              referralCode
+            }
+          }
+        }
+      `,
+      variables: { input },
     }),
 }

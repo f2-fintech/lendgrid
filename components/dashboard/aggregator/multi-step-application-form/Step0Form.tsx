@@ -8,6 +8,7 @@ import {
     Edit,
     ArrowRight,
     AlertCircle,
+    AlertTriangle,
     Plus,
 } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -43,7 +44,8 @@ import {
     PopoverTrigger,
 } from "@/components/ui/popover"
 import { Check, ChevronsUpDown, X } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { cn, getCookie } from "@/lib/utils"
+import { getCompanyId } from '@/lib/http-client';
 
 import { step0Schema, Step0FormData } from './validation';
 import { useFormContext } from './FormContext';
@@ -90,6 +92,13 @@ const leadTypeOptions = [
 export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => {
     const [amountDialogOpen, setAmountDialogOpen] = useState(false);
     const [editingProvider, setEditingProvider] = useState<string | null>(null);
+    const [duplicateInfo, setDuplicateInfo] = useState<{
+        isDuplicate: boolean;
+        message: string;
+        daysRemaining?: number;
+        application?: any;
+    } | null>(null);
+    const [isDuplicateChecking, setIsDuplicateChecking] = useState<boolean>(false);
 
     const { formData, setFormData, nextStep } = useFormContext();
     const { toast } = useToast();
@@ -151,6 +160,87 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
     const providerAmounts = watch('providerAmounts');
     const existingLoans = watch('existingLoans');
     const businessEntityType = watch('businessEntityType');
+
+    // Real-time duplicate check for selected providers if customer context is known (edit mode or existing draft)
+    useEffect(() => {
+        if (!selectedProviders || selectedProviders.length === 0) {
+            setDuplicateInfo(null);
+            setIsDuplicateChecking(false);
+            return;
+        }
+
+        let contact = '';
+        let pan = '';
+        let customerId = '';
+        let editingAppId = '';
+
+        if (typeof window !== 'undefined') {
+            try {
+                const draft = JSON.parse(localStorage.getItem('step1CustomerDraft') || '{}');
+                contact = draft.contact || '';
+                pan = draft.pan || '';
+                customerId = localStorage.getItem('loanFormCustomerId') || '';
+                editingAppId = localStorage.getItem('editingApplicationId') || '';
+            } catch (e) {}
+        }
+
+        const mobileOk = /^[0-9]{7,15}$/.test((contact || '').trim());
+        const panOk = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test((pan || '').trim().toUpperCase());
+
+        if (!customerId && (!mobileOk || !panOk)) {
+            // Customer contact and PAN not yet filled — will be verified in Step 1
+            return;
+        }
+
+        let isCancelled = false;
+        const checkDuplicate = async () => {
+            setIsDuplicateChecking(true);
+            try {
+                const apiBaseUrl = process.env.NEXT_PUBLIC_WEB_URL
+                    ? `${process.env.NEXT_PUBLIC_WEB_URL.replace(/\/api\/v1\/?$/, '')}/api/v1`
+                    : 'http://localhost:8080/api/v1';
+                const token = getCookie('lendgrid_cookie');
+                const companyId = getCompanyId();
+
+                const resp = await fetch(`${apiBaseUrl}/check-duplicate-application`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...(companyId && companyId !== 'all' ? { companyid: String(companyId) } : {}),
+                        ...(token ? { Authorization: `Bearer ${token}` } : {})
+                    },
+                    body: JSON.stringify({
+                        customerId: customerId ? Number(customerId) : undefined,
+                        mobile: mobileOk ? contact.trim() : undefined,
+                        pan: panOk ? pan.trim().toUpperCase() : undefined,
+                        providers: selectedProviders,
+                        excludeApplicationId: editingAppId ? Number(editingAppId) : undefined,
+                    })
+                });
+
+                if (resp.ok) {
+                    const result = await resp.json();
+                    if (!isCancelled) {
+                        if (result?.data?.isDuplicate) {
+                            setDuplicateInfo(result.data);
+                        } else {
+                            setDuplicateInfo(null);
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('[Step0Form] duplicate check error:', e);
+            } finally {
+                if (!isCancelled) setIsDuplicateChecking(false);
+            }
+        };
+
+        const timer = setTimeout(checkDuplicate, 300);
+        return () => {
+            isCancelled = true;
+            clearTimeout(timer);
+        };
+    }, [selectedProviders]);
 
     const canAddAnotherLoan = existingLoans?.every(loan =>
         loan.hasRunningLoans === 'yes' &&
@@ -223,6 +313,15 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
 
     // Handle form submission with React Hook Form
     const onFormSubmit = (data: Step0FormData) => {
+        if (duplicateInfo?.isDuplicate) {
+            toast({
+                title: 'Duplicate Lender Detected',
+                description: duplicateInfo.message || 'An application already exists for this customer with one of the selected lenders within 30 days.',
+                variant: 'destructive'
+            });
+            return;
+        }
+
         const updatedProviderAmounts = (data.providers || []).map((p) => {
             const existing = data.providerAmounts?.find((pa) => pa.provider === p);
             return {
@@ -583,6 +682,43 @@ export const Step0Form: React.FC<Step0FormProps> = ({ providers, onSubmit }) => 
                                     </div>
                                 );
                             })}
+                        </div>
+                    )}
+
+                    {/* Duplicate Check Indicator & Alert Banner */}
+                    {isDuplicateChecking && (
+                        <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground p-2.5 bg-muted/40 rounded-lg border border-border/50 animate-pulse">
+                            <Clock className="w-3.5 h-3.5 animate-spin text-primary" />
+                            <span>Checking lender availability...</span>
+                        </div>
+                    )}
+
+                    {!isDuplicateChecking && duplicateInfo?.isDuplicate && (
+                        <div className="mt-4 p-4 rounded-xl border border-destructive/50 bg-destructive/10 space-y-2.5 animate-in fade-in-50">
+                            <div className="flex items-start gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-destructive/20 text-destructive flex items-center justify-center shrink-0 mt-0.5">
+                                    <AlertTriangle className="w-4 h-4" />
+                                </div>
+                                <div className="space-y-1 flex-1">
+                                    <div className="flex items-center justify-between gap-2 flex-wrap">
+                                        <h4 className="text-sm font-bold text-destructive flex items-center gap-1.5">
+                                            Duplicate Application Detected
+                                        </h4>
+                                        {duplicateInfo.daysRemaining !== undefined && (
+                                            <Badge variant="destructive" className="text-[10px] font-mono">
+                                                {duplicateInfo.daysRemaining} days remaining
+                                            </Badge>
+                                        )}
+                                    </div>
+                                    <p className="text-xs text-foreground/90 font-medium">
+                                        {duplicateInfo.message || `An application with lender "${duplicateInfo.application?.provider || 'selected lender'}" already exists for this customer within 30 days.`}
+                                    </p>
+                                </div>
+                            </div>
+                            <p className="text-[11px] text-destructive flex items-center gap-1 font-medium">
+                                <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                                <span>Please remove or change the duplicate lender before continuing.</span>
+                            </p>
                         </div>
                     )}
 
