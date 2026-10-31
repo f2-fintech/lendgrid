@@ -263,30 +263,23 @@ export function LoginForm() {
         return;
       }
 
-      // Verify if the user has the 'sales' role before proceeding
-      const decoded = decodeJwt(result.access_token);
-      const omsRole = decoded?.role?.toLowerCase();
-
-      if (omsRole !== 'sales') {
-        toast({
-          title: "Access Denied",
-          description: "Only OMS staff with the 'Sales' role are authorized to login here.",
-          variant: "destructive",
-        });
-        setIsLoading(false);
-        return;
-      }
-
       // Store standard user token, since Lendgrid treats OMS staff interchangeably
       setCookie("lendgrid_cookie", result.access_token, 1);
       toast({
         title: "Login successful!",
-        description: "Welcome! Redirecting to Sales Workspace...",
+        description: "Welcome! Redirecting to Workspace...",
       });
+
+      const decoded: any = decodeJwt(result.access_token);
+      const isSales = decoded?.role?.toLowerCase() === 'sales';
 
       // Wait a bit to ensure the cookie propagates for next navigation
       setTimeout(() => {
-        router.push(navigationPaths.lendgridSales.dashboard);
+        if (isSales) {
+          router.push(navigationPaths.lendgridSales.dashboard);
+        } else {
+          router.push(navigationPaths.lendgridSales.partners);
+        }
       }, 500);
 
     } catch (error: any) {

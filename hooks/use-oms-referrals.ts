@@ -41,6 +41,46 @@ export function useOmsPartnersForAdmin(omsEmployeeId?: string, enabled: boolean 
   })
 }
 
+export function useMyOmsReferralCode(enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.omsReferrals.myCode(),
+    queryFn: async () => {
+      const response = await omsReferralApi.getMyReferralCode()
+      return response.getMyOmsReferralCode
+    },
+    enabled,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    retry: 1,
+  })
+}
+
+export function useMyOmsPartners(enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.omsReferrals.partners(),
+    queryFn: async () => {
+      const response = await omsReferralApi.getPartners()
+      return response.getOmsPartners
+    },
+    enabled,
+    staleTime: 1000 * 30, // 30 seconds
+    retry: 1,
+  })
+}
+
+export function useOmsPartnerApplications(aggregatorProfileId?: string, enabled: boolean = true) {
+  return useQuery({
+    queryKey: queryKeys.omsReferrals.partnerApps(aggregatorProfileId),
+    queryFn: async () => {
+      if (!aggregatorProfileId) return { applications: [], totalCount: 0 }
+      const response = await omsReferralApi.getPartnerApplications(aggregatorProfileId)
+      return response.getOmsPartnerApplications
+    },
+    enabled: !!aggregatorProfileId && enabled,
+    staleTime: 1000 * 30,
+    retry: 1,
+  })
+}
+
 export function useGenerateOmsReferral() {
   const queryClient = useQueryClient()
   const { toast } = useToast()

@@ -753,7 +753,17 @@ export function CloneApplicationDialog({
           : `Redirecting to application editor with new lender ${selectedProvider}...`
       });
 
-      router.push('/aggregator/applications/new');
+      const queryParams = new URLSearchParams();
+      if (application.companyId) queryParams.set('companyId', String(application.companyId));
+      if (application.aggregatorProfileId || application.partnerId) {
+        queryParams.set('aggregatorProfileId', String(application.aggregatorProfileId || application.partnerId));
+      }
+      if (application.companyName || application.partnerName) {
+        queryParams.set('partnerName', String(application.companyName || application.partnerName));
+      }
+
+      const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
+      router.push(`/aggregator/applications/new${queryString}`);
     } catch (e) {
       console.error('Error prefilling form:', e);
     } finally {

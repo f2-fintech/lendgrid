@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -170,6 +170,7 @@ const navigationConfig = {
     {
       title: "Organization",
       items: [
+        { title: "Your Partners", url: navigationPaths.lendgridSales.partners, icon: Users },
         { title: "Team Management", url: navigationPaths.aggregator.team, icon: Users },
         {
           title: "Profile Settings",
@@ -286,6 +287,11 @@ const navigationConfig = {
           url: navigationPaths.lendgridSales.dashboard,
           icon: FileText,
         },
+        {
+          title: "Your Partners",
+          url: navigationPaths.lendgridSales.partners,
+          icon: Users,
+        },
       ],
     },
   ],
@@ -308,7 +314,30 @@ function AppSidebar({
   const pathname = usePathname();
   const logout = useLogout();
   const { setOpenMobile } = useSidebar();
-  const navigation = navigationConfig[userRole];
+
+  const rawNavigation = navigationConfig[userRole];
+  const isOmsNonSales =
+    (user?.source === "oms" || userRole === "lendgrid_sales") &&
+    user?.isSales === false;
+
+  const navigation = useMemo(() => {
+    if (!rawNavigation || !Array.isArray(rawNavigation)) return rawNavigation;
+    if (userRole === "lendgrid_sales" && isOmsNonSales) {
+      const omsRoleLabel = user?.omsRole
+        ? `${user.omsRole.charAt(0).toUpperCase() + user.omsRole.slice(1)} Workspace`
+        : "Partners Workspace";
+      return rawNavigation.map((group) => ({
+        ...group,
+        title: omsRoleLabel,
+        items: group.items.filter(
+          (item) =>
+            item.url !== navigationPaths.lendgridSales.dashboard &&
+            item.title !== "Applications"
+        ),
+      }));
+    }
+    return rawNavigation;
+  }, [rawNavigation, userRole, isOmsNonSales, user?.omsRole]);
 
   const handleLogout = () => {
     if (userRole === "hrms_employee") {
@@ -332,7 +361,9 @@ function AppSidebar({
       case "hrms_employee":
         return getEmployeeRoleLabel(user?.rawRole ?? "3");
       case "lendgrid_sales":
-        return "Lendgrid Sales";
+        return user?.omsRole && user.omsRole !== "sales"
+          ? `OMS ${user.omsRole.charAt(0).toUpperCase() + user.omsRole.slice(1)}`
+          : "Lendgrid Sales";
       default:
         return "User";
     }
@@ -671,7 +702,7 @@ export function DashboardLayout({ children, userRole }: DashboardLayoutProps) {
           <SidebarTrigger className="-ml-1" />
 
           <div className="ml-auto flex items-center space-x-2 relative">
-            {isSalesRole && (
+            {isSalesRole && user?.isSales !== false && (
               <Select
                 value={selectedCompanyId}
                 onValueChange={handleCompanyChange}

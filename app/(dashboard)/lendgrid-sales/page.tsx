@@ -1,9 +1,11 @@
 "use client";
 
 import { useMemo, useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { navigationPaths } from "@/lib/navigation";
 import { AggregatorMemberApplications } from "@/components/dashboard/aggregator-member/AggregatorMemberApplications";
-import { Calendar, Clock, ChevronDown } from "lucide-react";
+import { Calendar, Clock, ChevronDown, Users } from "lucide-react";
 import { format } from "date-fns";
 import {
   Select,
@@ -15,6 +17,7 @@ import {
 import { Input } from "@/components/ui/input";
 
 export default function LendgridSalesPage() {
+  const router = useRouter();
   const { loading, role, user } = useAuth("lendgrid_sales");
   const [currentDate, setCurrentDate] = useState<Date | null>(null);
   const [selectedMonth, setSelectedMonth] = useState<string>("all");
@@ -79,7 +82,13 @@ export default function LendgridSalesPage() {
     return { startDate: null, endDate: null };
   }, [selectedMonth, selectedDate, currentDate]);
 
-  if (loading) {
+  useEffect(() => {
+    if (!loading && (user?.source === "oms" || role === "lendgrid_sales") && !user?.isSales) {
+      router.replace(navigationPaths.lendgridSales.partners);
+    }
+  }, [loading, user, role, router]);
+
+  if (loading || (!loading && (user?.source === "oms" || role === "lendgrid_sales") && !user?.isSales)) {
     return (
       <div className="min-h-[60vh] flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -139,6 +148,14 @@ export default function LendgridSalesPage() {
               className="h-9 w-36 bg-card/80 border-border text-xs font-medium rounded-lg pr-2 [color-scheme:dark]"
             />
           </div>
+
+          <a
+            href="/lendgrid-sales/partners"
+            className="h-9 px-3 text-xs font-semibold rounded-lg bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 flex items-center gap-1.5 transition-colors whitespace-nowrap"
+          >
+            <Users className="w-3.5 h-3.5" />
+            <span>Your Partners</span>
+          </a>
         </div>
       </div>
 

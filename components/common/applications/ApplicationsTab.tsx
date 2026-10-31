@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import {
     Search, Plus, Eye, Edit, Trash2, FileText, Clock, Phone, Mail,
-    Calendar, Building2, User, X,
+    Calendar, Building2, User, Users, X,
     FileWarning,
     Upload,
     Send,
@@ -623,6 +623,14 @@ export function AggregatorApplications({
     const decoded = decodeJwt(token)
     const isOmsEnabled = decoded?.isOmsEnabled ?? false
 
+    // Non-sales OMS staff (e.g. operations, admin) cannot create direct self applications,
+    // they can only create applications for their partners from the Your Partners section
+    const isOmsNonSales =
+        (user?.source === 'oms' || decoded?.source === 'oms') &&
+        user?.omsRole !== 'sales' &&
+        decoded?.role?.toLowerCase() !== 'sales';
+    const canCreateDirectApplication = !isOmsNonSales;
+
     const [form, setForm] = useState({
         customerName: '',
         customerEmail: '',
@@ -921,14 +929,26 @@ export function AggregatorApplications({
 
                             {/* Actions & View Toggle */}
                             <div className="flex items-center gap-2 self-end sm:self-auto">
-                                <Button
-                                    size="sm"
-                                    onClick={() => router.push('/aggregator/applications/new')}
-                                    className="h-8 px-4 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 rounded-lg shadow-sm"
-                                >
-                                    <Plus className="w-3.5 h-3.5" />
-                                    <span>Create Application</span>
-                                </Button>
+                                {canCreateDirectApplication ? (
+                                    <Button
+                                        size="sm"
+                                        onClick={() => router.push('/aggregator/applications/new')}
+                                        className="h-8 px-4 text-xs font-medium bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5 rounded-lg shadow-sm"
+                                    >
+                                        <Plus className="w-3.5 h-3.5" />
+                                        <span>Create Application</span>
+                                    </Button>
+                                ) : (
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => router.push('/lendgrid-sales/partners')}
+                                        className="h-8 px-3 text-xs font-medium border-primary/30 text-primary hover:bg-primary/10 gap-1.5 rounded-lg shadow-sm"
+                                    >
+                                        <Users className="w-3.5 h-3.5" />
+                                        <span>Apply for Partner</span>
+                                    </Button>
+                                )}
 
                                 <div className="flex items-center p-0.5 bg-muted/60 border border-border/60 rounded-lg">
                                     <Tooltip>
@@ -1036,7 +1056,7 @@ export function AggregatorApplications({
                                                                     <RotateCcw className="w-3.5 h-3.5 text-muted-foreground" />
                                                                     Reset All Filters
                                                                 </Button>
-                                                            ) : (
+                                                            ) : canCreateDirectApplication ? (
                                                                 <Button
                                                                     size="sm"
                                                                     onClick={() => router.push('/aggregator/applications/new')}
@@ -1044,6 +1064,16 @@ export function AggregatorApplications({
                                                                 >
                                                                     <Plus className="w-3.5 h-3.5" />
                                                                     Create Application
+                                                                </Button>
+                                                            ) : (
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline"
+                                                                    onClick={() => router.push('/lendgrid-sales/partners')}
+                                                                    className="h-8 px-3 text-xs font-medium border-primary/30 text-primary hover:bg-primary/10 gap-1.5 rounded-lg shadow-sm"
+                                                                >
+                                                                    <Users className="w-3.5 h-3.5" />
+                                                                    Apply for Partner
                                                                 </Button>
                                                             )}
                                                         </div>
@@ -1061,7 +1091,7 @@ export function AggregatorApplications({
                                 isLoading={isTableLoading}
                                 hasFilters={hasActiveFilters}
                                 onClearFilters={handleClearFilters}
-                                onCreateClick={() => router.push('/aggregator/applications/new')}
+                                onCreateClick={canCreateDirectApplication ? () => router.push('/aggregator/applications/new') : () => router.push('/lendgrid-sales/partners')}
                                 onView={(app) => {
                                     setSelectedApplication(app);
                                     setIsViewDialogOpen(true);

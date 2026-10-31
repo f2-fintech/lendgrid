@@ -42,4 +42,22 @@ export const companiesApi = {
     }
     return res.json()
   },
+
+  /**
+   * Create company profile in OMS
+   */
+  create: async (payload: { name: string; email: string; contactNumber: string; companyId: string | number }) => {
+    try {
+      const res = await fetch(`${ADMIN_BASE_URL}/companies`, {
+        method: 'POST',
+        headers: buildHeaders({ 'Content-Type': 'application/json' }, true),
+        body: JSON.stringify(payload),
+        credentials: 'include',
+      })
+      return res.json().catch(() => null)
+    } catch (e) {
+      console.warn('Failed to create company profile in OMS:', e)
+      return null
+    }
+  },
 }

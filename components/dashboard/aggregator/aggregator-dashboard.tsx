@@ -126,23 +126,26 @@ export function AggregatorDashboard() {
       // No bank or document checks for sourcer
     } else {
       // CHANNEL_PARTNER / DEFAULT REQUIREMENTS: Full checks
-      businessChecks = [
-        Boolean(aggData?.companyName),
-        Boolean(aggData?.aggregatorType),
-        Boolean(aggData?.rank),
-        Boolean(aggData?.businessType),
-        Boolean(aggData?.yearOfEstablishment),
-        Boolean(aggData?.registeredAddress),
-        Boolean(aggData?.city),
-        Boolean(aggData?.state),
-        Boolean(aggData?.pincode),
-        Boolean(aggData?.websiteUrl),
-        Boolean(aggData?.gstNumber),
-        Boolean(aggData?.panNumber),
-        Boolean(aggData?.aadhaarNumber),
-        Boolean(aggData?.cinNumber),
-        Boolean(aggData?.tanNumber),
-      ]
+      const isFreelance = aggData?.hasRegisteredBusiness === false
+      businessChecks = isFreelance
+        ? []
+        : [
+            Boolean(aggData?.companyName),
+            Boolean(aggData?.aggregatorType),
+            Boolean(aggData?.rank),
+            Boolean(aggData?.businessType),
+            Boolean(aggData?.yearOfEstablishment),
+            Boolean(aggData?.registeredAddress),
+            Boolean(aggData?.city),
+            Boolean(aggData?.state),
+            Boolean(aggData?.pincode),
+            Boolean(aggData?.websiteUrl),
+            Boolean(aggData?.gstNumber),
+            Boolean(aggData?.panNumber),
+            Boolean(aggData?.aadhaarNumber),
+            Boolean(aggData?.cinNumber),
+            Boolean(aggData?.tanNumber),
+          ]
 
       bankChecks = [
         Boolean(aggData?.bankName),
@@ -156,11 +159,8 @@ export function AggregatorDashboard() {
         Boolean(docs?.aadhaarFront),
         Boolean(docs?.aadhaarBack),
         Boolean(docs?.panCard),
-        Boolean(docs?.gstCertificate),
-        Boolean(docs?.bankStatement),
-        Boolean(docs?.incorporationCertificate),
-        Boolean(docs?.cancelledCheque),
         Boolean(docs?.addressProof),
+        ...(isFreelance ? [] : [Boolean(docs?.gstCertificate)]),
       ]
     }
 

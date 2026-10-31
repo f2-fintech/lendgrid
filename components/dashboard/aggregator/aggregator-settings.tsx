@@ -1113,39 +1113,9 @@ function BankingKycDocumentsTab({ hasRegisteredBusiness = true }: { hasRegistere
                   onRemove={() => setValue("documents.gstCertificate", "")}
                   acceptTypes="image/*,application/pdf"
                 />
-                <DocumentUploadField
-                  label="Certificate of Incorporation"
-                  fieldName="documents.incorporationCertificate"
-                  currentValue={watch("documents.incorporationCertificate")}
-                  onFileSelect={(url) => setValue("documents.incorporationCertificate", url, { shouldDirty: true })}
-                  onRemove={() => setValue("documents.incorporationCertificate", "")}
-                  acceptTypes="image/*,application/pdf"
-                />
               </div>
             </div>
           )}
-
-          <div>
-            <h4 className="text-foreground font-semibold mb-4 pb-2 border-b border-border">Banking Documents</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <DocumentUploadField
-                label="Bank Statement (Last 6 months)"
-                fieldName="documents.bankStatement"
-                currentValue={watch("documents.bankStatement")}
-                onFileSelect={(url) => setValue("documents.bankStatement", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.bankStatement", "")}
-                acceptTypes="image/*,application/pdf"
-              />
-              <DocumentUploadField
-                label="Cancelled Cheque"
-                fieldName="documents.cancelledCheque"
-                currentValue={watch("documents.cancelledCheque")}
-                onFileSelect={(url) => setValue("documents.cancelledCheque", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.cancelledCheque", "")}
-                acceptTypes="image/*,application/pdf"
-              />
-            </div>
-          </div>
         </CardContent>
       </Card>
     </div>
@@ -1280,23 +1250,26 @@ export function AggregatorSettings() {
       // No bank or document checks for sourcer
     } else {
       // CHANNEL_PARTNER / DEFAULT REQUIREMENTS: Full checks
-      businessChecks = [
-        Boolean(aggData?.companyName),
-        Boolean(aggData?.aggregatorType),
-        Boolean(aggData?.rank),
-        Boolean(aggData?.businessType),
-        Boolean(aggData?.yearOfEstablishment),
-        Boolean(aggData?.registeredAddress),
-        Boolean(aggData?.city),
-        Boolean(aggData?.state),
-        Boolean(aggData?.pincode),
-        Boolean(aggData?.websiteUrl),
-        Boolean(aggData?.gstNumber),
-        Boolean(aggData?.panNumber),
-        Boolean(aggData?.aadhaarNumber),
-        Boolean(aggData?.cinNumber),
-        Boolean(aggData?.tanNumber),
-      ]
+      const isFreelance = aggData?.hasRegisteredBusiness === false
+      businessChecks = isFreelance
+        ? []
+        : [
+            Boolean(aggData?.companyName),
+            Boolean(aggData?.aggregatorType),
+            Boolean(aggData?.rank),
+            Boolean(aggData?.businessType),
+            Boolean(aggData?.yearOfEstablishment),
+            Boolean(aggData?.registeredAddress),
+            Boolean(aggData?.city),
+            Boolean(aggData?.state),
+            Boolean(aggData?.pincode),
+            Boolean(aggData?.websiteUrl),
+            Boolean(aggData?.gstNumber),
+            Boolean(aggData?.panNumber),
+            Boolean(aggData?.aadhaarNumber),
+            Boolean(aggData?.cinNumber),
+            Boolean(aggData?.tanNumber),
+          ]
 
       bankChecks = [
         Boolean(aggData?.bankName),
@@ -1306,15 +1279,12 @@ export function AggregatorSettings() {
       ]
 
       const docs = (aggData as any)?.documents || {}
-      const isFreelance = aggData?.hasRegisteredBusiness === false
       documentsChecks = [
         Boolean(docs?.aadhaarFront),
         Boolean(docs?.aadhaarBack),
         Boolean(docs?.panCard),
-        ...(isFreelance ? [] : [Boolean(docs?.gstCertificate), Boolean(docs?.incorporationCertificate)]),
-        Boolean(docs?.bankStatement),
-        Boolean(docs?.cancelledCheque),
         Boolean(docs?.addressProof),
+        ...(isFreelance ? [] : [Boolean(docs?.gstCertificate)]),
       ]
     }
 
@@ -1325,7 +1295,16 @@ export function AggregatorSettings() {
     setProfileCompletePct(pct)
   }, [userData, aggData])
 
-  const allTabsVisited = visitedTabs.has("profile") && visitedTabs.has("business") && visitedTabs.has("banking");
+  const isFreelance = aggData?.hasRegisteredBusiness === false;
+  const allTabsVisited = isFreelance
+    ? visitedTabs.has("profile") && visitedTabs.has("banking")
+    : visitedTabs.has("profile") && visitedTabs.has("business") && visitedTabs.has("banking");
+
+  useEffect(() => {
+    if (isFreelance && activeTab === "business") {
+      setActiveTab("profile");
+    }
+  }, [isFreelance, activeTab]);
 
   const onSaveAll = handleSubmit(async (values) => {
     setIsSaving(true)
@@ -1476,21 +1455,23 @@ export function AggregatorSettings() {
         </motion.div>
 
         <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)} className="space-y-6">
-          <TabsList className="bg-card border-border flex flex-col sm:grid sm:grid-cols-3 w-full h-auto p-1 gap-1">
+          <TabsList className={`bg-card border-border flex flex-col sm:grid ${isFreelance ? 'sm:grid-cols-2' : 'sm:grid-cols-3'} w-full h-auto p-1 gap-1`}>
             <TabsTrigger value="profile" className="w-full data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               <User className="w-5 h-5 mr-2" />Profile & Contact
             </TabsTrigger>
-            <TabsTrigger value="business" className="w-full data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
-              <Building2 className="w-5 h-5 mr-2" />Business Details
-            </TabsTrigger>
+            {!isFreelance && (
+              <TabsTrigger value="business" className="w-full data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
+                <Building2 className="w-5 h-5 mr-2" />Business Details
+              </TabsTrigger>
+            )}
             <TabsTrigger value="banking" className="w-full data-[state=active]:bg-gradient-to-r from-blue to-cyan-500 data-[state=active]:text-dark">
               <FileCheck className="w-5 h-5 mr-2" />Banking & KYC
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile"><ProfileAndContactTab /></TabsContent>
-          <TabsContent value="business"><BusinessDetailsTab /></TabsContent>
-          <TabsContent value="banking"><BankingKycDocumentsTab hasRegisteredBusiness={aggData?.hasRegisteredBusiness !== false} /></TabsContent>
+          {!isFreelance && <TabsContent value="business"><BusinessDetailsTab /></TabsContent>}
+          <TabsContent value="banking"><BankingKycDocumentsTab hasRegisteredBusiness={!isFreelance} /></TabsContent>
         </Tabs>
       </div>
     </FormProvider>

@@ -145,5 +145,7 @@ export const queryKeys = {
         myCode: () => [...queryKeys.omsReferrals.all, 'myCode'] as const,
         partners: (omsEmployeeId?: string) =>
             [...queryKeys.omsReferrals.all, 'partners', omsEmployeeId] as const,
+        partnerApps: (aggregatorProfileId?: string) =>
+            [...queryKeys.omsReferrals.all, 'partnerApps', aggregatorProfileId] as const,
     },
 } as const

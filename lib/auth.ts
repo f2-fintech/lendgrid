@@ -34,25 +34,31 @@ export function useAuth(requiredRole?: AppRole | AppRole[]) {
 			try {
 				const decoded: any = decodeJwt(token)
 				
-				// Map OMS roles (sales, sub_admin) to Lendgrid roles
+				const isOms = decoded?.source === 'oms';
+				const rawRole = decoded?.role?.toLowerCase();
+
+				// Map OMS roles to Lendgrid roles (any OMS staff belongs to lendgrid_sales workspace)
 				const mapRole = (r: string): AppRole => {
 					const lower = r?.toLowerCase()
-					if (lower === 'sales' || lower === 'sub_admin') return 'lendgrid_sales'
+					if (isOms || lower === 'sales' || lower === 'sub_admin') return 'lendgrid_sales'
 					return lower as AppRole
 				}
 
-				const decodedRole = decoded?.role ? mapRole(decoded.role) : null
+				const decodedRole = decoded?.role ? mapRole(decoded.role) : (isOms ? 'lendgrid_sales' : null)
 				if (decodedRole) setRole(decodedRole)
 
 				let fetchedRole = undefined;
 
 				// Bypass usersApi.profile for OMS staff as they don't exist in Lendgrid DB
-				if (decodedRole === 'lendgrid_sales') {
+				if (isOms || decodedRole === 'lendgrid_sales') {
 					setUser({
 						username: decoded?.username || decoded?.name || decoded?.first_name || 'OMS Staff',
 						email: decoded?.email || '',
 						role: decoded?.role,
-						omsUserId: decoded?.id || decoded?.sub
+						omsRole: rawRole,
+						isSales: rawRole === 'sales',
+						omsUserId: decoded?.id || decoded?.sub,
+						source: 'oms',
 					});
 					fetchedRole = 'lendgrid_sales';
 				} else {

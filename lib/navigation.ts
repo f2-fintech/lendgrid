@@ -66,6 +66,8 @@ export const navigationPaths = {
   // Lendgrid Sales (OMS) routes
   lendgridSales: {
     dashboard: '/lendgrid-sales',
+    partners: '/lendgrid-sales/partners',
+    newApplication: '/lendgrid-sales/applications/new',
   }
 }
 

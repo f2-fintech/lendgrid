@@ -122,6 +122,61 @@ export const omsReferralApi = {
     }),
 
   /**
+   * OMS Staff: Fetch (or lazy-create) referral code for logged-in OMS staff
+   */
+  getMyReferralCode: () =>
+    gqlFetch<{ getMyOmsReferralCode: OmsReferralCodeResponse }>({
+      query: `
+        query GetMyOmsReferralCode {
+          getMyOmsReferralCode {
+            referralCode
+            employeeName
+            designation
+            employeeCode
+            signupLink
+          }
+        }
+      `,
+    }),
+
+  /**
+   * OMS Staff / Admin: Fetch all loan applications of a referred partner
+   */
+  getPartnerApplications: (aggregatorProfileId: string) =>
+    gqlFetch<{
+      getOmsPartnerApplications: {
+        totalCount: number
+        applications: {
+          _id: string
+          applicantName?: string
+          applicationId?: string
+          loanAmount?: number
+          loanType?: string
+          status?: string
+          createdAt?: string
+        }[]
+      }
+    }>({
+      query: `
+        query GetOmsPartnerApplications($aggregatorProfileId: ID!) {
+          getOmsPartnerApplications(aggregatorProfileId: $aggregatorProfileId) {
+            totalCount
+            applications {
+              _id
+              applicantName
+              applicationId
+              loanAmount
+              loanType
+              status
+              createdAt
+            }
+          }
+        }
+      `,
+      variables: { aggregatorProfileId },
+    }),
+
+  /**
    * Super Admin: Manually generate referral code for an employee
    */
   generateForEmployee: (
