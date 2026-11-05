@@ -59,19 +59,11 @@ export function useNotifications({
     let pollIntervalId: any = null;
     let cancelled = false;
 
-    // Fallback polling interval: runs every 10s (<=15s) whenever WS is not connected.
-    // Ensures real-time UI refresh even if WS is blocked, failing, or disconnected.
+    // Fallback polling interval: runs every 10s (<=15s).
+    // Ensures real-time UI refresh even if WS is blocked, failing, or packet delivery is delayed.
     pollIntervalId = setInterval(async () => {
-      try {
-        const mod = await import('@/lib/subscription-client');
-        if (!mod.isWebSocketConnected()) {
-          queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-          queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
-        }
-      } catch {
-        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-        queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
-      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
     }, 10000);
 
     // Dynamic import to avoid SSR issues
@@ -84,14 +76,11 @@ export function useNotifications({
             payload?.data?.notificationCreated || payload?.notificationCreated;
           if (notification) {
             queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-            if (
-              notification.type === 'COMMISSION_STATUS_CHANGE' ||
-              notification.commissionTransactionId ||
-              notification.actionUrl?.includes('payouts') ||
-              notification.actionUrl?.includes('commission')
-            ) {
-              queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
-            }
+            queryClient.refetchQueries({ queryKey: queryKeys.notifications.all });
+
+            // Invalidate and refetch all commission queries so table and stats update live
+            queryClient.invalidateQueries({ queryKey: queryKeys.commissions.all });
+            queryClient.refetchQueries({ queryKey: queryKeys.commissions.all });
           }
         });
 

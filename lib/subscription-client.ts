@@ -163,6 +163,7 @@ export async function subscribeToNotificationCreated(
       { query: SUBSCRIPTION_QUERY },
       {
         next: (data: any) => {
+          console.log('[subscriptions] Received WebSocket notification data:', data);
           // Fan-out to all active listeners.
           listeners.forEach((listener) => {
             try {
