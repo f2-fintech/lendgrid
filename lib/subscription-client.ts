@@ -1,6 +1,11 @@
 // Create the graphql-ws client only in the browser to avoid pulling server-side modules.
 // Single module-level client singleton — shared across all hook instances.
 let client: any = null;
+let isWsConnected = false;
+
+export function isWebSocketConnected(): boolean {
+  return isWsConnected;
+}
 
 // Track active subscription count so we only open one subscribe() call at a time.
 let activeSubscribers = 0;
@@ -8,18 +13,30 @@ let disposeShared: (() => void) | null = null;
 const listeners = new Set<(payload: any) => void>();
 
 /**
- * Derive the WebSocket URL from NEXT_PUBLIC_API_BASE_URL so it always
- * points to the backend, not the Next.js frontend.
- * Falls back to localhost for local dev when the env var is not set.
+ * Derive the WebSocket URL from NEXT_PUBLIC_API_WS_URL or NEXT_PUBLIC_API_BASE_URL.
+ * Normalizes slashes and /graphql path, and automatically uses production wss://
+ * when loaded over HTTPS in production if localhost fallback was about to be used.
  */
-function getWsUrl(): string {
+export function getWsUrl(): string {
   if (process.env.NEXT_PUBLIC_API_WS_URL) return process.env.NEXT_PUBLIC_API_WS_URL;
 
-  const httpBase =
-    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
+  let httpBase = process.env.NEXT_PUBLIC_API_BASE_URL;
 
-  // Convert http(s):// → ws(s)://
-  return httpBase.replace(/^http/, 'ws') + '/graphql';
+  // If in browser on HTTPS (production) and no valid HTTPS base URL was inlined at build time:
+  if (typeof window !== 'undefined' && window.location.protocol === 'https:') {
+    if (!httpBase || !httpBase.startsWith('https')) {
+      httpBase = 'https://lendgrid.f2fintech.in';
+    }
+  }
+
+  if (!httpBase) {
+    httpBase = 'http://localhost:4000';
+  }
+
+  const cleanBase = httpBase.replace(/\/+$/, '').replace(/\/graphql$/, '');
+  const wsBase = cleanBase.replace(/^http:\/\//, 'ws://').replace(/^https:\/\//, 'wss://');
+
+  return `${wsBase}/graphql`;
 }
 
 /**
@@ -84,11 +101,20 @@ export async function subscribeToNotificationCreated(
   // Initialise the client once, with auth token in connectionParams.
   if (!client) {
     try {
-      const mod = await import('graphql-ws/client');
-      const { createClient } = mod;
+      let createClientFn: any = null;
+      try {
+        const mod: any = await import('graphql-ws');
+        createClientFn = mod.createClient || mod.default?.createClient;
+      } catch {
+        const modClient: any = await import('graphql-ws/client');
+        createClientFn = modClient.createClient || modClient.default?.createClient;
+      }
 
-      client = createClient({
-        url: getWsUrl(),
+      const wsUrl = getWsUrl();
+      console.log('[subscriptions] Initializing GraphQL WebSocket client at:', wsUrl);
+
+      client = createClientFn({
+        url: wsUrl,
         // Pass the JWT token so the backend context factory can authenticate
         // the subscription and the filter can read context.req.user.
         connectionParams: () => {
@@ -97,6 +123,26 @@ export async function subscribeToNotificationCreated(
         },
         // Retry the connection up to 5 times on transient failures.
         retryAttempts: 5,
+        on: {
+          connecting: () => {
+            console.log('[subscriptions] Connecting to WebSocket...');
+          },
+          opened: () => {
+            console.log('[subscriptions] WebSocket connection opened');
+          },
+          connected: () => {
+            console.log('[subscriptions] WebSocket connected and acknowledged');
+            isWsConnected = true;
+          },
+          closed: (event: any) => {
+            console.warn('[subscriptions] WebSocket connection closed:', event?.code, event?.reason);
+            isWsConnected = false;
+          },
+          error: (error: any) => {
+            console.error('[subscriptions] WebSocket error:', error);
+            isWsConnected = false;
+          },
+        },
       });
     } catch (err) {
       console.error(
@@ -126,8 +172,10 @@ export async function subscribeToNotificationCreated(
             }
           });
         },
-        error: (err: any) =>
-          console.error('[subscriptions] Subscription error', err),
+        error: (err: any) => {
+          console.error('[subscriptions] Subscription error:', err);
+          isWsConnected = false;
+        },
         complete: () => {
           // Connection closed — reset so the next subscriber re-opens it.
           disposeShared = null;

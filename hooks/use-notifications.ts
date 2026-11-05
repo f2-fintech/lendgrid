@@ -59,6 +59,21 @@ export function useNotifications({
     let pollIntervalId: any = null;
     let cancelled = false;
 
+    // Fallback polling interval: runs every 10s (<=15s) whenever WS is not connected.
+    // Ensures real-time UI refresh even if WS is blocked, failing, or disconnected.
+    pollIntervalId = setInterval(async () => {
+      try {
+        const mod = await import('@/lib/subscription-client');
+        if (!mod.isWebSocketConnected()) {
+          queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+          queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
+        }
+      } catch {
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+        queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
+      }
+    }, 10000);
+
     // Dynamic import to avoid SSR issues
     import('@/lib/subscription-client')
       .then(async (mod) => {
@@ -88,23 +103,10 @@ export function useNotifications({
 
         if (typeof result === 'function') {
           unsubRef.current = result;
-        } else {
-          // Subscription not available (null returned); fallback to polling
-          pollIntervalId = setInterval(() => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-            queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
-          }, 10000);
         }
       })
       .catch((err) => {
         console.error('[useNotifications] Failed to initialize subscription', err);
-        if (!cancelled) {
-          // Fallback to polling only if subscription setup failed
-          pollIntervalId = setInterval(() => {
-            queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-            queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
-          }, 10000);
-        }
       });
 
     return () => {
