@@ -69,6 +69,14 @@ export function useNotifications({
             payload?.data?.notificationCreated || payload?.notificationCreated;
           if (notification) {
             queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+            if (
+              notification.type === 'COMMISSION_STATUS_CHANGE' ||
+              notification.commissionTransactionId ||
+              notification.actionUrl?.includes('payouts') ||
+              notification.actionUrl?.includes('commission')
+            ) {
+              queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
+            }
           }
         });
 
@@ -84,6 +92,7 @@ export function useNotifications({
           // Subscription not available (null returned); fallback to polling
           pollIntervalId = setInterval(() => {
             queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
           }, 10000);
         }
       })
@@ -93,6 +102,7 @@ export function useNotifications({
           // Fallback to polling only if subscription setup failed
           pollIntervalId = setInterval(() => {
             queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+            queryClient.invalidateQueries({ queryKey: queryKeys.commissions.transactions.all });
           }, 10000);
         }
       });

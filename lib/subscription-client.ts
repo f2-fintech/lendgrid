@@ -54,6 +54,7 @@ const SUBSCRIPTION_QUERY = `
       status
       priority
       actionUrl
+      commissionTransactionId
       createdAt
       recipientId
     }
