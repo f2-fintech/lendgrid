@@ -391,24 +391,24 @@ function BusinessDetailsTab() {
                                     <SelectValue placeholder="Select Business Type" />
                                 </SelectTrigger>
                                 <SelectContent className="bg-card border-border">
-                                     <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
-                                         <div className="flex items-center gap-2">
-                                             <Building className="w-4 h-4 text-amber-400" />
-                                             <span>Cat C — Gold (Individual Partners)</span>
-                                         </div>
-                                     </SelectItem>
-                                     <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
-                                         <div className="flex items-center gap-2">
-                                             <Building className="w-4 h-4 text-purple-400" />
-                                             <span>Cat B — Platinum (DSA Partners &lt; 1 Cr/Month)</span>
-                                         </div>
-                                     </SelectItem>
-                                     <SelectItem value={ApplicableFor.MAGNUS_AGGREGATORS} className="text-foreground">
-                                         <div className="flex items-center gap-2">
-                                             <Landmark className="w-4 h-4 text-emerald-400" />
-                                             <span>Cat A — Magnus (Top DSA Partners)</span>
-                                         </div>
-                                     </SelectItem>
+                                    <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Building className="w-4 h-4 text-amber-400" />
+                                            <span>Cat C — Gold (Individual Partners)</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Building className="w-4 h-4 text-purple-400" />
+                                            <span>Cat B — Platinum (DSA Partners &lt; 1 Cr/Month)</span>
+                                        </div>
+                                    </SelectItem>
+                                    <SelectItem value={ApplicableFor.MAGNUS_AGGREGATORS} className="text-foreground">
+                                        <div className="flex items-center gap-2">
+                                            <Landmark className="w-4 h-4 text-emerald-400" />
+                                            <span>Cat A — Magnus (Top DSA Partners)</span>
+                                        </div>
+                                    </SelectItem>
                                 </SelectContent>
                             </Select>
                             <input type="hidden" {...register("business.rank")} />
@@ -801,21 +801,18 @@ function DocumentUploadField({
 }: DocumentUploadFieldProps) {
     const { toast } = useToast();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [selectedFile, setSelectedFile] = useState<File | null>(null);
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
-    // Check if we have a saved URL from database
+    // Check if we have a saved URL from database or recent upload
     const isUrl = typeof currentValue === "string" && currentValue.trim() !== "";
-    const displayUrl = isUrl ? currentValue : "";
-    const isImageUrl = isUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(displayUrl);
-    const isPdfUrl = isUrl && /\.pdf$/i.test(displayUrl);
+    const displayUrl = isUrl ? currentValue.trim() : (localPreviewUrl || "");
+    const isImageUrl = displayUrl && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(displayUrl);
+    const isPdfUrl = displayUrl && /\.pdf(\?.*)?$/i.test(displayUrl);
 
-    // Determine if we're showing a preview of selected file or uploaded document
-    const showingPreview = selectedFile !== null;
-    const showingUploaded = !showingPreview && isUrl;
+    const hasContent = isUrl || localPreviewUrl !== null;
 
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (!file) return;
 
@@ -828,92 +825,82 @@ function DocumentUploadField({
             return;
         }
 
-        // Store the file and create preview
-        setSelectedFile(file);
-        const preview = URL.createObjectURL(file);
-        setPreviewUrl(preview);
-    };
-
-    const handleUpload = async () => {
-        if (!selectedFile) return;
-
+        // Show local preview immediately
+        const tempUrl = URL.createObjectURL(file);
+        setLocalPreviewUrl(tempUrl);
         setIsUploading(true);
+
         try {
-            // Upload to S3
+            const cleanFieldName = fieldName.replace(/[^a-zA-Z0-9_-]/g, "_");
             const uploadedUrl = await uploadToS3(
-                selectedFile,
-                `documents/${fieldName}/${Date.now()}-${selectedFile.name}`
+                file,
+                `documents/${cleanFieldName}/${Date.now()}-${file.name}`
             );
 
-            // Store the URL in form state
+            // Store in form state
             onFileSelect(uploadedUrl);
 
-            // Clear preview state
-            if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-            }
-            setSelectedFile(null);
-            setPreviewUrl(null);
+            URL.revokeObjectURL(tempUrl);
+            setLocalPreviewUrl(null);
 
             toast({
                 title: "Upload Successful",
-                description: "Document uploaded successfully",
+                description: `${label} uploaded successfully`,
             });
-        } catch (error) {
+        } catch (error: any) {
             toast({
                 title: "Upload Failed",
-                description: "Unable to upload document",
+                description: error?.message || "Unable to upload document",
                 variant: "destructive",
             });
+            URL.revokeObjectURL(tempUrl);
+            setLocalPreviewUrl(null);
         } finally {
             setIsUploading(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+            }
         }
     };
 
     const handleRemove = () => {
-        // Clear selected file preview
-        if (selectedFile) {
-            if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
-            }
-            setSelectedFile(null);
-            setPreviewUrl(null);
-            if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-            }
-        } else {
-            // Clear uploaded document from form
-            onRemove();
+        if (localPreviewUrl) {
+            URL.revokeObjectURL(localPreviewUrl);
+            setLocalPreviewUrl(null);
         }
+        if (fileInputRef.current) {
+            fileInputRef.current.value = "";
+        }
+        onRemove();
     };
 
     const handleBoxClick = () => {
-        if (!showingPreview && !showingUploaded) {
+        if (!hasContent && !isUploading) {
             fileInputRef.current?.click();
         }
     };
 
-    const handlePdfClick = (e: React.MouseEvent) => {
+    const handleDocClick = (e: React.MouseEvent) => {
         e.stopPropagation();
-        if (isPdfUrl && displayUrl) {
+        if (displayUrl && !isUploading) {
             window.open(displayUrl, '_blank');
         }
     };
 
-    // Cleanup preview URL on unmount
+    // Cleanup local preview URL on unmount
     useEffect(() => {
         return () => {
-            if (previewUrl) {
-                URL.revokeObjectURL(previewUrl);
+            if (localPreviewUrl) {
+                URL.revokeObjectURL(localPreviewUrl);
             }
         };
-    }, [previewUrl]);
+    }, [localPreviewUrl]);
 
     return (
         <div className="space-y-2">
             <Label className="text-foreground">{label}</Label>
 
-            {!showingPreview && !showingUploaded ? (
+            {!hasContent ? (
                 // EMPTY STATE - Click to upload
                 <div
                     className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
@@ -931,85 +918,61 @@ function DocumentUploadField({
                     />
                 </div>
             ) : (
-                // PREVIEW OR UPLOADED STATE
+                // UPLOADED OR UPLOADING STATE
                 <div className="relative bg-card/50 border-2 border-border rounded-lg overflow-hidden group">
-                    {showingPreview ? (
-                        // Selected file preview (not yet uploaded)
-                        <>
-                            {selectedFile?.type.startsWith('image/') ? (
-                                <img
-                                    src={previewUrl!}
-                                    alt="Preview"
-                                    className="w-full h-48 object-contain bg-black/5"
-                                />
-                            ) : (
-                                <div className="w-full h-48 flex items-center justify-center bg-black/5">
-                                    <FileText className="w-16 h-16 text-blue-400" />
-                                    <p className="text-foreground text-sm ml-3">{selectedFile?.name}</p>
-                                </div>
-                            )}
+                    {/* Uploading progress overlay */}
+                    {isUploading && (
+                        <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10 text-white gap-2">
+                            <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                            <p className="text-xs font-medium">Uploading document...</p>
+                        </div>
+                    )}
 
-                            {/* Action buttons for preview */}
-                            <div className="absolute top-2 right-2 flex gap-2">
-                                <button
-                                    type="button"
-                                    onClick={handleUpload}
-                                    disabled={isUploading}
-                                    className="bg-green-500/90 hover:bg-green-600 text-white rounded-full p-2 transition-colors disabled:opacity-50"
-                                    title="Upload"
-                                >
-                                    {isUploading ? (
-                                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    ) : (
-                                        <Upload className="w-5 h-5" />
-                                    )}
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleRemove}
-                                    className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
-                                    title="Remove"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
+                    {isImageUrl ? (
+                        <div className="relative cursor-pointer" onClick={handleDocClick} title="Click to view full image">
+                            <img
+                                src={displayUrl}
+                                alt="Uploaded document"
+                                className="w-full h-48 object-contain bg-black/5"
+                            />
+                            <div className="absolute bottom-1 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
+                                Click to view
                             </div>
-                        </>
+                        </div>
+                    ) : isPdfUrl ? (
+                        <div
+                            className="w-full h-48 flex flex-col items-center justify-center bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
+                            onClick={handleDocClick}
+                            title="Click to view PDF"
+                        >
+                            <FileText className="w-16 h-16 text-blue-400 mb-1" />
+                            <p className="text-foreground text-sm font-medium">PDF Document</p>
+                            <p className="text-xs text-muted-foreground mt-1">Click to view PDF</p>
+                        </div>
                     ) : (
-                        // Uploaded document from database
-                        <>
-                            {isImageUrl ? (
-                                <img
-                                    src={displayUrl}
-                                    alt="Uploaded document"
-                                    className="w-full h-48 object-contain bg-black/5"
-                                />
-                            ) : isPdfUrl ? (
-                                <div
-                                    className="w-full h-48 flex items-center justify-center bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
-                                    onClick={handlePdfClick}
-                                >
-                                    <FileText className="w-16 h-16 text-blue-400" />
-                                    <p className="text-foreground text-sm ml-3">Click to view PDF</p>
-                                </div>
-                            ) : (
-                                <div className="w-full h-48 flex items-center justify-center bg-black/5">
-                                    <FileText className="w-16 h-16 text-blue-400" />
-                                    <p className="text-foreground text-sm ml-3">Document uploaded</p>
-                                </div>
-                            )}
+                        <div
+                            className="w-full h-48 flex flex-col items-center justify-center bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
+                            onClick={handleDocClick}
+                            title="Click to view document"
+                        >
+                            <FileText className="w-16 h-16 text-blue-400 mb-1" />
+                            <p className="text-foreground text-sm font-medium">Document Uploaded</p>
+                            <p className="text-xs text-muted-foreground mt-1">Click to view document</p>
+                        </div>
+                    )}
 
-                            {/* Remove button for uploaded document */}
-                            <div className="absolute top-2 right-2">
-                                <button
-                                    type="button"
-                                    onClick={handleRemove}
-                                    className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
-                                    title="Remove"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-                        </>
+                    {/* Remove button for uploaded document */}
+                    {!isUploading && (
+                        <div className="absolute top-2 right-2 z-20">
+                            <button
+                                type="button"
+                                onClick={handleRemove}
+                                className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors shadow-md"
+                                title="Remove"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
                     )}
                 </div>
             )}
@@ -1260,14 +1223,14 @@ export function AggregatorProfilePage({ id }: { id: string }) {
         resolver: zodResolver(rootSchema),
         mode: "onBlur",
         defaultValues: {
-            profile: { firstName: "", lastName: "", email: "", contact: "", status: "" },
-            business: { companyName: "" },
+            profile: { userId: "", firstName: "", lastName: "", email: "", contact: "", status: "", photoUrl: "" },
+            business: { id: "", companyName: "" },
             bankAndKyc: {},
             documents: {},
         },
     })
 
-    const { handleSubmit, trigger, reset } = methods
+    const { handleSubmit, trigger, reset, register } = methods
 
     // Populate form when data loads
     useEffect(() => {
@@ -1406,64 +1369,113 @@ export function AggregatorProfilePage({ id }: { id: string }) {
     const onSaveAll = handleSubmit(async (values) => {
         setIsSaving(true)
         try {
+            // Determine User ID with fallbacks
+            const targetUserId =
+                values.profile?.userId ||
+                aggData?.user?._id ||
+                (aggData?.user as any)?.id ||
+                aggData?.userId;
+
+            if (!targetUserId) {
+                toast({
+                    title: "Error",
+                    description: "User ID not found. Please refresh and try again.",
+                    variant: "destructive",
+                });
+                setIsSaving(false);
+                return;
+            }
+
+            // Determine Aggregator Profile ID with fallbacks
+            const targetAggId =
+                values.business?.id ||
+                aggData?._id ||
+                (aggData as any)?.id ||
+                id;
+
+            if (!targetAggId) {
+                toast({
+                    title: "Error",
+                    description: "Aggregator profile ID not found. Please refresh and try again.",
+                    variant: "destructive",
+                });
+                setIsSaving(false);
+                return;
+            }
+
             // Update User
-            const userPayload = {
-                id: values.profile.userId!,
-                username: `${values.profile.firstName} ${values.profile.lastName}`.trim(),
-                email: values.profile.email,
-                contact: values.profile.contact,
-                photoUrl: values.profile.photoUrl,
-                status: values.profile.status,
+            const fullName = `${values.profile?.firstName || ""} ${values.profile?.lastName || ""}`.trim();
+            const userPayload: any = {
+                id: targetUserId,
+                username: fullName || undefined,
+                email: values.profile?.email || undefined,
+                contact: values.profile?.contact || undefined,
+                photoUrl: values.profile?.photoUrl || undefined,
             };
+
+            const validStatus = (values.profile?.status || aggData?.user?.status)?.trim().toUpperCase();
+            if (validStatus && ["ACTIVE", "INACTIVE", "PENDING_APPROVAL", "SUSPENDED"].includes(validStatus)) {
+                userPayload.status = validStatus;
+            }
 
             console.log(userPayload, 'userpayload')
             await updateUserHook.mutateAsync(userPayload)
 
             // Update Aggregator Profile
-            const aggPayload = {
-                id: values.business.id!,
-                companyName: values.business.companyName,
-                aggregatorType: values.business.aggregatorType,
-                businessType: values.business.businessType?.toUpperCase() as BusinessType,
-                rank: values.business.rank,
-                yearOfEstablishment: values.business.yearOfEstablishment,
-                registeredAddress: values.business.registeredAddress,
-                city: values.business.city,
-                state: values.business.state,
-                pincode: values.business.pincode,
-                websiteUrl: values.business.websiteUrl,
-                gstNumber: values.business.gstNumber,
-                panNumber: values.business.panNumber,
-                aadhaarNumber: values.business.aadhaarNumber,
-                cinNumber: values.business.cinNumber,
-                tanNumber: values.business.tanNumber,
-                fixedCommissionPercent: values.business.fixedCommissionPercent,
-                lenderCommissions: values.business.lenderCommissions?.length
+            const rawBusinessType = values.business?.businessType?.toString().trim().toUpperCase();
+            const validBusinessType = rawBusinessType && ["LLP", "PARTNERSHIP", "PRIVATE_LIMITED", "PROPRIETORSHIP", "PUBLIC_LIMITED"].includes(rawBusinessType)
+                ? (rawBusinessType as BusinessType)
+                : undefined;
+
+            const rawKycStatus = values.bankAndKyc?.kycStatus?.toString().trim().toUpperCase();
+            const validKycStatus = rawKycStatus && ["APPROVED", "PENDING", "REJECTED", "RESUBMIT", "UNDER_REVIEW"].includes(rawKycStatus)
+                ? (rawKycStatus as KYCStatus)
+                : undefined;
+
+            const aggPayload: any = {
+                id: targetAggId,
+                companyName: values.business?.companyName || undefined,
+                aggregatorType: values.business?.aggregatorType || aggData?.aggregatorType || undefined,
+                businessType: validBusinessType,
+                rank: values.business?.rank || undefined,
+                yearOfEstablishment: values.business?.yearOfEstablishment || undefined,
+                registeredAddress: values.business?.registeredAddress || undefined,
+                city: values.business?.city || undefined,
+                state: values.business?.state || undefined,
+                pincode: values.business?.pincode || undefined,
+                websiteUrl: values.business?.websiteUrl || undefined,
+                gstNumber: values.business?.gstNumber || undefined,
+                panNumber: values.business?.panNumber || undefined,
+                aadhaarNumber: values.business?.aadhaarNumber || undefined,
+                cinNumber: values.business?.cinNumber || undefined,
+                tanNumber: values.business?.tanNumber || undefined,
+                fixedCommissionPercent: values.business?.fixedCommissionPercent,
+                lenderCommissions: values.business?.lenderCommissions?.length
                     ? values.business.lenderCommissions
                     : undefined,
-                bankName: values.bankAndKyc.bankName,
-                accountNumber: values.bankAndKyc.accountNumber,
-                ifscCode: values.bankAndKyc.ifscCode,
-                accountHolderName: values.bankAndKyc.accountHolderName,
-                kycStatus: values.bankAndKyc?.kycStatus?.toUpperCase() as KYCStatus,
-                kycRejectionReason: values.bankAndKyc.kycRejectionReason?.trim() || undefined,
+                bankName: values.bankAndKyc?.bankName || undefined,
+                accountNumber: values.bankAndKyc?.accountNumber || undefined,
+                ifscCode: values.bankAndKyc?.ifscCode || undefined,
+                accountHolderName: values.bankAndKyc?.accountHolderName || undefined,
+                kycStatus: validKycStatus,
+                kycRejectionReason: values.bankAndKyc?.kycRejectionReason?.trim() || undefined,
                 kycApprovedAt:
-                    values.bankAndKyc.kycApprovedAt && values.bankAndKyc.kycApprovedAt.trim() !== ""
+                    values.bankAndKyc?.kycApprovedAt && values.bankAndKyc.kycApprovedAt.trim() !== ""
                         ? values.bankAndKyc.kycApprovedAt
                         : undefined,
                 kycApprovedBy:
-                    values.bankAndKyc.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.bankAndKyc.kycApprovedBy)
+                    values.bankAndKyc?.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.bankAndKyc.kycApprovedBy)
                         ? values.bankAndKyc.kycApprovedBy
                         : undefined,
                 documents: {
-                    aadhaarFront: values.documents?.aadhaarFront,
-                    aadhaarBack: values.documents?.aadhaarBack,
-                    panCard: values.documents?.panCard,
-                    gstCertificate: values.documents?.gstCertificate,
-                    incorporationCertificate: values.documents?.incorporationCertificate,
-                    bankStatement: values.documents?.bankStatement,
-                    cancelledCheque: values.documents?.cancelledCheque,
-                    addressProof: values.documents?.addressProof,
+                    aadhaarFront: values.documents?.aadhaarFront || undefined,
+                    aadhaarBack: values.documents?.aadhaarBack || undefined,
+                    panCard: values.documents?.panCard || undefined,
+                    gstCertificate: values.documents?.gstCertificate || undefined,
+                    incorporationCertificate: values.documents?.incorporationCertificate || undefined,
+                    bankStatement: values.documents?.bankStatement || undefined,
+                    cancelledCheque: values.documents?.cancelledCheque || undefined,
+                    addressProof: values.documents?.addressProof || undefined,
                 },
             }
             console.log(aggPayload, 'aggpayload')
@@ -1530,6 +1542,9 @@ export function AggregatorProfilePage({ id }: { id: string }) {
 
     return (
         <FormProvider {...methods}>
+            {/* Hidden inputs to guarantee form tracking of critical IDs across tabs */}
+            <input type="hidden" {...register("profile.userId")} />
+            <input type="hidden" {...register("business.id")} />
             <div className="min-h-screen bg-background p-6 space-y-6">
                 {/* Profile completion banner */}
                 {profileCompletePct <= 100 && (

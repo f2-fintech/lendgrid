@@ -56,8 +56,8 @@ const profileSchema = z.object({
   userId: z.string().optional(),
   firstName: z.string().optional().refine(val => !val || val.trim().length >= 2, "First name must be at least 2 chars"),
   lastName: z.string().optional(),
-  email: z.string().optional().refine(val => !val || /\S+@\S+\.\S+/.test(val), "Invalid email"),
-  contact: z.string().optional().refine(val => !val || /^[0-9]{10}$/.test(val), "Phone must be 10 digits"),
+  email: z.string().optional().refine(val => !val || val.trim() === "" || /\S+@\S+\.\S+/.test(val.trim()), "Invalid email"),
+  contact: z.string().optional().refine(val => !val || val.trim() === "" || /^[0-9]{10}$/.test(val.replace(/\D/g, "")), "Phone must be 10 digits"),
   status: z.string().optional(),
   photoUrl: z.string().optional(),
 })
@@ -65,31 +65,43 @@ const profileSchema = z.object({
 const businessSchema = z.object({
   id: z.string().optional(),
   companyName: z.string().optional().refine(val => !val || val.trim().length >= 2, "Company name must be at least 2 chars"),
-  aggregatorType: z.nativeEnum(AggregatorType).optional(),
-  businessType: z.nativeEnum(BusinessType).optional(),
-  rank: z.nativeEnum(ApplicableFor).optional(),
-  yearOfEstablishment: z.string().optional().refine(val => !val || /^[0-9]{4}$/.test(val), "Must be YYYY format"),
+  aggregatorType: z.any().optional(),
+  businessType: z.any().optional(),
+  rank: z.any().optional(),
+  yearOfEstablishment: z.string().optional().refine(val => !val || val.trim() === "" || /^[0-9]{4}$/.test(val.trim()), "Must be YYYY format"),
   registeredAddress: z.string().optional(),
   city: z.string().optional(),
   state: z.string().optional(),
-  pincode: z.string().optional().refine(val => !val || /^[0-9]{6}$/.test(val), "Pincode must be 6 digits"),
-  websiteUrl: z.string().optional().refine(val => !val || /^https?:\/\/.+/.test(val), "Invalid website URL"),
+  pincode: z.string().optional().refine(val => !val || val.trim() === "" || /^[0-9]{6}$/.test(val.trim()), "Pincode must be 6 digits"),
+  websiteUrl: z.string().optional(),
   gstNumber: z.string().optional().refine(
-    val => !val || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/.test(val),
+    val => !val || val.trim() === "" || /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][1-9A-Z]Z[0-9A-Z]$/i.test(val.trim()),
     "Invalid GST Number"
   ),
-  panNumber: z.string().optional().refine(val => !val || /^[A-Z]{5}[0-9]{4}[A-Z]$/.test(val), "Invalid PAN Number"),
-  aadhaarNumber: z.string().optional().refine(val => !val || /^[0-9]{12}$/.test(val), "Aadhaar must be 12 digits"),
+  panNumber: z.string().optional().refine(
+    val => !val || val.trim() === "" || /^[A-Z]{5}[0-9]{4}[A-Z]$/i.test(val.trim()),
+    "Invalid PAN Number"
+  ),
+  aadhaarNumber: z.string().optional().refine(
+    val => !val || val.trim() === "" || /^[0-9]{12}$/.test(val.replace(/\D/g, "")),
+    "Aadhaar must be 12 digits"
+  ),
   tanNumber: z.string().optional(),
   cinNumber: z.string().optional(),
 })
 
 const bankAndKycSchema = z.object({
   accountHolderName: z.string().optional(),
-  accountNumber: z.string().optional().refine(val => !val || /^[0-9]{9,18}$/.test(val), "Invalid account number"),
-  ifscCode: z.string().optional().refine(val => !val || /^[A-Z]{4}0[A-Z0-9]{6}$/.test(val), "Invalid IFSC code"),
+  accountNumber: z.string().optional().refine(
+    val => !val || val.trim() === "" || /^[0-9]{9,18}$/.test(val.replace(/\s/g, "")),
+    "Invalid account number"
+  ),
+  ifscCode: z.string().optional().refine(
+    val => !val || val.trim() === "" || /^[A-Z]{4}0[A-Z0-9]{6}$/i.test(val.trim()),
+    "Invalid IFSC code"
+  ),
   bankName: z.string().optional(),
-  kycStatus: z.string().optional(),
+  kycStatus: z.any().optional(),
   kycRejectionReason: z.string().optional(),
   kycApprovedAt: z.string().optional(),
   kycApprovedBy: z.string().optional(),
@@ -173,7 +185,7 @@ const getKycStatusIcon = (status?: string) => {
 }
 
 //  TAB 1: PROFILE & CONTACT
-function ProfileAndContactTab() {
+function ProfileAndContactTab({ readonly = false }: { readonly?: boolean }) {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { register, setValue, watch, formState: { errors }, trigger } = useFormContext<RootForm>()
@@ -310,6 +322,7 @@ function ProfileAndContactTab() {
               {...register("profile.email", { onBlur: () => trigger("profile.email") })}
               className="bg-card border-border text-foreground"
               placeholder="email@example.com"
+              disabled={readonly}
             />
             {errors.profile?.email && <p className="text-red-400 text-sm">{errors.profile.email.message}</p>}
           </div>
@@ -338,7 +351,7 @@ function ProfileAndContactTab() {
 }
 
 //  TAB 2: BUSINESS & STATUTORY DETAILS
-function BusinessDetailsTab() {
+function BusinessDetailsTab({ readonly = false }: { readonly?: boolean }) {
   const { user } = useAuth()
   const { register, setValue, trigger, watch, formState: { errors } } = useFormContext<RootForm>()
   const businessType = watch("business.businessType")
@@ -347,316 +360,323 @@ function BusinessDetailsTab() {
 
   return (
     <div className="space-y-6">
-      {/* Company Information */}
-      <Card className="bg-background/50 border-border">
-        <CardHeader>
-          <CardTitle className="text-foreground flex items-center gap-2">
-            <Building2 className="w-5 h-5" />
-            Company Information
-          </CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Organization details and business structure
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="companyName" className="text-foreground">Company Name *</Label>
-              <Input
-                id="companyName"
-                {...register("business.companyName", { onBlur: () => trigger("business.companyName") })}
-                className="bg-card border-border text-foreground"
-                placeholder="Registered company name"
-              />
-              {errors.business?.companyName && <p className="text-red-400 text-sm">{errors.business.companyName.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-foreground font-medium">Company Rank *</Label>
-              {isSuperAdmin ? (
-                <>
-                  <Select
-                    value={rank || ""}
-                    onValueChange={(value) =>
-                      setValue("business.rank", value as ApplicableFor, { shouldValidate: true, shouldDirty: true })
-                    }
-                  >
-                    <SelectTrigger className="bg-card border-border text-foreground h-11">
-                      <SelectValue placeholder="Select Aggregator Rank" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-card border-border">
-                      <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 text-amber-400" />
-                          <span>Cat C — Gold (Individual Partners)</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Building className="w-4 h-4 text-purple-400" />
-                          <span>Cat B — Platinum (DSA Partners &lt; 1 Cr/Month)</span>
-                        </div>
-                      </SelectItem>
-                      <SelectItem value={ApplicableFor.MAGNUS_AGGREGATORS} className="text-foreground">
-                        <div className="flex items-center gap-2">
-                          <Landmark className="w-4 h-4 text-emerald-400" />
-                          <span>Cat A — Magnus (Top DSA Partners)</span>
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <input type="hidden" {...register("business.rank")} />
-                  {errors.business?.rank && <p className="text-red-400 text-sm">{errors.business.rank.message}</p>}
-                </>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-4 py-3">
-                    <span className="text-muted-foreground">Assigned Rank</span>
-                    <Badge variant="outline" className="font-semibold">
-                      {rank || "N/A"}
-                    </Badge>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Assigned by Admin
-                  </p>
-                </>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-foreground font-medium">Aggregator Type *</Label>
-              <div className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-4 py-3">
-                <span className="text-muted-foreground">Assigned Type</span>
-                <Badge variant="outline" className="font-semibold flex items-center gap-1.5">
-                  {watch("business.aggregatorType") === AggregatorType.SOURCER ? (
-                    <>
-                      <UserCheck className="w-3.5 h-3.5" />
-                      <span>Sourcer</span>
-                    </>
-                  ) : watch("business.aggregatorType") === AggregatorType.CHANNEL_PARTNER ? (
-                    <>
-                      <Building className="w-3.5 h-3.5" />
-                      <span>Channel Partner</span>
-                    </>
-                  ) : (
-                    "N/A"
-                  )}
-                </Badge>
+      {readonly && (
+        <p className="text-xs text-muted-foreground italic px-1">
+          🔒 Contact your Aggregator Admin to update company details.
+        </p>
+      )}
+      <fieldset disabled={readonly} style={{ all: 'unset', display: 'contents' }}>
+        {/* Company Information */}
+        <Card className="bg-background/50 border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground flex items-center gap-2">
+              <Building2 className="w-5 h-5" />
+              Company Information
+            </CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Organization details and business structure
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="companyName" className="text-foreground">Company Name *</Label>
+                <Input
+                  id="companyName"
+                  {...register("business.companyName", { onBlur: () => trigger("business.companyName") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="Registered company name"
+                />
+                {errors.business?.companyName && <p className="text-red-400 text-sm">{errors.business.companyName.message}</p>}
               </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Assigned by Admin
-              </p>
-            </div>
 
-            <div className="space-y-2">
-              <Label className="text-foreground font-medium">Business Type *</Label>
-              <Select
-                value={businessType || ""}
-                onValueChange={(value) =>
-                  setValue("business.businessType", value as BusinessType, { shouldValidate: true })
-                }
-              >
-                <SelectTrigger className="bg-card border-border text-foreground h-11">
-                  <SelectValue placeholder="Select Business Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-border">
-                  <SelectItem value={BusinessType.PROPRIETORSHIP} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4" />
-                      <span>Proprietorship</span>
+              <div className="space-y-2">
+                <Label className="text-foreground font-medium">Company Rank *</Label>
+                {isSuperAdmin ? (
+                  <>
+                    <Select
+                      value={rank || ""}
+                      onValueChange={(value) =>
+                        setValue("business.rank", value as ApplicableFor, { shouldValidate: true, shouldDirty: true })
+                      }
+                    >
+                      <SelectTrigger className="bg-card border-border text-foreground h-11">
+                        <SelectValue placeholder="Select Aggregator Rank" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-card border-border">
+                        <SelectItem value={ApplicableFor.GOLD_AGGREGATORS} className="text-foreground">
+                          <div className="flex items-center gap-2">
+                            <Building className="w-4 h-4 text-amber-400" />
+                            <span>Cat C — Gold (Individual Partners)</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value={ApplicableFor.PLATINUM_AGGREGATORS} className="text-foreground">
+                          <div className="flex items-center gap-2">
+                            <Building className="w-4 h-4 text-purple-400" />
+                            <span>Cat B — Platinum (DSA Partners &lt; 1 Cr/Month)</span>
+                          </div>
+                        </SelectItem>
+                        <SelectItem value={ApplicableFor.MAGNUS_AGGREGATORS} className="text-foreground">
+                          <div className="flex items-center gap-2">
+                            <Landmark className="w-4 h-4 text-emerald-400" />
+                            <span>Cat A — Magnus (Top DSA Partners)</span>
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <input type="hidden" {...register("business.rank")} />
+                    {errors.business?.rank && <p className="text-red-400 text-sm">{errors.business.rank.message}</p>}
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-4 py-3">
+                      <span className="text-muted-foreground">Assigned Rank</span>
+                      <Badge variant="outline" className="font-semibold">
+                        {rank || "N/A"}
+                      </Badge>
                     </div>
-                  </SelectItem>
-                  <SelectItem value={BusinessType.PARTNERSHIP} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4" />
-                      <span>Partnership</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Building className="w-4 h-4" />
-                      <span>Private Limited</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={BusinessType.PUBLIC_LIMITED} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Landmark className="w-4 h-4" />
-                      <span>Public Limited</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value={BusinessType.LLP} className="text-foreground">
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4" />
-                      <span>LLP</span>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-              <input type="hidden" {...register("business.businessType")} />
-              {errors.business?.businessType && <p className="text-red-400 text-sm">{errors.business.businessType.message}</p>}
-            </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Assigned by Admin
+                    </p>
+                  </>
+                )}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="yearOfEstablishment" className="text-foreground">Year of Establishment</Label>
-              <Input
-                id="yearOfEstablishment"
-                {...register("business.yearOfEstablishment", { onBlur: () => trigger("business.yearOfEstablishment") })}
-                className="bg-card border-border text-foreground"
-                placeholder="YYYY (e.g., 2020)"
-              />
-              {errors.business?.yearOfEstablishment && <p className="text-red-400 text-sm">{errors.business.yearOfEstablishment.message}</p>}
-            </div>
+              <div className="space-y-2">
+                <Label className="text-foreground font-medium">Aggregator Type *</Label>
+                <div className="flex items-center justify-between bg-card/50 border border-border rounded-lg px-4 py-3">
+                  <span className="text-muted-foreground">Assigned Type</span>
+                  <Badge variant="outline" className="font-semibold flex items-center gap-1.5">
+                    {watch("business.aggregatorType") === AggregatorType.SOURCER ? (
+                      <>
+                        <UserCheck className="w-3.5 h-3.5" />
+                        <span>Sourcer</span>
+                      </>
+                    ) : watch("business.aggregatorType") === AggregatorType.CHANNEL_PARTNER ? (
+                      <>
+                        <Building className="w-3.5 h-3.5" />
+                        <span>Channel Partner</span>
+                      </>
+                    ) : (
+                      "N/A"
+                    )}
+                  </Badge>
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Assigned by Admin
+                </p>
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="websiteUrl" className="text-foreground">Website URL</Label>
-              <Input
-                id="websiteUrl"
-                {...register("business.websiteUrl", { onBlur: () => trigger("business.websiteUrl") })}
-                className="bg-card border-border text-foreground"
-                placeholder="https://example.com"
-              />
-              {errors.business?.websiteUrl && <p className="text-red-400 text-sm">{errors.business.websiteUrl.message}</p>}
-            </div>
-          </div>
-
-          {/* Address */}
-          <div className="space-y-2">
-            <Label htmlFor="registeredAddress" className="text-foreground">Registered Address *</Label>
-            <Textarea
-              id="registeredAddress"
-              {...register("business.registeredAddress", { onBlur: () => trigger("business.registeredAddress") })}
-              className="bg-card border-border text-foreground"
-              rows={3}
-              placeholder="Complete registered office address"
-            />
-            {errors.business?.registeredAddress && <p className="text-red-400 text-sm">{errors.business.registeredAddress.message}</p>}
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="city" className="text-foreground">City *</Label>
-              <Input
-                id="city"
-                {...register("business.city", { onBlur: () => trigger("business.city") })}
-                className="bg-card border-border text-foreground"
-                placeholder="City name"
-              />
-              {errors.business?.city && <p className="text-red-400 text-sm">{errors.business.city.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="state" className="text-foreground">State *</Label>
-              <Input
-                id="state"
-                {...register("business.state", { onBlur: () => trigger("business.state") })}
-                className="bg-card border-border text-foreground"
-                placeholder="State name"
-              />
-              {errors.business?.state && <p className="text-red-400 text-sm">{errors.business.state.message}</p>}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="pincode" className="text-foreground">Pincode *</Label>
-              <Input
-                id="pincode"
-                {...register("business.pincode", { onBlur: () => trigger("business.pincode") })}
-                className="bg-card border-border text-foreground"
-                placeholder="6-digit pincode"
-              />
-              {errors.business?.pincode && <p className="text-red-400 text-sm">{errors.business.pincode.message}</p>}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Statutory Details */}
-      <Card className="bg-background/50 border-border">
-        <CardHeader>
-          <CardTitle className="text-foreground">Statutory Details</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Tax registration and identification numbers
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="panNumber" className="text-foreground">PAN Number *</Label>
-              <Input
-                id="panNumber"
-                {...register("business.panNumber", {
-                  onBlur: (e: any) => {
-                    const formatted = formatPan(e.target.value)
-                    e.target.value = formatted
-                    setValue("business.panNumber", formatted, { shouldValidate: true })
-                    trigger("business.panNumber")
+              <div className="space-y-2">
+                <Label className="text-foreground font-medium">Business Type *</Label>
+                <Select
+                  value={businessType || ""}
+                  onValueChange={(value) =>
+                    setValue("business.businessType", value as BusinessType, { shouldValidate: true })
                   }
-                })}
-                className="bg-card border-border text-foreground"
-                placeholder="ABCDE1234F"
-              />
-              {errors.business?.panNumber && <p className="text-red-400 text-sm">{errors.business.panNumber.message}</p>}
+                >
+                  <SelectTrigger className="bg-card border-border text-foreground h-11">
+                    <SelectValue placeholder="Select Business Type" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-card border-border">
+                    <SelectItem value={BusinessType.PROPRIETORSHIP} className="text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        <span>Proprietorship</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={BusinessType.PARTNERSHIP} className="text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        <span>Partnership</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={BusinessType.PRIVATE_LIMITED} className="text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Building className="w-4 h-4" />
+                        <span>Private Limited</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={BusinessType.PUBLIC_LIMITED} className="text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Landmark className="w-4 h-4" />
+                        <span>Public Limited</span>
+                      </div>
+                    </SelectItem>
+                    <SelectItem value={BusinessType.LLP} className="text-foreground">
+                      <div className="flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        <span>LLP</span>
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <input type="hidden" {...register("business.businessType")} />
+                {errors.business?.businessType && <p className="text-red-400 text-sm">{errors.business.businessType.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="yearOfEstablishment" className="text-foreground">Year of Establishment</Label>
+                <Input
+                  id="yearOfEstablishment"
+                  {...register("business.yearOfEstablishment", { onBlur: () => trigger("business.yearOfEstablishment") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="YYYY (e.g., 2020)"
+                />
+                {errors.business?.yearOfEstablishment && <p className="text-red-400 text-sm">{errors.business.yearOfEstablishment.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="websiteUrl" className="text-foreground">Website URL</Label>
+                <Input
+                  id="websiteUrl"
+                  {...register("business.websiteUrl", { onBlur: () => trigger("business.websiteUrl") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="https://example.com"
+                />
+                {errors.business?.websiteUrl && <p className="text-red-400 text-sm">{errors.business.websiteUrl.message}</p>}
+              </div>
             </div>
 
+            {/* Address */}
             <div className="space-y-2">
-              <Label htmlFor="gstNumber" className="text-foreground">GST Number</Label>
-              <Input
-                id="gstNumber"
-                {...register("business.gstNumber", {
-                  onBlur: (e: any) => {
-                    const formatted = formatGst(e.target.value)
-                    e.target.value = formatted
-                    setValue("business.gstNumber", formatted, { shouldValidate: true })
-                    trigger("business.gstNumber")
-                  }
-                })}
+              <Label htmlFor="registeredAddress" className="text-foreground">Registered Address *</Label>
+              <Textarea
+                id="registeredAddress"
+                {...register("business.registeredAddress", { onBlur: () => trigger("business.registeredAddress") })}
                 className="bg-card border-border text-foreground"
-                placeholder="15-character GST"
+                rows={3}
+                placeholder="Complete registered office address"
               />
-              {errors.business?.gstNumber && <p className="text-red-400 text-sm">{errors.business.gstNumber.message}</p>}
+              {errors.business?.registeredAddress && <p className="text-red-400 text-sm">{errors.business.registeredAddress.message}</p>}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="aadhaarNumber" className="text-foreground">Aadhaar Number (Proprietor)</Label>
-              <Input
-                id="aadhaarNumber"
-                {...register("business.aadhaarNumber", {
-                  onBlur: (e: any) => {
-                    const formatted = formatAadhaar(e.target.value)
-                    e.target.value = formatted
-                    setValue("business.aadhaarNumber", formatted, { shouldValidate: true })
-                    trigger("business.aadhaarNumber")
-                  }
-                })}
-                className="bg-card border-border text-foreground"
-                placeholder="12-digit Aadhaar"
-              />
-              {errors.business?.aadhaarNumber && <p className="text-red-400 text-sm">{errors.business.aadhaarNumber.message}</p>}
-            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="city" className="text-foreground">City *</Label>
+                <Input
+                  id="city"
+                  {...register("business.city", { onBlur: () => trigger("business.city") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="City name"
+                />
+                {errors.business?.city && <p className="text-red-400 text-sm">{errors.business.city.message}</p>}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="cinNumber" className="text-foreground">CIN / Registration Number</Label>
-              <Input
-                id="cinNumber"
-                {...register("business.cinNumber", { onBlur: () => trigger("business.cinNumber") })}
-                className="bg-card border-border text-foreground"
-                placeholder="Company/LLP registration number"
-              />
-              {errors.business?.cinNumber && <p className="text-red-400 text-sm">{errors.business.cinNumber.message}</p>}
-            </div>
+              <div className="space-y-2">
+                <Label htmlFor="state" className="text-foreground">State *</Label>
+                <Input
+                  id="state"
+                  {...register("business.state", { onBlur: () => trigger("business.state") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="State name"
+                />
+                {errors.business?.state && <p className="text-red-400 text-sm">{errors.business.state.message}</p>}
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="tanNumber" className="text-foreground">TAN Number</Label>
-              <Input
-                id="tanNumber"
-                {...register("business.tanNumber", { onBlur: () => trigger("business.tanNumber") })}
-                className="bg-card border-border text-foreground"
-                placeholder="Tax Deduction Account Number"
-              />
-              {errors.business?.tanNumber && <p className="text-red-400 text-sm">{errors.business.tanNumber.message}</p>}
+              <div className="space-y-2">
+                <Label htmlFor="pincode" className="text-foreground">Pincode *</Label>
+                <Input
+                  id="pincode"
+                  {...register("business.pincode", { onBlur: () => trigger("business.pincode") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="6-digit pincode"
+                />
+                {errors.business?.pincode && <p className="text-red-400 text-sm">{errors.business.pincode.message}</p>}
+              </div>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* Statutory Details */}
+        <Card className="bg-background/50 border-border">
+          <CardHeader>
+            <CardTitle className="text-foreground">Statutory Details</CardTitle>
+            <CardDescription className="text-muted-foreground">
+              Tax registration and identification numbers
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="panNumber" className="text-foreground">PAN Number *</Label>
+                <Input
+                  id="panNumber"
+                  {...register("business.panNumber", {
+                    onBlur: (e: any) => {
+                      const formatted = formatPan(e.target.value)
+                      e.target.value = formatted
+                      setValue("business.panNumber", formatted, { shouldValidate: true })
+                      trigger("business.panNumber")
+                    }
+                  })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="ABCDE1234F"
+                />
+                {errors.business?.panNumber && <p className="text-red-400 text-sm">{errors.business.panNumber.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="gstNumber" className="text-foreground">GST Number</Label>
+                <Input
+                  id="gstNumber"
+                  {...register("business.gstNumber", {
+                    onBlur: (e: any) => {
+                      const formatted = formatGst(e.target.value)
+                      e.target.value = formatted
+                      setValue("business.gstNumber", formatted, { shouldValidate: true })
+                      trigger("business.gstNumber")
+                    }
+                  })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="15-character GST"
+                />
+                {errors.business?.gstNumber && <p className="text-red-400 text-sm">{errors.business.gstNumber.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="aadhaarNumber" className="text-foreground">Aadhaar Number (Proprietor)</Label>
+                <Input
+                  id="aadhaarNumber"
+                  {...register("business.aadhaarNumber", {
+                    onBlur: (e: any) => {
+                      const formatted = formatAadhaar(e.target.value)
+                      e.target.value = formatted
+                      setValue("business.aadhaarNumber", formatted, { shouldValidate: true })
+                      trigger("business.aadhaarNumber")
+                    }
+                  })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="12-digit Aadhaar"
+                />
+                {errors.business?.aadhaarNumber && <p className="text-red-400 text-sm">{errors.business.aadhaarNumber.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="cinNumber" className="text-foreground">CIN / Registration Number</Label>
+                <Input
+                  id="cinNumber"
+                  {...register("business.cinNumber", { onBlur: () => trigger("business.cinNumber") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="Company/LLP registration number"
+                />
+                {errors.business?.cinNumber && <p className="text-red-400 text-sm">{errors.business.cinNumber.message}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="tanNumber" className="text-foreground">TAN Number</Label>
+                <Input
+                  id="tanNumber"
+                  {...register("business.tanNumber", { onBlur: () => trigger("business.tanNumber") })}
+                  className="bg-card border-border text-foreground"
+                  placeholder="Tax Deduction Account Number"
+                />
+                {errors.business?.tanNumber && <p className="text-red-400 text-sm">{errors.business.tanNumber.message}</p>}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </fieldset>
     </div>
   )
 }
@@ -669,6 +689,7 @@ interface DocumentUploadFieldProps {
   onFileSelect: (url: string) => void;
   onRemove: () => void;
   acceptTypes?: string;
+  readonly?: boolean;
 }
 
 function DocumentUploadField({
@@ -677,25 +698,23 @@ function DocumentUploadField({
   currentValue,
   onFileSelect,
   onRemove,
-  acceptTypes = "image/*"
+  acceptTypes = "image/*",
+  readonly = false,
 }: DocumentUploadFieldProps) {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [localPreviewUrl, setLocalPreviewUrl] = useState<string | null>(null);
 
-  // Check if we have a saved URL from database
+  // Check if we have a saved URL from database or recent upload
   const isUrl = typeof currentValue === "string" && currentValue.trim() !== "";
-  const displayUrl = isUrl ? currentValue : "";
-  const isImageUrl = isUrl && /\.(jpg|jpeg|png|gif|webp)$/i.test(displayUrl);
-  const isPdfUrl = isUrl && /\.pdf$/i.test(displayUrl);
+  const displayUrl = isUrl ? currentValue.trim() : (localPreviewUrl || "");
+  const isImageUrl = displayUrl && /\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(displayUrl);
+  const isPdfUrl = displayUrl && /\.pdf(\?.*)?$/i.test(displayUrl);
 
-  // Determine if we're showing a preview of selected file or uploaded document
-  const showingPreview = selectedFile !== null;
-  const showingUploaded = !showingPreview && isUrl;
+  const hasContent = isUrl || localPreviewUrl !== null;
 
-  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
@@ -708,188 +727,161 @@ function DocumentUploadField({
       return;
     }
 
-    // Store the file and create preview
-    setSelectedFile(file);
-    const preview = URL.createObjectURL(file);
-    setPreviewUrl(preview);
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-
+    // Generate local preview immediately
+    const tempUrl = URL.createObjectURL(file);
+    setLocalPreviewUrl(tempUrl);
     setIsUploading(true);
+
     try {
-      // Upload to S3
+      const cleanFieldName = fieldName.replace(/[^a-zA-Z0-9_-]/g, "_");
       const uploadedUrl = await uploadToS3(
-        selectedFile,
-        `documents/${fieldName}/${Date.now()}-${selectedFile.name}`
+        file,
+        `documents/${cleanFieldName}/${Date.now()}-${file.name}`
       );
 
-      // Store the URL in form state
+      // Store in form state
       onFileSelect(uploadedUrl);
 
-      // Clear preview state
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setSelectedFile(null);
-      setPreviewUrl(null);
+      // Clean temp preview
+      URL.revokeObjectURL(tempUrl);
+      setLocalPreviewUrl(null);
 
       toast({
         title: "Upload Successful",
-        description: "Document uploaded successfully",
+        description: `${label} uploaded successfully`,
       });
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Upload Failed",
-        description: "Unable to upload document",
+        description: error?.message || "Unable to upload document",
         variant: "destructive",
       });
+      URL.revokeObjectURL(tempUrl);
+      setLocalPreviewUrl(null);
     } finally {
       setIsUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
   const handleRemove = () => {
-    // Clear selected file preview
-    if (selectedFile) {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-      setSelectedFile(null);
-      setPreviewUrl(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    } else {
-      // Clear uploaded document from form
-      onRemove();
+    if (localPreviewUrl) {
+      URL.revokeObjectURL(localPreviewUrl);
+      setLocalPreviewUrl(null);
     }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+    onRemove();
   };
 
   const handleBoxClick = () => {
-    if (!showingPreview && !showingUploaded) {
+    if (!hasContent && !readonly && !isUploading) {
       fileInputRef.current?.click();
     }
   };
 
-  const handlePdfClick = (e: React.MouseEvent) => {
+  const handleDocClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isPdfUrl && displayUrl) {
+    if (displayUrl && !isUploading) {
       window.open(displayUrl, '_blank');
     }
   };
 
-  // Cleanup preview URL on unmount
+  // Cleanup local preview URL on unmount
   useEffect(() => {
     return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
+      if (localPreviewUrl) {
+        URL.revokeObjectURL(localPreviewUrl);
       }
     };
-  }, [previewUrl]);
+  }, [localPreviewUrl]);
 
   return (
     <div className="space-y-2">
       <Label className="text-foreground">{label}</Label>
 
-      {!showingPreview && !showingUploaded ? (
-        // EMPTY STATE - Click to upload
-        <div
-          className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
-          onClick={handleBoxClick}
-        >
-          <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Click to upload</p>
-          <p className="text-xs text-gray-500 mt-1">Max Size 2MB</p>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept={acceptTypes}
-            onChange={handleFileChange}
-            className="hidden"
-          />
-        </div>
+      {!hasContent ? (
+        readonly ? (
+          <div className="border border-dashed border-border rounded-lg p-6 text-center bg-card/20">
+            <p className="text-sm text-muted-foreground">No document uploaded</p>
+          </div>
+        ) : (
+          // EMPTY STATE - Click to upload
+          <div
+            className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-gold transition-colors cursor-pointer"
+            onClick={handleBoxClick}
+          >
+            <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+            <p className="text-sm text-muted-foreground">Click to upload</p>
+            <p className="text-xs text-gray-500 mt-1">Max Size 2MB</p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={acceptTypes}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        )
       ) : (
-        // PREVIEW OR UPLOADED STATE
+        // UPLOADED OR UPLOADING STATE
         <div className="relative bg-card/50 border-2 border-border rounded-lg overflow-hidden group">
-          {showingPreview ? (
-            // Selected file preview (not yet uploaded)
-            <>
-              {selectedFile?.type.startsWith('image/') ? (
-                <img
-                  src={previewUrl!}
-                  alt="Preview"
-                  className="w-full h-48 object-contain bg-black/5"
-                />
-              ) : (
-                <div className="w-full h-48 flex items-center justify-center bg-black/5">
-                  <FileText className="w-16 h-16 text-blue-400" />
-                  <p className="text-foreground text-sm ml-3">{selectedFile?.name}</p>
-                </div>
-              )}
+          {/* Uploading progress overlay */}
+          {isUploading && (
+            <div className="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10 text-white gap-2">
+              <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              <p className="text-xs font-medium">Uploading document...</p>
+            </div>
+          )}
 
-              {/* Action buttons for preview */}
-              <div className="absolute top-2 right-2 flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleUpload}
-                  disabled={isUploading}
-                  className="bg-green-500/90 hover:bg-green-600 text-white rounded-full p-2 transition-colors disabled:opacity-50"
-                  title="Upload"
-                >
-                  {isUploading ? (
-                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <Upload className="w-5 h-5" />
-                  )}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
-                  title="Remove"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+          {isImageUrl ? (
+            <div className="relative cursor-pointer" onClick={handleDocClick} title="Click to view full image">
+              <img
+                src={displayUrl}
+                alt="Uploaded document"
+                className="w-full h-48 object-contain bg-black/5"
+              />
+              <div className="absolute bottom-1 right-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded">
+                Click to view
               </div>
-            </>
+            </div>
+          ) : isPdfUrl ? (
+            <div
+              className="w-full h-48 flex flex-col items-center justify-center bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
+              onClick={handleDocClick}
+              title="Click to view PDF"
+            >
+              <FileText className="w-16 h-16 text-blue-400 mb-1" />
+              <p className="text-foreground text-sm font-medium">PDF Document</p>
+              <p className="text-xs text-muted-foreground mt-1">Click to view PDF</p>
+            </div>
           ) : (
-            // Uploaded document from database
-            <>
-              {isImageUrl ? (
-                <img
-                  src={displayUrl}
-                  alt="Uploaded document"
-                  className="w-full h-48 object-contain bg-black/5"
-                />
-              ) : isPdfUrl ? (
-                <div
-                  className="w-full h-48 flex items-center justify-center bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
-                  onClick={handlePdfClick}
-                >
-                  <FileText className="w-16 h-16 text-blue-400" />
-                  <p className="text-foreground text-sm ml-3">Click to view PDF</p>
-                </div>
-              ) : (
-                <div className="w-full h-48 flex items-center justify-center bg-black/5">
-                  <FileText className="w-16 h-16 text-blue-400" />
-                  <p className="text-foreground text-sm ml-3">Document uploaded</p>
-                </div>
-              )}
+            <div
+              className="w-full h-48 flex flex-col items-center justify-center bg-black/5 cursor-pointer hover:bg-black/10 transition-colors"
+              onClick={handleDocClick}
+              title="Click to view document"
+            >
+              <FileText className="w-16 h-16 text-blue-400 mb-1" />
+              <p className="text-foreground text-sm font-medium">Document Uploaded</p>
+              <p className="text-xs text-muted-foreground mt-1">Click to view document</p>
+            </div>
+          )}
 
-              {/* Remove button for uploaded document */}
-              <div className="absolute top-2 right-2">
-                <button
-                  type="button"
-                  onClick={handleRemove}
-                  className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors"
-                  title="Remove"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </>
+          {/* Remove button for uploaded document */}
+          {!readonly && !isUploading && (
+            <div className="absolute top-2 right-2 z-20">
+              <button
+                type="button"
+                onClick={handleRemove}
+                className="bg-red-500/90 hover:bg-red-600 text-white rounded-full p-2 transition-colors shadow-md"
+                title="Remove"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
           )}
         </div>
       )}
@@ -898,7 +890,7 @@ function DocumentUploadField({
 }
 
 // TAB 3: BANKING, KYC & DOCUMENTS
-function BankingKycDocumentsTab({ hasRegisteredBusiness = true }: { hasRegisteredBusiness?: boolean }) {
+function BankingKycDocumentsTab({ hasRegisteredBusiness = true, readonly = false }: { hasRegisteredBusiness?: boolean, readonly?: boolean }) {
   const { register, formState: { errors }, setValue, trigger, watch } = useFormContext<RootForm>()
   const { user } = useAuth()    // Get current user
   const kycStatus = watch("bankAndKyc.kycStatus")
@@ -918,30 +910,37 @@ function BankingKycDocumentsTab({ hasRegisteredBusiness = true }: { hasRegistere
           <CardDescription className="text-muted-foreground">Bank account for commission payouts</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="accountHolderName" className="text-foreground">Account Holder Name</Label>
-              <Input id="accountHolderName" {...register("bankAndKyc.accountHolderName")} className="bg-card border-border text-foreground" placeholder="As per bank" />
+          {readonly && (
+            <p className="text-xs text-muted-foreground italic mb-4">
+              🔒 Bank account and payout details are managed by your Aggregator Admin.
+            </p>
+          )}
+          <fieldset disabled={readonly} style={{ all: 'unset', display: 'contents' }}>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="accountHolderName" className="text-foreground">Account Holder Name</Label>
+                <Input id="accountHolderName" {...register("bankAndKyc.accountHolderName")} className="bg-card border-border text-foreground" placeholder="As per bank" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="accountNumber" className="text-foreground">Account Number</Label>
+                <Input id="accountNumber" {...register("bankAndKyc.accountNumber")} className="bg-card border-border text-foreground" placeholder="9-18 digits" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ifscCode" className="text-foreground">IFSC Code</Label>
+                <Input id="ifscCode" {...register("bankAndKyc.ifscCode", {
+                  onBlur: (e: any) => {
+                    const formatted = formatIfsc(e.target.value)
+                    e.target.value = formatted
+                    setValue("bankAndKyc.ifscCode", formatted, { shouldValidate: true })
+                  }
+                })} className="bg-card border-border text-foreground" placeholder="SBIN0001234" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bankName" className="text-foreground">Bank Name</Label>
+                <Input id="bankName" {...register("bankAndKyc.bankName")} className="bg-card border-border text-foreground" placeholder="Bank name" />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="accountNumber" className="text-foreground">Account Number</Label>
-              <Input id="accountNumber" {...register("bankAndKyc.accountNumber")} className="bg-card border-border text-foreground" placeholder="9-18 digits" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="ifscCode" className="text-foreground">IFSC Code</Label>
-              <Input id="ifscCode" {...register("bankAndKyc.ifscCode", {
-                onBlur: (e: any) => {
-                  const formatted = formatIfsc(e.target.value)
-                  e.target.value = formatted
-                  setValue("bankAndKyc.ifscCode", formatted, { shouldValidate: true })
-                }
-              })} className="bg-card border-border text-foreground" placeholder="SBIN0001234" />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bankName" className="text-foreground">Bank Name</Label>
-              <Input id="bankName" {...register("bankAndKyc.bankName")} className="bg-card border-border text-foreground" placeholder="Bank name" />
-            </div>
-          </div>
+          </fieldset>
         </CardContent>
       </Card>
 
@@ -1073,30 +1072,34 @@ function BankingKycDocumentsTab({ hasRegisteredBusiness = true }: { hasRegistere
                 label="Aadhaar Card - Front"
                 fieldName="documents.aadhaarFront"
                 currentValue={watch("documents.aadhaarFront")}
-                onFileSelect={(url) => setValue("documents.aadhaarFront", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.aadhaarFront", "")}
+                onFileSelect={(url) => setValue("documents.aadhaarFront", url, { shouldDirty: true, shouldValidate: true })}
+                onRemove={() => setValue("documents.aadhaarFront", "", { shouldDirty: true, shouldValidate: true })}
+                readonly={readonly}
               />
               <DocumentUploadField
                 label="Aadhaar Card - Back"
                 fieldName="documents.aadhaarBack"
                 currentValue={watch("documents.aadhaarBack")}
-                onFileSelect={(url) => setValue("documents.aadhaarBack", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.aadhaarBack", "")}
+                onFileSelect={(url) => setValue("documents.aadhaarBack", url, { shouldDirty: true, shouldValidate: true })}
+                onRemove={() => setValue("documents.aadhaarBack", "", { shouldDirty: true, shouldValidate: true })}
+                readonly={readonly}
               />
               <DocumentUploadField
                 label="PAN Card"
                 fieldName="documents.panCard"
                 currentValue={watch("documents.panCard")}
-                onFileSelect={(url) => setValue("documents.panCard", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.panCard", "")}
+                onFileSelect={(url) => setValue("documents.panCard", url, { shouldDirty: true, shouldValidate: true })}
+                onRemove={() => setValue("documents.panCard", "", { shouldDirty: true, shouldValidate: true })}
+                readonly={readonly}
               />
               <DocumentUploadField
                 label="Address Proof"
                 fieldName="documents.addressProof"
                 currentValue={watch("documents.addressProof")}
-                onFileSelect={(url) => setValue("documents.addressProof", url, { shouldDirty: true })}
-                onRemove={() => setValue("documents.addressProof", "")}
+                onFileSelect={(url) => setValue("documents.addressProof", url, { shouldDirty: true, shouldValidate: true })}
+                onRemove={() => setValue("documents.addressProof", "", { shouldDirty: true, shouldValidate: true })}
                 acceptTypes="image/*,application/pdf"
+                readonly={readonly}
               />
             </div>
           </div>
@@ -1109,9 +1112,10 @@ function BankingKycDocumentsTab({ hasRegisteredBusiness = true }: { hasRegistere
                   label="GST Certificate"
                   fieldName="documents.gstCertificate"
                   currentValue={watch("documents.gstCertificate")}
-                  onFileSelect={(url) => setValue("documents.gstCertificate", url, { shouldDirty: true })}
-                  onRemove={() => setValue("documents.gstCertificate", "")}
+                  onFileSelect={(url) => setValue("documents.gstCertificate", url, { shouldDirty: true, shouldValidate: true })}
+                  onRemove={() => setValue("documents.gstCertificate", "", { shouldDirty: true, shouldValidate: true })}
                   acceptTypes="image/*,application/pdf"
+                  readonly={readonly}
                 />
               </div>
             </div>
@@ -1124,9 +1128,11 @@ function BankingKycDocumentsTab({ hasRegisteredBusiness = true }: { hasRegistere
 
 //  Main Component
 export function AggregatorSettings() {
-  const { user } = useAuth('aggregator_admin')
+  const { user, role } = useAuth(['aggregator_admin', 'aggregator_member'])
+  const isAggregatorMember = role === 'aggregator_member'
   const { data: userData, isLoading: userLoading } = useProfile(true)
-  const { data: aggData, isLoading: aggLoading } = useAggregator(user?.profileId ?? null, true)
+  const targetProfileId = userData?.profileId || user?.profileId || null
+  const { data: aggData, isLoading: aggLoading } = useAggregator(targetProfileId, !!targetProfileId)
   const updateUserHook = useUpdateUser()
   const updateAggHook = useUpdateAggregatorProfile()
   const { toast } = useToast()
@@ -1140,14 +1146,14 @@ export function AggregatorSettings() {
     resolver: zodResolver(rootSchema),
     mode: "onBlur",
     defaultValues: {
-      profile: { firstName: "", lastName: "", email: "", contact: "", status: "" },
-      business: { companyName: "" },
+      profile: { userId: "", firstName: "", lastName: "", email: "", contact: "", status: "", photoUrl: "" },
+      business: { id: "", companyName: "" },
       bankAndKyc: {},
       documents: {},
     },
   })
 
-  const { handleSubmit, trigger, reset } = methods
+  const { handleSubmit, trigger, reset, register } = methods
 
   // Populate form when data loads
   useEffect(() => {
@@ -1254,22 +1260,22 @@ export function AggregatorSettings() {
       businessChecks = isFreelance
         ? []
         : [
-            Boolean(aggData?.companyName),
-            Boolean(aggData?.aggregatorType),
-            Boolean(aggData?.rank),
-            Boolean(aggData?.businessType),
-            Boolean(aggData?.yearOfEstablishment),
-            Boolean(aggData?.registeredAddress),
-            Boolean(aggData?.city),
-            Boolean(aggData?.state),
-            Boolean(aggData?.pincode),
-            Boolean(aggData?.websiteUrl),
-            Boolean(aggData?.gstNumber),
-            Boolean(aggData?.panNumber),
-            Boolean(aggData?.aadhaarNumber),
-            Boolean(aggData?.cinNumber),
-            Boolean(aggData?.tanNumber),
-          ]
+          Boolean(aggData?.companyName),
+          Boolean(aggData?.aggregatorType),
+          Boolean(aggData?.rank),
+          Boolean(aggData?.businessType),
+          Boolean(aggData?.yearOfEstablishment),
+          Boolean(aggData?.registeredAddress),
+          Boolean(aggData?.city),
+          Boolean(aggData?.state),
+          Boolean(aggData?.pincode),
+          Boolean(aggData?.websiteUrl),
+          Boolean(aggData?.gstNumber),
+          Boolean(aggData?.panNumber),
+          Boolean(aggData?.aadhaarNumber),
+          Boolean(aggData?.cinNumber),
+          Boolean(aggData?.tanNumber),
+        ]
 
       bankChecks = [
         Boolean(aggData?.bankName),
@@ -1306,117 +1312,206 @@ export function AggregatorSettings() {
     }
   }, [isFreelance, activeTab]);
 
-  const onSaveAll = handleSubmit(async (values) => {
-    setIsSaving(true)
-    try {
-      // Update User
-      const userPayload = {
-        id: values.profile.userId!,
-        username: `${values.profile.firstName} ${values.profile.lastName}`.trim(),
-        email: values.profile.email,
-        contact: values.profile.contact,
-        photoUrl: values.profile.photoUrl,
-        status: values.profile.status,
-      };
+  const onSaveAll = handleSubmit(
+    async (values) => {
+      setIsSaving(true)
+      try {
+        // Determine User ID with fallbacks
+        const targetUserId =
+          values.profile?.userId ||
+          userData?._id ||
+          (userData as any)?.id ||
+          user?._id ||
+          user?.id ||
+          aggData?.userId;
 
-      console.log(userPayload, 'userpayload')
-      await updateUserHook.mutateAsync(userPayload)
-
-      // Update Aggregator Profile
-      const aggPayload = {
-        id: values.business.id!,
-        companyName: values.business.companyName,
-        businessType: values.business.businessType?.toUpperCase() as BusinessType,
-        rank: values.business.rank,
-        yearOfEstablishment: values.business.yearOfEstablishment,
-        registeredAddress: values.business.registeredAddress,
-        city: values.business.city,
-        state: values.business.state,
-        pincode: values.business.pincode,
-        websiteUrl: values.business.websiteUrl,
-        gstNumber: values.business.gstNumber,
-        panNumber: values.business.panNumber,
-        aadhaarNumber: values.business.aadhaarNumber,
-        cinNumber: values.business.cinNumber,
-        tanNumber: values.business.tanNumber,
-        bankName: values.bankAndKyc.bankName,
-        accountNumber: values.bankAndKyc.accountNumber,
-        ifscCode: values.bankAndKyc.ifscCode,
-        accountHolderName: values.bankAndKyc.accountHolderName,
-        kycStatus: values.bankAndKyc?.kycStatus?.toUpperCase() as KYCStatus,
-        kycRejectionReason: values.bankAndKyc.kycRejectionReason?.trim() || undefined,
-        kycApprovedAt:
-          values.bankAndKyc.kycApprovedAt && values.bankAndKyc.kycApprovedAt.trim() !== ""
-            ? values.bankAndKyc.kycApprovedAt
-            : undefined,
-        kycApprovedBy:
-          values.bankAndKyc.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.bankAndKyc.kycApprovedBy)
-            ? values.bankAndKyc.kycApprovedBy
-            : undefined,
-        documents: {
-          aadhaarFront: values.documents?.aadhaarFront,
-          aadhaarBack: values.documents?.aadhaarBack,
-          panCard: values.documents?.panCard,
-          gstCertificate: values.documents?.gstCertificate,
-          incorporationCertificate: values.documents?.incorporationCertificate,
-          bankStatement: values.documents?.bankStatement,
-          cancelledCheque: values.documents?.cancelledCheque,
-          addressProof: values.documents?.addressProof,
-        },
-      }
-      console.log(aggPayload, 'aggpayload')
-      await updateAggHook.mutateAsync(aggPayload)
-
-      var duration = 3 * 1000;
-      var end = Date.now() + duration;
-
-      (function frame() {
-        // Left bottom cannon
-        confetti({
-          particleCount: 25,
-          angle: 60,
-          spread: 60,
-          startVelocity: 50,
-          gravity: 0.8,
-          scalar: 1.1,
-          ticks: 300,
-          origin: { x: 0, y: 1 }
-        });
-
-        // Right bottom cannon
-        confetti({
-          particleCount: 25,
-          angle: 120,
-          spread: 60,
-          startVelocity: 50,
-          gravity: 0.8,
-          scalar: 1.1,
-          ticks: 300,
-          origin: { x: 1, y: 1 }
-        });
-
-        if (Date.now() < end) {
-          requestAnimationFrame(frame);
+        if (!targetUserId) {
+          toast({
+            title: "Error",
+            description: "User ID not found. Please refresh and try again.",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
         }
-      })();
 
+        // Update User
+        const fullName = `${values.profile?.firstName || ""} ${values.profile?.lastName || ""}`.trim();
+        const userPayload: any = {
+          id: targetUserId,
+          username: fullName || undefined,
+          email: values.profile?.email || undefined,
+          contact: values.profile?.contact || undefined,
+          photoUrl: values.profile?.photoUrl || undefined,
+        };
+
+        // Only pass status if it is a valid non-empty Status enum
+        const validStatus = (values.profile?.status || userData?.status)?.trim().toUpperCase();
+        if (validStatus && ["ACTIVE", "INACTIVE", "PENDING_APPROVAL", "SUSPENDED"].includes(validStatus)) {
+          userPayload.status = validStatus;
+        }
+
+        console.log(userPayload, 'userpayload')
+        await updateUserHook.mutateAsync(userPayload)
+
+        // Aggregator Member only updates user profile, not aggregator business/bank profile
+        if (isAggregatorMember) {
+          toast({
+            title: "Success",
+            description: "Profile updated successfully",
+          })
+          setIsSaving(false)
+          return
+        }
+
+        // Determine Aggregator Profile ID with fallbacks
+        const targetAggId =
+          values.business?.id ||
+          aggData?._id ||
+          (aggData as any)?.id ||
+          user?.profileId;
+
+        if (!targetAggId) {
+          toast({
+            title: "Error",
+            description: "Aggregator profile ID not found. Please refresh and try again.",
+            variant: "destructive",
+          });
+          setIsSaving(false);
+          return;
+        }
+
+        // Update Aggregator Profile
+        const rawBusinessType = values.business?.businessType?.toString().trim().toUpperCase();
+        const validBusinessType = rawBusinessType && ["LLP", "PARTNERSHIP", "PRIVATE_LIMITED", "PROPRIETORSHIP", "PUBLIC_LIMITED"].includes(rawBusinessType)
+          ? (rawBusinessType as BusinessType)
+          : undefined;
+
+        const rawKycStatus = values.bankAndKyc?.kycStatus?.toString().trim().toUpperCase();
+        const validKycStatus = rawKycStatus && ["APPROVED", "PENDING", "REJECTED", "RESUBMIT", "UNDER_REVIEW"].includes(rawKycStatus)
+          ? (rawKycStatus as KYCStatus)
+          : undefined;
+
+        const aggPayload: any = {
+          id: targetAggId,
+          ...(isFreelance
+            ? {}
+            : {
+              companyName: values.business?.companyName || undefined,
+              businessType: validBusinessType,
+              rank: values.business?.rank || undefined,
+              yearOfEstablishment: values.business?.yearOfEstablishment || undefined,
+              registeredAddress: values.business?.registeredAddress || undefined,
+              city: values.business?.city || undefined,
+              state: values.business?.state || undefined,
+              pincode: values.business?.pincode || undefined,
+              websiteUrl: values.business?.websiteUrl || undefined,
+              gstNumber: values.business?.gstNumber || undefined,
+              panNumber: values.business?.panNumber || undefined,
+              aadhaarNumber: values.business?.aadhaarNumber || undefined,
+              cinNumber: values.business?.cinNumber || undefined,
+              tanNumber: values.business?.tanNumber || undefined,
+            }),
+          bankName: values.bankAndKyc?.bankName || undefined,
+          accountNumber: values.bankAndKyc?.accountNumber ? values.bankAndKyc.accountNumber.replace(/\s/g, "") : undefined,
+          ifscCode: values.bankAndKyc?.ifscCode ? values.bankAndKyc.ifscCode.toUpperCase().trim() : undefined,
+          accountHolderName: values.bankAndKyc?.accountHolderName || undefined,
+          kycStatus: validKycStatus,
+          kycRejectionReason: values.bankAndKyc?.kycRejectionReason?.trim() || undefined,
+          kycApprovedAt:
+            values.bankAndKyc?.kycApprovedAt && values.bankAndKyc.kycApprovedAt.trim() !== ""
+              ? values.bankAndKyc.kycApprovedAt
+              : undefined,
+          kycApprovedBy:
+            values.bankAndKyc?.kycApprovedBy && /^[a-fA-F0-9]{24}$/.test(values.bankAndKyc.kycApprovedBy)
+              ? values.bankAndKyc.kycApprovedBy
+              : undefined,
+          documents: {
+            aadhaarFront: values.documents?.aadhaarFront || undefined,
+            aadhaarBack: values.documents?.aadhaarBack || undefined,
+            panCard: values.documents?.panCard || undefined,
+            gstCertificate: isFreelance ? undefined : (values.documents?.gstCertificate || undefined),
+            incorporationCertificate: isFreelance ? undefined : (values.documents?.incorporationCertificate || undefined),
+            bankStatement: values.documents?.bankStatement || undefined,
+            cancelledCheque: values.documents?.cancelledCheque || undefined,
+            addressProof: values.documents?.addressProof || undefined,
+          },
+        }
+        console.log(aggPayload, 'aggpayload')
+        await updateAggHook.mutateAsync(aggPayload)
+
+        var duration = 3 * 1000;
+        var end = Date.now() + duration;
+
+        (function frame() {
+          // Left bottom cannon
+          confetti({
+            particleCount: 25,
+            angle: 60,
+            spread: 60,
+            startVelocity: 50,
+            gravity: 0.8,
+            scalar: 1.1,
+            ticks: 300,
+            origin: { x: 0, y: 1 }
+          });
+
+          // Right bottom cannon
+          confetti({
+            particleCount: 25,
+            angle: 120,
+            spread: 60,
+            startVelocity: 50,
+            gravity: 0.8,
+            scalar: 1.1,
+            ticks: 300,
+            origin: { x: 1, y: 1 }
+          });
+
+          if (Date.now() < end) {
+            requestAnimationFrame(frame);
+          }
+        })();
+
+        toast({
+          title: "Success",
+          description: "Profile updated successfully",
+        })
+        setTimeout(() => {
+          setActiveTab('profile');
+        }, 2000)
+      } catch (error: any) {
+        toast({
+          title: "Error",
+          description: error.message || "Failed to update profile",
+          variant: "destructive",
+        })
+      } finally {
+        setIsSaving(false)
+      }
+    },
+    (formErrors) => {
+      console.error("Form validation errors:", formErrors);
+      let errorMsg = "";
+      if (formErrors.profile) {
+        const first = Object.values(formErrors.profile).find((e: any) => e?.message);
+        if (first) errorMsg = (first as any).message;
+      }
+      if (!errorMsg && !isFreelance && !isAggregatorMember && formErrors.business) {
+        const first = Object.values(formErrors.business).find((e: any) => e?.message);
+        if (first) errorMsg = (first as any).message;
+      }
+      if (!errorMsg && !isAggregatorMember && formErrors.bankAndKyc) {
+        const first = Object.values(formErrors.bankAndKyc).find((e: any) => e?.message);
+        if (first) errorMsg = (first as any).message;
+      }
       toast({
-        title: "Success",
-        description: "Profile updated successfully",
-      })
-      setTimeout(() => {
-        setActiveTab('profile');
-      }, 2000)
-    } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to update profile",
+        title: "Validation Error",
+        description: errorMsg || "Please check the entered values",
         variant: "destructive",
-      })
-    } finally {
-      setIsSaving(false)
+      });
     }
-  })
+  )
 
   if (userLoading || aggLoading) {
     return (
@@ -1428,6 +1523,9 @@ export function AggregatorSettings() {
 
   return (
     <FormProvider {...methods}>
+      {/* Hidden inputs to guarantee form tracking of critical IDs across tabs */}
+      <input type="hidden" {...register("profile.userId")} />
+      <input type="hidden" {...register("business.id")} />
       <div className="min-h-screen bg-background p-4 sm:p-6 space-y-4 sm:space-y-6">
         {/* Profile completion banner */}
         {profileCompletePct <= 100 && (
@@ -1442,14 +1540,11 @@ export function AggregatorSettings() {
             <p className="text-sm sm:text-base text-muted-foreground mt-1">Manage your profile, business details, and documents</p>
           </div>
 
-          <Button className="w-full sm:w-auto bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700" onClick={async () => {
-            const ok = await trigger()
-            if (!ok) {
-              toast({ title: "Validation failed", description: "Please check all required fields", variant: "destructive" })
-              return
-            }
-            await onSaveAll()
-          }} disabled={!allTabsVisited || isSaving}>
+          <Button
+            className="w-full sm:w-auto bg-gradient-to-r from-blue to-cyan-500 text-dark hover:from-blue-600 hover:to-cyan-700"
+            onClick={() => onSaveAll()}
+            disabled={isSaving}
+          >
             <Save className="w-5 h-5 mr-2" />{isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </motion.div>
@@ -1469,9 +1564,9 @@ export function AggregatorSettings() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile"><ProfileAndContactTab /></TabsContent>
-          {!isFreelance && <TabsContent value="business"><BusinessDetailsTab /></TabsContent>}
-          <TabsContent value="banking"><BankingKycDocumentsTab hasRegisteredBusiness={!isFreelance} /></TabsContent>
+          <TabsContent value="profile"><ProfileAndContactTab readonly={isAggregatorMember} /></TabsContent>
+          {!isFreelance && <TabsContent value="business"><BusinessDetailsTab readonly={isAggregatorMember} /></TabsContent>}
+          <TabsContent value="banking"><BankingKycDocumentsTab hasRegisteredBusiness={!isFreelance} readonly={isAggregatorMember} /></TabsContent>
         </Tabs>
       </div>
     </FormProvider>

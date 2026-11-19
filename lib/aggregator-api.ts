@@ -152,9 +152,9 @@ export const aggregatorProfileApi = {
           }
         }
       `,
-      variables: { 
+      variables: {
         paginationArgs: { page: params?.page || 1, limit: params?.limit || 10 },
-        status: params?.status || null
+        status: params?.status || null,
       },
     }),
 
@@ -385,6 +385,26 @@ export const aggregatorProfileApi = {
               }
               createdAt
               createdBy
+              sourcingType
+              omsReferredBy
+              omsReferral {
+                _id
+                employeeName
+                employeeCode
+                referralCode
+                designation
+              }
+              referredByAggregatorId
+              referredByReferralCode
+              referredByAggregator {
+                _id
+                companyName
+                referralCode
+                user {
+                  username
+                  email
+                }
+              }
               teamMemberUsers {
                 _id
                 username
@@ -413,7 +433,7 @@ export const aggregatorProfileApi = {
       variables: {
         searchTerm,
         paginationArgs: { page: params?.page || 1, limit: params?.limit || 10 },
-        status: params?.status || null
+        status: params?.status || null,
       },
     }),
 
@@ -459,6 +479,16 @@ export const aggregatorProfileApi = {
             companyName
             companyId
             kycStatus
+            documents {
+              panCard
+              aadhaarFront
+              aadhaarBack
+              gstCertificate
+              incorporationCertificate
+              bankStatement
+              cancelledCheque
+              addressProof
+            }
             updatedAt
           }
         }

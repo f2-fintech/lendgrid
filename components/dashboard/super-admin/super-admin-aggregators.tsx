@@ -24,7 +24,8 @@ import {
   Trash2,
   UserCheck,
   Percent,
-  Share2
+  Share2,
+  Filter
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,11 +37,21 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
 import { AddTeamMemberDialog } from './dialogs/AddTeamMemberDialog'
 import { AssignReferralSourceDialog } from './dialogs/AssignReferralSourceDialog'
 import { useAggregators, useSearchAggregators, useUpdateAggregatorProfile } from '@/hooks/use-aggregators'
+import { useAllOmsReferrals } from '@/hooks/use-oms-referrals'
 import { useUpdateUser } from '@/hooks/use-users'
 import { AggregatorProfile } from '@/lib'
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -62,6 +73,7 @@ const ApplicationCountCell = ({ companyId }: { companyId?: number }) => {
 export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
+  const [filterSourcing, setFilterSourcing] = useState<string>('ALL')
   const [selectedAggregator, setSelectedAggregator] = useState<AggregatorProfile | null>(null)
 
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
@@ -84,6 +96,24 @@ export function SuperAdminAggregators() {
   const updateAggHook = useUpdateAggregatorProfile()
   const { toast } = useToast()
 
+  // Load OMS referrals list for sourcing filter
+  const { data: omsData } = useAllOmsReferrals({ limit: 200 })
+  const omsStaffList = omsData?.items || []
+
+  const getSourcingLabel = (value: string) => {
+    if (value === 'ALL') return 'All'
+    if (value === 'UNASSIGNED') return 'Not Assigned'
+    if (value === 'DIRECT') return 'Direct'
+    if (value === 'AGGREGATOR') return 'Channel Partner'
+    if (value === 'OMS') return 'All OMS Staff'
+    if (value.startsWith('OMS:')) {
+      const empId = value.replace('OMS:', '')
+      const emp = omsStaffList.find((e: any) => e.omsEmployeeId === empId)
+      return emp?.employeeName || 'OMS Staff'
+    }
+    return value
+  }
+
   // Debounce the search term so we don't fire API on every keystroke
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -94,6 +124,11 @@ export function SuperAdminAggregators() {
   }, [searchTerm])
 
   const isSearching = debouncedSearch.trim().length > 0
+  const isSourcingFilterActive = filterSourcing !== 'ALL'
+
+  // If a sourcing filter is active, fetch up to 500 items so we can filter across the entire list accurately
+  const queryPage = isSourcingFilterActive ? 1 : page
+  const queryLimit = isSourcingFilterActive ? 500 : pageSize
 
   const {
     data: allData,
@@ -101,23 +136,66 @@ export function SuperAdminAggregators() {
     isError: isAllError,
     error: allError,
     refetch: refetchAll,
-  } = useAggregators({ page, limit: pageSize, status: filterStatus, enabled: !isSearching })
+  } = useAggregators({ page: queryPage, limit: queryLimit, status: filterStatus, enabled: !isSearching })
 
   const {
     data: searchData,
     isLoading: isSearchLoading,
     isError: isSearchError,
     error: searchError,
-  } = useSearchAggregators(debouncedSearch, { page, limit: pageSize, status: filterStatus, enabled: isSearching })
+    refetch: refetchSearch,
+  } = useSearchAggregators(debouncedSearch, { page: queryPage, limit: queryLimit, status: filterStatus, enabled: isSearching })
 
   const data = isSearching ? searchData : allData
   const isTableLoading = isSearching ? isSearchLoading : isAllLoading
   const isError = isSearching ? isSearchError : isAllError
   const error = isSearching ? searchError : allError
-  const refetch = refetchAll
+  const refetch = isSearching ? refetchSearch : refetchAll
 
-  const aggregators = data?.results || []
-  const total = data?.count || 0
+  // Filter aggregators by selected sourcing filter
+  const { aggregators, total } = useMemo(() => {
+    const rawResults: AggregatorProfile[] = data?.results || []
+
+    if (!isSourcingFilterActive) {
+      return {
+        aggregators: rawResults,
+        total: data?.count || 0,
+      }
+    }
+
+    const filtered = rawResults.filter((item) => {
+      const hasOms = item.sourcingType === 'OMS' || !!item.omsReferredBy || !!item.omsReferral
+      const hasPartner = item.sourcingType === 'AGGREGATOR' || !!item.referredByAggregatorId || !!item.referredByReferralCode
+      const isDirect = item.sourcingType === 'DIRECT'
+
+      if (filterSourcing === 'UNASSIGNED') {
+        return !hasOms && !hasPartner && !isDirect
+      }
+      if (filterSourcing === 'DIRECT') {
+        return isDirect
+      }
+      if (filterSourcing === 'AGGREGATOR') {
+        return hasPartner
+      }
+      if (filterSourcing === 'OMS') {
+        return hasOms
+      }
+      if (filterSourcing.startsWith('OMS:')) {
+        const empId = filterSourcing.replace('OMS:', '')
+        return item.omsReferredBy === empId || item.omsReferral?._id === empId
+      }
+      return true
+    })
+
+    const startIndex = (page - 1) * pageSize
+    const paged = filtered.slice(startIndex, startIndex + pageSize)
+
+    return {
+      aggregators: paged,
+      total: filtered.length,
+    }
+  }, [data, isSourcingFilterActive, filterSourcing, page, pageSize])
+
   const activeCount = data?.activeCount ?? 0
   const inactiveCount = data?.inactiveCount ?? 0
   const isInactiveView = filterStatus === 'INACTIVE'
@@ -133,7 +211,7 @@ export function SuperAdminAggregators() {
 
   useEffect(() => {
     setPage(1)
-  }, [filterStatus])
+  }, [filterStatus, filterSourcing])
 
   useEffect(() => {
     if (selectedAggregator) {
@@ -421,14 +499,72 @@ export function SuperAdminAggregators() {
                   Complete list of  {isInactiveView ? 'deleted aggregators' : 'active aggregators and their performance'}
                 </CardDescription>
               </div>
-              <div className="flex items-center space-x-4 w-full md:w-auto">
-                <div className="relative w-full">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
+                {/* Sourced By Filter */}
+                <div className="flex items-center gap-1.5">
+                  <Select
+                    value={filterSourcing}
+                    onValueChange={(val) => {
+                      setFilterSourcing(val)
+                      setPage(1)
+                    }}
+                  >
+                    <SelectTrigger className="w-full sm:w-[200px] lg:w-[230px] bg-background border-border text-foreground h-10 text-xs">
+                      <div className="flex items-center gap-2 truncate">
+                        <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+                        <span className="text-muted-foreground text-[11px]">Source:</span>
+                        <span className="font-medium truncate text-xs">
+                          {getSourcingLabel(filterSourcing)}
+                        </span>
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent className="max-h-80 bg-card border-border text-foreground">
+                      <SelectItem value="ALL">All Sources (Sabhi)</SelectItem>
+                      <SelectGroup>
+                        <SelectLabel className="text-[10px] text-muted-foreground uppercase tracking-wider">General</SelectLabel>
+                        <SelectItem value="UNASSIGNED">⚠️ Not Assigned (+ Assign)</SelectItem>
+                        <SelectItem value="DIRECT">Direct Signup</SelectItem>
+                        <SelectItem value="AGGREGATOR">Channel Partner Referral</SelectItem>
+                        <SelectItem value="OMS">All Sales / OMS Staff</SelectItem>
+                      </SelectGroup>
+                      {omsStaffList.length > 0 && (
+                        <SelectGroup>
+                          <SelectLabel className="text-[10px] text-muted-foreground uppercase tracking-wider">By OMS Staff Member</SelectLabel>
+                          {omsStaffList.map((emp) => (
+                            <SelectItem key={emp._id} value={`OMS:${emp.omsEmployeeId}`}>
+                              👤 {emp.employeeName} {emp.employeeCode ? `(${emp.employeeCode})` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectGroup>
+                      )}
+                    </SelectContent>
+                  </Select>
+
+                  {filterSourcing !== 'ALL' && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilterSourcing('ALL')
+                        setPage(1)
+                      }}
+                      className="h-10 px-2 text-xs text-muted-foreground hover:text-foreground"
+                      title="Clear source filter"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </Button>
+                  )}
+                </div>
+
+                {/* Search Input */}
+                <div className="relative w-full sm:w-[240px] lg:w-[280px]">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                   <Input
                     placeholder="Search aggregators..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-background border-border text-foreground w-full md:w-[360px] lg:w-[400px]"
+                    className="pl-10 bg-background border-border text-foreground w-full h-10 text-xs"
                   />
                 </div>
               </div>
@@ -719,6 +855,36 @@ export function SuperAdminAggregators() {
                 <p className="text-muted-foreground">
                   All aggregators are currently active
                 </p>
+              </div>
+            )}
+
+            {!isTableLoading && filterStatus !== 'INACTIVE' && aggregators.length === 0 && (
+              <div className="text-center py-12">
+                <AlertCircle className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-60" />
+                <h3 className="text-base font-semibold text-foreground mb-1">
+                  No Aggregators Found
+                </h3>
+                <p className="text-xs text-muted-foreground mb-3">
+                  {filterSourcing !== 'ALL'
+                    ? `No aggregators found for source "${getSourcingLabel(filterSourcing)}".`
+                    : isSearching
+                    ? `No aggregators matching "${debouncedSearch}".`
+                    : 'No aggregators available.'}
+                </p>
+                {(filterSourcing !== 'ALL' || isSearching) && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs"
+                    onClick={() => {
+                      setFilterSourcing('ALL')
+                      setSearchTerm('')
+                      setPage(1)
+                    }}
+                  >
+                    Clear Filters
+                  </Button>
+                )}
               </div>
             )}
 
@@ -1154,7 +1320,10 @@ export function SuperAdminAggregators() {
         onOpenChange={setIsAssignReferralDialogOpen}
         aggregator={selectedAggregatorForReferral}
         onSuccess={() => {
-          refetch()
+          refetchAll()
+          if (isSearching) {
+            refetchSearch()
+          }
         }}
       />
 

@@ -481,6 +481,7 @@ export function SuperAdminSettings() {
     mode: "onBlur",
     defaultValues: {
       profile: {
+        userId: "",
         firstName: "",
         lastName: "",
         email: "",
@@ -492,7 +493,7 @@ export function SuperAdminSettings() {
     },
   });
 
-  const { handleSubmit, trigger, reset, watch } = methods;
+  const { handleSubmit, trigger, reset, watch, register } = methods;
   const createdAt = watch("profile.createdAt");
 
   useEffect(() => {
@@ -516,14 +517,36 @@ export function SuperAdminSettings() {
   const onSave = handleSubmit(async (values) => {
     setIsSaving(true);
     try {
-      await updateUserHook.mutateAsync({
-        id: values.profile.userId!,
-        username: `${values.profile.firstName} ${values.profile.lastName}`.trim(),
-        email: values.profile.email,
-        contact: values.profile.contact,
-        photoUrl: values.profile.photoUrl,
-        status: values.profile.status,
-      });
+      const targetUserId =
+        values.profile?.userId ||
+        userData?._id ||
+        (userData as any)?.id;
+
+      if (!targetUserId) {
+        toast({
+          title: "Error",
+          description: "User ID not found. Please refresh and try again.",
+          variant: "destructive",
+        });
+        setIsSaving(false);
+        return;
+      }
+
+      const fullName = `${values.profile?.firstName || ""} ${values.profile?.lastName || ""}`.trim();
+      const userPayload: any = {
+        id: targetUserId,
+        username: fullName || undefined,
+        email: values.profile?.email || undefined,
+        contact: values.profile?.contact || undefined,
+        photoUrl: values.profile?.photoUrl || undefined,
+      };
+
+      const validStatus = (values.profile?.status || userData?.status)?.trim().toUpperCase();
+      if (validStatus && ["ACTIVE", "INACTIVE", "PENDING_APPROVAL", "SUSPENDED"].includes(validStatus)) {
+        userPayload.status = validStatus;
+      }
+
+      await updateUserHook.mutateAsync(userPayload);
       toast({ title: "Profile updated", description: "Changes saved successfully." });
     } catch (error: any) {
       toast({
@@ -546,6 +569,7 @@ export function SuperAdminSettings() {
 
   return (
     <FormProvider {...methods}>
+      <input type="hidden" {...register("profile.userId")} />
       <div className="min-h-screen bg-background p-4 sm:p-8">
         {/* Page header */}
         <motion.div

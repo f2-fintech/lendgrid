@@ -54,16 +54,20 @@ export function AssignReferralSourceDialog({
   // Pre-fill existing sourcing state when aggregator changes
   useEffect(() => {
     if (aggregator) {
-      if (aggregator.omsReferredBy) {
+      if (aggregator.omsReferredBy || aggregator.sourcingType === "OMS") {
         setSourceType("OMS");
-        setSelectedOmsId(aggregator.omsReferredBy);
+        setSelectedOmsId(aggregator.omsReferredBy || "");
         setSelectedPartnerId("");
-      } else if (aggregator.referredByAggregatorId) {
+      } else if (aggregator.referredByAggregatorId || aggregator.sourcingType === "AGGREGATOR") {
         setSourceType("AGGREGATOR");
-        setSelectedPartnerId(aggregator.referredByAggregatorId);
+        setSelectedPartnerId(aggregator.referredByAggregatorId || "");
         setSelectedOmsId("");
-      } else {
+      } else if (aggregator.sourcingType === "DIRECT") {
         setSourceType("DIRECT");
+        setSelectedOmsId("");
+        setSelectedPartnerId("");
+      } else {
+        setSourceType("OMS");
         setSelectedOmsId("");
         setSelectedPartnerId("");
       }
@@ -88,15 +92,19 @@ export function AssignReferralSourceDialog({
   const handleSave = async () => {
     if (!aggregator?._id) return;
 
-    await assignMutation.mutateAsync({
-      aggregatorProfileId: aggregator._id,
-      sourceType,
-      omsEmployeeId: sourceType === "OMS" ? selectedOmsId : undefined,
-      referredByAggregatorId: sourceType === "AGGREGATOR" ? selectedPartnerId : undefined,
-    });
+    try {
+      await assignMutation.mutateAsync({
+        aggregatorProfileId: aggregator._id,
+        sourceType,
+        omsEmployeeId: sourceType === "OMS" ? selectedOmsId : undefined,
+        referredByAggregatorId: sourceType === "AGGREGATOR" ? selectedPartnerId : undefined,
+      });
 
-    onOpenChange(false);
-    onSuccess?.();
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (error) {
+      console.error("Failed to assign referral source:", error);
+    }
   };
 
   return (

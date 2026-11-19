@@ -211,6 +211,11 @@ const navigationConfig = {
           url: navigationPaths.aggregatorMember.applications,
           icon: FileText,
         },
+        {
+          title: "Profile Settings",
+          url: navigationPaths.aggregator.settings,
+          icon: Settings,
+        },
       ],
     },
   ],
