@@ -85,10 +85,10 @@ export function SignupForm() {
   const parentCompanyName = searchParams.get('c_name') || '';
 
   // Differentiate between 3 flows:
-  // 1. OMS staff referral (OMS- prefix) -> Independent Channel Partner (AGGREGATOR_ADMIN)
+  // 1. OMS / HRMS staff referral (OMS-, F2-, F3-, INT-, F0xx prefix) -> Independent Channel Partner (AGGREGATOR_ADMIN)
   // 2. Team member invite (type=member or c_name present without partner type) -> AGGREGATOR_MEMBER
   // 3. Partner referral (AG- code and type!=member) -> Independent Channel Partner (AGGREGATOR_ADMIN)
-  const isOmsReferral = referralCode.toUpperCase().startsWith('OMS-');
+  const isOmsReferral = /^(OMS-|F2-|F3-|INT-|F0\d+)/i.test(referralCode.trim());
   const isMemberInvite = !isOmsReferral && (inviteType === 'member' || (Boolean(parentCompanyName) && inviteType !== 'partner'));
   const isPartnerReferral = Boolean(referralCode) && !isMemberInvite;
 
@@ -595,11 +595,11 @@ export function SignupForm() {
                     id="referralCode"
                     {...register('referralCode')}
                     className="h-11 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground font-mono focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 uppercase"
-                    placeholder="e.g. AG-XXXXXX or OMS-XXXXXX"
+                    placeholder="e.g. AG-XXXXXX, OMS-XXXXXX or F2-369-XXX"
                     disabled={isLoading}
                   />
                   <p className="text-xs text-muted-foreground">
-                    If you have a referral code from a Channel Partner or OMS Staff, enter it here.
+                    If you have a referral code from a Channel Partner, OMS Staff, or Employee Code, enter it here.
                   </p>
                 </div>
               )}

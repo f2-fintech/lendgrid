@@ -40,15 +40,14 @@ export function AssignReferralSourceDialog({
 
   const assignMutation = useAssignAggregatorReferral();
 
-  // Load OMS referrals list
+  // Load OMS referrals list (all staff members)
   const { data: omsData, isLoading: isOmsLoading } = useAllOmsReferrals({
-    limit: 200,
-    searchTerm: omsSearch,
+    limit: 500,
   });
 
   // Load active channel partners list (for partner-to-partner sourcing)
   const { data: aggregatorsData, isLoading: isAggLoading } = useAggregators({
-    limit: 100,
+    limit: 500,
   });
 
   // Pre-fill existing sourcing state when aggregator changes
@@ -75,6 +74,27 @@ export function AssignReferralSourceDialog({
   }, [aggregator, open]);
 
   const omsStaffList = omsData?.items || [];
+  const filteredOmsStaff = omsStaffList.filter((emp) => {
+    if (!omsSearch.trim()) return true;
+    const term = omsSearch.toLowerCase().trim();
+    return (
+      emp.employeeName?.toLowerCase().includes(term) ||
+      emp.employeeCode?.toLowerCase().includes(term) ||
+      emp.referralCode?.toLowerCase().includes(term) ||
+      emp.designation?.toLowerCase().includes(term)
+    );
+  });
+
+  const selectedEmp = omsStaffList.find(
+    (e) =>
+      e.omsEmployeeId === selectedOmsId ||
+      e._id === selectedOmsId ||
+      (e.employeeCode && e.employeeCode === selectedOmsId)
+  );
+  const selectedEmpDisplayName = selectedEmp
+    ? `${selectedEmp.employeeName}${selectedEmp.employeeCode ? ` (${selectedEmp.employeeCode})` : ` (${selectedEmp.referralCode})`}`
+    : selectedOmsId;
+
   const candidatePartners = (aggregatorsData?.results || []).filter(
     (p) => p._id !== aggregator?._id
   );
@@ -179,10 +199,15 @@ export function AssignReferralSourceDialog({
               <div className="flex items-center justify-between">
                 <Label className="text-xs font-semibold text-foreground">
                   Select Sales / OMS Team Member
+                  {omsStaffList.length > 0 && (
+                    <span className="text-[11px] text-muted-foreground font-normal ml-1.5">
+                      ({filteredOmsStaff.length} {filteredOmsStaff.length === 1 ? 'user' : 'users'})
+                    </span>
+                  )}
                 </Label>
                 {selectedOmsId && (
-                  <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px]">
-                    Selected: {selectedOmsId}
+                  <Badge className="bg-purple-500/20 text-purple-400 border border-purple-500/30 text-[10px] max-w-[220px] truncate">
+                    Selected: {selectedEmpDisplayName}
                   </Badge>
                 )}
               </div>
@@ -190,27 +215,30 @@ export function AssignReferralSourceDialog({
               <div className="relative">
                 <Search className="w-4 h-4 text-muted-foreground absolute left-3 top-1/2 -translate-y-1/2" />
                 <Input
-                  placeholder="Search by name, employee code or OMS code..."
+                  placeholder="Search by name, employee code (e.g. F2-369-...) or OMS code..."
                   value={omsSearch}
                   onChange={(e) => setOmsSearch(e.target.value)}
                   className="pl-9 h-10 text-xs bg-background border-border text-foreground rounded-lg"
                 />
               </div>
 
-              <div className="max-h-48 overflow-y-auto space-y-1.5 pr-1">
+              <div className="max-h-60 overflow-y-auto space-y-1.5 pr-1">
                 {isOmsLoading ? (
                   <div className="py-6 flex items-center justify-center text-xs text-muted-foreground">
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading OMS Staff...
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" /> Loading all OMS users...
                   </div>
-                ) : omsStaffList.length === 0 ? (
-                  <p className="text-xs text-muted-foreground py-4 text-center">No OMS staff found</p>
+                ) : filteredOmsStaff.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-4 text-center">No OMS users found</p>
                 ) : (
-                  omsStaffList.map((emp) => {
-                    const isSelected = selectedOmsId === emp.omsEmployeeId;
+                  filteredOmsStaff.map((emp) => {
+                    const isSelected =
+                      selectedOmsId === emp.omsEmployeeId ||
+                      selectedOmsId === emp._id ||
+                      (emp.employeeCode && selectedOmsId === emp.employeeCode);
                     return (
                       <div
                         key={emp._id}
-                        onClick={() => setSelectedOmsId(emp.omsEmployeeId)}
+                        onClick={() => setSelectedOmsId(emp.omsEmployeeId || emp._id)}
                         className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center justify-between transition-all ${
                           isSelected
                             ? "bg-purple-500/15 border-purple-500 text-purple-400 font-medium"
@@ -225,7 +253,7 @@ export function AssignReferralSourceDialog({
                             {emp.designation ? ` • ${emp.designation}` : ""}
                           </p>
                         </div>
-                        {isSelected && <Check className="w-4 h-4 text-purple-400" />}
+                        {isSelected && <Check className="w-4 h-4 text-purple-400 shrink-0" />}
                       </div>
                     );
                   })
