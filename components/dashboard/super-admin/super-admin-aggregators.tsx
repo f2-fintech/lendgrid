@@ -25,7 +25,9 @@ import {
   UserCheck,
   Percent,
   Share2,
-  Filter
+  Filter,
+  Check,
+  ChevronsUpDown
 } from 'lucide-react'
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,15 +39,16 @@ import { Label } from '@/components/ui/label'
 import { useToast } from '@/hooks/use-toast'
 import { TablePagination } from "@/components/ui/pagination"
 import { CardSkeleton, TableSkeleton } from "@/components/ui/loading-skeleton"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectLabel,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from "@/components/ui/command"
 
 import { AddAggregatorDialog } from './dialogs/AddAggregatorDialog'
 import { AddTeamMemberDialog } from './dialogs/AddTeamMemberDialog'
@@ -74,6 +77,7 @@ export function SuperAdminAggregators() {
   const [searchTerm, setSearchTerm] = useState('')
   const [filterStatus, setFilterStatus] = useState('')
   const [filterSourcing, setFilterSourcing] = useState<string>('ALL')
+  const [isSourceOpen, setIsSourceOpen] = useState(false)
   const [selectedAggregator, setSelectedAggregator] = useState<AggregatorProfile | null>(null)
 
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
@@ -97,7 +101,7 @@ export function SuperAdminAggregators() {
   const { toast } = useToast()
 
   // Load OMS referrals list for sourcing filter
-  const { data: omsData } = useAllOmsReferrals({ limit: 200 })
+  const { data: omsData } = useAllOmsReferrals({ limit: 500 })
   const omsStaffList = omsData?.items || []
 
   const getSourcingLabel = (value: string) => {
@@ -500,45 +504,126 @@ export function SuperAdminAggregators() {
                 </CardDescription>
               </div>
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full md:w-auto">
-                {/* Sourced By Filter */}
+                {/* Sourced By Filter (Searchable Autocomplete Combobox) */}
                 <div className="flex items-center gap-1.5">
-                  <Select
-                    value={filterSourcing}
-                    onValueChange={(val) => {
-                      setFilterSourcing(val)
-                      setPage(1)
-                    }}
-                  >
-                    <SelectTrigger className="w-full sm:w-[200px] lg:w-[230px] bg-background border-border text-foreground h-10 text-xs">
-                      <div className="flex items-center gap-2 truncate">
-                        <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
-                        <span className="text-muted-foreground text-[11px]">Source:</span>
-                        <span className="font-medium truncate text-xs">
-                          {getSourcingLabel(filterSourcing)}
-                        </span>
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="max-h-80 bg-card border-border text-foreground">
-                      <SelectItem value="ALL">All Sources (Sabhi)</SelectItem>
-                      <SelectGroup>
-                        <SelectLabel className="text-[10px] text-muted-foreground uppercase tracking-wider">General</SelectLabel>
-                        <SelectItem value="UNASSIGNED">⚠️ Not Assigned (+ Assign)</SelectItem>
-                        <SelectItem value="DIRECT">Direct Signup</SelectItem>
-                        <SelectItem value="AGGREGATOR">Channel Partner Referral</SelectItem>
-                        <SelectItem value="OMS">All Sales / OMS Staff</SelectItem>
-                      </SelectGroup>
-                      {omsStaffList.length > 0 && (
-                        <SelectGroup>
-                          <SelectLabel className="text-[10px] text-muted-foreground uppercase tracking-wider">By OMS Staff Member</SelectLabel>
-                          {omsStaffList.map((emp) => (
-                            <SelectItem key={emp._id} value={`OMS:${emp.omsEmployeeId}`}>
-                              👤 {emp.employeeName} {emp.employeeCode ? `(${emp.employeeCode})` : ''}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      )}
-                    </SelectContent>
-                  </Select>
+                  <Popover open={isSourceOpen} onOpenChange={setIsSourceOpen}>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        role="combobox"
+                        aria-expanded={isSourceOpen}
+                        className="w-full sm:w-[220px] lg:w-[250px] justify-between bg-background border-border text-foreground hover:bg-background/90 h-10 px-3 text-xs font-normal"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <Filter className="w-3.5 h-3.5 text-primary shrink-0" />
+                          <span className="text-muted-foreground text-[11px]">Source:</span>
+                          <span className="font-medium truncate text-xs">
+                            {getSourcingLabel(filterSourcing)}
+                          </span>
+                        </div>
+                        <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent
+                      align="end"
+                      className="w-[300px] sm:w-[320px] p-0 bg-card border-border text-foreground"
+                    >
+                      <Command className="bg-card text-foreground">
+                        <CommandInput
+                          placeholder="Search source, staff name or code..."
+                          className="h-9 text-xs"
+                        />
+                        <CommandList className="max-h-80">
+                          <CommandEmpty className="py-4 text-center text-xs text-muted-foreground">
+                            No matching source found.
+                          </CommandEmpty>
+                          <CommandGroup>
+                            <CommandItem
+                              value="ALL All Sources Sabhi"
+                              onSelect={() => {
+                                setFilterSourcing('ALL')
+                                setPage(1)
+                                setIsSourceOpen(false)
+                              }}
+                              className="text-xs cursor-pointer"
+                            >
+                              <Check
+                                className={`mr-2 h-3.5 w-3.5 ${
+                                  filterSourcing === 'ALL' ? 'opacity-100 text-primary' : 'opacity-0'
+                                }`}
+                              />
+                              All Sources (Sabhi)
+                            </CommandItem>
+                          </CommandGroup>
+                          <CommandSeparator />
+                          <CommandGroup heading="General">
+                            {[
+                              { value: 'UNASSIGNED', keywords: 'unassigned not assigned', label: '⚠️ Not Assigned (+ Assign)' },
+                              { value: 'DIRECT', keywords: 'direct signup', label: 'Direct Signup' },
+                              { value: 'AGGREGATOR', keywords: 'aggregator channel partner referral dsa', label: 'Channel Partner Referral' },
+                              { value: 'OMS', keywords: 'oms all sales staff', label: 'All Sales / OMS Staff' },
+                            ].map((opt) => (
+                              <CommandItem
+                                key={opt.value}
+                                value={`${opt.value} ${opt.keywords} ${opt.label}`}
+                                onSelect={() => {
+                                  setFilterSourcing(opt.value)
+                                  setPage(1)
+                                  setIsSourceOpen(false)
+                                }}
+                                className="text-xs cursor-pointer"
+                              >
+                                <Check
+                                  className={`mr-2 h-3.5 w-3.5 ${
+                                    filterSourcing === opt.value ? 'opacity-100 text-primary' : 'opacity-0'
+                                  }`}
+                                />
+                                {opt.label}
+                              </CommandItem>
+                            ))}
+                          </CommandGroup>
+                          {omsStaffList.length > 0 && (
+                            <>
+                              <CommandSeparator />
+                              <CommandGroup heading={`By OMS Staff Member (${omsStaffList.length})`}>
+                                {omsStaffList.map((emp) => {
+                                  const itemVal = `OMS:${emp.omsEmployeeId}`
+                                  const isSelected = filterSourcing === itemVal
+                                  return (
+                                    <CommandItem
+                                      key={emp._id}
+                                      value={`${emp.employeeName} ${emp.employeeCode || ''} ${emp.referralCode || ''} ${emp.omsEmployeeId}`}
+                                      onSelect={() => {
+                                        setFilterSourcing(itemVal)
+                                        setPage(1)
+                                        setIsSourceOpen(false)
+                                      }}
+                                      className="text-xs cursor-pointer flex items-center justify-between"
+                                    >
+                                      <div className="flex items-center min-w-0 flex-1">
+                                        <Check
+                                          className={`mr-2 h-3.5 w-3.5 shrink-0 ${
+                                            isSelected ? 'opacity-100 text-primary' : 'opacity-0'
+                                          }`}
+                                        />
+                                        <span className="truncate">👤 {emp.employeeName}</span>
+                                      </div>
+                                      {(emp.employeeCode || emp.referralCode) && (
+                                        <span className="ml-2 text-[10px] font-mono text-muted-foreground shrink-0">
+                                          {emp.employeeCode || emp.referralCode}
+                                        </span>
+                                      )}
+                                    </CommandItem>
+                                  )
+                                })}
+                              </CommandGroup>
+                            </>
+                          )}
+                        </CommandList>
+                      </Command>
+                    </PopoverContent>
+                  </Popover>
 
                   {filterSourcing !== 'ALL' && (
                     <Button
