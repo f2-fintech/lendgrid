@@ -7,6 +7,7 @@ import './globals.css'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ThemeProvider } from '@/components/theme-provider'
+import { AssistantWidget } from '@/components/assistant/assistant-widget'
 
 export const metadata: Metadata = {
   title: 'LendGrid SaaS App',
@@ -45,6 +46,7 @@ html {
           <TooltipProvider delayDuration={200}>
             <QueryProvider>
               {children}
+              <AssistantWidget />
               <Toaster />
             </QueryProvider>
           </TooltipProvider>

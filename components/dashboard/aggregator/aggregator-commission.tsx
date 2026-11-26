@@ -1,9 +1,10 @@
 "use client"
 
 import { useEffect, useRef, useState, useMemo } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { useTheme } from 'next-themes'
 import { motion } from 'framer-motion'
-import { TrendingUp, Calendar, Download, Eye, FileCheck, Search, Clock, CheckCircle, AlertCircle, XCircle, ClipboardList, Award, Lock, Unlock, Percent, Shield, Medal, Trophy, Crown, Gem } from 'lucide-react'
+import { TrendingUp, Calendar, Download, Eye, FileCheck, Search, Clock, CheckCircle, AlertCircle, XCircle, ClipboardList, Award, Lock, Unlock, Percent, Shield, Medal, Trophy, Crown, Gem, Sparkles } from 'lucide-react'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts'
 import * as XLSX from 'xlsx'
 import jsPDF from 'jspdf'
@@ -413,6 +414,30 @@ export function AggregatorCommission() {
   const [exporting, setExporting] = useState(false)
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
+
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+
+  const isAssistantFiltered = searchParams.get('assistant_filtered') === 'true'
+  const urlStatus = searchParams.get('status') as CommissionStatus | null
+
+  useEffect(() => {
+    if (urlStatus && urlStatus !== filterStatus) {
+      setFilterStatus(urlStatus)
+      setActiveTab('history')
+    }
+  }, [urlStatus, filterStatus])
+
+  const handleResetAssistantFilters = () => {
+    setFilterStatus('')
+    const params = new URLSearchParams(window.location.search)
+    params.delete('assistant_filtered')
+    params.delete('status')
+    params.delete('page')
+    const q = params.toString()
+    router.push(q ? `${pathname}?${q}` : pathname)
+  }
 
   const chartRef = useRef<HTMLDivElement | null>(null)
   const tableTopRef = useRef<HTMLDivElement | null>(null)
@@ -862,6 +887,22 @@ export function AggregatorCommission() {
 
   return (
     <div className="space-y-8">
+      {isAssistantFiltered && (
+        <div className="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-sm text-blue-400 animate-in fade-in duration-200">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-blue-400 animate-pulse flex-shrink-0" />
+            <span>Filtered by the assistant: status <strong>{urlStatus || 'Custom'}</strong></span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleResetAssistantFilters}
+            className="text-xs hover:bg-blue-500/20 text-blue-300 h-7 px-2.5 rounded-lg flex-shrink-0"
+          >
+            Reset
+          </Button>
+        </div>
+      )}
       {/* Header */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

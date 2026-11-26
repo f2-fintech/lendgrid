@@ -727,7 +727,7 @@ export function LandingPage() {
               <CardContent className="p-6 flex items-start space-x-4">
                 <Building2 className="w-6 h-6 text-accent mt-1" />
                 <div className="text-left">
-                  <h4 className="font-semibold text-foreground">50+ lenders</h4>
+                  <h4 className="font-semibold text-foreground">40+ lenders</h4>
                   <p className="text-foreground text-sm">Access a large network of banks, NBFCs and fintech lenders</p>
                 </div>
               </CardContent>

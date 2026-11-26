@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { motion } from 'framer-motion'
 import {
     Search, ClipboardList, Eye, Trash2, Clock, CheckCircle, AlertCircle, Phone, Mail,
@@ -22,7 +23,8 @@ import {
     TrendingUp,
     MapPin,
     RotateCcw,
-    Copy
+    Copy,
+    Sparkles
 } from 'lucide-react'
 
 import { CloneApplicationDialog } from './CloneApplicationDialog'
@@ -739,6 +741,34 @@ export function TicketsTab({
     const [dateRange, setDateRange] = useState<DateRange | undefined>()
     const [isExporting, setIsExporting] = useState(false)
 
+    const searchParams = useSearchParams()
+    const router = useRouter()
+    const pathname = usePathname()
+
+    const isAssistantFiltered = searchParams.get('assistant_filtered') === 'true'
+    const urlStatus = searchParams.get('status')
+    const urlSearch = searchParams.get('search')
+
+    useEffect(() => {
+        if (urlStatus && urlStatus !== filterStatus) {
+            setFilterStatus(urlStatus)
+        }
+        if (urlSearch && urlSearch !== searchTerm) {
+            setSearchTerm(urlSearch)
+        }
+    }, [urlStatus, urlSearch, filterStatus, searchTerm])
+
+    const handleResetAssistantFilters = () => {
+        setFilterStatus('')
+        setSearchTerm('')
+        const params = new URLSearchParams(window.location.search)
+        params.delete('assistant_filtered')
+        params.delete('status')
+        params.delete('search')
+        const q = params.toString()
+        router.push(q ? `${pathname}?${q}` : pathname)
+    }
+
     const [selectedApplication, setSelectedApplication] = useState<any>(null)
     const [cloneTarget, setCloneTarget] = useState<any | null>(null)
     const [isCloneDialogOpen, setIsCloneDialogOpen] = useState(false)
@@ -929,8 +959,8 @@ export function TicketsTab({
             const pathKey = `/get-all-tickets${((decoded?.source === 'oms' && decoded?.role === 'sales') || decoded?.role === 'aggregator_member') && decoded?.id && isNumericId ? `/${decoded.id}` : ''}`;
             const finalEndpoint = `${pathKey}?${params.toString()}`;
 
-            const response = await apiFetch(finalEndpoint);
-            const exportData = response.data?.results;
+            const response: any = await apiFetch(finalEndpoint);
+            const exportData = response?.data?.results;
 
             if (!exportData || exportData.length === 0) {
                 toast({
@@ -1102,6 +1132,22 @@ export function TicketsTab({
 
     return (
         <div className="space-y-6 w-full min-w-0 max-w-full">
+            {isAssistantFiltered && (
+                <div className="flex items-center justify-between p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-sm text-blue-400 mb-2 animate-in fade-in duration-200">
+                    <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-400 animate-pulse flex-shrink-0" />
+                        <span>Filtered by the assistant{urlStatus ? `: status "${pretty(urlStatus)}"` : ''}{urlSearch ? ` | search "${urlSearch}"` : ''}</span>
+                    </div>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={handleResetAssistantFilters}
+                        className="text-xs hover:bg-blue-500/20 text-blue-300 h-7 px-2.5 rounded-lg flex-shrink-0"
+                    >
+                        Reset
+                    </Button>
+                </div>
+            )}
             <div className="flex flex-col gap-5 w-full min-w-0" ref={tableTopRef}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card/80 p-4 border border-border/70 rounded-xl shadow-sm">
                     <div className="flex items-center gap-3">
