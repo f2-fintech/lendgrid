@@ -2,11 +2,22 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { ChatMessage, SseEvent } from '../lib/assistant-types';
+import { ChatMessage, SseEvent, SuggestionChip } from '../lib/assistant-types';
 import { validateAndExecuteAction, syncAllowlistedRoutes } from '../lib/assistant-action-handler';
+import { getAuthToken } from '../lib/http-client';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:4000';
 const VISITOR_SESSION_KEY = 'lendgrid_assistant_visitor_session';
+
+function toStaticChips(labels: string[]): SuggestionChip[] {
+  return labels.map((label, idx) => ({
+    id: `static_${idx}`,
+    label,
+    action: 'message',
+    target: label,
+    contextual: false,
+  }));
+}
 
 function generateOpaqueSessionId(): string {
   if (typeof crypto !== 'undefined' && crypto.randomUUID) {
@@ -23,7 +34,7 @@ export function useAssistantChat(currentUser?: any) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [statusText, setStatusText] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
-  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [suggestions, setSuggestions] = useState<SuggestionChip[]>([]);
   const [sessionId, setSessionId] = useState<string>('');
   const [lastUserId, setLastUserId] = useState<string | null>(null);
 
@@ -68,44 +79,54 @@ export function useAssistantChat(currentUser?: any) {
     }
   }, [currentUser, lastUserId]);
 
-  // Set default suggestions based on role / mode
+  // Set default suggestions based on role / mode (never overwrite while streaming)
   useEffect(() => {
-    if (!currentUser && suggestions.length === 0) {
-      setSuggestions([
-        'How do I become a DSA partner?',
-        'What commission rates are offered?',
-        'Which lenders are available?',
-        'Talk to our partnership team',
-      ]);
-    } else if (currentUser && suggestions.length === 0) {
+    if (isStreaming || suggestions.length > 0) return;
+
+    if (!currentUser) {
+      setSuggestions(
+        toStaticChips([
+          'How do I become a DSA partner?',
+          'What commission rates are offered?',
+          'Which lenders are available?',
+          'Talk to our partnership team',
+        ]),
+      );
+    } else {
       const normalizedRole = String(currentUser?.role || '')
         .toLowerCase()
         .replace(/\s+/g, '_');
 
       if (normalizedRole === 'aggregator_admin' || normalizedRole === 'super_admin') {
-        setSuggestions([
-          'Show my dashboard metrics',
-          'My ticket summary',
-          'What is my pending commission?',
-          'Filter approved applications',
-          'Check my profile completion',
-        ]);
+        setSuggestions(
+          toStaticChips([
+            'Show my dashboard metrics',
+            'My ticket summary',
+            'What is my pending commission?',
+            'Filter approved applications',
+            'Check my profile completion',
+          ]),
+        );
       } else if (normalizedRole === 'aggregator_member') {
-        setSuggestions([
-          'My submitted applications',
-          'My ticket summary',
-          'How do I complete loan files?',
-          'Lender partner products',
-        ]);
+        setSuggestions(
+          toStaticChips([
+            'My submitted applications',
+            'My ticket summary',
+            'How do I complete loan files?',
+            'Lender partner products',
+          ]),
+        );
       } else {
-        setSuggestions([
-          'Show my dashboard metrics',
-          'My ticket summary',
-          'Which lenders are available?',
-        ]);
+        setSuggestions(
+          toStaticChips([
+            'Show my dashboard metrics',
+            'My ticket summary',
+            'Which lenders are available?',
+          ]),
+        );
       }
     }
-  }, [currentUser, suggestions.length]);
+  }, [currentUser, isStreaming, suggestions.length]);
 
   const abortStream = useCallback(() => {
     if (abortControllerRef.current) {
@@ -159,12 +180,13 @@ export function useAssistantChat(currentUser?: any) {
           } catch {}
         }
 
-        // Auth is handled purely via browser HttpOnly cookie credentials
-        // No JWT tokens exposed to JavaScript
+        const authToken = getAuthToken();
+
         const response = await fetch(`${API_BASE_URL}/api/v1/assistant/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
             ...(visitorToken ? { 'x-assistant-visitor-token': visitorToken } : {}),
           },
           credentials: 'include',
@@ -264,8 +286,10 @@ export function useAssistantChat(currentUser?: any) {
                   break;
 
                 case 'suggestions':
-                  if (event.items && Array.isArray(event.items)) {
-                    setSuggestions(event.items);
+                  if (Array.isArray(event.suggestedReplies) && event.suggestedReplies.length > 0) {
+                    setSuggestions(event.suggestedReplies);
+                  } else if (Array.isArray(event.items)) {
+                    setSuggestions(toStaticChips(event.items));
                   }
                   break;
 
@@ -337,9 +361,13 @@ export function useAssistantChat(currentUser?: any) {
   const submitFeedback = useCallback(
     async (messageId: string, rating: 'positive' | 'negative', comment?: string) => {
       try {
+        const authToken = getAuthToken();
         await fetch(`${API_BASE_URL}/api/v1/assistant/feedback`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+          },
           credentials: 'include',
           body: JSON.stringify({
             sessionId,
@@ -371,9 +399,11 @@ export function useAssistantChat(currentUser?: any) {
           } catch {}
         }
 
+        const authToken = getAuthToken();
         await fetch(`${API_BASE_URL}/api/v1/assistant/session/${sessionId}`, {
           method: 'DELETE',
           headers: {
+            ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
             ...(visitorToken ? { 'x-assistant-visitor-token': visitorToken } : {}),
           },
           credentials: 'include',
@@ -393,6 +423,27 @@ export function useAssistantChat(currentUser?: any) {
     setSessionId(nextSess);
   }, [abortStream, sessionId, currentUser]);
 
+  const executeSuggestion = useCallback(
+    (chip: SuggestionChip) => {
+      if (isStreaming || !chip) return;
+      if (chip.action === 'navigate') {
+        const res = validateAndExecuteAction(
+          'navigate',
+          { route: chip.target },
+          currentUser?.role || 'visitor',
+          router,
+          pathname,
+        );
+        if (!res.executed) {
+          sendMessage(chip.label);
+        }
+        return;
+      }
+      sendMessage(chip.target || chip.label);
+    },
+    [isStreaming, currentUser, router, pathname, sendMessage],
+  );
+
   return {
     isOpen,
     setIsOpen,
@@ -401,6 +452,7 @@ export function useAssistantChat(currentUser?: any) {
     isStreaming,
     suggestions,
     sendMessage,
+    executeSuggestion,
     abortStream,
     clearSession,
     submitFeedback,

@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation';
 
 import { gqlFetch } from '@/lib/http-client';
+import { deleteCookie } from '@/lib/utils';
 
 export function useLogout() {
 	const router = useRouter();
@@ -12,8 +13,7 @@ export function useLogout() {
 			});
 		} catch { }
 
-		document.cookie =
-			'lendgrid_cookie=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax';
+		deleteCookie('lendgrid_cookie');
 
 		localStorage.clear();
 		router.replace('/login');

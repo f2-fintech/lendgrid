@@ -20,6 +20,8 @@ import {
   Volume2,
   VolumeX,
   ShieldCheck,
+  ArrowUpRight,
+  CornerDownRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +29,8 @@ import { MarkdownMessage } from './markdown-message';
 import { TicketCard } from './ticket-card';
 import { InfoCards } from './info-cards';
 import { useAssistantChat } from '@/hooks/use-assistant-chat';
-import { decodeJwt } from '@/lib/utils';
+import { SuggestionChip } from '@/lib/assistant-types';
+import { decodeJwt, deleteCookie } from '@/lib/utils';
 import { usersApi } from '@/lib/users-api';
 
 const HIDDEN_ROUTES = [
@@ -137,6 +140,7 @@ export function AssistantWidget() {
           setUser(profileResp?.profile || null);
         }
       } catch {
+        deleteCookie('lendgrid_cookie');
         if (active) setUser(null);
       }
     }
@@ -167,7 +171,7 @@ export function AssistantWidget() {
           setIsEnabled(data.assistantEnabled);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       active = false;
     };
@@ -181,6 +185,7 @@ export function AssistantWidget() {
     isStreaming,
     suggestions,
     sendMessage,
+    executeSuggestion,
     abortStream,
     clearSession,
     submitFeedback,
@@ -292,29 +297,62 @@ export function AssistantWidget() {
     setInput('');
   };
 
-  const handleSuggestionClick = (chip: string) => {
+  const handleSuggestionClick = (chipOrText: string | SuggestionChip) => {
     playChime();
     setIsOpen(true);
     setShowTeaser(false);
-    sendMessage(chip);
+    if (typeof chipOrText === 'string') {
+      sendMessage(chipOrText);
+      return;
+    }
+    executeSuggestion(chipOrText);
+  };
+
+  const handleChipRailKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const buttons = Array.from(
+      e.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])'),
+    );
+    const currentIdx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (currentIdx === -1) return;
+    e.preventDefault();
+    const nextIdx =
+      e.key === 'ArrowRight'
+        ? (currentIdx + 1) % buttons.length
+        : (currentIdx - 1 + buttons.length) % buttons.length;
+    buttons[nextIdx]?.focus();
+    buttons[nextIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   };
 
   // Dynamic context greetings & options
-  const defaultGreeting = user
-    ? 'Hi! How can I assist with your lending portfolio today?'
-    : 'Hi! Are you looking for a loan or partnership?';
+  const defaultGreeting = user ? (
+    'Hi! How can I assist with your lending portfolio today?'
+  ) : (
+    <>
+      Hi! Are you looking for a{' '}
+      <a
+        href="https://f2fintech.com/application-form"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-semibold text-blue-fixed dark:text-blue-fixed-light underline underline-offset-2 hover:opacity-80"
+      >
+        loan
+      </a>{' '}
+      or partnership?
+    </>
+  );
 
   const defaultStarterOptions = user
     ? [
-        { label: 'Check pending commissions & payouts', icon: Sparkles, query: 'What is my pending commission?' },
-        { label: 'Review application status & metrics', icon: Search, query: 'Show my dashboard metrics' },
-        { label: 'Ask a question about LendGrid platform', icon: HelpCircle, query: 'How does LendGrid aggregator platform work?' },
-      ]
+      { label: 'Check pending commissions & payouts', icon: Sparkles, query: 'What is my pending commission?' },
+      { label: 'Review application status & metrics', icon: Search, query: 'Show my dashboard metrics' },
+      { label: 'Ask a question about LendGrid platform', icon: HelpCircle, query: 'How does LendGrid aggregator platform work?' },
+    ]
     : [
-        { label: 'Find a loan or explore lending products', icon: Search, query: 'Which lenders and loan products are available?' },
-        { label: 'Become a LendGrid DSA partner', icon: Briefcase, query: 'How do I become a DSA partner?' },
-        { label: 'Ask a question about commissions & terms', icon: HelpCircle, query: 'What commission rates are offered?' },
-      ];
+      { label: 'Find a lender or explore loan products', icon: Search, query: 'Which lenders and loan products are available?' },
+      { label: 'Become a LendGrid DSA partner', icon: Briefcase, query: 'How do I become a DSA partner?' },
+      { label: 'Ask a question about commissions & earnings', icon: HelpCircle, query: 'What commission rates are offered?' },
+    ];
 
   // Current formatted time for chat header timestamp
   const formattedCurrentTime = `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase()}`;
@@ -566,11 +604,10 @@ export function AssistantWidget() {
                   className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm ${
-                      msg.role === 'user'
-                        ? 'bg-blue-fixed text-white rounded-tr-sm shadow-sm'
-                        : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/60 text-foreground rounded-tl-sm shadow-sm'
-                    }`}
+                    className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user'
+                      ? 'bg-blue-fixed text-white rounded-tr-sm shadow-sm'
+                      : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/60 text-foreground rounded-tl-sm shadow-sm'
+                      }`}
                   >
                     {msg.role === 'user' ? (
                       <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
@@ -599,11 +636,10 @@ export function AssistantWidget() {
                       <div className="flex items-center gap-1 ml-1">
                         <button
                           onClick={() => submitFeedback(msg.id, 'positive')}
-                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${
-                            msg.feedback === 'positive'
-                              ? 'text-emerald-500 font-semibold'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${msg.feedback === 'positive'
+                            ? 'text-emerald-500 font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                           title="Helpful"
                           aria-label="Helpful"
                         >
@@ -611,11 +647,10 @@ export function AssistantWidget() {
                         </button>
                         <button
                           onClick={() => submitFeedback(msg.id, 'negative')}
-                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${
-                            msg.feedback === 'negative'
-                              ? 'text-rose-500 font-semibold'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${msg.feedback === 'negative'
+                            ? 'text-rose-500 font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                           title="Not helpful"
                           aria-label="Not helpful"
                         >
@@ -638,26 +673,76 @@ export function AssistantWidget() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Topic Chips (Always visible when suggestions are available) */}
-            {suggestions.length > 0 && (
-              <div className="px-3.5 py-2 border-t border-border/50 bg-muted/30 flex-shrink-0">
+            {/* Quick Topic Chips & Contextual Next-Step Pills */}
+            {isStreaming ? (
+              <div
+                className="px-3.5 py-2 border-t border-border/50 bg-muted/30 flex-shrink-0"
+                role="status"
+                aria-live="polite"
+                aria-label="Updating suggested replies"
+              >
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1.5 font-medium">
-                  <Sparkles className="w-3 h-3 text-blue-fixed dark:text-blue-fixed-light" />
-                  <span>Suggested topics:</span>
+                  <Sparkles className="w-3 h-3 text-blue-fixed dark:text-blue-fixed-light animate-pulse" />
+                  <span>Updating suggested replies...</span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                  {suggestions.map((chip, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSuggestionClick(chip)}
-                      disabled={isStreaming}
-                      className="whitespace-nowrap px-3 py-1 rounded-full bg-card dark:bg-slate-800 border border-blue-fixed/30 dark:border-blue-fixed-light/40 hover:bg-blue-fixed/10 dark:hover:bg-blue-fixed/20 text-xs font-medium text-blue-fixed dark:text-blue-fixed-light shadow-sm transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {chip}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5 overflow-hidden pb-1">
+                  <span className="h-6 w-28 rounded-full bg-muted animate-pulse flex-shrink-0" />
+                  <span className="h-6 w-24 rounded-full bg-muted animate-pulse flex-shrink-0" />
+                  <span className="h-6 w-20 rounded-full bg-muted animate-pulse flex-shrink-0" />
                 </div>
               </div>
+            ) : (
+              suggestions.length > 0 && (
+                <div
+                  className="px-3.5 py-2 border-t border-border/50 bg-muted/30 flex-shrink-0"
+                  role="region"
+                  aria-label="Suggested topics and contextual quick replies"
+                >
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1.5 font-medium">
+                    <Sparkles className="w-3 h-3 text-blue-fixed dark:text-blue-fixed-light" />
+                    <span>
+                      {suggestions.some((c) => c.contextual)
+                        ? 'Quick replies & topics:'
+                        : 'Suggested topics:'}
+                    </span>
+                  </div>
+                  <div
+                    onKeyDown={handleChipRailKeyDown}
+                    className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar scroll-smooth"
+                  >
+                    {suggestions.map((chip) => {
+                      const isContextual = Boolean(chip.contextual);
+                      const isNavigate = chip.action === 'navigate';
+                      return (
+                        <button
+                          key={chip.id}
+                          type="button"
+                          onClick={() => handleSuggestionClick(chip)}
+                          disabled={isStreaming}
+                          aria-label={
+                            isNavigate
+                              ? `${chip.label} (navigates to page)`
+                              : `${chip.label} (send reply)`
+                          }
+                          className={
+                            isContextual
+                              ? 'whitespace-nowrap inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-fixed hover:bg-blue-fixed/90 border border-blue-fixed text-xs font-medium text-white shadow-sm transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-fixed focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed'
+                              : 'whitespace-nowrap inline-flex items-center gap-1 px-3 py-1 rounded-full bg-card dark:bg-slate-800 border border-blue-fixed/30 dark:border-blue-fixed-light/40 hover:bg-blue-fixed/10 dark:hover:bg-blue-fixed/20 text-xs font-medium text-blue-fixed dark:text-blue-fixed-light shadow-sm transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-fixed focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed'
+                          }
+                        >
+                          {isContextual &&
+                            (isNavigate ? (
+                              <ArrowUpRight className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                            ) : (
+                              <CornerDownRight className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                            ))}
+                          <span>{chip.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )
             )}
 
             {/* Bottom Input Bar */}

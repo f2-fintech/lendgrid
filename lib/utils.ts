@@ -36,7 +36,8 @@ export function setCookie(name: string, value: string, days = 1): void {
 
 export function deleteCookie(name: string): void {
   if (typeof document === 'undefined') return
-  document.cookie = `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=None`
+  document.cookie = `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; SameSite=Lax`
+  document.cookie = `${name}=; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Path=/; secure; SameSite=None`
 }
 
 // Lightweight JWT decoder (no verification; for claims extraction only)
