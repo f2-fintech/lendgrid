@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
+  Minus,
   Send,
   Trash2,
   ThumbsUp,
@@ -41,7 +42,7 @@ const HIDDEN_ROUTES = [
   '/turnstile-mobile',
 ];
 
-/** Branded LendGrid Co-pilot Avatar */
+/** Branded LendGrid AI Avatar */
 function AssistantAvatar({
   size = 'md',
   className = '',
@@ -57,38 +58,15 @@ function AssistantAvatar({
 
   return (
     <div
-      className={`relative rounded-full overflow-hidden flex items-center justify-center bg-[#0a4d9c] text-white shadow-inner flex-shrink-0 ${sizeClasses} ${className}`}
+      className={`relative rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-fixed-light via-blue-fixed to-blue-fixed-hover text-white shadow-inner flex-shrink-0 ${sizeClasses} ${className}`}
     >
-      <svg
-        viewBox="0 0 36 36"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-[72%] h-[72%]"
-        aria-hidden="true"
-      >
-        <circle cx="18" cy="18" r="16" fill="url(#lg-bot-gradient)" />
-        <path
-          d="M12 21.5C12 18.1863 14.6863 15.5 18 15.5C21.3137 15.5 24 18.1863 24 21.5V22.5C24 23.0523 23.5523 23.5 23 23.5H13C12.4477 23.5 12 23.0523 12 22.5V21.5Z"
-          fill="white"
-          fillOpacity="0.95"
-        />
-        <circle cx="18" cy="12" r="4.2" fill="white" />
-        <path
-          d="M10 16.5C10 12.0817 13.5817 8.5 18 8.5C22.4183 8.5 26 12.0817 26 16.5"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <rect x="8" y="14.5" width="3" height="4.5" rx="1.5" fill="white" />
-        <rect x="25" y="14.5" width="3" height="4.5" rx="1.5" fill="white" />
-        <defs>
-          <linearGradient id="lg-bot-gradient" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#1E40AF" />
-            <stop offset="0.6" stopColor="#2563EB" />
-            <stop offset="1" stopColor="#4F46E5" />
-          </linearGradient>
-        </defs>
-      </svg>
+      <img
+        src="/lendgrid-ai-logo.png"
+        srcSet="/lendgrid-ai-logo.png 1x, /lendgrid-ai-logo@2x.png 2x"
+        alt="LendGrid AI"
+        className="w-full h-full object-contain object-center scale-[1.06] select-none pointer-events-none"
+        draggable={false}
+      />
     </div>
   );
 }
@@ -419,7 +397,7 @@ export function AssistantWidget() {
             setShowTeaser(false);
           }}
           className="pointer-events-auto relative flex items-center justify-center w-14 h-14 rounded-full bg-white dark:bg-slate-900 border-2 border-blue-fixed/30 ring-4 ring-blue-fixed/10 shadow-xl hover:shadow-2xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-fixed focus:ring-offset-2 p-0.5"
-          aria-label={isOpen ? 'Close LendGrid Assistant' : 'Open LendGrid Assistant'}
+          aria-label={isOpen ? 'Minimize LendGrid AI' : 'Open LendGrid AI'}
         >
           {isOpen ? (
             <div className="w-12 h-12 rounded-full bg-[#0a4d9c] dark:bg-[#1d4ed8] flex items-center justify-center text-white shadow-inner">
@@ -445,7 +423,7 @@ export function AssistantWidget() {
             transition={{ duration: 0.22, ease: 'easeOut' }}
             role="dialog"
             aria-modal="true"
-            aria-label="LendGrid Assistant Co-pilot"
+            aria-label="LendGrid AI Co-pilot"
             className="fixed bottom-24 right-4 md:right-6 z-50 w-[calc(100vw-2rem)] md:w-[410px] h-[590px] max-h-[calc(100vh-7.5rem)] flex flex-col rounded-2xl bg-card dark:bg-slate-900 border border-border shadow-2xl overflow-hidden"
           >
             {/* Header: Solid Deep Blue Banner */}
@@ -459,7 +437,7 @@ export function AssistantWidget() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm md:text-base text-white tracking-tight leading-tight">
-                    LendGrid Assistant
+                    LendGrid AI
                   </h3>
                   <p className="text-[11px] text-white/80 truncate max-w-[190px] md:max-w-[220px]">
                     {user?.role
@@ -495,15 +473,15 @@ export function AssistantWidget() {
                   </button>
                 )}
 
-                {/* Close window button */}
+                {/* Minimize window button */}
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
                   className="w-8 h-8 rounded-full text-white/80 hover:text-white hover:bg-white/15 flex items-center justify-center transition-colors"
-                  title="Close assistant"
-                  aria-label="Close"
+                  title="Minimize assistant"
+                  aria-label="Minimize"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  <Minus className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
@@ -572,14 +550,18 @@ export function AssistantWidget() {
               {messages.length === 0 && (
                 <div className="space-y-2.5 animate-fadeIn">
                   {/* Greeting Bubble */}
-                  <div className="flex flex-col items-start">
-                    <div className="max-w-[88%] rounded-2xl rounded-tl-sm px-4 py-2.5 bg-slate-100 dark:bg-slate-800/90 text-foreground border border-slate-200/70 dark:border-slate-700/60 shadow-sm text-sm">
+                  <div className="flex items-start gap-2">
+                    <AssistantAvatar
+                      size="sm"
+                      className="mt-0.5 ring-1 ring-blue-fixed/30 dark:ring-blue-fixed-light/40"
+                    />
+                    <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-2.5 bg-slate-100 dark:bg-slate-800/90 text-foreground border border-slate-200/70 dark:border-slate-700/60 shadow-sm text-sm">
                       <p className="whitespace-pre-wrap">{defaultGreeting}</p>
                     </div>
                   </div>
 
                   {/* Grouped Starter Options Card */}
-                  <div className="rounded-xl border border-border bg-card dark:bg-slate-800/60 shadow-sm divide-y divide-border overflow-hidden max-w-[88%]">
+                  <div className="ml-9 rounded-xl border border-border bg-card dark:bg-slate-800/60 shadow-sm divide-y divide-border overflow-hidden max-w-[85%]">
                     {defaultStarterOptions.map((opt, idx) => {
                       const IconComponent = opt.icon;
                       return (
@@ -604,32 +586,54 @@ export function AssistantWidget() {
                   className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user'
-                      ? 'bg-blue-fixed text-white rounded-tr-sm shadow-sm'
-                      : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/60 text-foreground rounded-tl-sm shadow-sm'
-                      }`}
+                    className={`flex items-start gap-2 ${msg.role === 'user' ? 'justify-end w-full' : 'w-full'}`}
                   >
-                    {msg.role === 'user' ? (
-                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                    ) : (
-                      <MarkdownMessage content={msg.content || '...'} />
+                    {msg.role === 'assistant' && (
+                      <AssistantAvatar
+                        size="sm"
+                        className="mt-0.5 ring-1 ring-blue-fixed/30 dark:ring-blue-fixed-light/40"
+                      />
                     )}
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user'
+                        ? 'bg-blue-fixed text-white rounded-tr-sm shadow-sm'
+                        : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/60 text-foreground rounded-tl-sm shadow-sm'
+                        }`}
+                    >
+                      {msg.role === 'user' ? (
+                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      ) : (
+                        <MarkdownMessage content={msg.content || '...'} />
+                      )}
+                    </div>
                   </div>
 
                   {/* UI Action / Rich Cards */}
                   {msg.uiAction?.action === 'renderTicketCard' ? (
-                    <TicketCard data={msg.uiAction.payload} />
+                    <div className={msg.role === 'assistant' ? 'ml-9 w-[calc(100%-2.25rem)]' : ''}>
+                      <TicketCard data={msg.uiAction.payload} />
+                    </div>
                   ) : msg.uiAction?.action === 'renderInfoCards' ? (
-                    <InfoCards data={msg.uiAction.payload} />
+                    <div className={msg.role === 'assistant' ? 'ml-9 w-[calc(100%-2.25rem)]' : ''}>
+                      <InfoCards data={msg.uiAction.payload} />
+                    </div>
                   ) : msg.uiAction ? (
-                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-blue-fixed dark:text-blue-fixed-light px-1">
+                    <div
+                      className={`mt-1 flex items-center gap-1.5 text-[11px] text-blue-fixed dark:text-blue-fixed-light px-1 ${
+                        msg.role === 'assistant' ? 'ml-9' : ''
+                      }`}
+                    >
                       <Sparkles className="w-3 h-3 flex-shrink-0" />
                       <span>Action executed: {msg.uiAction.action}</span>
                     </div>
                   ) : null}
 
                   {/* Timestamp & Helpful Feedback */}
-                  <div className="flex items-center gap-2 mt-1 px-1">
+                  <div
+                    className={`flex items-center gap-2 mt-1 px-1 ${
+                      msg.role === 'assistant' ? 'ml-9' : ''
+                    }`}
+                  >
                     <span className="text-[10px] text-muted-foreground">{msg.timestamp}</span>
 
                     {msg.role === 'assistant' && msg.content && (
