@@ -125,7 +125,10 @@ const schema = z
             required_error: "Please select a commission rule",
         }).min(1, "Please select a commission rule"),
 
-        referralCode: z.string().optional(),
+        referralCode: z
+            .string({ required_error: "Referral code is required" })
+            .trim()
+            .min(1, "Referral code is required"),
     })
     .refine((data) => data.password === data.confirmPassword, {
         message: "Passwords don't match",
@@ -258,7 +261,7 @@ export function AddAggregatorDialog({
                 isOmsEnabled: true,
                 rank: matchedRule ? matchedRule.applicableFor : undefined,
                 commissionRuleId: data.commissionRuleId || undefined,
-                referralCode: data.referralCode || undefined,
+                referralCode: data.referralCode.trim().toUpperCase(),
             };
 
             const res = await registerMutation.mutateAsync(payload);
@@ -545,18 +548,24 @@ export function AddAggregatorDialog({
                                 )}
                             </div>
 
-                            {/* Referral Code (Optional) */}
+                            {/* Referral Code (Required) */}
                             <div>
                                 <Label htmlFor="referralCode" className="text-sm font-medium">
-                                    Referral Code <span className="text-muted-foreground font-normal">(Optional)</span>
+                                    Referral Code <span className="text-red-400">*</span>
                                 </Label>
                                 <Input
                                     id="referralCode"
                                     type="text"
                                     {...register("referralCode")}
                                     className="mt-1.5 bg-background border-border focus:ring-2 focus:ring-primary/20 uppercase"
-                                    placeholder="e.g. REF-12345"
+                                    placeholder="e.g. AG-XXXXXX, OMS-XXXXXX or F2-369-XXX"
                                 />
+                                {errors.referralCode && (
+                                    <p className="text-sm text-red-400 mt-1.5 flex items-center gap-1">
+                                        <AlertCircle className="w-3 h-3" />
+                                        {errors.referralCode.message}
+                                    </p>
+                                )}
                             </div>
                         </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

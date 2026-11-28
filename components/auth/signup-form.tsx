@@ -135,6 +135,7 @@ export function SignupForm() {
     register,
     handleSubmit,
     setValue,
+    setError,
     formState: { errors }
   } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema),
@@ -237,6 +238,19 @@ export function SignupForm() {
           : data.fullName;
 
       const enteredReferralCode = (data.referralCode || referralCode || '').trim().toUpperCase();
+      if (!isMemberInvite && !enteredReferralCode) {
+        setError('referralCode', {
+          type: 'manual',
+          message: 'Referral code is required',
+        });
+        toast({
+          title: "Referral code required",
+          description: "Please enter a referral code from a Channel Partner, OMS Staff, or Employee Code.",
+          variant: "destructive",
+        });
+        setIsLoading(false);
+        return;
+      }
 
       const payload = {
         username: data.fullName,
@@ -583,7 +597,7 @@ export function SignupForm() {
                   <div className="flex items-center justify-between">
                     <Label htmlFor="referralCode" className="text-foreground font-medium flex items-center gap-1.5">
                       <Tag className="w-3.5 h-3.5 text-primary" />
-                      Referral Code <span className="text-muted-foreground text-xs font-normal">(Optional)</span>
+                      Referral Code <span className="text-primary">*</span>
                     </Label>
                     {referralCode && (
                       <span className="text-[11px] text-primary font-medium bg-primary/10 border border-primary/20 px-2 py-0.5 rounded-full">
@@ -593,13 +607,21 @@ export function SignupForm() {
                   </div>
                   <Input
                     id="referralCode"
-                    {...register('referralCode')}
+                    {...register('referralCode', {
+                      validate: (val) =>
+                        isMemberInvite ||
+                        Boolean((val || referralCode || '').trim()) ||
+                        'Referral code is required',
+                    })}
                     className="h-11 rounded-xl bg-background border border-border text-foreground placeholder:text-muted-foreground font-mono focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-0 uppercase"
                     placeholder="e.g. AG-XXXXXX, OMS-XXXXXX or F2-369-XXX"
                     disabled={isLoading}
                   />
+                  {errors.referralCode && (
+                    <p className="text-destructive text-sm mt-1">{errors.referralCode.message}</p>
+                  )}
                   <p className="text-xs text-muted-foreground">
-                    If you have a referral code from a Channel Partner, OMS Staff, or Employee Code, enter it here.
+                    Enter a referral code from a Channel Partner, OMS Staff, or Employee Code.
                   </p>
                 </div>
               )}
