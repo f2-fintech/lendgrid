@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   X,
+  Minus,
   Send,
   Trash2,
   ThumbsUp,
@@ -20,6 +21,8 @@ import {
   Volume2,
   VolumeX,
   ShieldCheck,
+  ArrowUpRight,
+  CornerDownRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +30,8 @@ import { MarkdownMessage } from './markdown-message';
 import { TicketCard } from './ticket-card';
 import { InfoCards } from './info-cards';
 import { useAssistantChat } from '@/hooks/use-assistant-chat';
-import { decodeJwt } from '@/lib/utils';
+import { SuggestionChip } from '@/lib/assistant-types';
+import { decodeJwt, deleteCookie } from '@/lib/utils';
 import { usersApi } from '@/lib/users-api';
 
 const HIDDEN_ROUTES = [
@@ -38,7 +42,7 @@ const HIDDEN_ROUTES = [
   '/turnstile-mobile',
 ];
 
-/** Branded LendGrid Co-pilot Avatar */
+/** Branded LendGrid AI Avatar */
 function AssistantAvatar({
   size = 'md',
   className = '',
@@ -54,38 +58,15 @@ function AssistantAvatar({
 
   return (
     <div
-      className={`relative rounded-full overflow-hidden flex items-center justify-center bg-[#0a4d9c] text-white shadow-inner flex-shrink-0 ${sizeClasses} ${className}`}
+      className={`relative rounded-full overflow-hidden flex items-center justify-center bg-gradient-to-br from-blue-fixed-light via-blue-fixed to-blue-fixed-hover text-white shadow-inner flex-shrink-0 ${sizeClasses} ${className}`}
     >
-      <svg
-        viewBox="0 0 36 36"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        className="w-[72%] h-[72%]"
-        aria-hidden="true"
-      >
-        <circle cx="18" cy="18" r="16" fill="url(#lg-bot-gradient)" />
-        <path
-          d="M12 21.5C12 18.1863 14.6863 15.5 18 15.5C21.3137 15.5 24 18.1863 24 21.5V22.5C24 23.0523 23.5523 23.5 23 23.5H13C12.4477 23.5 12 23.0523 12 22.5V21.5Z"
-          fill="white"
-          fillOpacity="0.95"
-        />
-        <circle cx="18" cy="12" r="4.2" fill="white" />
-        <path
-          d="M10 16.5C10 12.0817 13.5817 8.5 18 8.5C22.4183 8.5 26 12.0817 26 16.5"
-          stroke="white"
-          strokeWidth="2"
-          strokeLinecap="round"
-        />
-        <rect x="8" y="14.5" width="3" height="4.5" rx="1.5" fill="white" />
-        <rect x="25" y="14.5" width="3" height="4.5" rx="1.5" fill="white" />
-        <defs>
-          <linearGradient id="lg-bot-gradient" x1="4" y1="4" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-            <stop stopColor="#1E40AF" />
-            <stop offset="0.6" stopColor="#2563EB" />
-            <stop offset="1" stopColor="#4F46E5" />
-          </linearGradient>
-        </defs>
-      </svg>
+      <img
+        src="/lendgrid-ai-logo.png"
+        srcSet="/lendgrid-ai-logo.png 1x, /lendgrid-ai-logo@2x.png 2x"
+        alt="LendGrid AI"
+        className="w-full h-full object-contain object-center scale-[1.06] select-none pointer-events-none"
+        draggable={false}
+      />
     </div>
   );
 }
@@ -137,6 +118,7 @@ export function AssistantWidget() {
           setUser(profileResp?.profile || null);
         }
       } catch {
+        deleteCookie('lendgrid_cookie');
         if (active) setUser(null);
       }
     }
@@ -167,7 +149,7 @@ export function AssistantWidget() {
           setIsEnabled(data.assistantEnabled);
         }
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       active = false;
     };
@@ -181,6 +163,7 @@ export function AssistantWidget() {
     isStreaming,
     suggestions,
     sendMessage,
+    executeSuggestion,
     abortStream,
     clearSession,
     submitFeedback,
@@ -292,29 +275,62 @@ export function AssistantWidget() {
     setInput('');
   };
 
-  const handleSuggestionClick = (chip: string) => {
+  const handleSuggestionClick = (chipOrText: string | SuggestionChip) => {
     playChime();
     setIsOpen(true);
     setShowTeaser(false);
-    sendMessage(chip);
+    if (typeof chipOrText === 'string') {
+      sendMessage(chipOrText);
+      return;
+    }
+    executeSuggestion(chipOrText);
+  };
+
+  const handleChipRailKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+    const buttons = Array.from(
+      e.currentTarget.querySelectorAll<HTMLButtonElement>('button:not([disabled])'),
+    );
+    const currentIdx = buttons.indexOf(document.activeElement as HTMLButtonElement);
+    if (currentIdx === -1) return;
+    e.preventDefault();
+    const nextIdx =
+      e.key === 'ArrowRight'
+        ? (currentIdx + 1) % buttons.length
+        : (currentIdx - 1 + buttons.length) % buttons.length;
+    buttons[nextIdx]?.focus();
+    buttons[nextIdx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   };
 
   // Dynamic context greetings & options
-  const defaultGreeting = user
-    ? 'Hi! How can I assist with your lending portfolio today?'
-    : 'Hi! Are you looking for a loan or partnership?';
+  const defaultGreeting = user ? (
+    'Hi! How can I assist with your lending portfolio today?'
+  ) : (
+    <>
+      Hi! Are you looking for a{' '}
+      <a
+        href="https://f2fintech.com/application-form"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="font-semibold text-blue-fixed dark:text-blue-fixed-light underline underline-offset-2 hover:opacity-80"
+      >
+        loan
+      </a>{' '}
+      or partnership?
+    </>
+  );
 
   const defaultStarterOptions = user
     ? [
-        { label: 'Check pending commissions & payouts', icon: Sparkles, query: 'What is my pending commission?' },
-        { label: 'Review application status & metrics', icon: Search, query: 'Show my dashboard metrics' },
-        { label: 'Ask a question about LendGrid platform', icon: HelpCircle, query: 'How does LendGrid aggregator platform work?' },
-      ]
+      { label: 'Check pending commissions & payouts', icon: Sparkles, query: 'What is my pending commission?' },
+      { label: 'Review application status & metrics', icon: Search, query: 'Show my dashboard metrics' },
+      { label: 'Ask a question about LendGrid platform', icon: HelpCircle, query: 'How does LendGrid aggregator platform work?' },
+    ]
     : [
-        { label: 'Find a loan or explore lending products', icon: Search, query: 'Which lenders and loan products are available?' },
-        { label: 'Become a LendGrid DSA partner', icon: Briefcase, query: 'How do I become a DSA partner?' },
-        { label: 'Ask a question about commissions & terms', icon: HelpCircle, query: 'What commission rates are offered?' },
-      ];
+      { label: 'Find a lender or explore loan products', icon: Search, query: 'Which lenders and loan products are available?' },
+      { label: 'Become a LendGrid DSA partner', icon: Briefcase, query: 'How do I become a DSA partner?' },
+      { label: 'Ask a question about commissions & earnings', icon: HelpCircle, query: 'What commission rates are offered?' },
+    ];
 
   // Current formatted time for chat header timestamp
   const formattedCurrentTime = `Today ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }).toLowerCase()}`;
@@ -381,7 +397,7 @@ export function AssistantWidget() {
             setShowTeaser(false);
           }}
           className="pointer-events-auto relative flex items-center justify-center w-14 h-14 rounded-full bg-white dark:bg-slate-900 border-2 border-blue-fixed/30 ring-4 ring-blue-fixed/10 shadow-xl hover:shadow-2xl transition-all focus:outline-none focus:ring-2 focus:ring-blue-fixed focus:ring-offset-2 p-0.5"
-          aria-label={isOpen ? 'Close LendGrid Assistant' : 'Open LendGrid Assistant'}
+          aria-label={isOpen ? 'Minimize LendGrid AI' : 'Open LendGrid AI'}
         >
           {isOpen ? (
             <div className="w-12 h-12 rounded-full bg-[#0a4d9c] dark:bg-[#1d4ed8] flex items-center justify-center text-white shadow-inner">
@@ -407,7 +423,7 @@ export function AssistantWidget() {
             transition={{ duration: 0.22, ease: 'easeOut' }}
             role="dialog"
             aria-modal="true"
-            aria-label="LendGrid Assistant Co-pilot"
+            aria-label="LendGrid AI Co-pilot"
             className="fixed bottom-24 right-4 md:right-6 z-50 w-[calc(100vw-2rem)] md:w-[410px] h-[590px] max-h-[calc(100vh-7.5rem)] flex flex-col rounded-2xl bg-card dark:bg-slate-900 border border-border shadow-2xl overflow-hidden"
           >
             {/* Header: Solid Deep Blue Banner */}
@@ -421,7 +437,7 @@ export function AssistantWidget() {
                 </div>
                 <div>
                   <h3 className="font-semibold text-sm md:text-base text-white tracking-tight leading-tight">
-                    LendGrid Assistant
+                    LendGrid AI
                   </h3>
                   <p className="text-[11px] text-white/80 truncate max-w-[190px] md:max-w-[220px]">
                     {user?.role
@@ -457,15 +473,15 @@ export function AssistantWidget() {
                   </button>
                 )}
 
-                {/* Close window button */}
+                {/* Minimize window button */}
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
                   className="w-8 h-8 rounded-full text-white/80 hover:text-white hover:bg-white/15 flex items-center justify-center transition-colors"
-                  title="Close assistant"
-                  aria-label="Close"
+                  title="Minimize assistant"
+                  aria-label="Minimize"
                 >
-                  <X className="w-5 h-5 text-white" />
+                  <Minus className="w-5 h-5 text-white" />
                 </button>
               </div>
             </div>
@@ -534,14 +550,18 @@ export function AssistantWidget() {
               {messages.length === 0 && (
                 <div className="space-y-2.5 animate-fadeIn">
                   {/* Greeting Bubble */}
-                  <div className="flex flex-col items-start">
-                    <div className="max-w-[88%] rounded-2xl rounded-tl-sm px-4 py-2.5 bg-slate-100 dark:bg-slate-800/90 text-foreground border border-slate-200/70 dark:border-slate-700/60 shadow-sm text-sm">
+                  <div className="flex items-start gap-2">
+                    <AssistantAvatar
+                      size="sm"
+                      className="mt-0.5 ring-1 ring-blue-fixed/30 dark:ring-blue-fixed-light/40"
+                    />
+                    <div className="max-w-[85%] rounded-2xl rounded-tl-sm px-4 py-2.5 bg-slate-100 dark:bg-slate-800/90 text-foreground border border-slate-200/70 dark:border-slate-700/60 shadow-sm text-sm">
                       <p className="whitespace-pre-wrap">{defaultGreeting}</p>
                     </div>
                   </div>
 
                   {/* Grouped Starter Options Card */}
-                  <div className="rounded-xl border border-border bg-card dark:bg-slate-800/60 shadow-sm divide-y divide-border overflow-hidden max-w-[88%]">
+                  <div className="ml-9 rounded-xl border border-border bg-card dark:bg-slate-800/60 shadow-sm divide-y divide-border overflow-hidden max-w-[85%]">
                     {defaultStarterOptions.map((opt, idx) => {
                       const IconComponent = opt.icon;
                       return (
@@ -566,44 +586,64 @@ export function AssistantWidget() {
                   className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}
                 >
                   <div
-                    className={`max-w-[88%] rounded-2xl px-4 py-2.5 text-sm ${
-                      msg.role === 'user'
+                    className={`flex items-start gap-2 ${msg.role === 'user' ? 'justify-end w-full' : 'w-full'}`}
+                  >
+                    {msg.role === 'assistant' && (
+                      <AssistantAvatar
+                        size="sm"
+                        className="mt-0.5 ring-1 ring-blue-fixed/30 dark:ring-blue-fixed-light/40"
+                      />
+                    )}
+                    <div
+                      className={`max-w-[85%] rounded-2xl px-4 py-2.5 text-sm ${msg.role === 'user'
                         ? 'bg-blue-fixed text-white rounded-tr-sm shadow-sm'
                         : 'bg-slate-100 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/60 text-foreground rounded-tl-sm shadow-sm'
-                    }`}
-                  >
-                    {msg.role === 'user' ? (
-                      <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                    ) : (
-                      <MarkdownMessage content={msg.content || '...'} />
-                    )}
+                        }`}
+                    >
+                      {msg.role === 'user' ? (
+                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                      ) : (
+                        <MarkdownMessage content={msg.content || '...'} />
+                      )}
+                    </div>
                   </div>
 
                   {/* UI Action / Rich Cards */}
                   {msg.uiAction?.action === 'renderTicketCard' ? (
-                    <TicketCard data={msg.uiAction.payload} />
+                    <div className={msg.role === 'assistant' ? 'ml-9 w-[calc(100%-2.25rem)]' : ''}>
+                      <TicketCard data={msg.uiAction.payload} />
+                    </div>
                   ) : msg.uiAction?.action === 'renderInfoCards' ? (
-                    <InfoCards data={msg.uiAction.payload} />
+                    <div className={msg.role === 'assistant' ? 'ml-9 w-[calc(100%-2.25rem)]' : ''}>
+                      <InfoCards data={msg.uiAction.payload} />
+                    </div>
                   ) : msg.uiAction ? (
-                    <div className="mt-1 flex items-center gap-1.5 text-[11px] text-blue-fixed dark:text-blue-fixed-light px-1">
+                    <div
+                      className={`mt-1 flex items-center gap-1.5 text-[11px] text-blue-fixed dark:text-blue-fixed-light px-1 ${
+                        msg.role === 'assistant' ? 'ml-9' : ''
+                      }`}
+                    >
                       <Sparkles className="w-3 h-3 flex-shrink-0" />
                       <span>Action executed: {msg.uiAction.action}</span>
                     </div>
                   ) : null}
 
                   {/* Timestamp & Helpful Feedback */}
-                  <div className="flex items-center gap-2 mt-1 px-1">
+                  <div
+                    className={`flex items-center gap-2 mt-1 px-1 ${
+                      msg.role === 'assistant' ? 'ml-9' : ''
+                    }`}
+                  >
                     <span className="text-[10px] text-muted-foreground">{msg.timestamp}</span>
 
                     {msg.role === 'assistant' && msg.content && (
                       <div className="flex items-center gap-1 ml-1">
                         <button
                           onClick={() => submitFeedback(msg.id, 'positive')}
-                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${
-                            msg.feedback === 'positive'
-                              ? 'text-emerald-500 font-semibold'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${msg.feedback === 'positive'
+                            ? 'text-emerald-500 font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                           title="Helpful"
                           aria-label="Helpful"
                         >
@@ -611,11 +651,10 @@ export function AssistantWidget() {
                         </button>
                         <button
                           onClick={() => submitFeedback(msg.id, 'negative')}
-                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${
-                            msg.feedback === 'negative'
-                              ? 'text-rose-500 font-semibold'
-                              : 'text-muted-foreground hover:text-foreground'
-                          }`}
+                          className={`p-1 rounded hover:bg-muted text-xs transition-colors ${msg.feedback === 'negative'
+                            ? 'text-rose-500 font-semibold'
+                            : 'text-muted-foreground hover:text-foreground'
+                            }`}
                           title="Not helpful"
                           aria-label="Not helpful"
                         >
@@ -638,26 +677,76 @@ export function AssistantWidget() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Topic Chips (Always visible when suggestions are available) */}
-            {suggestions.length > 0 && (
-              <div className="px-3.5 py-2 border-t border-border/50 bg-muted/30 flex-shrink-0">
+            {/* Quick Topic Chips & Contextual Next-Step Pills */}
+            {isStreaming ? (
+              <div
+                className="px-3.5 py-2 border-t border-border/50 bg-muted/30 flex-shrink-0"
+                role="status"
+                aria-live="polite"
+                aria-label="Updating suggested replies"
+              >
                 <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1.5 font-medium">
-                  <Sparkles className="w-3 h-3 text-blue-fixed dark:text-blue-fixed-light" />
-                  <span>Suggested topics:</span>
+                  <Sparkles className="w-3 h-3 text-blue-fixed dark:text-blue-fixed-light animate-pulse" />
+                  <span>Updating suggested replies...</span>
                 </div>
-                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                  {suggestions.map((chip, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => handleSuggestionClick(chip)}
-                      disabled={isStreaming}
-                      className="whitespace-nowrap px-3 py-1 rounded-full bg-card dark:bg-slate-800 border border-blue-fixed/30 dark:border-blue-fixed-light/40 hover:bg-blue-fixed/10 dark:hover:bg-blue-fixed/20 text-xs font-medium text-blue-fixed dark:text-blue-fixed-light shadow-sm transition-all flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {chip}
-                    </button>
-                  ))}
+                <div className="flex items-center gap-1.5 overflow-hidden pb-1">
+                  <span className="h-6 w-28 rounded-full bg-muted animate-pulse flex-shrink-0" />
+                  <span className="h-6 w-24 rounded-full bg-muted animate-pulse flex-shrink-0" />
+                  <span className="h-6 w-20 rounded-full bg-muted animate-pulse flex-shrink-0" />
                 </div>
               </div>
+            ) : (
+              suggestions.length > 0 && (
+                <div
+                  className="px-3.5 py-2 border-t border-border/50 bg-muted/30 flex-shrink-0"
+                  role="region"
+                  aria-label="Suggested topics and contextual quick replies"
+                >
+                  <div className="flex items-center gap-1 text-[11px] text-muted-foreground mb-1.5 font-medium">
+                    <Sparkles className="w-3 h-3 text-blue-fixed dark:text-blue-fixed-light" />
+                    <span>
+                      {suggestions.some((c) => c.contextual)
+                        ? 'Quick replies & topics:'
+                        : 'Suggested topics:'}
+                    </span>
+                  </div>
+                  <div
+                    onKeyDown={handleChipRailKeyDown}
+                    className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar scroll-smooth"
+                  >
+                    {suggestions.map((chip) => {
+                      const isContextual = Boolean(chip.contextual);
+                      const isNavigate = chip.action === 'navigate';
+                      return (
+                        <button
+                          key={chip.id}
+                          type="button"
+                          onClick={() => handleSuggestionClick(chip)}
+                          disabled={isStreaming}
+                          aria-label={
+                            isNavigate
+                              ? `${chip.label} (navigates to page)`
+                              : `${chip.label} (send reply)`
+                          }
+                          className={
+                            isContextual
+                              ? 'whitespace-nowrap inline-flex items-center gap-1 px-3 py-1 rounded-full bg-blue-fixed hover:bg-blue-fixed/90 border border-blue-fixed text-xs font-medium text-white shadow-sm transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-fixed focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed'
+                              : 'whitespace-nowrap inline-flex items-center gap-1 px-3 py-1 rounded-full bg-card dark:bg-slate-800 border border-blue-fixed/30 dark:border-blue-fixed-light/40 hover:bg-blue-fixed/10 dark:hover:bg-blue-fixed/20 text-xs font-medium text-blue-fixed dark:text-blue-fixed-light shadow-sm transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-fixed focus-visible:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed'
+                          }
+                        >
+                          {isContextual &&
+                            (isNavigate ? (
+                              <ArrowUpRight className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                            ) : (
+                              <CornerDownRight className="w-3 h-3 flex-shrink-0" aria-hidden="true" />
+                            ))}
+                          <span>{chip.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )
             )}
 
             {/* Bottom Input Bar */}

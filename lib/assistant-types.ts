@@ -4,6 +4,14 @@
 
 export type AssistantMode = 'visitor' | 'authenticated';
 
+export interface SuggestionChip {
+  id: string;
+  label: string;
+  action: 'navigate' | 'message';
+  target: string;
+  contextual?: boolean;
+}
+
 export interface SseEvent {
   type: 'status' | 'text-delta' | 'ui-action' | 'suggestions' | 'done' | 'error' | 'session';
   sessionId?: string;
@@ -12,6 +20,7 @@ export interface SseEvent {
   action?: 'navigate' | 'applyFilter' | 'resetFilters' | 'renderTicketCard' | 'renderInfoCards';
   payload?: any;
   items?: string[];
+  suggestedReplies?: SuggestionChip[];
   messageId?: string;
   message?: string;
 }
